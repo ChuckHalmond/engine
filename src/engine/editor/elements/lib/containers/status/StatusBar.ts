@@ -35,8 +35,6 @@ class HTMLEStatusBarElement extends HTMLElement {
                     position: relative; 
                     user-select: none;
 
-                    font-size: 0.95em;
-
                     background-color: white;
                 }
 

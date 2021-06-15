@@ -1711,8 +1711,7 @@ define("engine/editor/elements/lib/containers/menus/MenuBar", ["require", "expor
         };
         HTMLEMenuBarElement = __decorate([
             HTMLElement_4.RegisterCustomHTMLElement({
-                name: "e-menubar",
-                observedAttributes: ["active"]
+                name: "e-menubar"
             }),
             HTMLElement_4.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
@@ -2155,8 +2154,6 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
                     display: flex;
                     position: relative; 
                     user-select: none;
-
-                    font-size: 0.95em;
 
                     background-color: white;
                 }

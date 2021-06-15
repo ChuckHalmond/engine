@@ -10,8 +10,7 @@ function isHTMLEMenuBarElement(elem: any): elem is HTMLEMenuBarElement {
 }
 
 @RegisterCustomHTMLElement({
-    name: "e-menubar",
-    observedAttributes: ["active"]
+    name: "e-menubar"
 })
 @GenerateAttributeAccessors([
     {name: "name", type: "string"},
