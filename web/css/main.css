@@ -1,0 +1,166 @@
+@import "theme.css";
+@import "default.css";
+
+*:focus {
+    z-index: 1;
+}
+
+a {
+    color: rgb(0, 128, 255);
+}
+
+e-menubar > e-menuitem[type="menu"] > [slot="menu"] {
+    transition-delay: 0s;
+
+    left: 0;
+    top: 100%;
+}
+
+e-menubar > e-menuitem[type="menu"]::part(visual) {
+    display: none;
+}
+
+e-menubutton > [slot="menu"] > [slot="menu"],
+e-menu > e-menuitem[type="menu"] > [slot="menu"] {
+    left: 100%;
+    top: -6px;
+}
+
+e-menu {
+    -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+    -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+    box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+}
+/*
+e-menuitem::part(visual) {
+    visibility: visible;
+    display: inline-block;
+    width: 20px;
+    line-height: 22px;
+    font-size: 22px;
+    font-family: "Material Icons Round";
+    -webkit-font-smoothing: antialiased;
+}*/
+
+.statusbar-dropdown [slot="content"] {
+    top: unset;
+    bottom: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+
+
+
+.hidden {
+    display: none !important;
+}
+
+.flex {
+    display: flex;
+}
+
+.blue {
+    color: rgb(150, 190, 233);
+}
+
+.yellow {
+    color: rgb(255, 200, 95);
+}
+
+.centered {
+    text-align: center;
+}
+
+.padded {
+    padding: 4px;
+}
+
+[data-role="dropdown-button"] {
+    position: relative;
+    border: 0;
+}
+
+[data-role="dropdown-menu"] {
+    display: flex;
+    z-index: 1;
+    position: absolute;
+
+    left: 0;
+    top: 100%;
+
+    padding: 8px 0;
+    background-color: white;
+    border: 1px solid grey;
+}
+
+[data-role="dropdown-menu"][data-hidden] {
+    display: none;
+}
+
+#container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+#canvas {
+    border-radius: 4px;
+    margin: 0;
+    border: none;
+    min-width: 1080px;
+    background-color: white;
+}
+
+#canvas:focus {
+    border: 2px solid grey;
+}
+
+#ui {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    font-size: 20px;
+    
+    margin-bottom: 8px;
+}
+
+#ui > div {
+    display: inline-block;
+}
+
+.flex-rows {
+  display: flex;
+  flex-flow: column nowrap;
+}
+
+.flex-cols {
+    display: flex;
+    flex-flow: row nowrap;
+}
+
+.flex-none {
+    flex: none;
+}
+
+.flex-auto {
+    flex: auto;
+}
+
+section {
+    width: 100%;
+    height: 100%;
+}
+
+main {
+    overflow: hidden;
+}
+
+header {
+    text-align: center;
+}

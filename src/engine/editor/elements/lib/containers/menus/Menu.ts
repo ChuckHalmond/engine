@@ -1,0 +1,267 @@
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
+import { isHTMLEMenuItemElement, HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
+import { pointIntersectsWithDOMRect } from "engine/editor/elements/Snippets";
+import { HTMLEMenuItemGroupElement, isHTMLEMenuItemGroupElement } from "./MenuItemGroup";
+
+export { isHTMLEMenuElement };
+export { HTMLEMenuElement };
+
+function isHTMLEMenuElement(elem: any): elem is HTMLEMenuElement {
+    return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-menu";
+}
+
+@RegisterCustomHTMLElement({
+    name: "e-menu"
+})
+@GenerateAttributeAccessors([
+    {name: "name", type: "string"},
+])
+class HTMLEMenuElement extends HTMLElement {
+
+    public name!: string;
+
+    public parentItem: HTMLEMenuItemElement | null;
+    public items: (HTMLEMenuItemElement | HTMLEMenuItemGroupElement)[];
+
+    private activeIndex: number;
+
+    constructor() {
+        super();
+
+        bindShadowRoot(this, /*template*/`
+            <style>
+                :host {
+                    display: block;
+                    position: relative;
+                    user-select: none;
+
+                    padding: 6px 0;
+                    background-color: white;
+                    cursor: initial;
+                }
+
+                :host(:focus) {
+                    outline: none;
+                }
+
+                [part~="ul"] {
+                    display: block;
+                    list-style-type: none;
+                    padding: 0; margin: 0;
+                }
+
+                ::slotted(*) {
+                    display: block;
+                    width: 100%;
+                }
+
+                ::slotted(hr) {
+                    margin: 6px 0;
+                }
+            </style>
+            <ul part="ul">
+                <slot></slot>
+            </ul>
+        `);
+
+        this.parentItem = null;
+        this.items = [];
+        this.activeIndex = -1;
+    }
+
+    public get activeItem(): HTMLEMenuItemElement | HTMLEMenuItemGroupElement | null {
+        return this.items[this.activeIndex] || null;
+    }
+
+    public connectedCallback() {
+        this.tabIndex = this.tabIndex;
+        
+        const slot = this.shadowRoot?.querySelector("slot");
+        if (slot) {
+            slot.addEventListener("slotchange", () => {
+                const items = slot.assignedElements().filter(
+                    elem => isHTMLEMenuItemElement(elem) || isHTMLEMenuItemGroupElement(elem)
+                ) as (HTMLEMenuItemElement | HTMLEMenuItemGroupElement)[];
+                this.items = items;
+                items.forEach((item) => {
+                    item.parentMenu = this;
+                });
+            });
+        }
+
+        this.addEventListener("mousedown", (event: MouseEvent) => {
+            let target = event.target as any;
+            if (isHTMLEMenuItemElement(target)) {
+                let thisIncludesTarget = this.items.includes(target);
+                if (thisIncludesTarget) {
+                    target.trigger();
+                }
+            }
+        });
+
+        this.addEventListener("mouseover", (event: MouseEvent) => {
+            let target = event.target as any;
+            let targetIndex = this.items.indexOf(target);
+            if (this === target) {
+                this.reset();
+                this.focus();
+            } 
+            else if (targetIndex >= 0) {
+                if (isHTMLEMenuItemElement(target)) {
+                    this.focusItemAt(targetIndex, true);
+                }
+                else {
+                    this.activeIndex = targetIndex;
+                }
+            }
+        });
+
+        this.addEventListener("mouseout", (event: MouseEvent) => {
+            let target = event.target as any;
+            let thisIntersectsWithMouse = pointIntersectsWithDOMRect(
+                event.clientX, event.clientY,
+                this.getBoundingClientRect()
+            );
+            if ((this === target || this.items.includes(target)) && !thisIntersectsWithMouse) {
+                this.reset();
+                this.focus();
+            }
+        });
+
+        this.addEventListener("focusin", (event: FocusEvent) => {
+            let target = event.target as any;
+            this.activeIndex = this.items.findIndex(
+                (item) => item.contains(target)
+            );
+        });
+
+        this.addEventListener("focusout", (event: FocusEvent) => {
+            let newTarget = event.relatedTarget as any;
+            if (!this.contains(newTarget)) {  
+                this.reset();
+            }
+        });
+
+        this.addEventListener("keydown", (event: KeyboardEvent) => {
+            switch (event.key) {
+                case "ArrowUp":
+                    this.focusItemAt((this.activeIndex <= 0) ? this.items.length - 1 : this.activeIndex - 1);
+                    if (isHTMLEMenuItemGroupElement(this.activeItem)) {
+                        this.activeItem.focusItemAt(this.activeItem.items.length - 1);
+                    }
+                    event.stopPropagation();
+                    break;
+                case "ArrowDown":
+                    this.focusItemAt((this.activeIndex >= this.items.length - 1) ? 0 : this.activeIndex + 1);
+                    if (isHTMLEMenuItemGroupElement(this.activeItem)) {
+                        this.activeItem.focusItemAt(0);
+                    }
+                    event.stopPropagation();
+                    break;
+                case "Home":
+                    this.focusItemAt(0);
+                    if (isHTMLEMenuItemGroupElement(this.activeItem)) {
+                        this.activeItem.focusItemAt(0);
+                    }
+                    event.stopPropagation();
+                    break;
+                case "End":
+                    this.focusItemAt(this.items.length - 1);
+                    if (isHTMLEMenuItemGroupElement(this.activeItem)) {
+                        this.activeItem.focusItemAt(this.activeItem.items.length - 1);
+                    }
+                    event.stopPropagation();
+                    break;
+                case "Enter":
+                    if (isHTMLEMenuItemElement(this.activeItem)) {
+                        this.activeItem.trigger();
+                        event.stopPropagation();
+                    }
+                    break;
+                case "Escape":
+                    this.reset();
+                    break;
+                case "ArrowLeft":
+                    if (this.parentItem) {
+                        let parentGroup = this.parentItem.group;
+                        let parentMenu = this.parentItem.parentMenu;
+                        if (isHTMLEMenuElement(parentMenu)) {
+                            if (parentGroup) {
+                                parentGroup.focusItemAt(parentGroup.activeIndex);
+                            }
+                            else {
+                                parentMenu.focusItemAt(parentMenu.activeIndex);
+                            }
+                            this.reset();
+                            event.stopPropagation();
+                        }
+                    }
+                    break;
+                case "ArrowRight":
+                    if (this.items.includes(event.target as any)) {
+                        if (isHTMLEMenuItemElement(this.activeItem) && this.activeItem.childMenu) {
+                            this.activeItem.childMenu.focusItemAt(0);
+                            event.stopPropagation();
+                        }
+                    }
+                    break;
+            }
+        });
+    }
+
+    public focusItemAt(index: number, childMenu?: boolean): void {
+        let item = this.items[index];
+        if (item) {
+            this.activeIndex = index;
+            item.focus();
+            if (isHTMLEMenuItemElement(item)) {
+                if (childMenu && item.childMenu) {
+                    item.childMenu.focus();
+                }
+            }
+            else {
+                item.focusItemAt(0);
+            } 
+        }
+    }
+
+    public focusItem(predicate: (item: HTMLEMenuItemElement) => boolean, subitems?: boolean): void {
+        let item = this.findItem(predicate, subitems);
+        if (item) {
+            item.focus();
+        }
+    }
+
+    public reset() {
+        let item = this.activeItem;
+        this.activeIndex = -1;
+        if (isHTMLEMenuItemElement(item) && item.childMenu) {
+            item.childMenu.reset();
+        }
+    }
+
+    public findItem(predicate: (item: HTMLEMenuItemElement) => boolean, subitems?: boolean): HTMLEMenuItemElement | null {
+        let foundItem: HTMLEMenuItemElement | HTMLEMenuItemGroupElement | null = null;
+        for (let idx = 0; idx < this.items.length; idx++) {
+            let item = this.items[idx];
+            if (isHTMLEMenuItemElement(item)) {
+                if (predicate(item)) {
+                    return item;
+                }
+                if (subitems && item.childMenu) {
+                    foundItem = item.childMenu.findItem(predicate, subitems);
+                    if (foundItem) {
+                        return foundItem;
+                    }
+                }
+            }
+            else if (isHTMLEMenuItemGroupElement(item)) {
+                foundItem = item.findItem(predicate, subitems);
+                if (foundItem) {
+                    return foundItem;
+                }
+            }
+        }
+        return foundItem;
+    }
+}
