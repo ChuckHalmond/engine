@@ -128,9 +128,10 @@ const simpleSceneDOM = /*template*/`
                 <e-breadcrumbitem label="label 1"></e-breadcrumbitem>
                 <e-breadcrumbitem label="label 2"></e-breadcrumbitem>
               </e-breadcrumbtrail>
-              <e-draggable id="draggableA" tabindex="-1">A</e-draggable>
-              <e-draggable tabindex="-1">B</e-draggable>
-              <e-dropzone id="dropzone1" tabindex="-1">1</e-dropzone>
+              <e-draggable id="draggableA" tabindex="-1" type="A">A</e-draggable>
+              <e-draggable id="draggableB" tabindex="-1" type="B">B</e-draggable>
+              <e-draggable tabindex="-1" type="C">B bis</e-draggable>
+              <e-dropzone id="dropzone1" tabindex="-1" allowedtypes="A">1</e-dropzone>
               <e-dropzone tabindex="-1">2</e-dropzone>
             </e-tab-panel>
 
@@ -407,15 +408,19 @@ export async function launchScene() {
 
 
   const dropzone1 = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone1");
-  dropzone1?.addEventListener("datatransfer", ((event: CustomEvent) => {
+  dropzone1?.addEventListener("datatransfer", ((event: CustomEvent<{data: any, success: boolean}>) => {
     console.log(event.detail.data);
+    console.log(event.detail.success);
   }) as EventListener);
 
   const draggableA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");
   if (draggableA) {
-    draggableA.data = {
-      data: "nop"
-    };
+    draggableA.data = "A";
+  }
+
+  const draggableB = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableB");
+  if (draggableB) {
+    draggableB.data = "B";
   }
 
 
