@@ -45,6 +45,11 @@ import { HTMLEStatusItemElement } from "engine/editor/elements/lib/containers/st
 import { HTMLEMenuItemTemplate } from "engine/editor/templates/menus/MenuItemTemplate";
 import { HTMLEMenuItemGroupElement } from "engine/editor/elements/lib/containers/menus/MenuItemGroup";
 import { HTMLEMenuButtonElement } from "engine/editor/elements/lib/containers/menus/MenuButton";
+import { PaletteElement } from "engine/editor/elements/lib/misc/Palette";
+import { HTMLEBreadcrumbTrailElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail";
+import { HTMLEBreadcrumbItemElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem";
+import { HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
+import { HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
 
 
 HTMLEMenuButtonElement;
@@ -69,6 +74,12 @@ StatefulButtonElement;
 ButtonStateElement;
 
 HTMLEDropdownElement;
+HTMLEBreadcrumbTrailElement;
+HTMLEBreadcrumbItemElement;
+PaletteElement;
+
+HTMLEDraggableElement;
+HTMLEDropzoneElement;
 
 const simpleSceneDOM = /*template*/`
 <link rel="stylesheet" href="../css/main.css"/>
@@ -86,21 +97,6 @@ const simpleSceneDOM = /*template*/`
       <div class="flex-auto flex-cols">
 
         <!--<e-window title="My window">-->
-          <!--<e-palette cols="5" colors='[
-          "var(--theme-color-50)",
-          "var(--theme-color-100)",
-          "var(--theme-color-200)",
-          "var(--theme-color-300)",
-          "var(--theme-color-400)",
-          "var(--theme-color-500)",
-          "var(--theme-color-600)",
-          "var(--theme-color-700)",
-          "var(--theme-color-800)",
-          "var(--theme-color-900)",
-          "var(--theme-palette-color-1)",
-          "var(--theme-palette-color-2)",
-          "var(--theme-palette-color-3)"
-        ]'></e-palette>-->
 <!--
 
         </e-window>-->
@@ -108,11 +104,35 @@ const simpleSceneDOM = /*template*/`
         <e-panel id="panel-1" class="flex-rows flex-none" state="opened" label="L.Panel">
 
             <e-tab-list id="list">
-              <e-tab name="play" controls="play-panel" active>Play tab</e-tab>
-              <e-tab name="pause" controls="pause-panel">Pause Tab</e-tab>
+              <e-tab name="play" controls="play-panel">Play tab</e-tab>
+              <e-tab name="pause" controls="pause-panel" active>Pause Tab</e-tab>
             </e-tab-list>
             <e-tab-panel id="play-panel">assets/editor/icons/play.svg</e-tab-panel>
-            <e-tab-panel id="pause-panel"></e-tab-panel>
+            <e-tab-panel id="pause-panel">
+              <!--<e-palette cols="5" colors='[
+                "var(--theme-color-50)",
+                "var(--theme-color-100)",
+                "var(--theme-color-200)",
+                "var(--theme-color-300)",
+                "var(--theme-color-400)",
+                "var(--theme-color-500)",
+                "var(--theme-color-600)",
+                "var(--theme-color-700)",
+                "var(--theme-color-800)",
+                "var(--theme-color-900)",
+                "var(--theme-palette-color-1)",
+                "var(--theme-palette-color-2)",
+                "var(--theme-palette-color-3)"
+              ]'></e-palette>-->
+              <e-breadcrumbtrail>
+                <e-breadcrumbitem label="label 1"></e-breadcrumbitem>
+                <e-breadcrumbitem label="label 2"></e-breadcrumbitem>
+              </e-breadcrumbtrail>
+              <e-draggable id="draggableA" tabindex="-1">A</e-draggable>
+              <e-draggable tabindex="-1">B</e-draggable>
+              <e-dropzone id="dropzone1" tabindex="-1">1</e-dropzone>
+              <e-dropzone tabindex="-1">2</e-dropzone>
+            </e-tab-panel>
 
             <section>
               <form id="test-form" novalidate>
@@ -382,6 +402,40 @@ export async function launchScene() {
       showFPSAction(showFpsCheckbox.checked);
     });
   }*/
+
+
+
+
+  const dropzone1 = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone1");
+  dropzone1?.addEventListener("datatransfer", ((event: CustomEvent) => {
+    console.log(event.detail.data);
+  }) as EventListener);
+
+  const draggableA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");
+  if (draggableA) {
+    draggableA.data = {
+      data: "nop"
+    };
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 

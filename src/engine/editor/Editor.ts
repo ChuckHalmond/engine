@@ -64,6 +64,8 @@ interface EditorCommand extends Command {
     context: string;
 }
 
+interface EditorSelection extends Object {}
+
 interface EditorHotkey extends HotKey {}
 
 interface EditorCommandCall extends EditorCommand {
@@ -94,7 +96,7 @@ class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
     public menubar: HTMLEMenuBarElement | null;
     public statusbar: HTMLEStatusBarElement | null;
 
-    public _selection: Selection | null;
+    public _selection: EditorSelection | null;
 
     private _focusListeners: Array<() => void>;
 

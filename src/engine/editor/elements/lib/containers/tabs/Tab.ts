@@ -36,16 +36,21 @@ class TabElement extends HTMLElement {
                     user-select: none;
                     white-space: nowrap;
                     padding: 2px 6px;
-                    border: 1px solid grey;
+                    border-bottom: 4px solid transparent;
+                    cursor: pointer;
                 }
 
-                :host([active]:not([disabled])) {
-                    background-color: rgb(160, 160, 160);
+                :host([disabled]) {
+                    color: grey;
+                }
+
+                :host([active]) {
+                    font-weight: bold;
+                    border-bottom: 4px solid rgb(92, 92, 92);
                 }
             </style>
             <slot></slot>
         `);
-
 
         this.panel = null;
     }

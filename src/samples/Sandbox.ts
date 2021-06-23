@@ -57,6 +57,10 @@ export async function sandbox(): Promise<void> {
   
   start();
 
+  window.addEventListener("blur", () => {
+    document.body.focus();
+  });
+
     /*const myWindow = window.open("http://localhost:8080/", "MsgWindow", "width=200,height=100");
     if (myWindow) {
     myWindow.document.write("<p>This is 'MsgWindow'. I am 200px wide and 100px tall!</p>");

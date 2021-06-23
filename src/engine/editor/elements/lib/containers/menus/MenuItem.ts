@@ -16,11 +16,10 @@ function isHTMLEMenuItemElement(elem: any): elem is HTMLEMenuItemElement {
 
 @RegisterCustomHTMLElement({
     name: "e-menuitem",
-    observedAttributes: ["icon", "label", "checked", "active"]
+    observedAttributes: ["icon", "label", "checked"]
 })
 @GenerateAttributeAccessors([
     {name: "name", type: "string"},
-    {name: "active", type: "boolean"},
     {name: "label", type: "string"},
     {name: "icon", type: "string"},
     {name: "type", type: "string"},
@@ -28,7 +27,6 @@ function isHTMLEMenuItemElement(elem: any): elem is HTMLEMenuItemElement {
     {name: "checked", type: "boolean"},
     {name: "value", type: "string"},
 ])
-
 class HTMLEMenuItemElement extends HTMLElement {
 
     public name!: string;
@@ -36,7 +34,6 @@ class HTMLEMenuItemElement extends HTMLElement {
     public type!: EMenuItemElementType;
     public disabled!: boolean;
     public checked!: boolean;
-    public active!: boolean;
     public value!: string;
     public icon!: string;
 
@@ -71,27 +68,20 @@ class HTMLEMenuItemElement extends HTMLElement {
                     outline: none;
                 }
                 
-                :host(:focus),
                 :host(:focus-within) {
                     color: white;
                     background-color: rgb(92, 92, 92);
                 }
                 
-                :host(:focus) [part~="visual"],
+                :host(:hover) [part~="visual"],
                 :host(:focus-within) [part~="visual"] {
                     color: inherit;
-                }
-
-                :host(:focus) ::slotted([slot="menu"]),
-                :host(:focus-within) ::slotted([slot="menu"]) {
-                    color: initial;
                 }
 
                 :host([disabled]) {
                     color: rgb(180, 180, 180);
                 }
 
-                :host(:focus[disabled]),
                 :host(:focus-within[disabled]) {
                     background-color: rgb(220, 220, 220);
                 }
@@ -99,12 +89,18 @@ class HTMLEMenuItemElement extends HTMLElement {
                 :host([type="menu"]) ::slotted([slot="menu"]) {
                     z-index: 1;
                     position: absolute;
+                    color: initial;
                     
                     left: 100%;
                     top: -6px;
                 }
 
-                :host([type="menu"]) ::slotted([slot="menu"]:not(:focus):not(:focus-within)) {
+                :host([type="menu"]) ::slotted([slot="menu"][overflowing]) {
+                    right: 100%;
+                    left: auto;
+                }
+
+                :host([type="menu"]) ::slotted([slot="menu"]:not([expanded])) {
                     opacity: 0;
                     pointer-events: none !important;
                 }
@@ -247,6 +243,8 @@ class HTMLEMenuItemElement extends HTMLElement {
 
     public connectedCallback() {
         this.tabIndex = this.tabIndex;
+
+        this.setAttribute("aria-label", this.label);
 
         const menuSlot = this.shadowRoot?.querySelector<HTMLSlotElement>("slot[name=menu]");
         if (menuSlot) {

@@ -22,7 +22,6 @@ class TabPanelElement extends HTMLElement {
                 :host {
                     display: block;
                     padding: 2px 6px;
-                    border: 1px solid grey;
                 }
 
                 :host(:not([active])) {

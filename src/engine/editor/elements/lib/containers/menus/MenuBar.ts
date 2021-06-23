@@ -26,7 +26,7 @@ class HTMLEMenuBarElement extends HTMLElement {
 
     constructor() {
         super();
-
+        
         bindShadowRoot(this, /*template*/`
             <style>
                 :host {

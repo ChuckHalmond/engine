@@ -18,7 +18,8 @@ enum Key {
     ARROW_DOWN = "ArrowDown",
     ARROW_LEFT = "ArrowLeft",
     ARROW_RIGHT = "ArrowRight",
-    ARROW_UP = "ArrowUp"
+    ARROW_UP = "ArrowUp",
+    SHIFT = "Shift"
 }
 
 enum KeyModifier {
@@ -134,7 +135,7 @@ class Input {
 
         // Keeps the INPUT_EVENT.REPEAT section values
         this.mouseFlags.fill(false, INPUT_EVENT.DOWN * this.mouseButtonsCount, INPUT_EVENT.REPEAT * this.mouseButtonsCount);
-        this.mouseFlags.fill(false, INPUT_EVENT.UP * this.mouseButtonsCount, (INPUT_EVENT.UP + 1) * this.mouseButtonsCount);
+        this.mouseFlags.fill(false, INPUT_EVENT.UP * this.mouseButtonsCount);
 
         this.wheelDelta = 0;
     }
@@ -168,16 +169,13 @@ class Input {
 
     private static initializeKeyboardHandlers(element: HTMLElement) {
         element.addEventListener('keydown', (event: KeyboardEvent) => {
-            if (!event.repeat) {
-                this.keyFlags[INPUT_EVENT.DOWN * this.keysCount + KEYS_INDICES[event.key as Key]] = true;
-            }
-            else {
-                this.keyFlags[INPUT_EVENT.REPEAT * this.keysCount + KEYS_INDICES[event.key as Key]] = true;
-            }
+            this.keyFlags[(!event.repeat ? INPUT_EVENT.DOWN : INPUT_EVENT.REPEAT) * this.keysCount + KEYS_INDICES[event.key as Key]] = true;
         });
 
         element.addEventListener('keyup', (event: KeyboardEvent) => {
             this.keyFlags[INPUT_EVENT.UP * this.keysCount + KEYS_INDICES[event.key as Key]] = true;
+            this.keyFlags[INPUT_EVENT.DOWN * this.keysCount + KEYS_INDICES[event.key as Key]] = false;
+            this.keyFlags[INPUT_EVENT.REPEAT * this.keysCount + KEYS_INDICES[event.key as Key]] = false;
         });
     }
 

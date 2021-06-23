@@ -1,18 +1,14 @@
 import { bindShadowRoot, GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
-import { isTabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
+import { isTabElement, TabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
 
 export { TabListElement };
 
 @RegisterCustomHTMLElement({
     name: "e-tab-list"
 })
-@GenerateAttributeAccessors([
-    {name: "activeTab", type: "string"},
-])
 class TabListElement extends HTMLElement {
-
-    public activeTab!: string;
-
+    public tabs: TabElement[];
+    
     constructor() {
         super();
         
@@ -25,36 +21,36 @@ class TabListElement extends HTMLElement {
             <slot id="tabs"></slot>
         `);
 
+        this.tabs = [];
+        
         const tabsSlot = this.shadowRoot!.getElementById("tabs")!;
         tabsSlot.addEventListener("slotchange", (event: Event) => {
-
-            const slottedTabs = (event.target as HTMLSlotElement).assignedElements();
-            slottedTabs.forEach((tab) => {
-                if (isTabElement(tab)) {
-
-                    this.addEventListener("tabchange", ((event: CustomEvent<{tab: string}>) => {
-                        if ((event.detail.tab === tab.name)) {
-                            tab.show();
-                        }
-                        else {
-                            tab.hide();
-                        }
-                    }) as EventListener);
-                    
-                    tab.addEventListener("click", () => {
-                        this.dispatchEvent(new CustomEvent<{tab: string}>("tabchange", {
-                            detail: {
-                                tab: tab.name
-                            }
-                        }));
-                    });
+            const tabs = (event.target as HTMLSlotElement).assignedElements().filter(isTabElement);
+            this.tabs = tabs;
+        });
+        
+        this.addEventListener("tabchange", ((event: CustomEvent<{tab: string}>) => {
+            this.tabs.forEach((tab) => {
+                if ((event.detail.tab === tab.name)) {
+                    tab.show();
+                }
+                else {
+                    tab.hide();
                 }
             });
-
-            this.addEventListener("tabchange", ((event: CustomEvent<{tab: string}>) => {
-                this.activeTab = event.detail.tab;
-            }) as EventListener);
-        }, {once: true});
+        }) as EventListener);
+        
+        this.addEventListener("click", (event) => {
+            let target = event.target as any;
+            if (isTabElement(target)) {
+                this.dispatchEvent(new CustomEvent<{tab: string}>("tabchange", {
+                    detail: {
+                        tab: target.name
+                    },
+                    bubbles: true
+                }));
+            }
+        });
     }
 
     public connectedCallback() {

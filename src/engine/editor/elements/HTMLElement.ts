@@ -6,12 +6,11 @@ import { HTMLEMenuItemGroupElement } from "./lib/containers/menus/MenuItemGroup"
 export { RegisterCustomHTMLElement };
 export { GenerateAttributeAccessors };
 export { bindShadowRoot };
-
 export { HTMLElementProperties };
 export { HTMLElementAttributes };
 export { HTMLElementDescription };
 export { HTMLElementTemplate };
-export { setHTMLElementAttributes }
+export { setHTMLElementAttributes };
 export { setHTMLElementProperties };
 export { CustomOrBultinHTMLElementTagNameMap };
 
@@ -236,7 +235,6 @@ const HTMLElementTemplate: HTMLElementTemplate = function<K extends keyof Custom
                         HTMLElementTemplate(
                             child.tagName, {
                                 options: child.options,
-                                props: child.props,
                                 attr: child.attr,
                                 children: child.children
                             }

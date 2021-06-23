@@ -11,14 +11,19 @@ function isHTMLEMenuElement(elem: any): elem is HTMLEMenuElement {
 }
 
 @RegisterCustomHTMLElement({
-    name: "e-menu"
+    name: "e-menu",
+    observedAttributes: ["expanded"]
 })
 @GenerateAttributeAccessors([
     {name: "name", type: "string"},
+    {name: "expanded", type: "boolean"},
+    {name: "overflowing", type: "boolean"}
 ])
 class HTMLEMenuElement extends HTMLElement {
 
     public name!: string;
+    public expanded!: boolean;
+    public overflowing!: boolean;
 
     public parentItem: HTMLEMenuItemElement | null;
     public items: (HTMLEMenuItemElement | HTMLEMenuItemGroupElement)[];
@@ -72,7 +77,7 @@ class HTMLEMenuElement extends HTMLElement {
     public get activeItem(): HTMLEMenuItemElement | HTMLEMenuItemGroupElement | null {
         return this.items[this.activeIndex] || null;
     }
-
+    
     public connectedCallback() {
         this.tabIndex = this.tabIndex;
         
@@ -133,12 +138,14 @@ class HTMLEMenuElement extends HTMLElement {
             this.activeIndex = this.items.findIndex(
                 (item) => item.contains(target)
             );
+            this.expanded = true;
         });
 
         this.addEventListener("focusout", (event: FocusEvent) => {
             let newTarget = event.relatedTarget as any;
             if (!this.contains(newTarget)) {  
                 this.reset();
+                this.expanded = false;
             }
         });
 
@@ -207,6 +214,25 @@ class HTMLEMenuElement extends HTMLElement {
                     break;
             }
         });
+    }
+
+    public attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
+        if (newValue !== oldValue) {
+            switch (name) {
+                case "expanded":
+                    if (newValue != null) {
+                        let thisRect = this.getBoundingClientRect();
+                        let thisIsOverflowing = thisRect.right > document.body.clientWidth;
+                        if (thisIsOverflowing) {
+                            this.overflowing = true;
+                        }
+                    }
+                    else {
+                        this.overflowing = false;
+                    }
+                    break;
+            }
+        }
     }
 
     public focusItemAt(index: number, childMenu?: boolean): void {
