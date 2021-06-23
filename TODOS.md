@@ -1,0 +1,2 @@
+- Add command disabling and item disabling sync
+- Easy do/undo of commands on menu radio/checkbox

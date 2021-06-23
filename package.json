@@ -1,5 +1,25 @@
 {
+  "name": "engine",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+    "scripts": {
+    "start": "node main.js",
+    "gulp-node-to-lib": "gulp node-to-lib",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^3.9.2"
+  },
   "dependencies": {
-    "typescript": "^4.3.4"
+    "express": "^4.17.1",
+    "gulp": "^4.0.2",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "gulp-uglify": "^3.0.2",
+    "requirejs": "^2.3.6",
+    "three": "^0.116.1",
+    "twgl.js": "^4.15.2"
   }
 }

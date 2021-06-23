@@ -1,0 +1,21 @@
+{
+    "list": [
+        "shaders/common/primitive.vert",
+        "shaders/common/primitive.frag",
+        "shaders/common/texture.vert",
+        "shaders/common/texture.frag",
+        "shaders/common/phong.vert",
+        "shaders/common/phong.frag",
+        "shaders/common/skybox.vert",
+        "shaders/common/skybox.frag",
+        "img/waves_normal.png",
+        "img/brickwall.jpg",
+        "img/brickwall_normal.jpg",
+        "img/skybox_x_pos.png",
+        "img/skybox_x_neg.png",
+        "img/skybox_y_pos.png",
+        "img/skybox_y_neg.png",
+        "img/skybox_z_pos.png",
+        "img/skybox_z_neg.png"
+    ]
+}

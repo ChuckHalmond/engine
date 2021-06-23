@@ -1,0 +1,101 @@
+{
+    "tabIndex": 0,
+    "items": [
+        {
+            "name": "canvas-menu-item",
+            "label": "Canvas",
+            "type": "menu",
+            "menu": {
+                "items": [
+                    {
+                        "isGroup": true,
+                        "items": [
+                            {
+                                "name": "canvas-play-item",
+                                "label": "Play",
+                                "type": "button",
+                                "value": "play",
+                                "icon": "play_arrow",
+                                "command": "play-canvas",
+                                "hotkey": {
+                                    "key": "a",
+                                    "mod1": "Alt"
+                                }
+                            },
+                            {
+                                "name": "canvas-pause-item",
+                                "label": "Pause",
+                                "type": "button",
+                                "value": "pause",
+                                "icon": "pause",
+                                "command": "pause-canvas",
+                                "hotkey": {
+                                    "key": "z",
+                                    "mod1": "Alt"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "isGroup": true,
+                        "items": [
+                            {
+                                "name": "show-fps-item",
+                                "label": "Show FPS",
+                                "icon": "60fps",
+                                "type": "checkbox",
+                                "command": "toggle-show-fps",
+                                "hotkey": {
+                                    "key": "s",
+                                    "mod1": "Alt"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "letters-menu",
+                        "label": "Letters...",
+                        "type": "menu",
+                        "menu": {
+                            "items": [
+                                {
+                                    "isGroup": true,
+                                    "name": "favorite-letter",
+                                    "label": "Your favorite letter",
+                                    "items": [
+                                        {
+                                            "name": "a-item",
+                                            "label": "Letter A",
+                                            "type": "radio",
+                                            "value": "a"
+                                        },
+                                        {
+                                            "name": "b-item",
+                                            "label": "Letter B",
+                                            "type": "radio",
+                                            "value": "b"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "label": "Items",
+            "type": "menu",
+            "menu": {
+                "items": [
+                    {
+                        "label": "Item 1"
+                    },
+                    {
+                        "label": "Item 2"
+                    }
+                ]
+            }
+        }
+    ]
+}

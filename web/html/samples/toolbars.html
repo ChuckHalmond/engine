@@ -1,0 +1,57 @@
+<style>
+  #play-action-button[value='play'] ~ i::before {
+      content: 'play_arrow';
+  }
+
+  #play-action-button[value='pause'] ~ i::before {
+      content: 'pause';
+  }
+
+  #play-button ~ i::before {
+    content: 'play_arrow';
+  }
+
+  #pause-button ~ i::before {
+    content: 'pause';
+  }
+  
+  e-tool[type='radio'] {
+    padding: 0;
+  }
+
+  e-tool[type='radio'] input {
+    display: none;
+  }
+
+  e-tool[type='radio'] input + label {
+    padding: 2px 6px;
+  }
+
+  e-tool[ype='radio'] input:checked + label {
+    background-color: grey;
+  }
+
+</style>
+<nav class="flex-cols">
+  <e-toolbar name="icons-menu" tabindex="0">
+      <e-tool class="menuitem-icon" name='canvas-pause-item' type="button">
+        <input slot="button" id="play-action-button" type="button" name="play" value="play" tabindex="-1"></input>
+        <span slot="icon" class="material-menu-icon"></span>
+        <label for="play-action-button">Play/Pause</label>
+      </e-tool>
+      <!--<e-menuitem id='pause-canvas-item' name='canvas-pause-item'>
+        <input slot="button" id="pause-button" type="button" name="play" tabindex="-1"></input>
+        <span slot="icon" class="material-menu-icon">pause</span>
+      </e-menuitem>-->
+
+    <e-tool name='radio-1-item' type="radio" class="menuitem-radio-button">
+      <input slot="radio" id="radio-1" type="radio" name="my-radio" value="radio-1" tabindex="-1"/>
+      <label for="radio-1">Radio 1</label>
+    </e-tool>
+
+    <e-tool name='radio-2-item' type="radio" class="menuitem-radio-button">
+      <input slot="radio" id="radio-2" type="radio" name="my-radio" value="radio-2" tabindex="-1"/>
+      <label for="radio-2">Radio 2</label>
+    </e-tool>
+  </e-toolbar>
+</nav>

@@ -1,0 +1,30 @@
+@font-face {	
+	font-family: 'Roboto';
+	src: url('../assets/editor/fonts/Roboto_Mono/RobotoMono-VariableFont_wght.ttf') format('truetype');
+}
+
+:root:not([theme]), :root[theme='default'] {
+    --theme-font: 'Roboto';
+    
+    --theme-color-tint: 0;
+    --theme-color-saturation: 0%;
+    
+    --theme-color-100: hsl(var(--theme-color-tint), var(--theme-color-saturation), 10%);
+    --theme-color-200: hsl(var(--theme-color-tint), var(--theme-color-saturation), 14%);
+    --theme-color-300: hsl(var(--theme-color-tint), var(--theme-color-saturation), 18%);
+
+    --theme-color-400: hsl(var(--theme-color-tint), var(--theme-color-saturation), 20%);
+    --theme-color-500: hsl(var(--theme-color-tint), var(--theme-color-saturation), 24%);
+    --theme-color-600: hsl(var(--theme-color-tint), var(--theme-color-saturation), 28%);
+
+    --theme-color-700: hsl(var(--theme-color-tint), var(--theme-color-saturation), 32%);
+    --theme-color-800: hsl(var(--theme-color-tint), var(--theme-color-saturation), 40%);
+    --theme-color-900: hsl(var(--theme-color-tint), var(--theme-color-saturation), 50%);
+
+    --theme-on-color: rgb(218, 218, 218);
+    --theme-on-color-highlighted: rgb(252, 252, 252);
+
+    --theme-palette-color-1: rgb(255, 95, 95); 
+    --theme-palette-color-2: rgb(255, 200, 95);
+    --theme-palette-color-3: rgb(150, 190, 233);
+}
