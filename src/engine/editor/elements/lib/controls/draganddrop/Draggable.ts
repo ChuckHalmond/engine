@@ -1,5 +1,6 @@
 import { Input, Key } from "engine/core/input/Input";
 import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors } from "engine/editor/elements/HTMLElement";
+import { isHTMLEDropzoneElement } from "./Dropzone";
 
 export { isHTMLEDraggableElement };
 export { HTMLEDraggableElement };
@@ -13,14 +14,16 @@ function isHTMLEDraggableElement(obj: any): obj is HTMLEDraggableElement {
 })
 @GenerateAttributeAccessors([
     {name: "selected", type: "boolean"},
-    {name: "dragged", type: "boolean"}
+    {name: "dragged", type: "boolean"},
+    {name: "type", type: "string"}
 ])
 class HTMLEDraggableElement extends HTMLElement {
     
     public selected!: boolean;
     public dragged!: boolean;
+    public type!: string;
 
-    public data: any = {};
+    public data: any;
 
     constructor() {
         super();
@@ -33,72 +36,61 @@ class HTMLEDraggableElement extends HTMLElement {
             </style>
             <slot></slot>
         `);
+
+        this.data = null;
     }
     
     public connectedCallback() {
         this.tabIndex = this.tabIndex;
         this.draggable = true;
-    }
-}
 
-document.addEventListener("dragstart", (event) => {
-    let target = event.target;
-    if (isHTMLEDraggableElement(target)) {
-        let dataTransfer = event.dataTransfer;
-        if (dataTransfer !== null) {
-            dataTransfer.setData("text/plain", JSON.stringify(target.data));
-        }
-        target.dragged = true;
-    }
-});
-
-document.addEventListener("dragend", (event) => {
-    let target = event.target;
-    if (isHTMLEDraggableElement(target)) {
-        target.dragged = false;
-        let selectedDraggables = Array.from(document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]"));
-        selectedDraggables.forEach((selectedDraggable) => {
-            selectedDraggable.selected = false;
-        });
-    }
-});
-
-document.addEventListener("mousedown", (event) => {
-    let target = event.target as any;
-    if (isHTMLEDraggableElement(target)) {
-        if (!Input.getKeyDown(Key.SHIFT)) {
-            if (!target.selected) {
-                let selectedDraggables = Array.from(document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]"));
-                selectedDraggables.forEach((selectedDraggable) => {
-                    selectedDraggable.selected = false;
-                });
-                target.selected = true;
+        this.addEventListener("dragstart", (event: DragEvent) => {
+            let selectedDraggables = Array.from(document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]"));
+            let selectedDraggablesData: any[] = [];
+            selectedDraggables.forEach((selectedDraggable) => {
+                selectedDraggablesData.push(selectedDraggable.data);
+            });
+            let dataTransfer = event.dataTransfer;
+            if (dataTransfer !== null) {
+                dataTransfer.setData("text/plain", JSON.stringify(selectedDraggablesData));
             }
-        }
-        else {
-            target.selected = true;
-        }
-    }
-    else {
-        let selectedDraggables = Array.from(document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]"));
-        selectedDraggables.forEach((selectedDraggable) => {
-            selectedDraggable.selected = false;
+            this.dragged = true;
         });
-    }
-});
-
-document.addEventListener("mouseup", (event) => {
-    let target = event.target as any;
-    if (isHTMLEDraggableElement(target)) {
-        if (!Input.getKeyDown(Key.SHIFT)) {
+        
+        this.addEventListener("dragend", () => {
+            this.dragged = false;
             let selectedDraggables = Array.from(document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]"));
             selectedDraggables.forEach((selectedDraggable) => {
-                if (selectedDraggable !== target) {
-                    selectedDraggable.selected = false;
-                }
+                selectedDraggable.selected = false;
             });
-        }
+        });
+        
+        this.addEventListener("mousedown", (event: MouseEvent) => {
+            if (!event.shiftKey) {
+                if (!this.selected) {
+                    let selectedDraggables = Array.from(document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]"));
+                    selectedDraggables.forEach((selectedDraggable) => {
+                        selectedDraggable.selected = false;
+                    });
+                    this.selected = true;
+                }
+            }
+            else {
+                this.selected = true;
+            }
+        });
+        
+        this.addEventListener("mouseup", (event: MouseEvent) => {
+            if (!event.shiftKey) {
+                let selectedDraggables = Array.from(document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]"));
+                selectedDraggables.forEach((selectedDraggable) => {
+                    if (selectedDraggable !== this) {
+                        selectedDraggable.selected = false;
+                    }
+                });
+            }
+        });
     }
-});
+}
 
 Input.initialize(document.documentElement);
