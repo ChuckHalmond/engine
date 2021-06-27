@@ -49,7 +49,9 @@ import { PaletteElement } from "engine/editor/elements/lib/misc/Palette";
 import { HTMLEBreadcrumbTrailElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail";
 import { HTMLEBreadcrumbItemElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem";
 import { HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
-import { HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
+import { EDataTransferEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
+import { HTMLEJSONArrayElement } from "engine/editor/elements/lib/containers/json/JSONArray";
+import { HTMLEJSONObjectElement } from "engine/editor/elements/lib/containers/json/JSONObject";
 
 
 HTMLEMenuButtonElement;
@@ -80,6 +82,9 @@ PaletteElement;
 
 HTMLEDraggableElement;
 HTMLEDropzoneElement;
+
+HTMLEJSONArrayElement;
+HTMLEJSONObjectElement;
 
 const simpleSceneDOM = /*template*/`
 <link rel="stylesheet" href="../css/main.css"/>
@@ -128,13 +133,32 @@ const simpleSceneDOM = /*template*/`
                 <e-breadcrumbitem label="label 1"></e-breadcrumbitem>
                 <e-breadcrumbitem label="label 2"></e-breadcrumbitem>
               </e-breadcrumbtrail>
-              <e-draggable id="draggableA" tabindex="-1" type="A">A</e-draggable>
-              <e-draggable id="draggableB" tabindex="-1" type="B">B</e-draggable>
-              <e-draggable tabindex="-1" type="C">B bis</e-draggable>
-              <e-dropzone id="dropzone1" tabindex="-1" allowedtypes="A">1</e-dropzone>
-              <e-dropzone tabindex="-1">2</e-dropzone>
+              <e-draggable id="draggableA" tabindex="-1" type="df_column" ref="A">A</e-draggable>
+              <e-draggable id="draggableB" tabindex="-1" type="df_column" ref="B">B</e-draggable>
+              <e-draggable id="draggableC" tabindex="-1" type="df_column" ref="C">C</e-draggable>
+              <e-draggable id="draggableD" tabindex="-1" type="df_column" ref="D">D</e-draggable>
+              <e-dropzone id="dropzone1" tabindex="-1" allowedtypes="df_column" multiple></e-dropzone>
+              <!--<details>
+                <summary>Summary..</summary>
+                <fieldset>
+                  <label>My label</label><input value="My input"></input>
+                  <details>
+                    <summary><label>aggregates</label><input value="1" type="number"></input></summary>
+                    <fieldset>
+                    <label>My internal label</label><input value="My internal input"></input>
+                  </details>
+                </fieldset>
+                </fieldset>
+              </details>-->
+              <form>
+                <e-jsonarray>
+                  <e-jsonobject slot="prototype">
+                    <input name="text" type="text" value="Text..."></input>
+                  </e-jsonobject>
+                </e-jsonarray>
+              </form>
             </e-tab-panel>
-
+              
             <section>
               <form id="test-form" novalidate>
                 <input name="number-input" type="number" value="10"></input><br/>
@@ -408,14 +432,16 @@ export async function launchScene() {
 
 
   const dropzone1 = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone1");
-  dropzone1?.addEventListener("datatransfer", ((event: CustomEvent<{data: any, success: boolean}>) => {
+  dropzone1?.addEventListener("datatransfer", ((event: EDataTransferEvent) => {
     console.log(event.detail.data);
     console.log(event.detail.success);
+    console.log(event.detail.position);
   }) as EventListener);
 
   const draggableA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");
   if (draggableA) {
     draggableA.data = "A";
+    
   }
 
   const draggableB = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableB");

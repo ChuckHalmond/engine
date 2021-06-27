@@ -44,6 +44,10 @@ class TabElement extends HTMLElement {
                     color: grey;
                 }
 
+                :host(:hover:not([active])) {
+                    border-bottom: 4px solid lightgrey;
+                }
+
                 :host([active]) {
                     font-weight: bold;
                     border-bottom: 4px solid rgb(92, 92, 92);

@@ -41,47 +41,52 @@ e-menu {
     box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
 }
 
-
-
-
-
 e-draggable {
+    position: relative;
     display: inline-block;
-    width: 50px;
-    height: 50px;
-    background-color: red;
-    margin: 8px;
+    box-sizing: content-box;
+    background-clip: content-box;
+    padding: 6px;
 }
 
-e-draggable[selected][dragged] {
-    background-color: yellow;
-}
-
+e-draggable:focus,
 e-draggable[selected] {
-    background-color: orange;
+    font-weight: bold;
+    outline: none;
 }
 
+e-dropzone[droppreview] > e-draggable:last-child::after,
+e-draggable[droppreview]::before {
+    content: "";
+    pointer-events: none;
+    display: block;
+    position: absolute;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background-color: black;
+}
+
+e-dropzone[droppreview] > e-draggable:last-child::after {
+    left: 100%;
+    transform: translateX(calc(100%));
+}
+
+e-draggable[droppreview]::before {
+    left: 0;
+    transform: translateX(calc(-100%));
+}
 
 e-dropzone {
     display: block;
-    min-width: 60px;
-    min-height: 60px;
-    margin: 4px;
-    background-color: grey;
-    border: 4px solid transparent;
+    padding: 10px;
+    border: 2px solid transparent;
 }
 
+e-dropzone:focus,
 e-dropzone[draggedover] {
-    border: 4px solid black;
+    border: 2px solid black;
 }
-
-
-
-
-
-
-
-
 
 
 
