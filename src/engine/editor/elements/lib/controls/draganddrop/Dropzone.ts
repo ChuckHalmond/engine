@@ -167,15 +167,16 @@ class HTMLEDropzoneElement extends HTMLElement {
                 let dataTransfer = event.dataTransfer;
                 if (dataTransfer) {
                     let data = JSON.parse(dataTransfer.getData("text/plain"));
-                    this.dispatchEvent(new CustomEvent("datatransfer", {
+                    let event: EDataTransferEvent = new CustomEvent("datatransfer", {
                         bubbles: true,
                         detail: {
                             draggables: draggables,
                             position: position,
                             success: success,
                             data: data
-                        }
-                    }));
+                        } 
+                    });
+                    this.dispatchEvent(event);
                 }
                 this.draggedover = false;
             }

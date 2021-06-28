@@ -50,8 +50,9 @@ import { HTMLEBreadcrumbTrailElement } from "engine/editor/elements/lib/controls
 import { HTMLEBreadcrumbItemElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem";
 import { HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
 import { EDataTransferEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
-import { HTMLEJSONArrayElement } from "engine/editor/elements/lib/containers/json/JSONArray";
-import { HTMLEJSONObjectElement } from "engine/editor/elements/lib/containers/json/JSONObject";
+import { HTMLEFormDataArrayElement } from "engine/editor/elements/lib/containers/formdata/FormDataArray";
+import { HTMLEFormDataObjectElement } from "engine/editor/elements/lib/containers/formdata/FormDataObject";
+import { HTMLEInputDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/input/InputDropzone";
 
 
 HTMLEMenuButtonElement;
@@ -83,8 +84,10 @@ PaletteElement;
 HTMLEDraggableElement;
 HTMLEDropzoneElement;
 
-HTMLEJSONArrayElement;
-HTMLEJSONObjectElement;
+HTMLEFormDataArrayElement;
+HTMLEFormDataObjectElement;
+
+HTMLEInputDropzoneElement;
 
 const simpleSceneDOM = /*template*/`
 <link rel="stylesheet" href="../css/main.css"/>
@@ -133,10 +136,12 @@ const simpleSceneDOM = /*template*/`
                 <e-breadcrumbitem label="label 1"></e-breadcrumbitem>
                 <e-breadcrumbitem label="label 2"></e-breadcrumbitem>
               </e-breadcrumbtrail>
-              <e-draggable id="draggableA" tabindex="-1" type="df_column" ref="A">A</e-draggable>
-              <e-draggable id="draggableB" tabindex="-1" type="df_column" ref="B">B</e-draggable>
-              <e-draggable id="draggableC" tabindex="-1" type="df_column" ref="C">C</e-draggable>
-              <e-draggable id="draggableD" tabindex="-1" type="df_column" ref="D">D</e-draggable>
+              <e-draggable id="draggableA" tabindex="-1" type="df_column" ref="A">
+                A<input name="text" value="A" hidden></input>
+              </e-draggable>
+              <e-draggable id="draggableB" tabindex="-1" type="df_column" ref="B">B<input name="text" value="B" hidden></input></e-draggable>
+              <e-draggable id="draggableC" tabindex="-1" type="df_column" ref="C">C<input name="text" value="C" hidden></input></e-draggable>
+              <e-draggable id="draggableD" tabindex="-1" type="df_column" ref="D">D<input name="text" value="D" hidden></input></e-draggable>
               <e-dropzone id="dropzone1" tabindex="-1" allowedtypes="df_column" multiple></e-dropzone>
               <!--<details>
                 <summary>Summary..</summary>
@@ -150,12 +155,17 @@ const simpleSceneDOM = /*template*/`
                 </fieldset>
                 </fieldset>
               </details>-->
-              <form>
-                <e-jsonarray>
-                  <e-jsonobject slot="prototype">
-                    <input name="text" type="text" value="Text..."></input>
-                  </e-jsonobject>
-                </e-jsonarray>
+              <!--<e-fdobject>
+                <e-fdarray name="array">
+                  <e-fdobject slot="prototype">
+                    <e-dropzone id="dropzone1" tabindex="-1" allowedtypes="df_column" multiple></e-dropzone>
+                  </e-fdobject>
+                </e-fdarray>
+              </e-fdobject>-->
+              <e-dropzone id="input-dropzone" data-name="myname" allowedtypes="df_column" multiple></e-dropzone>
+              <form id="form">
+                <input name="text[1]" value="t1" hidden></input>
+                <input name="text[0]" value="t2" hidden></input>
               </form>
             </e-tab-panel>
               

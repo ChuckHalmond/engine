@@ -1,25 +1,23 @@
 import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { HTMLEJSONObjectElement, isHTMLEJSONObjectElement } from "./JSONObject";
+import { HTMLEFormDataObjectElement } from "./FormDataObject";
 
-export { HTMLEJSONArrayElement };
-export { isHTMLEJSONArrayElement };
+export { HTMLEFormDataArrayElement };
+export { isHTMLEFormDataArrayElement };
 
-function isHTMLEJSONArrayElement(elem: any): elem is HTMLEJSONArrayElement {
-    return  elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-jsonarray";
+function isHTMLEFormDataArrayElement(elem: any): elem is HTMLEFormDataArrayElement {
+    return  elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-fdarray";
 }
 
 @RegisterCustomHTMLElement({
-    name: "e-jsonarray"
+    name: "e-fdarray"
 })
 @GenerateAttributeAccessors([
     {name: "name", type: "string"},
-    {name: "disabled", type: "boolean"},
 ])
-class HTMLEJSONArrayElement extends HTMLElement {
+class HTMLEFormDataArrayElement extends HTMLElement {
 
     public name!: string;
-    public disabled!: boolean;
-    public prototype: HTMLEJSONObjectElement | null;
+    public prototype: Element | null;
 
     constructor() {
         super();
@@ -34,16 +32,10 @@ class HTMLEJSONArrayElement extends HTMLElement {
                     display: none;
                 }
             </style>
-            <fieldset part="fieldset">
-                <details part="details">
-                    <summary part="summary">
-                        <label part="label">size</label>
-                        <input part="size" type="number" value="0" min="0"></input>
-                        <slot name="prototype"></slot>
-                    </summary>
-                    <slot name="items"></slot>
-                </details>
-            </fieldset>
+                <input part="size" type="number" value="0" min="0"></input>
+                <slot name="prototype"></slot>
+                <slot name="items"></slot>
+            </details>
         `);
         this.prototype = null;
     }
@@ -55,9 +47,7 @@ class HTMLEJSONArrayElement extends HTMLElement {
         if (prototypeSlot) {
             prototypeSlot.addEventListener("slotchange", () => {
                 const prototype = prototypeSlot.assignedElements()[0];
-                if (isHTMLEJSONObjectElement(prototype)) {
-                    this.prototype = prototype;
-                }
+                this.prototype = prototype;
             });
         }
 
@@ -85,22 +75,25 @@ class HTMLEJSONArrayElement extends HTMLElement {
         }
     }
 
-    public attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
-        if (newValue !== oldValue) {
-            switch (name) {
-            }
-        }
-    }
+    public getFormData(): any[] {
+        let formData: any = [];
 
-    public getJSON() {
-        let children = Array.from(this.children);
-        children.forEach((child) => {
-            if (isHTMLEJSONObjectElement(child) || isHTMLEJSONArrayElement(child)) {
-                child.getJSON();
-            }
+        let fdos = this.querySelectorAll<HTMLEFormDataObjectElement | HTMLEFormDataArrayElement>(":scope > e-fdobject[slot='items'], :scope > e-fdarray[slot='items']");
+        fdos.forEach((fdo) => {
+            formData.push(fdo.getFormData());
         });
-        const form = document.createElement("form");
-        form.innerHTML = this.innerHTML;
-        console.log(Array.from(new FormData(form).values()));
+
+        let formElements = Array.from(this.querySelectorAll("*:not(e-fdobject):not(e-fdarray) input[slot='items'], *:not(e-fdobject):not(e-fdarray) select[slot='items']"));
+        let tempForm = document.createElement("form");
+        tempForm.append(...formElements);
+
+        let tempFormData = new FormData(tempForm);
+        Array.from(tempFormData.keys()).forEach(
+            (key) => {
+                formData.push(tempFormData.get(key));
+            }
+        );
+
+        return formData;
     }
 }

@@ -54,8 +54,30 @@ obs.observe(document.body, {
 });
 
 export async function sandbox(): Promise<void> {
+
+  await start();
+
+  const inputDropzone = document.querySelector<HTMLFormElement>("#input-dropzone");
+  if (inputDropzone) {
+    inputDropzone.addEventListener("datatransfer", () => {
+      let name = inputDropzone.dataset.name;
+      if (name) {
+        if (inputDropzone.multiple) {
+            let inputs = Array.from(inputDropzone.querySelectorAll<HTMLInputElement>("input"));
+            inputs.forEach((input, index) => {
+                input.name = `${name}[${index}]`;
+            });
+        }
+        else {
+            let input = inputDropzone.querySelector<HTMLInputElement>("input");
+            if (input) {
+              input.name = name;
+            }
+        }
+      }
+    });
   
-  start();
+  }
 
   window.addEventListener("blur", () => {
     document.body.focus();
