@@ -69,10 +69,13 @@ class StructuredFormData {
     }
 
     // data-scope on parent and name change on children + data-scope-indexed ?
-    public getScopedData() {
+    public getScopedFormData(form: HTMLFormElement) {
         let structuredData = {};
         let formData = new FormData(this.form);
-
+        let closestScope = form.closest("[data-scoped]");
+        while (closestScope !== null) {
+            
+        }
         let keys = Array.from(formData.keys());
         keys.forEach((key) => {
             setPropertyFromPath(structuredData, key, formData.get(key));

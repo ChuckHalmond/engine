@@ -11582,6 +11582,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                   </e-fdobject>
                 </e-fdarray>
               </e-fdobject>-->
+              <input type="number" name="temp-radio" value="1" data-change="test"></input>
               <e-dropzone id="input-dropzone" data-name="myname" allowedtypes="df_column" multiple></e-dropzone>
               <form id="form">
                 <input name="text[1]" value="t1" hidden></input>
@@ -12159,56 +12160,99 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     }
     exports.launchScene = launchScene;
 });
-define("samples/Sandbox", ["require", "exports", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets", "samples/scenes/SimpleScene"], function (require, exports, Editor_4, MenuItem_5, Snippets_14, SimpleScene_1) {
+define("samples/Sandbox", ["require", "exports", "engine/editor/Editor", "engine/editor/elements/Snippets", "samples/scenes/SimpleScene"], function (require, exports, Editor_4, Snippets_14, SimpleScene_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.sandbox = void 0;
-    const createCallback = (callbacks) => {
+    function isElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
+    }
+    class AttributeMutationHandler {
+        constructor(eventListener, setCallback, removeCallback) {
+            this.eventListener = eventListener;
+            this.setCallback = setCallback;
+            this.removeCallback = removeCallback;
+        }
+    }
+    const createCallback = (mutationHandlers) => {
         return (mutationsList) => {
             mutationsList.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
                     Snippets_14.forEachDescendent(node, (node) => {
-                        if (node.nodeType === 1) {
-                            const element = node;
-                            [...element.attributes].forEach((attr) => {
+                        if (isElement(node)) {
+                            [...node.attributes].forEach((attr) => {
                                 const attrName = attr.name;
-                                if (attrName in callbacks) {
-                                    callbacks[attrName](element);
+                                if (attrName in mutationHandlers) {
+                                    let handler = mutationHandlers[attrName];
+                                    handler.setCallback.call(handler, node);
                                 }
                             });
                         }
                     });
                 });
                 if (mutation.target.nodeType === 1) {
-                    const element = mutation.target;
-                    const attr = mutation.attributeName;
-                    if (attr && attr in callbacks) {
-                        callbacks[attr](element);
+                    let node = mutation.target;
+                    if (isElement(node)) {
+                        const attrName = mutation.attributeName;
+                        if (attrName && attrName in mutationHandlers) {
+                            if (node.hasAttribute(attrName)) {
+                                let handler = mutationHandlers[attrName];
+                                mutationHandlers[attrName].setCallback.call(handler, node);
+                            }
+                            else {
+                                let handler = mutationHandlers[attrName];
+                                mutationHandlers[attrName].removeCallback.call(handler, node);
+                            }
+                        }
                     }
                 }
             });
         };
     };
-    const callback = createCallback({
-        "data-command": (elem) => {
-            if (!MenuItem_5.isHTMLEMenuItemElement(elem)) {
-                elem.addEventListener("click", () => {
-                    const command = elem.dataset.command;
-                    if (command) {
-                        Editor_4.editor.executeCommand(command, elem.dataset.commandArgs);
-                    }
-                });
+    const dataChangeAttributeMutationHandler = new AttributeMutationHandler((event) => {
+        let target = event.target;
+        if (isElement(target)) {
+            const changeValue = target.getAttribute("change");
+            if (changeValue !== null) {
+                Editor_4.editor.executeCommand(changeValue);
             }
         }
+    }, function (element) {
+        element.addEventListener("change", this.eventListener);
+    }, function (element) {
+        element.removeEventListener("change", this.eventListener);
+    });
+    const dataCommandAttributeMutationHandler = new AttributeMutationHandler((event) => {
+        let target = event.target;
+        if (isElement(target)) {
+            const changeValue = target.getAttribute("command");
+            if (changeValue !== null) {
+                Editor_4.editor.executeCommand(changeValue);
+            }
+        }
+    }, function (element) {
+        element.addEventListener("click", this.eventListener);
+    }, function (element) {
+        element.removeEventListener("click", this.eventListener);
+    });
+    const callback = createCallback({
+        "data-command": dataCommandAttributeMutationHandler,
+        "data-change": dataChangeAttributeMutationHandler
     });
     const obs = new MutationObserver(callback);
     obs.observe(document.body, {
         childList: true,
         subtree: true,
-        attributeFilter: ["data-command"]
+        attributeFilter: ["data-command", "data-change"]
     });
     async function sandbox() {
         await SimpleScene_1.start();
+        Editor_4.editor.registerCommand("test", {
+            exec: () => {
+                alert("test");
+            },
+            context: "default"
+        });
         const inputDropzone = document.querySelector("#input-dropzone");
         if (inputDropzone) {
             inputDropzone.addEventListener("datatransfer", () => {
@@ -14379,7 +14423,7 @@ define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "ex
     ], NumberInputElement);
     exports.NumberInputElement = NumberInputElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem"], function (require, exports, HTMLElement_34, MenuItem_6) {
+define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem"], function (require, exports, HTMLElement_34, MenuItem_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuBarElement = exports.HTMLEMenuBarElement = void 0;
@@ -14436,7 +14480,7 @@ define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exp
                 slot.addEventListener("slotchange", () => {
                     const items = slot.assignedElements();
                     items.forEach((item) => {
-                        if (MenuItem_6.isHTMLEMenuItemElement(item)) {
+                        if (MenuItem_5.isHTMLEMenuItemElement(item)) {
                             this.items.push(item);
                             item.parentMenu = this;
                             item.addEventListener("mouseenter", () => {
@@ -14872,7 +14916,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
     ], HTMLEMenuItemElement);
     exports.HTMLEMenuItemElement = HTMLEMenuItemElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem"], function (require, exports, HTMLElement_36, MenuItem_7) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem"], function (require, exports, HTMLElement_36, MenuItem_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
@@ -14945,7 +14989,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
             const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
             if (slot) {
                 slot.addEventListener("slotchange", () => {
-                    const items = slot.assignedElements().filter(MenuItem_7.isHTMLEMenuItemElement);
+                    const items = slot.assignedElements().filter(MenuItem_6.isHTMLEMenuItemElement);
                     items.forEach((item) => {
                         if (!this.items.includes(item)) {
                             this.items.push(item);
@@ -15001,7 +15045,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
                     case "ArrowRight":
                         selectedItem = this.selectedItem;
                         if (this.items.indexOf(event.target) >= 0) {
-                            if (selectedItem && MenuItem_7.isHTMLEMenuItemElement(selectedItem) && selectedItem.childMenu) {
+                            if (selectedItem && MenuItem_6.isHTMLEMenuItemElement(selectedItem) && selectedItem.childMenu) {
                                 selectedItem.childMenu.selectItem(0);
                                 event.stopPropagation();
                             }
@@ -15403,9 +15447,13 @@ class StructuredFormData {
     constructor(form) {
         this.form = form;
     }
-    getScopedData() {
+    // data-scope on parent and name change on children + data-scope-indexed ?
+    getScopedFormData(form) {
         let structuredData = {};
         let formData = new FormData(this.form);
+        let closestScope = form.closest("[data-scoped]");
+        while (closestScope !== null) {
+        }
         let keys = Array.from(formData.keys());
         keys.forEach((key) => {
             setPropertyFromPath(structuredData, key, formData.get(key));

@@ -162,6 +162,7 @@ const simpleSceneDOM = /*template*/`
                   </e-fdobject>
                 </e-fdarray>
               </e-fdobject>-->
+              <input type="number" name="temp-radio" value="1" data-change="test"></input>
               <e-dropzone id="input-dropzone" data-name="myname" allowedtypes="df_column" multiple></e-dropzone>
               <form id="form">
                 <input name="text[1]" value="t1" hidden></input>
