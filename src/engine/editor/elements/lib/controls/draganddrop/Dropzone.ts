@@ -53,25 +53,9 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
                     cursor: pointer;
                 }
 
-                :host [part~="placeholder"]::after {
-                    content: "Drag a column here..";
-                    font-size: 0.9em;
-                    display: inline-block;
-                }
-
                 :host(:empty) [part~="clear"],
                 :host(:not(:empty)) [part~="placeholder"] {
                     display: none;
-                }
-
-                [part~="clear"]::after {
-                    display: inline-block;
-                    content: "[x]";
-                }
-
-                ::slotted(:not(e-draggable)) {
-                    pointer-events: none;
-                    user-select: none;
                 }
             </style>
             <slot id="draggables"></slot>

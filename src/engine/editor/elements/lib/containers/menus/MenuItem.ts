@@ -92,6 +92,10 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                     color: white;
                     background-color: dimgray;
                 }
+
+                :host(:focus-within) [part~="visual"] {
+                    color: white;
+                }
                                 
                 :host([type="menu"]:focus-within) {
                     color: black;
@@ -100,10 +104,6 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
 
                 :host([type="menu"]:focus-within) [part~="arrow"] {
                     color: dimgray;
-                }
-                
-                :host(:focus-within) [part~="visual"] {
-                    color: gainsboro;
                 }
 
                 :host([disabled]) {

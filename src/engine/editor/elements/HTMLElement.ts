@@ -1,10 +1,27 @@
+import { forAllHierarchyElements } from "./Snippets";
+
+export { isElement };
+export { isTagElement };
 export { RegisterCustomHTMLElement };
 export { GenerateAttributeAccessors };
 export { bindShadowRoot };
 export { HTMLElementDescription };
-export { HTMLElementTemplate };
+export { HTMLElementConstructor };
 export { setElementAttributes };
 export { setElementProperties };
+export { AttributeMutationMixin };
+export { AttributeType };
+export { areAttributesMatching };
+export { BaseAttributeMutationMixin };
+export { createMutationObserverCallback };
+
+function isElement(obj: any): obj is Element {
+    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
+}
+
+function isTagElement<K extends keyof HTMLElementTagNameMap>(tagName: K, obj: any): obj is HTMLElementTagNameMap[K] {
+    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() == tagName;
+}
 
 interface RegisterCustomHTMLElementDecorator {
     (args: {
@@ -182,7 +199,7 @@ type HTMLElementDescription<K extends string = any> = (K extends keyof HTMLEleme
     }
 });
 
-function HTMLElementTemplate<K extends keyof HTMLElementTagNameMap>(
+function HTMLElementConstructor<K extends keyof HTMLElementTagNameMap>(
     tagName: K,
     desc?: {
         options?: ElementCreationOptions,
@@ -190,7 +207,7 @@ function HTMLElementTemplate<K extends keyof HTMLElementTagNameMap>(
         attr?: {[attrName: string]: number | string | boolean | undefined},
         children?: (HTMLElementDescription | Node | string)[]
     }): HTMLElementTagNameMap[K];
-function HTMLElementTemplate<T extends HTMLElement>(
+function HTMLElementConstructor<T extends HTMLElement>(
     tagName: string,
     desc?: {
         options?: ElementCreationOptions,
@@ -198,7 +215,7 @@ function HTMLElementTemplate<T extends HTMLElement>(
         attr?: {[attrName: string]: number | string | boolean | undefined},
         children?: (HTMLElementDescription | Node | string)[]
     }): T;
-function HTMLElementTemplate(
+function HTMLElementConstructor(
     tagName: string,
     desc?: {
         options?: ElementCreationOptions,
@@ -223,7 +240,7 @@ function HTMLElementTemplate(
                 else {
                     if (child.desc) {
                         element.append(
-                            HTMLElementTemplate(
+                            HTMLElementConstructor(
                                 child.tagName, {
                                     options: child.desc.options,
                                     attr: child.desc.attr,
@@ -238,3 +255,87 @@ function HTMLElementTemplate(
     }
     return element;
 };
+
+interface AttributeMutationMixin {
+    readonly attributeName: string;
+    readonly attributeValue: string;
+    readonly attributeType: AttributeType;
+    attach(element: Element): void;
+    detach(element: Element): void;
+}
+  
+type AttributeType = "string" | "boolean" | "listitem";
+
+function areAttributesMatching(refAttributeType: AttributeType, refAttrName: string, refAttrValue: string, attrName: string, attrValue: string | null): boolean {
+    if (refAttrName == attrName) {
+        switch (refAttributeType) {
+            case "boolean":
+                return refAttrValue == "" && attrValue == "";
+            case "string":
+                return refAttrValue !== "" && (refAttrValue === attrValue);
+            case "listitem":
+                return (refAttrValue !== "" && attrValue !== null) && new RegExp(`${refAttrValue}\s*?`, "g").test(attrValue);
+        }
+    }
+    return false;
+}
+
+abstract class BaseAttributeMutationMixin implements AttributeMutationMixin {
+    readonly attributeName: string;
+    readonly attributeValue: string;
+    readonly attributeType: AttributeType;
+
+    constructor(attributeName: string, attributeType: AttributeType = "boolean", attributeValue: string = "") {
+        this.attributeName = attributeName;
+        this.attributeType = attributeType;
+        this.attributeValue = attributeValue;
+    }
+
+    public abstract attach(element: Element): void;
+    public abstract detach(element: Element): void;
+}
+
+function createMutationObserverCallback(
+    mixins: AttributeMutationMixin[]
+    ) {
+    return (mutationsList: MutationRecord[]) =>  {
+        mutationsList.forEach((mutation: MutationRecord) => {
+            mutation.addedNodes.forEach((node: Node) => {
+                if (isElement(node)) {
+                    let element = node;
+                    forAllHierarchyElements(element, (childElement: Element) => {
+                        [...childElement.attributes].forEach((attr) => {
+                            let matchingMixins = mixins.filter(
+                                mixin => areAttributesMatching(
+                                    mixin.attributeType, mixin.attributeName, mixin.attributeValue,
+                                    attr.name, attr.value
+                                )
+                            );
+                            matchingMixins.forEach((mixin) => {
+                                mixin.attach(childElement);
+                            });
+                        });
+                    });
+                }
+            });
+            const target = mutation.target;
+            if (isElement(target)) {
+                let attrName = mutation.attributeName;
+                if (attrName) {
+                    let relatedMixins = mixins.filter(mixin => mixin.attributeName === attrName);
+                    relatedMixins.forEach((mixin) => {
+                        if (areAttributesMatching(
+                                mixin.attributeType, mixin.attributeName, mixin.attributeValue,
+                                attrName!, target.getAttribute(attrName!)
+                            )) {
+                                mixin.attach(target);
+                        }
+                        else {
+                            mixin.detach(target);
+                        }
+                    });
+                }
+            }
+        });
+    }
+}

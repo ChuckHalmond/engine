@@ -45,12 +45,7 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
         bindShadowRoot(this, /*template*/`
             <style>
                 :host {
-                    display: inline-block;
-                    cursor: pointer;
-                }
-
-                :host(:hover) {
-                    display: inline-block;
+                    display: block;
                     cursor: pointer;
                 }
 

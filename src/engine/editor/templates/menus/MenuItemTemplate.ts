@@ -1,5 +1,5 @@
 import { HotKey, Key, KeyModifier } from "engine/core/input/Input";
-import { HTMLElementTemplate, setElementAttributes } from "engine/editor/elements/HTMLElement";
+import { HTMLElementConstructor, setElementAttributes } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { HTMLEMenuTemplate, HTMLEMenuTemplateDescription } from "./MenuTemplate";
 
@@ -36,14 +36,14 @@ const HTMLEMenuItemTemplate: HTMLEMenuItemTemplate = (desc: HTMLEMenuItemTemplat
                 HTMLEMenuTemplate(
                     desc.menu
                 ), {
-                    slot: 'menu'
+                    slot: "menu"
                 }
             )
         );
     }
 
-    const menuItem = HTMLElementTemplate<HTMLEMenuItemElement>(
-        'e-menuitem', {
+    const menuItem = HTMLElementConstructor<HTMLEMenuItemElement>(
+        "e-menuitem", {
             props: {
                 id: desc.id,
                 className: desc.className,

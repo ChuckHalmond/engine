@@ -1,18 +1,18 @@
-import { HTMLElementTemplate } from "engine/editor/elements/HTMLElement";
+import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
 
 export { HTMLTableTemplateDescription };
 export { HTMLTableTemplate };
 
-type HTMLTableTemplateDescription = Partial<Pick<HTMLTableElement, 'id' | 'className'>> & {
+type HTMLTableTemplateDescription = Partial<Pick<HTMLTableElement, "id" | "className">> & {
     headerCells: (string | Node)[];
 
     bodyCells: ((string | Node) | {
-        type: 'header' | 'data' | undefined
+        type: "header" | "data" | undefined
         content: Node | string
     })[][];
 
     footerCells: (string | Node | {
-        type: 'header' | 'data' | undefined
+        type: "header" | "data" | undefined
         content: Node | string
     })[];
 }
@@ -23,20 +23,20 @@ interface HTMLTableTemplate {
 
 const HTMLTableTemplate: HTMLTableTemplate = (desc: HTMLTableTemplateDescription) => {
     
-    const thead = HTMLElementTemplate(
-        'thead', {
+    const thead = HTMLElementConstructor(
+        "thead", {
             children: [
-                HTMLElementTemplate(
-                'tr', {
+                HTMLElementConstructor(
+                "tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
                     },
                     children: desc.headerCells.map((cell) => {
-                        return HTMLElementTemplate(
-                            'th', {
+                        return HTMLElementConstructor(
+                            "th", {
                                 props: {
-                                    scope: 'col' 
+                                    scope: "col" 
                                 },
                                 children: [
                                     cell
@@ -49,32 +49,32 @@ const HTMLTableTemplate: HTMLTableTemplate = (desc: HTMLTableTemplateDescription
         }
     );
 
-    const tbody = HTMLElementTemplate(
-        'tbody', {
+    const tbody = HTMLElementConstructor(
+        "tbody", {
             children: desc.bodyCells.map((row) => {
-                return HTMLElementTemplate(
-                'tr', {
+                return HTMLElementConstructor(
+                "tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
                     },
                     children: row.map((cell) => {
-                        if ((typeof cell === 'object') && !(cell instanceof Node) && ('type' in cell)) {
+                        if ((typeof cell === "object") && !(cell instanceof Node) && ("type" in cell)) {
                             switch (cell.type) {
-                                case 'data':
+                                case "data":
                                 default:
-                                    return HTMLElementTemplate(
-                                        'td', {
+                                    return HTMLElementConstructor(
+                                        "td", {
                                             children: [
                                                 cell.content
                                             ]
                                         }
                                     );
-                                case 'header':
-                                    return HTMLElementTemplate(
+                                case "header":
+                                    return HTMLElementConstructor(
                                         "th", {
                                             props: {
-                                                scope: 'row' 
+                                                scope: "row" 
                                             },
                                             children: [
                                                 cell.content
@@ -84,8 +84,8 @@ const HTMLTableTemplate: HTMLTableTemplate = (desc: HTMLTableTemplateDescription
                             }
                         }
                         else {
-                            return HTMLElementTemplate(
-                                'td', {
+                            return HTMLElementConstructor(
+                                "td", {
                                     children: [
                                         cell
                                     ]
@@ -98,32 +98,32 @@ const HTMLTableTemplate: HTMLTableTemplate = (desc: HTMLTableTemplateDescription
         }
     );
 
-    const tfoot = HTMLElementTemplate(
-        'tfoot', {
+    const tfoot = HTMLElementConstructor(
+        "tfoot", {
             children: [
-                HTMLElementTemplate(
-                'tr', {
+                HTMLElementConstructor(
+                "tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
                     },
                     children: desc.footerCells.map((cell) => {
-                        if ((typeof cell === 'object') && !(cell instanceof Node) && ('type' in cell)) {
+                        if ((typeof cell === "object") && !(cell instanceof Node) && ("type" in cell)) {
                             switch (cell.type) {
-                                case 'data':
+                                case "data":
                                 default:
-                                    return HTMLElementTemplate(
-                                        'td', {
+                                    return HTMLElementConstructor(
+                                        "td", {
                                             children: [
                                                 cell.content
                                             ]
                                         }
                                     );
-                                case 'header':
-                                    return HTMLElementTemplate(
-                                        'th', {
+                                case "header":
+                                    return HTMLElementConstructor(
+                                        "th", {
                                             props: {
-                                                scope: 'row' 
+                                                scope: "row" 
                                             },
                                             children: [
                                                 cell.content
@@ -133,8 +133,8 @@ const HTMLTableTemplate: HTMLTableTemplate = (desc: HTMLTableTemplateDescription
                             }
                         }
                         else {
-                            return HTMLElementTemplate(
-                                'td', {
+                            return HTMLElementConstructor(
+                                "td", {
                                     children: [
                                         cell
                                     ]
@@ -147,8 +147,8 @@ const HTMLTableTemplate: HTMLTableTemplate = (desc: HTMLTableTemplateDescription
         }
     );
 
-    const table = HTMLElementTemplate(
-        'table', {
+    const table = HTMLElementConstructor(
+        "table", {
             props: {
                 id: desc.id,
                 className: desc.className,

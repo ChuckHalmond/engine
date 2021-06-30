@@ -53,32 +53,38 @@
                         ]
                     },
                     {
-                        "name": "letters-menu",
-                        "label": "Letters",
-                        "type": "submenu",
-                        "menu": {
-                            "items": [
-                                {
-                                    "isGroup": true,
-                                    "name": "favorite-letter",
-                                    "label": "Your favorite letter",
+                        "isGroup": true,
+                        "name": "submenus",
+                        "items": [
+                            {
+                                "name": "letters-menu",
+                                "label": "Letters",
+                                "type": "submenu",
+                                "menu": {
                                     "items": [
                                         {
-                                            "name": "a-item",
-                                            "label": "Letter A",
-                                            "type": "radio",
-                                            "value": "a"
-                                        },
-                                        {
-                                            "name": "b-item",
-                                            "label": "Letter B",
-                                            "type": "radio",
-                                            "value": "b"
+                                            "isGroup": true,
+                                            "name": "favorite-letter",
+                                            "label": "Your favorite letter",
+                                            "items": [
+                                                {
+                                                    "name": "a-item",
+                                                    "label": "Letter A",
+                                                    "type": "radio",
+                                                    "value": "a"
+                                                },
+                                                {
+                                                    "name": "b-item",
+                                                    "label": "Letter B",
+                                                    "type": "radio",
+                                                    "value": "b"
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
-                            ]
-                        }
+                            }
+                        ]
                     }
                 ]
             }

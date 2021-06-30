@@ -5,10 +5,137 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define("engine/editor/elements/HTMLElement", ["require", "exports"], function (require, exports) {
+define("engine/editor/elements/Snippets", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.setElementProperties = exports.setElementAttributes = exports.HTMLElementTemplate = exports.bindShadowRoot = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = void 0;
+    exports.pointIntersectsWithDOMRect = exports.setPropertyFromPath = exports.getPropertyFromPath = exports.forAllHierarchyElements = void 0;
+    function forAllHierarchyElements(element, func) {
+        func(element);
+        Array.from(element.children).forEach((child) => {
+            forAllHierarchyElements(child, func);
+        });
+    }
+    exports.forAllHierarchyElements = forAllHierarchyElements;
+    /*
+    function getPropertyFromPath(src: object, path: string): any {
+      const props = path.split(".");
+      let obj: {[key: string]: any} | undefined  = src;
+      props.forEach((prop) => {
+        if (typeof obj === "object" && prop in obj) {
+          obj = obj[prop];
+        }
+        else {
+          obj = void 0;
+        }
+      });
+      return obj;
+    }
+    
+    function setPropertyFromPath(src: object, path: string, value: any): object {
+      const props = path.split(".");
+      let obj: {[key: string]: any} = src;
+      let lastPropIdx = props.length - 1;
+      props.forEach((prop, idx) => {
+        if (idx === lastPropIdx) {
+          Object.assign(obj, {
+            [prop]: value
+          });
+        }
+        else {
+          if (typeof obj[prop] !== "object") {
+            Object.assign(obj, {
+              [prop]: {}
+            });
+          }
+          obj = obj[prop];
+        }
+      });
+      return src;
+    }
+    */
+    function getPropertyFromPath(src, path) {
+        const props = path.split(".");
+        let obj = src;
+        props.forEach((prop) => {
+            if (prop.includes("[")) {
+                let index = parseInt(prop.substring(prop.indexOf("[") + 1, prop.indexOf("]")));
+                if (Number.isNaN(index)) {
+                    console.error(`Wrong indexed path: ${prop}`);
+                }
+                prop = prop.substring(0, prop.indexOf("["));
+                if (typeof obj === "object" && prop in obj && Array.isArray(obj[prop])) {
+                    obj = obj[prop][index];
+                }
+            }
+            else if (typeof obj === "object" && prop in obj) {
+                obj = obj[prop];
+            }
+            else {
+                obj = void 0;
+            }
+        });
+        return obj;
+    }
+    exports.getPropertyFromPath = getPropertyFromPath;
+    function setPropertyFromPath(src, path, value) {
+        const props = path.split(".");
+        let obj = src;
+        let lastPropIdx = props.length - 1;
+        props.forEach((prop, idx) => {
+            if (prop.includes("[")) {
+                let index = parseInt(prop.substring(prop.indexOf("[") + 1, prop.indexOf("]")));
+                if (Number.isNaN(index)) {
+                    console.error(`Wrong indexed path: ${prop}`);
+                }
+                prop = prop.substring(0, prop.indexOf("["));
+                if (!Array.isArray(obj[prop])) {
+                    obj[prop] = [];
+                }
+                if (idx === lastPropIdx) {
+                    obj[prop][index] = value;
+                }
+                else {
+                    if (typeof obj[prop][index] !== "object") {
+                        obj[prop][index] = {};
+                    }
+                    obj = obj[prop][index];
+                }
+            }
+            else {
+                if (typeof obj[prop] !== "object") {
+                    obj[prop] = {};
+                }
+                if (idx === lastPropIdx) {
+                    obj[prop] = value;
+                }
+                else {
+                    obj = obj[prop];
+                }
+            }
+        });
+        return src;
+    }
+    exports.setPropertyFromPath = setPropertyFromPath;
+    function pointIntersectsWithDOMRect(x, y, rect) {
+        return !(rect.left > x ||
+            rect.right < x ||
+            rect.top > y ||
+            rect.bottom < y);
+    }
+    exports.pointIntersectsWithDOMRect = pointIntersectsWithDOMRect;
+});
+define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createMutationObserverCallback = exports.BaseAttributeMutationMixin = exports.areAttributesMatching = exports.setElementProperties = exports.setElementAttributes = exports.HTMLElementConstructor = exports.bindShadowRoot = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = exports.isTagElement = exports.isElement = void 0;
+    function isElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
+    }
+    exports.isElement = isElement;
+    function isTagElement(tagName, obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() == tagName;
+    }
+    exports.isTagElement = isTagElement;
     const RegisterCustomHTMLElement = function (args) {
         return (elementCtor) => {
             const { name, observedAttributes, options } = args;
@@ -116,7 +243,7 @@ define("engine/editor/elements/HTMLElement", ["require", "exports"], function (r
         return element;
     }
     exports.setElementAttributes = setElementAttributes;
-    function HTMLElementTemplate(tagName, desc) {
+    function HTMLElementConstructor(tagName, desc) {
         const element = document.createElement(tagName, desc === null || desc === void 0 ? void 0 : desc.options);
         if (desc) {
             if (desc.props) {
@@ -132,7 +259,7 @@ define("engine/editor/elements/HTMLElement", ["require", "exports"], function (r
                     }
                     else {
                         if (child.desc) {
-                            element.append(HTMLElementTemplate(child.tagName, {
+                            element.append(HTMLElementConstructor(child.tagName, {
                                 options: child.desc.options,
                                 attr: child.desc.attr,
                                 children: child.desc.children
@@ -144,8 +271,65 @@ define("engine/editor/elements/HTMLElement", ["require", "exports"], function (r
         }
         return element;
     }
-    exports.HTMLElementTemplate = HTMLElementTemplate;
+    exports.HTMLElementConstructor = HTMLElementConstructor;
     ;
+    function areAttributesMatching(refAttributeType, refAttrName, refAttrValue, attrName, attrValue) {
+        if (refAttrName == attrName) {
+            switch (refAttributeType) {
+                case "boolean":
+                    return refAttrValue == "" && attrValue == "";
+                case "string":
+                    return refAttrValue !== "" && (refAttrValue === attrValue);
+                case "listitem":
+                    return (refAttrValue !== "" && attrValue !== null) && new RegExp(`${refAttrValue}\s*?`, "g").test(attrValue);
+            }
+        }
+        return false;
+    }
+    exports.areAttributesMatching = areAttributesMatching;
+    class BaseAttributeMutationMixin {
+        constructor(attributeName, attributeType = "boolean", attributeValue = "") {
+            this.attributeName = attributeName;
+            this.attributeType = attributeType;
+            this.attributeValue = attributeValue;
+        }
+    }
+    exports.BaseAttributeMutationMixin = BaseAttributeMutationMixin;
+    function createMutationObserverCallback(mixins) {
+        return (mutationsList) => {
+            mutationsList.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (isElement(node)) {
+                        let element = node;
+                        Snippets_1.forAllHierarchyElements(element, (childElement) => {
+                            [...childElement.attributes].forEach((attr) => {
+                                let matchingMixins = mixins.filter(mixin => areAttributesMatching(mixin.attributeType, mixin.attributeName, mixin.attributeValue, attr.name, attr.value));
+                                matchingMixins.forEach((mixin) => {
+                                    mixin.attach(childElement);
+                                });
+                            });
+                        });
+                    }
+                });
+                const target = mutation.target;
+                if (isElement(target)) {
+                    let attrName = mutation.attributeName;
+                    if (attrName) {
+                        let relatedMixins = mixins.filter(mixin => mixin.attributeName === attrName);
+                        relatedMixins.forEach((mixin) => {
+                            if (areAttributesMatching(mixin.attributeType, mixin.attributeName, mixin.attributeValue, attrName, target.getAttribute(attrName))) {
+                                mixin.attach(target);
+                            }
+                            else {
+                                mixin.detach(target);
+                            }
+                        });
+                    }
+                }
+            });
+        };
+    }
+    exports.createMutationObserverCallback = createMutationObserverCallback;
 });
 define("engine/editor/elements/lib/controls/draganddrop/Draggable", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_1) {
     "use strict";
@@ -161,12 +345,7 @@ define("engine/editor/elements/lib/controls/draganddrop/Draggable", ["require", 
             HTMLElement_1.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
-                    display: inline-block;
-                    cursor: pointer;
-                }
-
-                :host(:hover) {
-                    display: inline-block;
+                    display: block;
                     cursor: pointer;
                 }
 
@@ -273,25 +452,9 @@ define("engine/editor/elements/lib/controls/draganddrop/Dropzone", ["require", "
                     cursor: pointer;
                 }
 
-                :host [part~="placeholder"]::after {
-                    content: "Drag a column here..";
-                    font-size: 0.9em;
-                    display: inline-block;
-                }
-
                 :host(:empty) [part~="clear"],
                 :host(:not(:empty)) [part~="placeholder"] {
                     display: none;
-                }
-
-                [part~="clear"]::after {
-                    display: inline-block;
-                    content: "[x]";
-                }
-
-                ::slotted(:not(e-draggable)) {
-                    pointer-events: none;
-                    user-select: none;
                 }
             </style>
             <slot id="draggables"></slot>
@@ -423,125 +586,6 @@ define("engine/editor/elements/lib/controls/draganddrop/Dropzone", ["require", "
         ])
     ], BaseHTMLEDropzoneElement);
     exports.BaseHTMLEDropzoneElement = BaseHTMLEDropzoneElement;
-});
-define("engine/editor/elements/Snippets", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.pointIntersectsWithDOMRect = exports.setPropertyFromPath = exports.getPropertyFromPath = exports.forAllHierarchyElements = void 0;
-    function forAllHierarchyElements(element, func) {
-        func(element);
-        Array.from(element.children).forEach((child) => {
-            forAllHierarchyElements(child, func);
-        });
-    }
-    exports.forAllHierarchyElements = forAllHierarchyElements;
-    /*
-    function getPropertyFromPath(src: object, path: string): any {
-      const props = path.split(".");
-      let obj: {[key: string]: any} | undefined  = src;
-      props.forEach((prop) => {
-        if (typeof obj === "object" && prop in obj) {
-          obj = obj[prop];
-        }
-        else {
-          obj = void 0;
-        }
-      });
-      return obj;
-    }
-    
-    function setPropertyFromPath(src: object, path: string, value: any): object {
-      const props = path.split(".");
-      let obj: {[key: string]: any} = src;
-      let lastPropIdx = props.length - 1;
-      props.forEach((prop, idx) => {
-        if (idx === lastPropIdx) {
-          Object.assign(obj, {
-            [prop]: value
-          });
-        }
-        else {
-          if (typeof obj[prop] !== "object") {
-            Object.assign(obj, {
-              [prop]: {}
-            });
-          }
-          obj = obj[prop];
-        }
-      });
-      return src;
-    }
-    */
-    function getPropertyFromPath(src, path) {
-        const props = path.split(".");
-        let obj = src;
-        props.forEach((prop) => {
-            if (prop.includes("[")) {
-                let index = parseInt(prop.substring(prop.indexOf("[") + 1, prop.indexOf("]")));
-                if (Number.isNaN(index)) {
-                    console.error(`Wrong indexed path: ${prop}`);
-                }
-                prop = prop.substring(0, prop.indexOf("["));
-                if (typeof obj === "object" && prop in obj && Array.isArray(obj[prop])) {
-                    obj = obj[prop][index];
-                }
-            }
-            else if (typeof obj === "object" && prop in obj) {
-                obj = obj[prop];
-            }
-            else {
-                obj = void 0;
-            }
-        });
-        return obj;
-    }
-    exports.getPropertyFromPath = getPropertyFromPath;
-    function setPropertyFromPath(src, path, value) {
-        const props = path.split(".");
-        let obj = src;
-        let lastPropIdx = props.length - 1;
-        props.forEach((prop, idx) => {
-            if (prop.includes("[")) {
-                let index = parseInt(prop.substring(prop.indexOf("[") + 1, prop.indexOf("]")));
-                if (Number.isNaN(index)) {
-                    console.error(`Wrong indexed path: ${prop}`);
-                }
-                prop = prop.substring(0, prop.indexOf("["));
-                if (!Array.isArray(obj[prop])) {
-                    obj[prop] = [];
-                }
-                if (idx === lastPropIdx) {
-                    obj[prop][index] = value;
-                }
-                else {
-                    if (typeof obj[prop][index] !== "object") {
-                        obj[prop][index] = {};
-                    }
-                    obj = obj[prop][index];
-                }
-            }
-            else {
-                if (typeof obj[prop] !== "object") {
-                    obj[prop] = {};
-                }
-                if (idx === lastPropIdx) {
-                    obj[prop] = value;
-                }
-                else {
-                    obj = obj[prop];
-                }
-            }
-        });
-        return src;
-    }
-    exports.setPropertyFromPath = setPropertyFromPath;
-    function pointIntersectsWithDOMRect(x, y, rect) {
-        return !(rect.left > x ||
-            rect.right < x ||
-            rect.top > y ||
-            rect.bottom < y);
-    }
-    exports.pointIntersectsWithDOMRect = pointIntersectsWithDOMRect;
 });
 define("engine/libs/maths/MathError", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -1768,7 +1812,7 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
     ], HTMLEStatusBarElement);
     exports.HTMLEStatusBarElement = HTMLEStatusBarElement;
 });
-define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_6, MenuItem_2, Snippets_1) {
+define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_6, MenuItem_2, Snippets_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
@@ -1878,7 +1922,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", 
             });
             this.addEventListener("mouseout", (event) => {
                 let target = event.target;
-                let thisIntersectsWithMouse = Snippets_1.pointIntersectsWithDOMRect(event.clientX, event.clientY, this.getBoundingClientRect());
+                let thisIntersectsWithMouse = Snippets_2.pointIntersectsWithDOMRect(event.clientX, event.clientY, this.getBoundingClientRect());
                 if ((this === target || this.items.includes(target)) && !thisIntersectsWithMouse) {
                     this.reset();
                     this.focus();
@@ -2025,7 +2069,7 @@ define("engine/editor/templates/menus/MenuItemGroupTemplate", ["require", "expor
     exports.HTMLEMenuItemGroupTemplate = void 0;
     const HTMLEMenuItemGroupTemplate = (desc) => {
         const items = desc.items.map((descArgs) => MenuItemTemplate_1.HTMLEMenuItemTemplate(descArgs));
-        return HTMLElement_7.HTMLElementTemplate('e-menuitemgroup', {
+        return HTMLElement_7.HTMLElementConstructor("e-menuitemgroup", {
             props: {
                 id: desc.id,
                 className: desc.className,
@@ -2049,7 +2093,7 @@ define("engine/editor/templates/menus/MenuTemplate", ["require", "exports", "eng
                 return MenuItemTemplate_2.HTMLEMenuItemTemplate(itemDesc);
             }
         });
-        return HTMLElement_8.HTMLElementTemplate('e-menu', {
+        return HTMLElement_8.HTMLElementConstructor("e-menu", {
             props: {
                 id: desc.id,
                 className: desc.className,
@@ -2068,10 +2112,10 @@ define("engine/editor/templates/menus/MenuItemTemplate", ["require", "exports", 
         let slotted = [];
         if (desc.menu) {
             slotted.push(HTMLElement_9.setElementAttributes(MenuTemplate_1.HTMLEMenuTemplate(desc.menu), {
-                slot: 'menu'
+                slot: "menu"
             }));
         }
-        const menuItem = HTMLElement_9.HTMLElementTemplate('e-menuitem', {
+        const menuItem = HTMLElement_9.HTMLElementConstructor("e-menuitem", {
             props: {
                 id: desc.id,
                 className: desc.className,
@@ -2103,7 +2147,7 @@ define("engine/editor/templates/menus/MenubarTemplate", ["require", "exports", "
         const items = desc.items.map((itemDesc) => {
             return MenuItemTemplate_3.HTMLEMenuItemTemplate(itemDesc);
         });
-        return HTMLElement_10.HTMLElementTemplate('e-menubar', {
+        return HTMLElement_10.HTMLElementConstructor("e-menubar", {
             props: {
                 id: desc.id,
                 className: desc.className,
@@ -2114,7 +2158,7 @@ define("engine/editor/templates/menus/MenubarTemplate", ["require", "exports", "
     };
     exports.HTMLEMenubarTemplate = HTMLEMenubarTemplate;
 });
-define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/commands/Command", "engine/libs/patterns/messaging/events/EventDispatcher", "engine/resources/ResourceFetcher", "engine/editor/elements/Snippets", "engine/editor/templates/menus/MenubarTemplate"], function (require, exports, Command_1, EventDispatcher_1, ResourceFetcher_2, Snippets_2, MenubarTemplate_1) {
+define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/commands/Command", "engine/libs/patterns/messaging/events/EventDispatcher", "engine/resources/ResourceFetcher", "engine/editor/elements/Snippets", "engine/editor/templates/menus/MenubarTemplate"], function (require, exports, Command_1, EventDispatcher_1, ResourceFetcher_2, Snippets_3, MenubarTemplate_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EditorBase = exports.editor = void 0;
@@ -2205,11 +2249,11 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
             }
         }
         getState(key) {
-            return Snippets_2.getPropertyFromPath(this._state, key);
+            return Snippets_3.getPropertyFromPath(this._state, key);
         }
         //TODO: Create a listeners object with the same structure as the state object
         setState(key, value) {
-            Snippets_2.setPropertyFromPath(this._state, key, value);
+            Snippets_3.setPropertyFromPath(this._state, key, value);
             const listenedStates = Array.from(this._stateListeners.keys());
             listenedStates.filter((state) => {
                 return (state.startsWith(key) && (state.charAt(key.length) === "." || state.charAt(key.length) === "")) ||
@@ -2218,8 +2262,8 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
                 let stateListeners = this._stateListeners.get(state);
                 if (stateListeners) {
                     let newStateValue = (state.length === key.length) ? value :
-                        (state.length >= key.length) ? Snippets_2.getPropertyFromPath(value, state.substring(key.length + 1)) :
-                            Snippets_2.getPropertyFromPath(this._state, state);
+                        (state.length >= key.length) ? Snippets_3.getPropertyFromPath(value, state.substring(key.length + 1)) :
+                            Snippets_3.getPropertyFromPath(this._state, state);
                     stateListeners.forEach((stateListener) => {
                         stateListener(newStateValue);
                     });
@@ -2345,6 +2389,10 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                     color: white;
                     background-color: dimgray;
                 }
+
+                :host(:focus-within) [part~="visual"] {
+                    color: white;
+                }
                                 
                 :host([type="menu"]:focus-within) {
                     color: black;
@@ -2353,10 +2401,6 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
 
                 :host([type="menu"]:focus-within) [part~="arrow"] {
                     color: dimgray;
-                }
-                
-                :host(:focus-within) [part~="visual"] {
-                    color: gainsboro;
                 }
 
                 :host([disabled]) {
@@ -2630,7 +2674,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
     ], BaseHTMLEMenuItemElement);
     exports.BaseHTMLEMenuItemElement = BaseHTMLEMenuItemElement;
 });
-define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/menus/MenuItemGroup"], function (require, exports, HTMLElement_12, MenuItem_3, Snippets_3, MenuItemGroup_1) {
+define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/menus/MenuItemGroup"], function (require, exports, HTMLElement_12, MenuItem_3, Snippets_4, MenuItemGroup_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEMenuElement = exports.isHTMLEMenuElement = void 0;
@@ -2730,7 +2774,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
             });
             this.addEventListener("mouseout", (event) => {
                 let target = event.target;
-                let thisIntersectsWithMouse = Snippets_3.pointIntersectsWithDOMRect(event.clientX, event.clientY, this.getBoundingClientRect());
+                let thisIntersectsWithMouse = Snippets_4.pointIntersectsWithDOMRect(event.clientX, event.clientY, this.getBoundingClientRect());
                 if ((this === target || this.items.includes(target)) && !thisIntersectsWithMouse) {
                     this.reset();
                     this.focus();
@@ -3071,7 +3115,7 @@ define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "export
     ], BaseHTMLETabListElement);
     exports.BaseHTMLETabListElement = BaseHTMLETabListElement;
 });
-define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_4) {
+define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StructuredFormData = void 0;
@@ -3084,14 +3128,41 @@ define("engine/editor/objects/StructuredFormData", ["require", "exports", "engin
             let formData = new FormData(this.form);
             let keys = Array.from(formData.keys());
             keys.forEach((key) => {
-                Snippets_4.setPropertyFromPath(structuredData, key, formData.get(key));
+                Snippets_5.setPropertyFromPath(structuredData, key, formData.get(key));
             });
             return structuredData;
         }
     }
     exports.StructuredFormData = StructuredFormData;
 });
-define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draganddrop/Draggable", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "engine/editor/objects/StructuredFormData"], function (require, exports, Menu_2, MenuBar_1, MenuItem_4, MenuItemGroup_2, Tab_2, TabList_1, TabPanel_1, Draggable_2, Dropzone_1, StructuredFormData_1) {
+define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_16) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.HTMLDraggableInputTemplate = void 0;
+    const HTMLDraggableInputTemplate = (desc) => {
+        return HTMLElement_16.HTMLElementConstructor("e-draggable", {
+            props: {
+                id: desc.id,
+                className: desc.className,
+                ref: desc.ref,
+                type: desc.type
+            },
+            children: [
+                HTMLElement_16.HTMLElementConstructor("input", {
+                    props: {
+                        name: desc.name,
+                        hidden: true
+                    },
+                    attr: {
+                        value: desc.value
+                    }
+                })
+            ]
+        });
+    };
+    exports.HTMLDraggableInputTemplate = HTMLDraggableInputTemplate;
+});
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draganddrop/Draggable", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "engine/editor/objects/StructuredFormData", "engine/editor/templates/other/DraggableInputTemplate"], function (require, exports, Menu_2, MenuBar_1, MenuItem_4, MenuItemGroup_2, Tab_2, TabList_1, TabPanel_1, Draggable_2, Dropzone_1, StructuredFormData_1, DraggableInputTemplate_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.mockup = void 0;
@@ -3106,8 +3177,8 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
     MenuItem_4.BaseHTMLEMenuItemElement;
     const body = /*template*/ `
     <link rel="stylesheet" href="../css/mockup.css"/>
-    <div class="main flex-rows">
-        <nav class="flex-cols flex-none">
+    <div id="root" class="flex-rows">
+        <header class="flex-cols flex-none padded">
             <e-menubar tabindex="0">
                 <e-menuitem name="canvas-menu-item" type="menu" label="Canvas" tabindex="-1" aria-label="Canvas">
                     <e-menu slot="menu" tabindex="-1">
@@ -3121,42 +3192,44 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                             <e-menuitem name="show-fps-item" type="checkbox" label="Show FPS" icon="60fps" tabindex="-1"
                                 aria-label="Show FPS"></e-menuitem>
                         </e-menuitemgroup>
-                        <e-menuitem name="letters-menu" type="submenu" label="Letters" tabindex="-1" aria-label="Letters">
-                            <e-menu slot="menu" tabindex="-1">
-                                <e-menuitemgroup name="favorite-letter" tabindex="-1">
-                                    <e-menuitem name="a-item" type="radio" label="Letter A" value="a" tabindex="-1"
-                                        aria-label="Letter A" checked=""></e-menuitem>
-                                    <e-menuitem name="b-item" type="radio" label="Letter B" value="b" tabindex="-1"
-                                        aria-label="Letter B"></e-menuitem>
-                                </e-menuitemgroup>
-                            </e-menu>
-                        </e-menuitem>
+                        <e-menuitemgroup name="submenus" tabindex="-1">
+                            <e-menuitem name="letters-menu" type="submenu" label="Letters" tabindex="-1" aria-label="Letters">
+                                <e-menu slot="menu" tabindex="-1">
+                                    <e-menuitemgroup name="favorite-letter" label="Favorite letter" tabindex="-1">
+                                        <e-menuitem name="a-item" type="radio" label="Letter A" value="a" tabindex="-1"
+                                            aria-label="Letter A" checked=""></e-menuitem>
+                                        <e-menuitem name="b-item" type="radio" label="Letter B" value="b" tabindex="-1"
+                                            aria-label="Letter B"></e-menuitem>
+                                    </e-menuitemgroup>
+                                </e-menu>
+                            </e-menuitem>
+                        </e-menuitemgroup>
                     </e-menu>
                 </e-menuitem>
             </e-menubar>
-        </nav>
-        <div class="flex-cols flex-auto">
-            <div id="tabs-col" class="flex-none padded">
+        </header>
+        <main class="flex-cols flex-auto padded">
+            <div id="tabs-col" class="flex-none">
                 <e-tablist id="tablist">
                     <e-tab name="extract" controls="extract-panel" active>Extract</e-tab>
                     <e-tab name="transform" controls="transform-panel">Transform</e-tab>
                     <e-tab name="export" controls="export-panel">Export</e-tab>
                 </e-tablist>
             </div>
-            <div id="columns-col" class="flex-none padded">
-                <details open>
+            <div id="data-col" class="flex-none padded">
+                <details class="indented" open>
                     <summary>Dataset 1</summary>
-                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="A">Column A<input name="A" value="Column_A" hidden></input></e-draggable>
-                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="B">Column B<input name="B" value="Column_B" hidden></input></e-draggable>
-                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="C">Column C<input name="C" value="Column_C" hidden></input></e-draggable>
-                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D">Column D<input name="D" value="Column_D" hidden></input></e-draggable>
+                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A">Column A<input name="D1A" value="Column_D1A" hidden></input></e-draggable>
+                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B">Column B<input name="D1B" value="Column_D1B" hidden></input></e-draggable>
+                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C">Column C<input name="D1C" value="Column_D1C" hidden></input></e-draggable>
+                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D">Column D<input name="D1D" value="Column_D1D" hidden></input></e-draggable>
                 </details>
-                <details open>
-                    <summary>Dataset 1</summary>
-                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="A">Column A<input name="A" value="Column_A" hidden></input></e-draggable>
-                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="B">Column B<input name="B" value="Column_B" hidden></input></e-draggable>
-                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="C">Column C<input name="C" value="Column_C" hidden></input></e-draggable>
-                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D">Column D<input name="D" value="Column_D" hidden></input></e-draggable>
+                <details class="indented" open>
+                    <summary>Dataset 2</summary>
+                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D2A">Column A<input name="D2A" value="Column_D2A" hidden></input></e-draggable>
+                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D2B">Column B<input name="D2B" value="Column_D2B" hidden></input></e-draggable>
+                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D2C">Column C<input name="D2C" value="Column_D2C" hidden></input></e-draggable>
+                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D2D">Column D<input name="D2D" value="Column_D2D" hidden></input></e-draggable>
                 </details>
             </div>
             <div id ="panels-col" class="flex-auto padded">
@@ -3166,19 +3239,28 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                 </e-tabpanel>
                 <e-tabpanel id="transform-panel" class="padded">
                     <form>
-                        <details open>
+                        <details class="indented" open>
                             <summary>Transformation
                                 <select data-class="toggler-select">
                                     <option value="aggregate" selected>Aggregate</option>
                                     <option value="median_imputer">Median imputer</option>
                                 </select>
                             </summary>
-                            <fieldset id="aggregate" class="indented">
-                                <label>Columns</label><br/>
-                                <e-dropzone data-class="input-dropzone" data-input-dropzone-name="name" allowedtypes="*" multiple></e-dropzone><br/>
+                            <fieldset id="aggregate">
+                                <details class="indented" open>
+                                    <summary>
+                                        Columns
+                                    </summary>
+                                    <e-dropzone data-class="input-dropzone" data-input-dropzone-name="name" allowedtypes="*" multiple></e-dropzone><br/>
+                                </details>
                             </fieldset>
-                            <fieldset id="median_imputer" class="indented">
-                                <label>Median</label><input class="indented" name="median" type="number" value="1" min="0" max="100"></input><br/>
+                            <fieldset id="median_imputer">
+                                <details class="indented" open>
+                                    <summary>
+                                        Median
+                                    </summary>
+                                    <input name="median" type="number" value="1" min="0" max="100"></input>
+                                </details>
                             </fieldset>
                         </details>
                     </form>
@@ -3187,7 +3269,9 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                     <button id="download-btn">Download</button>
                 </e-tab-panel>
             </div>
-        </div>
+        </main>
+        <footer class="flex-cols flex-none padded">
+        </footer>
     </div>
 `;
     async function mockup() {
@@ -3201,6 +3285,13 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
         // });
         // columns.forEach((col) => {
         // });
+        console.log(DraggableInputTemplate_1.HTMLDraggableInputTemplate({
+            id: "draggableD",
+            type: "column",
+            ref: "D2D",
+            name: "D2D",
+            value: "Column_D2D"
+        }));
         let downloadBtn = document.getElementById("download-btn");
         if (downloadBtn) {
             downloadBtn.addEventListener("click", () => {
@@ -5883,7 +5974,7 @@ define("engine/libs/patterns/pools/StackPool", ["require", "exports", "engine/li
     const StackPool = StackPoolBase;
     exports.StackPool = StackPool;
 });
-define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_5, StackPool_1, MathError_6) {
+define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_6, StackPool_1, MathError_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuaternionPool = exports.QuaternionBase = exports.QuaternionInjector = exports.Quaternion = void 0;
@@ -5998,7 +6089,7 @@ define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports"
             if (den < Number.EPSILON) {
                 return out.setZeros();
             }
-            const scale = Snippets_5.qSqrt(den);
+            const scale = Snippets_6.qSqrt(den);
             out.setValues([this._x * scale, this._y * scale, this._z * scale]);
             return out;
         }
@@ -6831,7 +6922,7 @@ define("engine/libs/maths/geometry/primitives/Triangle", ["require", "exports", 
     const TrianglePool = new StackPool_3.StackPool(TriangleBase);
     exports.TrianglePool = TrianglePool;
 });
-define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_6) {
+define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TriangleListBase = exports.TriangleList = void 0;
@@ -6881,8 +6972,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             return indexOf;
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
-            const idxTo = Snippets_6.clamp(options.idxTo, 0, this.count);
-            const idxFrom = Snippets_6.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_7.clamp(options.idxTo, 0, this.count);
+            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -6900,8 +6991,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             tri.point3.readFromArray(this._array, indices[2]);
         }
         forIndexedPoints(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_6.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_6.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_7.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -6924,7 +7015,7 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
     const TriangleList = TriangleListBase;
     exports.TriangleList = TriangleList;
 });
-define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_7) {
+define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3ListBase = exports.Vector3List = void 0;
@@ -6944,8 +7035,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_7.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -6958,8 +7049,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
             Vector3Pools_3.Vector3Pool.release(1);
         }
         forEachFromIndices(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_7.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -7121,7 +7212,7 @@ define("engine/libs/maths/extensions/pools/Vector2Pools", ["require", "exports",
     const Vector2Pool = new StackPool_6.StackPool(Vector2_2.Vector2Base);
     exports.Vector2Pool = Vector2Pool;
 });
-define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_8) {
+define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector2ListBase = exports.Vector2List = void 0;
@@ -7141,8 +7232,8 @@ define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_8.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             Vector2Pools_1.Vector2Pool.acquireTemp(1, (vector) => {
                 while (idxObj < count) {
@@ -7972,7 +8063,7 @@ define("engine/utils/Snippets", ["require", "exports"], function (require, expor
     }
     exports.safeQuerySelector = safeQuerySelector;
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_9) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_10) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CubeGeometry = void 0;
@@ -8069,7 +8160,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [+1, -1, +1],
         [+1, -1, -1], // v7
     ];
-    const cubeVertices = Snippets_9.buildArrayFromIndexedArrays(cubeVerticesSet, [
+    const cubeVertices = Snippets_10.buildArrayFromIndexedArrays(cubeVerticesSet, [
         0, 2, 3, 1,
         0, 4, 5, 2,
         2, 5, 6, 3,
@@ -8083,7 +8174,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [0, 1],
         [1, 1],
     ];
-    const cubeUVS = Snippets_9.buildArrayFromIndexedArrays(cubeUVsSet, [
+    const cubeUVS = Snippets_10.buildArrayFromIndexedArrays(cubeUVsSet, [
         0, 1, 3, 2,
         0, 1, 3, 2,
         0, 1, 3, 2,
@@ -8113,7 +8204,7 @@ define("engine/libs/maths/geometry/GeometryConstants", ["require", "exports"], f
     const GOLDEN_RATIO = 1.6180;
     exports.GOLDEN_RATIO = GOLDEN_RATIO;
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_2, GeometryConstants_1, Snippets_10) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_2, GeometryConstants_1, Snippets_11) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IcosahedronGeometry = void 0;
@@ -8180,7 +8271,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const icosahedronVertices = Snippets_10.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
+    const icosahedronVertices = Snippets_11.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
         0, 1, 2,
         0, 2, 3,
         0, 3, 4,
@@ -8202,7 +8293,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         9, 11, 10,
         10, 11, 6, // f19
     ]);
-    const icosahedronUVS = Snippets_10.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
+    const icosahedronUVS = Snippets_11.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
         1, 2, 0,
         1, 2, 0,
         1, 2, 0,
@@ -8247,7 +8338,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         57, 58, 59, // f19
     ];
 });
-define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_11) {
+define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_12) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuadGeometry = void 0;
@@ -8327,10 +8418,10 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         [0, 1],
         [1, 1]
     ];
-    const quadVertices = Snippets_11.buildArrayFromIndexedArrays(quadVerticesSet, [
+    const quadVertices = Snippets_12.buildArrayFromIndexedArrays(quadVerticesSet, [
         0, 2, 3, 1, //  f0  f1
     ]);
-    const quadUVS = Snippets_11.buildArrayFromIndexedArrays(quadUVsSet, [
+    const quadUVS = Snippets_12.buildArrayFromIndexedArrays(quadUVsSet, [
         0, 2, 3, 1, //  f0  f1
     ]);
     const quadIndices = [
@@ -8338,11 +8429,11 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         0, 2, 3, //  f1
     ];
 });
-define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_12) {
+define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_13) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.VertexAttribute = exports.UniformType = exports.UniformQuery = exports.TextureWrapMode = exports.TextureMinFilter = exports.TextureMagFilter = exports.TextureTarget = exports.TextureParameter = exports.TextureUnits = exports.TestFunction = exports.StencilAction = exports.ShaderPrecision = exports.ShaderType = exports.Shader = exports.RenderbufferTarget = exports.PixelType = exports.PixelStorageMode = exports.PixelFormat = exports.Parameter = exports.HintMode = exports.HintTarget = exports.FrontFace = exports.FramebufferTextureTarget = exports.FramebufferTarget = exports.FramebufferAttachmentParameter = exports.FramebufferAttachment = exports.Error = exports.DataType = exports.DrawMode = exports.CullFaceMode = exports.Capabilities = exports.BufferTarget = exports.BufferInterpolation = exports.BufferIndexType = exports.BufferBindingPoint = exports.BufferMaskBit = exports.BufferMask = exports.BufferDataUsage = exports.BlendingEquation = exports.BlendingMode = void 0;
-    const gl = Snippets_12.crashIfNull(document.createElement('canvas').getContext('webgl2'));
+    const gl = Snippets_13.crashIfNull(document.createElement('canvas').getContext('webgl2'));
     var BlendingMode;
     (function (BlendingMode) {
         BlendingMode[BlendingMode["ZERO"] = gl.ZERO] = "ZERO";
@@ -10267,7 +10358,7 @@ define("engine/core/rendering/webgl/WebGLRendererUtilities", ["require", "export
     }
     exports.WebGLRendererUtilities = WebGLRendererUtilities;
 });
-define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_16) {
+define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_17) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isStateElement = exports.ButtonStateElement = void 0;
@@ -10281,10 +10372,10 @@ define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", 
         }
     };
     ButtonStateElement = __decorate([
-        HTMLElement_16.RegisterCustomHTMLElement({
+        HTMLElement_17.RegisterCustomHTMLElement({
             name: 'e-button-state'
         }),
-        HTMLElement_16.GenerateAttributeAccessors([
+        HTMLElement_17.GenerateAttributeAccessors([
             { name: 'name', type: 'string' },
             { name: 'next', type: 'string' },
             { name: 'active', type: 'boolean' },
@@ -10292,14 +10383,14 @@ define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", 
     ], ButtonStateElement);
     exports.ButtonStateElement = ButtonStateElement;
 });
-define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/buttons/ButtonState"], function (require, exports, HTMLElement_17, ButtonState_1) {
+define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/buttons/ButtonState"], function (require, exports, HTMLElement_18, ButtonState_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StatefulButtonElement = void 0;
     let StatefulButtonElement = class StatefulButtonElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_17.bindShadowRoot(this, /*template*/ `
+            HTMLElement_18.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -10343,23 +10434,23 @@ define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require
         }
     };
     StatefulButtonElement = __decorate([
-        HTMLElement_17.RegisterCustomHTMLElement({
+        HTMLElement_18.RegisterCustomHTMLElement({
             name: 'e-stateful-button'
         }),
-        HTMLElement_17.GenerateAttributeAccessors([
+        HTMLElement_18.GenerateAttributeAccessors([
             { name: 'state', type: 'string' },
         ])
     ], StatefulButtonElement);
     exports.StatefulButtonElement = StatefulButtonElement;
 });
-define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_18) {
+define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_19) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelElement = void 0;
     let PanelElement = class PanelElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_18.bindShadowRoot(this, /*template*/ `
+            HTMLElement_19.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -10435,25 +10526,25 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
         }
     };
     PanelElement = __decorate([
-        HTMLElement_18.RegisterCustomHTMLElement({
+        HTMLElement_19.RegisterCustomHTMLElement({
             name: 'e-panel',
             observedAttributes: ['state']
         }),
-        HTMLElement_18.GenerateAttributeAccessors([
+        HTMLElement_19.GenerateAttributeAccessors([
             { name: 'label', type: 'string' },
             { name: 'state', type: 'string' },
         ])
     ], PanelElement);
     exports.PanelElement = PanelElement;
 });
-define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_19) {
+define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_20) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelGroupElement = void 0;
     let PanelGroupElement = class PanelGroupElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_19.bindShadowRoot(this, /*template*/ `
+            HTMLElement_20.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -10514,24 +10605,24 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
     };
     PanelGroupElement.observedAttributes = ['state'];
     PanelGroupElement = __decorate([
-        HTMLElement_19.RegisterCustomHTMLElement({
+        HTMLElement_20.RegisterCustomHTMLElement({
             name: 'e-panel-group'
         }),
-        HTMLElement_19.GenerateAttributeAccessors([
+        HTMLElement_20.GenerateAttributeAccessors([
             { name: 'label', type: 'string' },
             { name: 'state', type: 'string' },
         ])
     ], PanelGroupElement);
     exports.PanelGroupElement = PanelGroupElement;
 });
-define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_20) {
+define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_21) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RangeElement = void 0;
     let RangeElement = class RangeElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_20.bindShadowRoot(this, /*template*/ `
+            HTMLElement_21.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -10550,16 +10641,16 @@ define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engi
         }
     };
     RangeElement = __decorate([
-        HTMLElement_20.RegisterCustomHTMLElement({
+        HTMLElement_21.RegisterCustomHTMLElement({
             name: 'e-range'
         }),
-        HTMLElement_20.GenerateAttributeAccessors([
+        HTMLElement_21.GenerateAttributeAccessors([
             { name: 'value', type: 'number' },
         ])
     ], RangeElement);
     exports.RangeElement = RangeElement;
 });
-define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_21) {
+define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_22) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ImportElement = void 0;
@@ -10585,10 +10676,10 @@ define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine
         }
     };
     ImportElement = __decorate([
-        HTMLElement_21.RegisterCustomHTMLElement({
+        HTMLElement_22.RegisterCustomHTMLElement({
             name: 'e-import'
         }),
-        HTMLElement_21.GenerateAttributeAccessors([
+        HTMLElement_22.GenerateAttributeAccessors([
             { name: 'src', type: 'string' }
         ])
     ], ImportElement);
@@ -10700,7 +10791,7 @@ define("engine/libs/graphics/colors/Color", ["require", "exports"], function (re
     const Color = ColorBase;
     exports.Color = Color;
 });
-define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_22) {
+define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_23) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isDropdownElement = exports.HTMLEDropdownElement = void 0;
@@ -10711,7 +10802,7 @@ define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "e
     let HTMLEDropdownElement = class HTMLEDropdownElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_22.bindShadowRoot(this, /*template*/ `
+            HTMLElement_23.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -10783,16 +10874,16 @@ define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "e
         }
     };
     HTMLEDropdownElement = __decorate([
-        HTMLElement_22.RegisterCustomHTMLElement({
+        HTMLElement_23.RegisterCustomHTMLElement({
             name: 'e-dropdown'
         }),
-        HTMLElement_22.GenerateAttributeAccessors([
+        HTMLElement_23.GenerateAttributeAccessors([
             { name: 'expanded', type: 'boolean' },
         ])
     ], HTMLEDropdownElement);
     exports.HTMLEDropdownElement = HTMLEDropdownElement;
 });
-define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/Menu"], function (require, exports, HTMLElement_23, Menu_3) {
+define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/Menu"], function (require, exports, HTMLElement_24, Menu_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEMenuButtonElement = exports.isHTMLEMenuButtonElement = void 0;
@@ -10803,7 +10894,7 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
     let BaseHTMLEMenuButtonElement = class BaseHTMLEMenuButtonElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_23.bindShadowRoot(this, /*template*/ `
+            HTMLElement_24.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     position: relative;
@@ -10996,11 +11087,11 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
         }
     };
     BaseHTMLEMenuButtonElement = __decorate([
-        HTMLElement_23.RegisterCustomHTMLElement({
+        HTMLElement_24.RegisterCustomHTMLElement({
             name: "e-menubutton",
             observedAttributes: ["icon", "label", "checked"]
         }),
-        HTMLElement_23.GenerateAttributeAccessors([
+        HTMLElement_24.GenerateAttributeAccessors([
             { name: "name", type: "string" },
             { name: "active", type: "boolean" },
             { name: "label", type: "string" },
@@ -11011,14 +11102,14 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
     ], BaseHTMLEMenuButtonElement);
     exports.BaseHTMLEMenuButtonElement = BaseHTMLEMenuButtonElement;
 });
-define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
+define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_25) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PaletteElement = void 0;
     let PaletteElement = class PaletteElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_24.bindShadowRoot(this, /*template*/ `
+            HTMLElement_25.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -11047,14 +11138,14 @@ define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine
         }
     };
     PaletteElement = __decorate([
-        HTMLElement_24.RegisterCustomHTMLElement({
+        HTMLElement_25.RegisterCustomHTMLElement({
             name: 'e-palette'
         }),
-        HTMLElement_24.GenerateAttributeAccessors([{ name: 'colors', type: 'json' }])
+        HTMLElement_25.GenerateAttributeAccessors([{ name: 'colors', type: 'json' }])
     ], PaletteElement);
     exports.PaletteElement = PaletteElement;
 });
-define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_25) {
+define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_26) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEBreadcrumbItemElement = exports.isHTMLEBreadcrumbItemElement = void 0;
@@ -11065,7 +11156,7 @@ define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", ["requir
     let HTMLEBreadcrumbItemElement = class HTMLEBreadcrumbItemElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_25.bindShadowRoot(this, /*template*/ `
+            HTMLElement_26.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: inline-block;
@@ -11116,18 +11207,18 @@ define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", ["requir
         }
     };
     HTMLEBreadcrumbItemElement = __decorate([
-        HTMLElement_25.RegisterCustomHTMLElement({
+        HTMLElement_26.RegisterCustomHTMLElement({
             name: "e-breadcrumbitem",
             observedAttributes: ["label"]
         }),
-        HTMLElement_25.GenerateAttributeAccessors([
+        HTMLElement_26.GenerateAttributeAccessors([
             { name: "label", type: "string" },
             { name: "active", type: "boolean" }
         ])
     ], HTMLEBreadcrumbItemElement);
     exports.HTMLEBreadcrumbItemElement = HTMLEBreadcrumbItemElement;
 });
-define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem"], function (require, exports, HTMLElement_26, BreadcrumbItem_1) {
+define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem"], function (require, exports, HTMLElement_27, BreadcrumbItem_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEBreadcrumbTrailElement = exports.isHTMLEBreadcrumbTrailElement = void 0;
@@ -11138,7 +11229,7 @@ define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", ["requi
     let HTMLEBreadcrumbTrailElement = class HTMLEBreadcrumbTrailElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_26.bindShadowRoot(this, /*template*/ `
+            HTMLElement_27.bindShadowRoot(this, /*template*/ `
             <style>
                 [part~="ul"] {
                     display: block;
@@ -11190,13 +11281,13 @@ define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", ["requi
         }
     };
     HTMLEBreadcrumbTrailElement = __decorate([
-        HTMLElement_26.RegisterCustomHTMLElement({
+        HTMLElement_27.RegisterCustomHTMLElement({
             name: "e-breadcrumbtrail"
         })
     ], HTMLEBreadcrumbTrailElement);
     exports.HTMLEBreadcrumbTrailElement = HTMLEBreadcrumbTrailElement;
 });
-define("engine/editor/elements/lib/containers/formdata/FormDataObject", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_27) {
+define("engine/editor/elements/lib/containers/formdata/FormDataObject", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_28) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEFormDataObjectElement = exports.HTMLEFormDataObjectElement = void 0;
@@ -11207,7 +11298,7 @@ define("engine/editor/elements/lib/containers/formdata/FormDataObject", ["requir
     let HTMLEFormDataObjectElement = class HTMLEFormDataObjectElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_27.bindShadowRoot(this, /*template*/ `
+            HTMLElement_28.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -11247,17 +11338,17 @@ define("engine/editor/elements/lib/containers/formdata/FormDataObject", ["requir
         }
     };
     HTMLEFormDataObjectElement = __decorate([
-        HTMLElement_27.RegisterCustomHTMLElement({
+        HTMLElement_28.RegisterCustomHTMLElement({
             name: "e-fdobject"
         }),
-        HTMLElement_27.GenerateAttributeAccessors([
+        HTMLElement_28.GenerateAttributeAccessors([
             { name: "name", type: "string" },
             { name: "disabled", type: "boolean" },
         ])
     ], HTMLEFormDataObjectElement);
     exports.HTMLEFormDataObjectElement = HTMLEFormDataObjectElement;
 });
-define("engine/editor/elements/lib/containers/formdata/FormDataArray", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_28) {
+define("engine/editor/elements/lib/containers/formdata/FormDataArray", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_29) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEFormDataArrayElement = exports.HTMLEFormDataArrayElement = void 0;
@@ -11268,7 +11359,7 @@ define("engine/editor/elements/lib/containers/formdata/FormDataArray", ["require
     let HTMLEFormDataArrayElement = class HTMLEFormDataArrayElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_28.bindShadowRoot(this, /*template*/ `
+            HTMLElement_29.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -11335,16 +11426,16 @@ define("engine/editor/elements/lib/containers/formdata/FormDataArray", ["require
         }
     };
     HTMLEFormDataArrayElement = __decorate([
-        HTMLElement_28.RegisterCustomHTMLElement({
+        HTMLElement_29.RegisterCustomHTMLElement({
             name: "e-fdarray"
         }),
-        HTMLElement_28.GenerateAttributeAccessors([
+        HTMLElement_29.GenerateAttributeAccessors([
             { name: "name", type: "string" },
         ])
     ], HTMLEFormDataArrayElement);
     exports.HTMLEFormDataArrayElement = HTMLEFormDataArrayElement;
 });
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/buttons/ButtonState", "engine/editor/elements/lib/containers/buttons/StatefulButton", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/Range", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draganddrop/Draggable", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "engine/editor/elements/lib/containers/formdata/FormDataArray", "engine/editor/elements/lib/containers/formdata/FormDataObject"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, ButtonState_2, StatefulButton_1, Menu_4, MenuBar_2, MenuItem_5, Panel_1, PanelGroup_1, Tab_3, TabList_2, TabPanel_2, Range_1, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_13, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_3, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_3, Dropzone_2, FormDataArray_1, FormDataObject_1) {
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/buttons/ButtonState", "engine/editor/elements/lib/containers/buttons/StatefulButton", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/Range", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draganddrop/Draggable", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "engine/editor/elements/lib/containers/formdata/FormDataArray", "engine/editor/elements/lib/containers/formdata/FormDataObject"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, ButtonState_2, StatefulButton_1, Menu_4, MenuBar_2, MenuItem_5, Panel_1, PanelGroup_1, Tab_3, TabList_2, TabPanel_2, Range_1, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_14, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_3, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_3, Dropzone_2, FormDataArray_1, FormDataObject_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.launchScene = exports.start = void 0;
@@ -11950,7 +12041,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                     //console.log(`cameraToTarget ${cameraToTarget.x.toFixed(4)} ${cameraToTarget.y.toFixed(4)} ${cameraToTarget.z.toFixed(4)}`);
                     let theta = Math.acos(cameraToTarget.z / radius);
                     let phi = Math.atan2(cameraToTarget.y, cameraToTarget.x);
-                    theta = Snippets_13.clamp(theta - deltaTheta, 0, Math.PI);
+                    theta = Snippets_14.clamp(theta - deltaTheta, 0, Math.PI);
                     phi -= deltaPhi;
                     //console.log(`theta ${theta.toFixed(4)} phi ${phi.toFixed(4)}`);
                     // Turn back into Cartesian coordinates
@@ -12021,71 +12112,11 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     }
     exports.launchScene = launchScene;
 });
-define("samples/Sandbox", ["require", "exports", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "engine/editor/elements/Snippets", "samples/scenes/Mockup"], function (require, exports, Dropzone_3, Snippets_14, Mockup_1) {
+define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "samples/scenes/Mockup"], function (require, exports, HTMLElement_30, Dropzone_3, Mockup_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.sandbox = void 0;
-    function isElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
-    }
-    function isTagElement(tagName, obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() == tagName;
-    }
-    const createMutationCallback = (mixins) => {
-        return (mutationsList) => {
-            mutationsList.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (isElement(node)) {
-                        let element = node;
-                        Snippets_14.forAllHierarchyElements(element, (childElement) => {
-                            [...childElement.attributes].forEach((attr) => {
-                                let matchingMixins = mixins.filter(mixin => match(mixin.attributeType, mixin.attributeName, mixin.attributeValue, attr.name, attr.value));
-                                matchingMixins.forEach((mixin) => {
-                                    mixin.attach(childElement);
-                                });
-                            });
-                        });
-                    }
-                });
-                const target = mutation.target;
-                if (isElement(target)) {
-                    let attrName = mutation.attributeName;
-                    if (attrName) {
-                        let relatedMixins = mixins.filter(mixin => mixin.attributeName === attrName);
-                        relatedMixins.forEach((mixin) => {
-                            if (match(mixin.attributeType, mixin.attributeName, mixin.attributeValue, attrName, target.getAttribute(attrName))) {
-                                mixin.attach(target);
-                            }
-                            else {
-                                mixin.detach(target);
-                            }
-                        });
-                    }
-                }
-            });
-        };
-    };
-    function match(refAttributeType, refAttrName, refAttrValue, attrName, attrValue) {
-        if (refAttrName == attrName) {
-            switch (refAttributeType) {
-                case "boolean":
-                    return refAttrValue == "" && attrValue == "";
-                case "string":
-                    return refAttrValue !== "" && (refAttrValue === attrValue);
-                case "listitem":
-                    return (refAttrValue !== "" && attrValue !== null) && new RegExp(`${refAttrValue}\s*?`, "g").test(attrValue);
-            }
-        }
-        return false;
-    }
-    class BaseAttributeMutationMixin {
-        constructor(attributeName, attributeType = "boolean", attributeValue = "") {
-            this.attributeName = attributeName;
-            this.attributeType = attributeType;
-            this.attributeValue = attributeValue;
-        }
-    }
-    class DataClassMixin extends BaseAttributeMutationMixin {
+    class DataClassMixin extends HTMLElement_30.BaseAttributeMutationMixin {
         constructor(attributeValue) {
             super("data-class", "listitem", attributeValue);
         }
@@ -12146,7 +12177,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/lib/con
             super("toggler-select");
             this.changeEventListener = (event) => {
                 let target = event.target;
-                if (isTagElement("select", target)) {
+                if (HTMLElement_30.isTagElement("select", target)) {
                     this.handlePostchangeToggle(target);
                 }
             };
@@ -12173,7 +12204,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/lib/con
         new InputDropzoneDataClassMixin(),
         new TogglerSelectDataClassMixin()
     ];
-    const mainObserver = new MutationObserver(createMutationCallback(attributeMutationMixins));
+    const mainObserver = new MutationObserver(HTMLElement_30.createMutationObserverCallback(attributeMutationMixins));
     mainObserver.observe(document.body, {
         childList: true,
         subtree: true,
@@ -14356,7 +14387,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports"], function
     }
     exports.isSelectElement = isSelectElement;
 });
-define("engine/editor/elements/lib/builtins/inputs/CallbackedInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_29) {
+define("engine/editor/elements/lib/builtins/inputs/CallbackedInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_31) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CallbackedInputElement = void 0;
@@ -14378,7 +14409,7 @@ define("engine/editor/elements/lib/builtins/inputs/CallbackedInput", ["require",
         }
     };
     CallbackedInputElement = __decorate([
-        HTMLElement_29.RegisterCustomHTMLElement({
+        HTMLElement_31.RegisterCustomHTMLElement({
             name: 'callbacked-input',
             options: {
                 extends: 'input'
@@ -14388,7 +14419,7 @@ define("engine/editor/elements/lib/builtins/inputs/CallbackedInput", ["require",
     ], CallbackedInputElement);
     exports.CallbackedInputElement = CallbackedInputElement;
 });
-define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_30) {
+define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.NumberInputElement = void 0;
@@ -14425,19 +14456,19 @@ define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "ex
         }
     };
     NumberInputElement = __decorate([
-        HTMLElement_30.RegisterCustomHTMLElement({
+        HTMLElement_32.RegisterCustomHTMLElement({
             name: 'number-input',
             options: {
                 extends: 'input'
             }
         }),
-        HTMLElement_30.GenerateAttributeAccessors([
+        HTMLElement_32.GenerateAttributeAccessors([
             { name: 'cache' }
         ])
     ], NumberInputElement);
     exports.NumberInputElement = NumberInputElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_31) {
+define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_33) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuBarElement = exports.HTMLEMenuBarElement = void 0;
@@ -14448,18 +14479,18 @@ define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exp
     let HTMLEMenuBarElement = class HTMLEMenuBarElement extends HTMLElement {
     };
     HTMLEMenuBarElement = __decorate([
-        HTMLElement_31.RegisterCustomHTMLElement({
+        HTMLElement_33.RegisterCustomHTMLElement({
             name: "e-menubar",
             observedAttributes: ["active"]
         }),
-        HTMLElement_31.GenerateAttributeAccessors([
+        HTMLElement_33.GenerateAttributeAccessors([
             { name: "name", type: "string" },
             { name: "active", type: "boolean" },
         ])
     ], HTMLEMenuBarElement);
     exports.HTMLEMenuBarElement = HTMLEMenuBarElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_34) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuItemElement = exports.HTMLEMenuItemElement = void 0;
@@ -14470,11 +14501,11 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
     let HTMLEMenuItemElement = class HTMLEMenuItemElement extends HTMLElement {
     };
     HTMLEMenuItemElement = __decorate([
-        HTMLElement_32.RegisterCustomHTMLElement({
+        HTMLElement_34.RegisterCustomHTMLElement({
             name: "e-menuitem",
             observedAttributes: ["icon", "label", "checked"]
         }),
-        HTMLElement_32.GenerateAttributeAccessors([
+        HTMLElement_34.GenerateAttributeAccessors([
             { name: "name", type: "string" },
             { name: "label", type: "string" },
             { name: "icon", type: "string" },
@@ -14486,7 +14517,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
     ], HTMLEMenuItemElement);
     exports.HTMLEMenuItemElement = HTMLEMenuItemElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_33) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_35) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
@@ -14497,11 +14528,11 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
     let HTMLEMenuItemGroupElement = class HTMLEMenuItemGroupElement extends HTMLElement {
     };
     HTMLEMenuItemGroupElement = __decorate([
-        HTMLElement_33.RegisterCustomHTMLElement({
+        HTMLElement_35.RegisterCustomHTMLElement({
             name: "e-menuitemgroup",
             observedAttributes: ["label", "active"]
         }),
-        HTMLElement_33.GenerateAttributeAccessors([
+        HTMLElement_35.GenerateAttributeAccessors([
             { name: "active", type: "boolean" },
             { name: "label", type: "string" },
             { name: "type", type: "string" },
@@ -14512,14 +14543,14 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
     ], HTMLEMenuItemGroupElement);
     exports.HTMLEMenuItemGroupElement = HTMLEMenuItemGroupElement;
 });
-define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_34) {
+define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_36) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.WindowElement = void 0;
     let WindowElement = class WindowElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_34.bindShadowRoot(this, /*template*/ `
+            HTMLElement_36.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -14596,10 +14627,10 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
         }
     };
     WindowElement = __decorate([
-        HTMLElement_34.RegisterCustomHTMLElement({
+        HTMLElement_36.RegisterCustomHTMLElement({
             name: 'e-window'
         }),
-        HTMLElement_34.GenerateAttributeAccessors([
+        HTMLElement_36.GenerateAttributeAccessors([
             { name: 'title', type: 'string' },
             { name: 'tooltip', type: 'string' },
             { name: 'toggled', type: 'boolean' }
@@ -14607,14 +14638,14 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
     ], WindowElement);
     exports.WindowElement = WindowElement;
 });
-define("engine/editor/elements/lib/controls/ComboBox", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_35) {
+define("engine/editor/elements/lib/controls/ComboBox", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_37) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ComboBoxElement = void 0;
     let ComboBoxElement = class ComboBoxElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_35.bindShadowRoot(this, /*template*/ `
+            HTMLElement_37.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -14633,23 +14664,23 @@ define("engine/editor/elements/lib/controls/ComboBox", ["require", "exports", "e
         }
     };
     ComboBoxElement = __decorate([
-        HTMLElement_35.RegisterCustomHTMLElement({
+        HTMLElement_37.RegisterCustomHTMLElement({
             name: 'e-combobox'
         }),
-        HTMLElement_35.GenerateAttributeAccessors([
+        HTMLElement_37.GenerateAttributeAccessors([
             { name: 'value', type: 'number' },
         ])
     ], ComboBoxElement);
     exports.ComboBoxElement = ComboBoxElement;
 });
-define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3", "engine/editor/attributes/Tooltip"], function (require, exports, HTMLElement_36, Vector3_8, Tooltip_1) {
+define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3", "engine/editor/attributes/Tooltip"], function (require, exports, HTMLElement_38, Vector3_8, Tooltip_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3InputElement = void 0;
     let Vector3InputElement = class Vector3InputElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_36.bindShadowRoot(this, /*template*/ `
+            HTMLElement_38.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -14707,21 +14738,21 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
         }
     };
     Vector3InputElement = __decorate([
-        HTMLElement_36.RegisterCustomHTMLElement({
+        HTMLElement_38.RegisterCustomHTMLElement({
             name: 'e-vector3-input'
         }),
-        HTMLElement_36.GenerateAttributeAccessors([{ name: 'label' }, { name: 'tooltip' }])
+        HTMLElement_38.GenerateAttributeAccessors([{ name: 'label' }, { name: 'tooltip' }])
     ], Vector3InputElement);
     exports.Vector3InputElement = Vector3InputElement;
 });
-define("engine/editor/elements/lib/misc/LogsFeed", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_37) {
+define("engine/editor/elements/lib/misc/LogsFeed", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_39) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.LogsFeedElement = void 0;
     let LogsFeedElement = class LogsFeedElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_37.bindShadowRoot(this, /*template*/ `
+            HTMLElement_39.bindShadowRoot(this, /*template*/ `
             <style>
                 p {
                     margin: 0;
@@ -14742,28 +14773,28 @@ define("engine/editor/elements/lib/misc/LogsFeed", ["require", "exports", "engin
         }
     };
     LogsFeedElement = __decorate([
-        HTMLElement_37.RegisterCustomHTMLElement({
+        HTMLElement_39.RegisterCustomHTMLElement({
             name: 'e-logs-feed',
         })
     ], LogsFeedElement);
     exports.LogsFeedElement = LogsFeedElement;
 });
-define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_38) {
+define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_40) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLTableTemplate = void 0;
     const HTMLTableTemplate = (desc) => {
-        const thead = HTMLElement_38.HTMLElementTemplate('thead', {
+        const thead = HTMLElement_40.HTMLElementConstructor("thead", {
             children: [
-                HTMLElement_38.HTMLElementTemplate('tr', {
+                HTMLElement_40.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
                     },
                     children: desc.headerCells.map((cell) => {
-                        return HTMLElement_38.HTMLElementTemplate('th', {
+                        return HTMLElement_40.HTMLElementConstructor("th", {
                             props: {
-                                scope: 'col'
+                                scope: "col"
                             },
                             children: [
                                 cell
@@ -14773,27 +14804,27 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 })
             ]
         });
-        const tbody = HTMLElement_38.HTMLElementTemplate('tbody', {
+        const tbody = HTMLElement_40.HTMLElementConstructor("tbody", {
             children: desc.bodyCells.map((row) => {
-                return HTMLElement_38.HTMLElementTemplate('tr', {
+                return HTMLElement_40.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
                     },
                     children: row.map((cell) => {
-                        if ((typeof cell === 'object') && !(cell instanceof Node) && ('type' in cell)) {
+                        if ((typeof cell === "object") && !(cell instanceof Node) && ("type" in cell)) {
                             switch (cell.type) {
-                                case 'data':
+                                case "data":
                                 default:
-                                    return HTMLElement_38.HTMLElementTemplate('td', {
+                                    return HTMLElement_40.HTMLElementConstructor("td", {
                                         children: [
                                             cell.content
                                         ]
                                     });
-                                case 'header':
-                                    return HTMLElement_38.HTMLElementTemplate("th", {
+                                case "header":
+                                    return HTMLElement_40.HTMLElementConstructor("th", {
                                         props: {
-                                            scope: 'row'
+                                            scope: "row"
                                         },
                                         children: [
                                             cell.content
@@ -14802,7 +14833,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             }
                         }
                         else {
-                            return HTMLElement_38.HTMLElementTemplate('td', {
+                            return HTMLElement_40.HTMLElementConstructor("td", {
                                 children: [
                                     cell
                                 ]
@@ -14812,27 +14843,27 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 });
             })
         });
-        const tfoot = HTMLElement_38.HTMLElementTemplate('tfoot', {
+        const tfoot = HTMLElement_40.HTMLElementConstructor("tfoot", {
             children: [
-                HTMLElement_38.HTMLElementTemplate('tr', {
+                HTMLElement_40.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
                     },
                     children: desc.footerCells.map((cell) => {
-                        if ((typeof cell === 'object') && !(cell instanceof Node) && ('type' in cell)) {
+                        if ((typeof cell === "object") && !(cell instanceof Node) && ("type" in cell)) {
                             switch (cell.type) {
-                                case 'data':
+                                case "data":
                                 default:
-                                    return HTMLElement_38.HTMLElementTemplate('td', {
+                                    return HTMLElement_40.HTMLElementConstructor("td", {
                                         children: [
                                             cell.content
                                         ]
                                     });
-                                case 'header':
-                                    return HTMLElement_38.HTMLElementTemplate('th', {
+                                case "header":
+                                    return HTMLElement_40.HTMLElementConstructor("th", {
                                         props: {
-                                            scope: 'row'
+                                            scope: "row"
                                         },
                                         children: [
                                             cell.content
@@ -14841,7 +14872,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             }
                         }
                         else {
-                            return HTMLElement_38.HTMLElementTemplate('td', {
+                            return HTMLElement_40.HTMLElementConstructor("td", {
                                 children: [
                                     cell
                                 ]
@@ -14851,7 +14882,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 })
             ]
         });
-        const table = HTMLElement_38.HTMLElementTemplate('table', {
+        const table = HTMLElement_40.HTMLElementConstructor("table", {
             props: {
                 id: desc.id,
                 className: desc.className,

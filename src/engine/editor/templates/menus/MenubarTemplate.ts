@@ -1,4 +1,4 @@
-import { HTMLElementTemplate } from "engine/editor/elements/HTMLElement";
+import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
 import { HTMLEMenuItemTemplate, HTMLEMenuItemTemplateDescription } from "./MenuItemTemplate";
 
@@ -19,8 +19,8 @@ const HTMLEMenubarTemplate: HTMLEMenubarTemplate = (desc: HTMLEMenubarTemplateDe
         return HTMLEMenuItemTemplate(itemDesc);
     });
 
-    return HTMLElementTemplate<HTMLEMenuBarElement>(
-        'e-menubar', {
+    return HTMLElementConstructor<HTMLEMenuBarElement>(
+        "e-menubar", {
             props: {
                 id: desc.id,
                 className: desc.className,

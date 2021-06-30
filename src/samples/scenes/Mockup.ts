@@ -8,6 +8,7 @@ import { BaseHTMLETabPanelElement } from "engine/editor/elements/lib/containers/
 import { BaseHTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
 import { BaseHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
 import { StructuredFormData } from "engine/editor/objects/StructuredFormData";
+import { HTMLDraggableInputTemplate } from "engine/editor/templates/other/DraggableInputTemplate";
 
 BaseHTMLETabElement;
 BaseHTMLETabListElement;
@@ -23,8 +24,8 @@ BaseHTMLEMenuItemElement;
 
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
-    <div class="main flex-rows">
-        <nav class="flex-cols flex-none">
+    <div id="root" class="flex-rows">
+        <header class="flex-cols flex-none padded">
             <e-menubar tabindex="0">
                 <e-menuitem name="canvas-menu-item" type="menu" label="Canvas" tabindex="-1" aria-label="Canvas">
                     <e-menu slot="menu" tabindex="-1">
@@ -38,42 +39,44 @@ const body = /*template*/`
                             <e-menuitem name="show-fps-item" type="checkbox" label="Show FPS" icon="60fps" tabindex="-1"
                                 aria-label="Show FPS"></e-menuitem>
                         </e-menuitemgroup>
-                        <e-menuitem name="letters-menu" type="submenu" label="Letters" tabindex="-1" aria-label="Letters">
-                            <e-menu slot="menu" tabindex="-1">
-                                <e-menuitemgroup name="favorite-letter" tabindex="-1">
-                                    <e-menuitem name="a-item" type="radio" label="Letter A" value="a" tabindex="-1"
-                                        aria-label="Letter A" checked=""></e-menuitem>
-                                    <e-menuitem name="b-item" type="radio" label="Letter B" value="b" tabindex="-1"
-                                        aria-label="Letter B"></e-menuitem>
-                                </e-menuitemgroup>
-                            </e-menu>
-                        </e-menuitem>
+                        <e-menuitemgroup name="submenus" tabindex="-1">
+                            <e-menuitem name="letters-menu" type="submenu" label="Letters" tabindex="-1" aria-label="Letters">
+                                <e-menu slot="menu" tabindex="-1">
+                                    <e-menuitemgroup name="favorite-letter" label="Favorite letter" tabindex="-1">
+                                        <e-menuitem name="a-item" type="radio" label="Letter A" value="a" tabindex="-1"
+                                            aria-label="Letter A" checked=""></e-menuitem>
+                                        <e-menuitem name="b-item" type="radio" label="Letter B" value="b" tabindex="-1"
+                                            aria-label="Letter B"></e-menuitem>
+                                    </e-menuitemgroup>
+                                </e-menu>
+                            </e-menuitem>
+                        </e-menuitemgroup>
                     </e-menu>
                 </e-menuitem>
             </e-menubar>
-        </nav>
-        <div class="flex-cols flex-auto">
-            <div id="tabs-col" class="flex-none padded">
+        </header>
+        <main class="flex-cols flex-auto padded">
+            <div id="tabs-col" class="flex-none">
                 <e-tablist id="tablist">
                     <e-tab name="extract" controls="extract-panel" active>Extract</e-tab>
                     <e-tab name="transform" controls="transform-panel">Transform</e-tab>
                     <e-tab name="export" controls="export-panel">Export</e-tab>
                 </e-tablist>
             </div>
-            <div id="columns-col" class="flex-none padded">
-                <details open>
+            <div id="data-col" class="flex-none padded">
+                <details class="indented" open>
                     <summary>Dataset 1</summary>
-                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="A">Column A<input name="A" value="Column_A" hidden></input></e-draggable>
-                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="B">Column B<input name="B" value="Column_B" hidden></input></e-draggable>
-                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="C">Column C<input name="C" value="Column_C" hidden></input></e-draggable>
-                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D">Column D<input name="D" value="Column_D" hidden></input></e-draggable>
+                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A">Column A<input name="D1A" value="Column_D1A" hidden></input></e-draggable>
+                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B">Column B<input name="D1B" value="Column_D1B" hidden></input></e-draggable>
+                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C">Column C<input name="D1C" value="Column_D1C" hidden></input></e-draggable>
+                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D">Column D<input name="D1D" value="Column_D1D" hidden></input></e-draggable>
                 </details>
-                <details open>
-                    <summary>Dataset 1</summary>
-                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="A">Column A<input name="A" value="Column_A" hidden></input></e-draggable>
-                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="B">Column B<input name="B" value="Column_B" hidden></input></e-draggable>
-                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="C">Column C<input name="C" value="Column_C" hidden></input></e-draggable>
-                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D">Column D<input name="D" value="Column_D" hidden></input></e-draggable>
+                <details class="indented" open>
+                    <summary>Dataset 2</summary>
+                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D2A">Column A<input name="D2A" value="Column_D2A" hidden></input></e-draggable>
+                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D2B">Column B<input name="D2B" value="Column_D2B" hidden></input></e-draggable>
+                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D2C">Column C<input name="D2C" value="Column_D2C" hidden></input></e-draggable>
+                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D2D">Column D<input name="D2D" value="Column_D2D" hidden></input></e-draggable>
                 </details>
             </div>
             <div id ="panels-col" class="flex-auto padded">
@@ -83,19 +86,28 @@ const body = /*template*/`
                 </e-tabpanel>
                 <e-tabpanel id="transform-panel" class="padded">
                     <form>
-                        <details open>
+                        <details class="indented" open>
                             <summary>Transformation
                                 <select data-class="toggler-select">
                                     <option value="aggregate" selected>Aggregate</option>
                                     <option value="median_imputer">Median imputer</option>
                                 </select>
                             </summary>
-                            <fieldset id="aggregate" class="indented">
-                                <label>Columns</label><br/>
-                                <e-dropzone data-class="input-dropzone" data-input-dropzone-name="name" allowedtypes="*" multiple></e-dropzone><br/>
+                            <fieldset id="aggregate">
+                                <details class="indented" open>
+                                    <summary>
+                                        Columns
+                                    </summary>
+                                    <e-dropzone data-class="input-dropzone" data-input-dropzone-name="name" allowedtypes="*" multiple></e-dropzone><br/>
+                                </details>
                             </fieldset>
-                            <fieldset id="median_imputer" class="indented">
-                                <label>Median</label><input class="indented" name="median" type="number" value="1" min="0" max="100"></input><br/>
+                            <fieldset id="median_imputer">
+                                <details class="indented" open>
+                                    <summary>
+                                        Median
+                                    </summary>
+                                    <input name="median" type="number" value="1" min="0" max="100"></input>
+                                </details>
                             </fieldset>
                         </details>
                     </form>
@@ -104,7 +116,9 @@ const body = /*template*/`
                     <button id="download-btn">Download</button>
                 </e-tab-panel>
             </div>
-        </div>
+        </main>
+        <footer class="flex-cols flex-none padded">
+        </footer>
     </div>
 `;
 
@@ -121,6 +135,14 @@ export async function mockup() {
     // columns.forEach((col) => {
 
     // });
+
+    console.log(HTMLDraggableInputTemplate({
+        id:"draggableD",
+        type:"column",
+        ref:"D2D",
+        name:"D2D",
+        value:"Column_D2D"
+    }));
 
     let downloadBtn = document.getElementById("download-btn");
     if (downloadBtn) {

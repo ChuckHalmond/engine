@@ -55,9 +55,44 @@ body {
     margin-left: 12px;
 }
 
-/*
+#root {
+    height: 100%;
+}
+
+summary {
+    position: relative;
+    list-style: none;
+    padding-left: 20px;
+    user-select: none;
+}
+
+summary:hover {
+    background-color: gainsboro;
+}
+
+summary::before {
+    position: absolute;
+    top: 0; left: 0;
+    content: "►";
+    display: inline-block;
+}
+
+details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+details.indented > summary {
+    margin-left: -20px;
+}
+
+details.indented {
+    margin-left: 20px;
+}
+
 fieldset {
     border: none;
+    padding: 0;
+    margin: 0;
 }
 
 e-draggable {
@@ -110,4 +145,20 @@ e-dropzone {
 e-dropzone:focus,
 e-dropzone[draggedover] {
     border: 2px solid black;
-}*/
+}
+
+
+e-dropzone::part(placeholder)::after {
+    content: "Drag a column here..";
+    font-size: 0.9em;
+    display: inline-block;
+}
+
+e-dropzone::part(clear)::after {
+    display: inline-block;
+    content: "[x]";
+}
+
+e-dropzone::part(clear):hover {
+    font-weight: bold;
+}

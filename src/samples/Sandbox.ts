@@ -1,99 +1,7 @@
+import { AttributeMutationMixin, BaseAttributeMutationMixin, createMutationObserverCallback, isTagElement } from "engine/editor/elements/HTMLElement";
 import { HTMLEDropzoneElement, isHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
-import { forAllHierarchyElements } from "engine/editor/elements/Snippets";
 import { mockup } from "./scenes/Mockup";
 import { start } from "./scenes/SimpleScene";
-
-function isElement(obj: any): obj is Element {
-  return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
-}
-
-function isTagElement<K extends keyof HTMLElementTagNameMap>(tagName: K, obj: any): obj is HTMLElementTagNameMap[K] {
-  return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() == tagName;
-}
-
-const createMutationCallback = (
-  mixins: AttributeMutationMixin[]
-  ) => {
-  return (mutationsList: MutationRecord[]) =>  {
-    mutationsList.forEach((mutation: MutationRecord) => {
-      mutation.addedNodes.forEach((node: Node) => {
-        if (isElement(node)) {
-          let element = node;
-          forAllHierarchyElements(element, (childElement: Element) => {
-            [...childElement.attributes].forEach((attr) => {
-              let matchingMixins = mixins.filter(
-                mixin => match(
-                  mixin.attributeType, mixin.attributeName, mixin.attributeValue,
-                  attr.name, attr.value
-                )
-              );
-              matchingMixins.forEach((mixin) => {
-                mixin.attach(childElement);
-              });
-            });
-          });
-        }
-      });
-      const target = mutation.target;
-      if (isElement(target)) {
-        let attrName = mutation.attributeName;
-        if (attrName) {
-          let relatedMixins = mixins.filter(mixin => mixin.attributeName === attrName);
-          relatedMixins.forEach((mixin) => {
-            if (match(
-                mixin.attributeType, mixin.attributeName, mixin.attributeValue,
-                attrName!, target.getAttribute(attrName!)
-              )) {
-              mixin.attach(target);
-            }
-            else {
-              mixin.detach(target);
-            }
-          });
-        }
-      }
-    });
-  }
-}
-
-interface AttributeMutationMixin {
-  readonly attributeName: string;
-  readonly attributeValue: string;
-  readonly attributeType: AttributeType;
-  attach(element: Element): void;
-  detach(element: Element): void;
-}
-
-type AttributeType = "string" | "boolean" | "listitem";
-
-function match(refAttributeType: AttributeType, refAttrName: string, refAttrValue: string, attrName: string, attrValue: string | null): boolean {
-  if (refAttrName == attrName) {
-    switch (refAttributeType) {
-      case "boolean":
-        return refAttrValue == "" && attrValue == "";
-      case "string":
-        return refAttrValue !== "" && (refAttrValue === attrValue);
-      case "listitem":
-        return (refAttrValue !== "" && attrValue !== null) && new RegExp(`${refAttrValue}\s*?`, "g").test(attrValue);
-    }
-  }
-  return false;
-}
-
-abstract class BaseAttributeMutationMixin implements AttributeMutationMixin {
-  readonly attributeName: string;
-  readonly attributeValue: string;
-  readonly attributeType: AttributeType;
-  
-  constructor(attributeName: string, attributeType: AttributeType = "boolean", attributeValue: string = "") {
-    this.attributeName = attributeName;
-    this.attributeType = attributeType;
-    this.attributeValue = attributeValue;
-  }
-
-  public abstract attach(element: Element): void;
-  public abstract detach(element: Element): void;
-}
 
 abstract class DataClassMixin extends BaseAttributeMutationMixin {
   constructor(attributeValue: string) {
@@ -198,14 +106,14 @@ class TogglerSelectDataClassMixin extends DataClassMixin {
   }
 }
 
-const attributeMutationMixins = [
+const attributeMutationMixins: AttributeMutationMixin[] = [
   new TestDataClassMixin(),
   new InputDropzoneDataClassMixin(),
   new TogglerSelectDataClassMixin()
 ];
 
 const mainObserver = new MutationObserver(
-  createMutationCallback(attributeMutationMixins)
+  createMutationObserverCallback(attributeMutationMixins)
 );
 
 mainObserver.observe(document.body, {

@@ -88,14 +88,6 @@ e-dropzone[draggedover] {
     border: 2px solid black;
 }
 
-input.ref {
-    display: inline-block;
-    width: auto;
-}
-
-e-jsonarray::part(size) {
-    
-}
 
 /*
 e-menuitem::part(visual) {
