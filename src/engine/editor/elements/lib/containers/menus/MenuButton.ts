@@ -3,9 +3,20 @@ import { HTMLEMenuElement, isHTMLEMenuElement } from "./Menu";
 
 export { HTMLEMenuButtonElement };
 export { isHTMLEMenuButtonElement };
+export { BaseHTMLEMenuButtonElement };
 
 function isHTMLEMenuButtonElement(elem: Element): elem is HTMLEMenuButtonElement {
     return elem.tagName.toLowerCase() === "e-menubutton";
+}
+
+interface HTMLEMenuButtonElement extends HTMLElement {
+    name: string;
+    label: string;
+    disabled: boolean;
+    icon: string;
+    active: boolean;
+    childMenu: HTMLEMenuElement | null;
+    trigger(): void
 }
 
 @RegisterCustomHTMLElement({
@@ -20,7 +31,7 @@ function isHTMLEMenuButtonElement(elem: Element): elem is HTMLEMenuButtonElement
     {name: "type", type: "string"},
     {name: "disabled", type: "boolean"},
 ])
-class HTMLEMenuButtonElement extends HTMLElement {
+class BaseHTMLEMenuButtonElement extends HTMLElement implements HTMLEMenuButtonElement {
 
     public name!: string;
     public label!: string;
@@ -181,7 +192,7 @@ class HTMLEMenuButtonElement extends HTMLElement {
         }, {capture: true});
     }
 
-    public trigger() {
+    public trigger(): void {
         if (!this.active) {
             this.active = true;
             if (this.childMenu) {

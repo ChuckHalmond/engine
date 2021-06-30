@@ -10,21 +10,21 @@ type HTMLEMenubarTemplateDescription = Partial<Pick<HTMLEMenuBarElement, 'id' | 
 }
 
 interface HTMLEMenubarTemplate {
-    (args: HTMLEMenubarTemplateDescription): HTMLEMenuBarElement;
+    (desc: HTMLEMenubarTemplateDescription): HTMLEMenuBarElement;
 }
 
-const HTMLEMenubarTemplate: HTMLEMenubarTemplate = (args: HTMLEMenubarTemplateDescription) => {
+const HTMLEMenubarTemplate: HTMLEMenubarTemplate = (desc: HTMLEMenubarTemplateDescription) => {
     
-    const items = args.items.map((itemArgs) => {
-        return HTMLEMenuItemTemplate(itemArgs);
+    const items = desc.items.map((itemDesc) => {
+        return HTMLEMenuItemTemplate(itemDesc);
     });
 
-    return HTMLElementTemplate(
+    return HTMLElementTemplate<HTMLEMenuBarElement>(
         'e-menubar', {
             props: {
-                id: args.id,
-                className: args.className,
-                tabIndex: args.tabIndex
+                id: desc.id,
+                className: desc.className,
+                tabIndex: desc.tabIndex
             },
             children: items
         }

@@ -1,24 +1,15 @@
-import { HTMLEMenuElement } from "./lib/containers/menus/Menu";
-import { HTMLEMenuBarElement } from "./lib/containers/menus/MenuBar";
-import { HTMLEMenuItemElement } from "./lib/containers/menus/MenuItem";
-import { HTMLEMenuItemGroupElement } from "./lib/containers/menus/MenuItemGroup";
-
 export { RegisterCustomHTMLElement };
 export { GenerateAttributeAccessors };
 export { bindShadowRoot };
-export { HTMLElementProperties };
-export { HTMLElementAttributes };
 export { HTMLElementDescription };
 export { HTMLElementTemplate };
-export { setHTMLElementAttributes };
-export { setHTMLElementProperties };
-export { CustomOrBultinHTMLElementTagNameMap };
+export { setElementAttributes };
+export { setElementProperties };
 
 interface RegisterCustomHTMLElementDecorator {
     (args: {
         name: string;
         observedAttributes?: string[],
-        shadowRootContent?: string,
         options?: ElementDefinitionOptions
     }): <C extends CustomElementConstructor>(elementCtor: C) => C;
 }
@@ -27,7 +18,6 @@ const RegisterCustomHTMLElement: RegisterCustomHTMLElementDecorator = function(a
     name: string;
     attributes?: string[],
     observedAttributes?: string[],
-    shadowRootContent?: string,
     options?: ElementDefinitionOptions
 }) {
     return <C extends CustomElementConstructor>(
@@ -141,25 +131,23 @@ function bindShadowRoot(element: HTMLElement, templateContent?: string): ShadowR
     return root;
 }
 
-type HTMLElementProperties<T extends HTMLElement> = Partial<Pick<T, keyof T>>;
-
-function setHTMLElementProperties<E extends HTMLElement>(
-    elem: E,
+function setElementProperties<E extends Element>(
+    element: E,
     props: Partial<Pick<E, keyof E>>
 ): E {
 
-    const elemProps = elem as {[prop: string]: any};
+    const elementProps = element as {[prop: string]: any};
     for (const prop in props) {
-        if (typeof elemProps[prop] === typeof props[prop] || typeof elemProps[prop] === "undefined" || elemProps[prop] === null) {
-            elemProps[prop] = props[prop];
+        if (typeof elementProps[prop] === typeof props[prop] || typeof elementProps[prop] === "undefined" || elementProps[prop] === null) {
+            elementProps[prop] = props[prop];
         }
     }
 
-    return elem;
+    return element;
 }
 
-function setHTMLElementAttributes<E extends HTMLElement>(
-    elem: E,
+function setElementAttributes<E extends Element>(
+    element: E,
     attr: {
         [name: string]: number | string | boolean | undefined;
     },
@@ -169,80 +157,84 @@ function setHTMLElementAttributes<E extends HTMLElement>(
     keys.forEach((key) => {
         const val = attr[key];
         if (val) {
-            elem.setAttribute(key, val.toString());
+            element.setAttribute(key, val.toString());
         }
     });
 
-    return elem;
+    return element;
 }
 
-interface HTMLElementAttributes {
-    [name: string]: number | string | boolean | undefined;
-}
-
-type HTMLEElementTagNameMap = {
-    "e-menuitem": HTMLEMenuItemElement,
-    "e-menu": HTMLEMenuElement,
-    "e-menuitemgroup": HTMLEMenuItemGroupElement,
-    "e-menubar": HTMLEMenuBarElement
-};
-
-type CustomOrBultinHTMLElementTagNameMap = HTMLEElementTagNameMap & HTMLElementTagNameMap;
-
-interface HTMLElementTemplate {
-    <K extends keyof CustomOrBultinHTMLElementTagNameMap>(
+type HTMLElementDescription<K extends string = any> = (K extends keyof HTMLElementTagNameMap ? {
     tagName: K,
-    args?: {
+    desc?: {
         options?: ElementCreationOptions,
-        props?: Partial<Pick<CustomOrBultinHTMLElementTagNameMap[K], keyof CustomOrBultinHTMLElementTagNameMap[K]>>;
-        attr?: HTMLElementAttributes,
+        props?: Partial<Pick<HTMLElementTagNameMap[K], keyof HTMLElementTagNameMap[K]>>,
+        attr?: {[attrName: string]: number | string | boolean | undefined},
         children?: (HTMLElementDescription<keyof HTMLElementTagNameMap> | Node | string)[]
-    }): CustomOrBultinHTMLElementTagNameMap[K];
-}
+    }
+} : {
+    tagName: string,
+    desc?: {
+        options?: ElementCreationOptions,
+        props?: Partial<Pick<HTMLElement, keyof HTMLElement>>,
+        attr?: {[attrName: string]: number | string | boolean | undefined},
+        children?: (HTMLElementDescription<keyof HTMLElementTagNameMap> | Node | string)[]
+    }
+});
 
-type HTMLElementDescription<K> = K extends keyof HTMLElementTagNameMap ? {
-    tagName: K
-    options?: ElementCreationOptions,
-    props?: Partial<Pick<CustomOrBultinHTMLElementTagNameMap[K], keyof CustomOrBultinHTMLElementTagNameMap[K]>>,
-    attr?: HTMLElementAttributes,
-    children?: (HTMLElementDescription<keyof HTMLElementTagNameMap> | Node | string)[]
-} : never;
-
-const HTMLElementTemplate: HTMLElementTemplate = function<K extends keyof CustomOrBultinHTMLElementTagNameMap>(
+function HTMLElementTemplate<K extends keyof HTMLElementTagNameMap>(
     tagName: K,
-    args?: {
+    desc?: {
         options?: ElementCreationOptions,
-        props?: Partial<Pick<CustomOrBultinHTMLElementTagNameMap[K], keyof CustomOrBultinHTMLElementTagNameMap[K]>>,
-        attr?: HTMLElementAttributes,
-        children?: (HTMLElementDescription<keyof HTMLElementTagNameMap> | Node | string)[]
-    }): CustomOrBultinHTMLElementTagNameMap[K] {
+        props?: Partial<Pick<HTMLElementTagNameMap[K], keyof HTMLElementTagNameMap[K]>>,
+        attr?: {[attrName: string]: number | string | boolean | undefined},
+        children?: (HTMLElementDescription | Node | string)[]
+    }): HTMLElementTagNameMap[K];
+function HTMLElementTemplate<T extends HTMLElement>(
+    tagName: string,
+    desc?: {
+        options?: ElementCreationOptions,
+        props?: Partial<Pick<T, keyof T>>,
+        attr?: {[attrName: string]: number | string | boolean | undefined},
+        children?: (HTMLElementDescription | Node | string)[]
+    }): T;
+function HTMLElementTemplate(
+    tagName: string,
+    desc?: {
+        options?: ElementCreationOptions,
+        props?: Partial<Pick<HTMLElement, keyof HTMLElement>>,
+        attr?: {[attrName: string]: number | string | boolean | undefined},
+        children?: (HTMLElementDescription | Node | string)[]
+    }): HTMLElement {
     
-    const elem = document.createElement(tagName, args?.options) as CustomOrBultinHTMLElementTagNameMap[K];
-    if (args) {
-        if (args.props) {
-            setHTMLElementProperties(elem, args.props);
+    const element = document.createElement(tagName, desc?.options);
+    if (desc) {
+        if (desc.props) {
+            setElementProperties(element, desc.props);
         }
-        if (args.attr) {
-            setHTMLElementAttributes(elem, args.attr);
+        if (desc.attr) {
+            setElementAttributes(element, desc.attr);
         }
-        if (args.children && Array.isArray(args.children)) {
-            args.children.forEach((child) => {
+        if (desc.children && Array.isArray(desc.children)) {
+            desc.children.forEach((child) => {
                 if (typeof child === "string" || child instanceof Node) {
-                    elem.append(child);
+                    element.append(child);
                 }
                 else {
-                    elem.append(
-                        HTMLElementTemplate(
-                            child.tagName, {
-                                options: child.options,
-                                attr: child.attr,
-                                children: child.children
-                            }
-                        )
-                    );
+                    if (child.desc) {
+                        element.append(
+                            HTMLElementTemplate(
+                                child.tagName, {
+                                    options: child.desc.options,
+                                    attr: child.desc.attr,
+                                    children: child.desc.children
+                                }
+                            )
+                        );
+                    }
                 }
             })
         }
     }
-    return elem;
-}
+    return element;
+};

@@ -5,13 +5,34 @@ import { isHTMLEMenuElement, HTMLEMenuElement } from "engine/editor/elements/lib
 import { HTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
 import { HTMLEMenuItemGroupElement } from "./MenuItemGroup";
 
-export { HTMLEMenuItemElement };
 export { isHTMLEMenuItemElement };
+export { HTMLEMenuItemElement };
+export { BaseHTMLEMenuItemElement };
 
-type EMenuItemElementType = "button" | "radio" | "checkbox" | "menu";
+type EMenuItemElementType = "button" | "radio" | "checkbox" | "menu" | "submenu";
 
-function isHTMLEMenuItemElement(elem: any): elem is HTMLEMenuItemElement {
-    return  elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-menuitem";
+function isHTMLEMenuItemElement(obj: any): obj is HTMLEMenuItemElement {
+    return  obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-menuitem";
+}
+
+interface HTMLEMenuItemElement extends HTMLElement {
+    name: string;
+    label: string;
+    type: EMenuItemElementType;
+    disabled: boolean;
+    checked: boolean;
+    value: string;
+    icon: string;
+
+    group: HTMLEMenuItemGroupElement | null;
+    parentMenu: HTMLEMenuElement | HTMLEMenuBarElement | null;
+    childMenu: HTMLEMenuElement | null;
+
+    hotkey: HotKey | null;
+    command: string | null;
+    commandArgs: any;
+
+    trigger(): void;
 }
 
 @RegisterCustomHTMLElement({
@@ -27,7 +48,7 @@ function isHTMLEMenuItemElement(elem: any): elem is HTMLEMenuItemElement {
     {name: "checked", type: "boolean"},
     {name: "value", type: "string"},
 ])
-class HTMLEMenuItemElement extends HTMLElement {
+class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemElement {
 
     public name!: string;
     public label!: string;
@@ -59,48 +80,65 @@ class HTMLEMenuItemElement extends HTMLElement {
                     user-select: none;
                     white-space: nowrap;
 
-                    padding: 3px 6px;
-                    background-color: white;
+                    padding: 2px 6px;
                     cursor: pointer;
                 }
-                
+
                 :host(:focus) {
                     outline: none;
                 }
-                
+
                 :host(:focus-within) {
                     color: white;
-                    background-color: rgb(92, 92, 92);
+                    background-color: dimgray;
+                }
+                                
+                :host([type="menu"]:focus-within) {
+                    color: black;
+                    background-color: gainsboro;
+                }
+
+                :host([type="menu"]:focus-within) [part~="arrow"] {
+                    color: dimgray;
                 }
                 
-                :host(:hover) [part~="visual"],
                 :host(:focus-within) [part~="visual"] {
-                    color: inherit;
+                    color: gainsboro;
                 }
 
                 :host([disabled]) {
-                    color: rgb(180, 180, 180);
+                    color: lightgray;
                 }
 
-                :host(:focus-within[disabled]) {
-                    background-color: rgb(220, 220, 220);
-                }
-
+                :host([type="submenu"]) ::slotted([slot="menu"]),
                 :host([type="menu"]) ::slotted([slot="menu"]) {
                     z-index: 1;
                     position: absolute;
                     color: initial;
-                    
+                }
+
+                :host([type="menu"]) ::slotted([slot="menu"]) {
+                    top: 100%;
+                    left: 0;
+                }
+
+                :host([type="submenu"]) ::slotted([slot="menu"]) {
                     left: 100%;
                     top: -6px;
                 }
-
-                :host([type="menu"]) ::slotted([slot="menu"][overflowing]) {
+                
+                :host([type="submenu"]) ::slotted([slot="menu"][overflowing]) {
                     right: 100%;
                     left: auto;
                 }
+                
+                :host([type="menu"]) ::slotted([slot="menu"][overflowing]) {
+                    right: 0;
+                    left: auto;
+                }
 
-                :host([type="menu"]) ::slotted([slot="menu"]:not([expanded])) {
+                :host([type="menu"]) ::slotted([slot="menu"]:not([expanded])),
+                :host([type="submenu"]) ::slotted([slot="menu"]:not([expanded])) {
                     opacity: 0;
                     pointer-events: none !important;
                 }
@@ -151,7 +189,7 @@ class HTMLEMenuItemElement extends HTMLElement {
                 }
 
                 [part~="visual"] {
-                    color: rgb(92, 92, 92);
+                    color: dimgray;
                     font-size: 1.6em;
                     line-height: 0.625;
                 }
@@ -169,7 +207,7 @@ class HTMLEMenuItemElement extends HTMLElement {
                     display: none;
                 }
 
-                :host(:not([type="menu"])) [part~="arrow"] {
+                :host(:not([type="submenu"])) [part~="arrow"] {
                     display: none !important;
                 }
                 
@@ -189,8 +227,8 @@ class HTMLEMenuItemElement extends HTMLElement {
                     content: "○";
                 }
 
-                :host([type="menu"]) [part~="arrow"]::after {
-                    content: "»";
+                :host([type="submenu"]) [part~="arrow"]::after {
+                    content: "›";
                 }
             </style>
             <li part="li">
@@ -305,7 +343,7 @@ class HTMLEMenuItemElement extends HTMLElement {
         }
     }
 
-    public trigger() {
+    public trigger(): void {
         if (!this.disabled) {
             switch (this.type) {
                 case "button":

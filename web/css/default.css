@@ -1,3 +1,8 @@
+@font-face {	
+	font-family: 'Roboto';
+	src: url('../assets/editor/fonts/Roboto_Mono/RobotoMono-VariableFont_wght.ttf') format('truetype');
+}
+
 * {
     box-sizing: border-box;
 }
@@ -14,7 +19,7 @@ html, body {
 }
 
 body {
-    font-family: 'Roboto';
+    font-family: "Roboto";
     font-size: 16px;
     padding: 4px;
     overflow: hidden;
@@ -37,37 +42,6 @@ input[type='radio'] {
     width: 1em;
     height: 1em;
 }
-
-/*
-tbody {
-    background-color: #e4f0f5;
-}
-
-thead,
-tfoot {
-    background-color: #3f87a6;
-}
-  
-td, th {
-    border: 1px solid #ddd;
-    padding: 4px;
-}
-  
-tr:nth-child(even){
-    background-color: #f2f2f2;
-}
-  
-tr:hover {
-      background-color: #ddd;
-}
-  
-th {
-    padding-top: 4px;
-    padding-bottom: 4px;
-    text-align: left;
-    background-color: grey;
-    color: white;
-}*/
 
 td,
 th {

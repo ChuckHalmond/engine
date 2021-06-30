@@ -1,11 +1,21 @@
 import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { TabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
+import { HTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
 
-export { TabElement };
-export { isTabElement };
+export { isHTMLETabElement };
+export { HTMLETabElement };
+export { BaseHTMLETabElement };
 
-function isTabElement(elem: Element): elem is TabElement {
-    return elem.tagName === "E-TAB";
+function isHTMLETabElement(obj: any): obj is HTMLETabElement {
+    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-tab";
+}
+
+interface HTMLETabElement extends HTMLElement {
+    name: string;
+    active: boolean;
+    controls: string;
+    panel: HTMLETabPanelElement | null;
+    show(): void;
+    hide(): void;
 }
 
 @RegisterCustomHTMLElement({
@@ -17,26 +27,25 @@ function isTabElement(elem: Element): elem is TabElement {
     {name: "active", type: "boolean"},
     {name: "controls", type: "string"},
 ])
-class TabElement extends HTMLElement {
+class BaseHTMLETabElement extends HTMLElement implements HTMLETabElement {
 
     public name!: string;
     public active!: boolean;
     public controls!: string;
 
-    public panel: TabPanelElement | null;
+    public panel: HTMLETabPanelElement | null;
 
     constructor() {
         super();
 
-
         bindShadowRoot(this, /*template*/`
             <style>
                 :host {
-                    display: inline-block;
+                    display: block;
                     user-select: none;
                     white-space: nowrap;
                     padding: 2px 6px;
-                    border-bottom: 4px solid transparent;
+                    border-left: 4px solid transparent;
                     cursor: pointer;
                 }
 
@@ -45,12 +54,13 @@ class TabElement extends HTMLElement {
                 }
 
                 :host(:hover:not([active])) {
-                    border-bottom: 4px solid lightgrey;
+                    font-weight: bold;
+                    border-left: 4px solid lightgrey;
                 }
 
                 :host([active]) {
                     font-weight: bold;
-                    border-bottom: 4px solid rgb(92, 92, 92);
+                    border-left: 4px solid dimgray;
                 }
             </style>
             <slot></slot>
@@ -59,48 +69,38 @@ class TabElement extends HTMLElement {
         this.panel = null;
     }
 
-    public connectedCallback() {
-
+    public connectedCallback(): void {
         this.tabIndex = this.tabIndex;
-        
-        this.panel = document.getElementById(this.controls) as TabPanelElement | null;
-        if (this.panel) {
-            this.panel.addEventListener("connected", () => {
-                if (this.active) {
-                    this.show();
-                }
-                else {
-                    this.hide();
-                }
+        this.panel = document.querySelector<HTMLETabPanelElement>(`#${this.controls}`);
+
+        if (this.panel !== null) {
+            this.panel.addEventListener("connected", (event) => {
+                let panel = event.target as HTMLETabPanelElement;
+                panel.hidden = !this.active;
             }, {once: true});
         }
     }
-
-    public show() {
-        this.active = true;
-    }
-
-    public hide() {
-        this.active = false;
-    }
-
+    
     public attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
         switch (name) {
             case "controls":
                 if (oldValue !== newValue) {
-                    this.panel = document.getElementById(newValue) as TabPanelElement | null;
+                    this.panel = document.querySelector<HTMLETabPanelElement>(`#${newValue}`);
                 }
                 break;
             case "active":
                 if (this.panel) {
-                    if (this.active) {
-                        this.panel.show();
-                    }
-                    else {
-                        this.panel.hide();
-                    }
+                    this.panel.hidden = !this.active;
                 }
                 break;
         }
+    }
+
+    public show(): void {
+        this.active = true;
+    }
+
+    public hide(): void {
+        this.active = false;
     }
 }

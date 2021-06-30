@@ -5,9 +5,29 @@ import { HTMLEMenuElement } from "./Menu";
 
 export { isHTMLEMenuItemGroupElement };
 export { HTMLEMenuItemGroupElement };
+export { BaseHTMLEMenuItemGroupElement };
 
 function isHTMLEMenuItemGroupElement(elem: any): elem is HTMLEMenuItemGroupElement {
     return  elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-menuitemgroup";
+}
+
+interface HTMLEMenuItemGroupElement extends HTMLElement {
+    name: string;
+    label: string;
+    type: "list" | "grid";
+    rows: number;
+    cells: number;
+
+    parentMenu: HTMLEMenuElement | null;
+    items: HTMLEMenuItemElement[];
+
+    readonly activeIndex: number;
+    readonly activeItem: HTMLEMenuItemElement | null;
+    
+    focusItemAt(index: number, childMenu?: boolean): void;
+    reset(): void;
+    focusItem(predicate: (item: HTMLEMenuItemElement) => boolean, subitems?: boolean): void;
+    findItem(predicate: (item: HTMLEMenuItemElement) => boolean, subitems?: boolean): HTMLEMenuItemElement | null;
 }
 
 @RegisterCustomHTMLElement({
@@ -21,8 +41,7 @@ function isHTMLEMenuItemGroupElement(elem: any): elem is HTMLEMenuItemGroupEleme
     {name: "rows", type: "number"},
     {name: "cells", type: "number"},
 ])
-class HTMLEMenuItemGroupElement extends HTMLElement {
-
+class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItemGroupElement {
     public name!: string;
     public label!: string;
     public type!: "list" | "grid";
@@ -32,7 +51,7 @@ class HTMLEMenuItemGroupElement extends HTMLElement {
     public parentMenu: HTMLEMenuElement | null;
     public items: HTMLEMenuItemElement[];
 
-    public activeIndex: number;
+    private _activeIndex: number;
 
     constructor() {
         super();
@@ -93,9 +112,13 @@ class HTMLEMenuItemGroupElement extends HTMLElement {
             </div>
         `);
 
-        this.activeIndex = -1;
+        this._activeIndex = -1;
         this.parentMenu = null;
         this.items = [];
+    }
+
+    public get activeIndex(): number {
+        return this._activeIndex;
     }
 
     public get activeItem(): HTMLEMenuItemElement | null {
@@ -151,7 +174,7 @@ class HTMLEMenuItemGroupElement extends HTMLElement {
 
         this.addEventListener("focusin", (event: FocusEvent) => {
             let target = event.target as any;
-            this.activeIndex = this.items.findIndex(
+            this._activeIndex = this.items.findIndex(
                 (item) => item.contains(target)
             );
         });
@@ -239,7 +262,7 @@ class HTMLEMenuItemGroupElement extends HTMLElement {
     public focusItemAt(index: number, childMenu?: boolean): void {
         let item = this.items[index];
         if (item) {
-            this.activeIndex = index;
+            this._activeIndex = index;
             item.focus();
             if (childMenu && item.childMenu) {
                 item.childMenu.focus();
@@ -247,9 +270,9 @@ class HTMLEMenuItemGroupElement extends HTMLElement {
         }
     }
 
-    public reset() {
+    public reset(): void {
         let item = this.activeItem;
-        this.activeIndex = -1;
+        this._activeIndex = -1;
         if (item?.childMenu) {
             item.childMenu.reset();
         }

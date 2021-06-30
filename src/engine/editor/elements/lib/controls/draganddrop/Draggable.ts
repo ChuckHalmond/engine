@@ -2,9 +2,19 @@ import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors }
 
 export { isHTMLEDraggableElement };
 export { HTMLEDraggableElement };
+export { BaseHTMLEDraggableElement };
 
 function isHTMLEDraggableElement(obj: any): obj is HTMLEDraggableElement {
     return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-draggable";
+}
+
+interface HTMLEDraggableElement extends HTMLElement {
+    selected: boolean;
+    dragged: boolean;
+    ref: string;
+    type: string;
+    droppreview: boolean;
+    data: any;
 }
 
 @RegisterCustomHTMLElement({
@@ -18,14 +28,13 @@ function isHTMLEDraggableElement(obj: any): obj is HTMLEDraggableElement {
     {name: "droppreview", type: "boolean"},
     {name: "type", type: "string"}
 ])
-class HTMLEDraggableElement extends HTMLElement {
+class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableElement {
     
     public selected!: boolean;
     public dragged!: boolean;
-    
+
     public ref!: string;
     public type!: string;
-
     public droppreview!: boolean;
 
     public data: any;
@@ -37,6 +46,12 @@ class HTMLEDraggableElement extends HTMLElement {
             <style>
                 :host {
                     display: inline-block;
+                    cursor: pointer;
+                }
+
+                :host(:hover) {
+                    display: inline-block;
+                    cursor: pointer;
                 }
 
                 slot {

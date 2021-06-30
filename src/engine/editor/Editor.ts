@@ -1,9 +1,9 @@
 import { HotKey } from "engine/core/input/Input";
-import { HTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
 import { Command, isUndoCommand } from "engine/libs/patterns/commands/Command";
 import { EventDispatcher } from "engine/libs/patterns/messaging/events/EventDispatcher";
 import { ResourceFetcher } from "engine/resources/ResourceFetcher";
 import { Resources } from "engine/resources/Resources";
+import { HTMLEMenuBarElement } from "./elements/lib/containers/menus/MenuBar";
 import { HTMLEStatusBarElement } from "./elements/lib/containers/status/StatusBar";
 import { getPropertyFromPath, setPropertyFromPath } from "./elements/Snippets";
 import { HTMLEMenubarTemplate, HTMLEMenubarTemplateDescription } from "./templates/menus/MenubarTemplate";

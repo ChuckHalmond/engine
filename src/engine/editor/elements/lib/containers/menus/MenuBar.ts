@@ -1,12 +1,24 @@
 import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
 import { isHTMLEMenuItemElement, HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
-import { isHTMLEMenuElement } from "./Menu";
 
-export { HTMLEMenuBarElement };
 export { isHTMLEMenuBarElement };
+export { HTMLEMenuBarElement };
+export { BaseHTMLEMenuBarElement };
 
 function isHTMLEMenuBarElement(elem: any): elem is HTMLEMenuBarElement {
     return  elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-menubar";
+}
+
+interface HTMLEMenuBarElement extends HTMLElement {
+    name: string;
+    active: boolean;
+    items: HTMLEMenuItemElement[];
+    readonly activeIndex: number;
+    readonly activeItem: HTMLEMenuItemElement | null;
+    focusItemAt(index: number, childMenu?: boolean): void;
+    focusItem(predicate: (item: HTMLEMenuItemElement) => boolean, subtree?: boolean): void;
+    reset(): void;
+    findItem(predicate: (item: HTMLEMenuItemElement) => boolean, subtree?: boolean): HTMLEMenuItemElement | null;
 }
 
 @RegisterCustomHTMLElement({
@@ -16,13 +28,14 @@ function isHTMLEMenuBarElement(elem: any): elem is HTMLEMenuBarElement {
     {name: "name", type: "string"},
     {name: "active", type: "boolean"},
 ])
-class HTMLEMenuBarElement extends HTMLElement {
+class BaseHTMLEMenuBarElement extends HTMLElement implements HTMLEMenuBarElement {
 
     public name!: string;
     public active!: boolean;
     
     public items: HTMLEMenuItemElement[];
-    public activeIndex: number;
+
+    private _activeIndex: number;
 
     constructor() {
         super();
@@ -43,8 +56,8 @@ class HTMLEMenuBarElement extends HTMLElement {
 
                 :host(:focus) ::slotted(:first-child),
                 :host(:not(:focus-within)) ::slotted(:hover) {
-                    background-color: rgb(92, 92, 92);
-                    color: white;
+                    color: black;
+                    background-color: gainsboro;
                 }
 
                 [part~="ul"] {
@@ -59,7 +72,11 @@ class HTMLEMenuBarElement extends HTMLElement {
         `);
 
         this.items = [];
-        this.activeIndex = -1;
+        this._activeIndex = -1;
+    }
+
+    public get activeIndex(): number {
+        return this._activeIndex;
     }
 
     public get activeItem(): HTMLEMenuItemElement | null {
@@ -89,7 +106,7 @@ class HTMLEMenuBarElement extends HTMLElement {
                         this.focusItemAt(targetIndex, true);
                     }
                     else {
-                        this.activeIndex = targetIndex;
+                        this._activeIndex = targetIndex;
                     }
                 }
             }
@@ -144,14 +161,14 @@ class HTMLEMenuBarElement extends HTMLElement {
         });
 
         this.addEventListener("focus", () => {
-            this.activeIndex = 0;
+            this._activeIndex = 0;
         });
     }
 
     public focusItemAt(index: number, childMenu?: boolean): void {
         let item = this.items[index];
         if (item) {
-            this.activeIndex = index;
+            this._activeIndex = index;
             item.focus();
             if (childMenu && item.childMenu) {
                 item.childMenu.focus();
@@ -166,9 +183,9 @@ class HTMLEMenuBarElement extends HTMLElement {
         }
     }
 
-    public reset() {
+    public reset(): void {
         let item = this.activeItem;
-        this.activeIndex = -1;
+        this._activeIndex = -1;
         if (item?.childMenu) {
             item.childMenu.reset();
         }

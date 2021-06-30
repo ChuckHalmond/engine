@@ -72,7 +72,7 @@ const HTMLTableTemplate: HTMLTableTemplate = (desc: HTMLTableTemplateDescription
                                     );
                                 case 'header':
                                     return HTMLElementTemplate(
-                                        'th', {
+                                        "th", {
                                             props: {
                                                 scope: 'row' 
                                             },

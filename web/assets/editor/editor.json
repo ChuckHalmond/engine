@@ -54,8 +54,8 @@
                     },
                     {
                         "name": "letters-menu",
-                        "label": "Letters...",
-                        "type": "menu",
+                        "label": "Letters",
+                        "type": "submenu",
                         "menu": {
                             "items": [
                                 {

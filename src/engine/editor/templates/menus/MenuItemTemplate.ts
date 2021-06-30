@@ -1,5 +1,5 @@
 import { HotKey, Key, KeyModifier } from "engine/core/input/Input";
-import { HTMLElementTemplate, setHTMLElementAttributes } from "engine/editor/elements/HTMLElement";
+import { HTMLElementTemplate, setElementAttributes } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { HTMLEMenuTemplate, HTMLEMenuTemplateDescription } from "./MenuTemplate";
 
@@ -27,14 +27,14 @@ interface HTMLEMenuItemTemplate {
     (args: HTMLEMenuItemTemplateDescription): HTMLEMenuItemElement;
 }
 
-const HTMLEMenuItemTemplate: HTMLEMenuItemTemplate = (args: HTMLEMenuItemTemplateDescription) => {
+const HTMLEMenuItemTemplate: HTMLEMenuItemTemplate = (desc: HTMLEMenuItemTemplateDescription) => {
     let slotted: (Node | string)[] = [];
 
-    if (args.menu) {
+    if (desc.menu) {
         slotted.push(
-            setHTMLElementAttributes(
+            setElementAttributes(
                 HTMLEMenuTemplate(
-                    args.menu
+                    desc.menu
                 ), {
                     slot: 'menu'
                 }
@@ -42,22 +42,22 @@ const HTMLEMenuItemTemplate: HTMLEMenuItemTemplate = (args: HTMLEMenuItemTemplat
         );
     }
 
-    const menuItem = HTMLElementTemplate(
+    const menuItem = HTMLElementTemplate<HTMLEMenuItemElement>(
         'e-menuitem', {
             props: {
-                id: args.id,
-                className: args.className,
-                name: args.name,
-                title: args.title,
-                type: args.type,
-                label: args.label,
-                disabled: args.disabled,
-                icon: args.icon,
-                value: args.value,
-                checked: args.checked,
-                command: args.command,
-                commandArgs: args.commandArgs,
-                hotkey: args.hotkey ? new HotKey(args.hotkey.key, args.hotkey.mod1, args.hotkey.mod2) : void 0
+                id: desc.id,
+                className: desc.className,
+                name: desc.name,
+                title: desc.title,
+                type: desc.type,
+                label: desc.label,
+                disabled: desc.disabled,
+                icon: desc.icon,
+                value: desc.value,
+                checked: desc.checked,
+                command: desc.command,
+                commandArgs: desc.commandArgs,
+                hotkey: desc.hotkey ? new HotKey(desc.hotkey.key, desc.hotkey.mod1, desc.hotkey.mod2) : void 0
             },
             children: [
                 ...slotted

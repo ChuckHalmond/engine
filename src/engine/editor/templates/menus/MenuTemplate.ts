@@ -14,23 +14,23 @@ interface HTMLEMenuTemplate {
     (desc: HTMLEMenuTemplateDescription): HTMLEMenuElement;
 }
 
-const HTMLEMenuTemplate: HTMLEMenuTemplate = (args: HTMLEMenuTemplateDescription) => {
+const HTMLEMenuTemplate: HTMLEMenuTemplate = (desc: HTMLEMenuTemplateDescription) => {
     
-    const items = args.items.map((itemArgs) => {
-        if ("isGroup" in itemArgs) {
-            return HTMLEMenuItemGroupTemplate(itemArgs);
+    const items = desc.items.map((itemDesc) => {
+        if ("isGroup" in itemDesc) {
+            return HTMLEMenuItemGroupTemplate(itemDesc);
         }
         else {
-            return HTMLEMenuItemTemplate(itemArgs);
+            return HTMLEMenuItemTemplate(itemDesc);
         }
     });
 
-    return HTMLElementTemplate(
+    return HTMLElementTemplate<HTMLEMenuElement>(
         'e-menu', {
             props: {
-                id: args.id,
-                className: args.className,
-                name: args.name,
+                id: desc.id,
+                className: desc.className,
+                name: desc.name,
             },
             children: items
         }

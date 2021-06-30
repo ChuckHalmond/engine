@@ -5,9 +5,24 @@ import { HTMLEMenuItemGroupElement, isHTMLEMenuItemGroupElement } from "./MenuIt
 
 export { isHTMLEMenuElement };
 export { HTMLEMenuElement };
+export { BaseHTMLEMenuElement };
 
 function isHTMLEMenuElement(elem: any): elem is HTMLEMenuElement {
     return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-menu";
+}
+
+interface HTMLEMenuElement extends HTMLElement {
+    name: string;
+    expanded: boolean;
+    overflowing: boolean;
+    parentItem: HTMLEMenuItemElement | null;
+    items: (HTMLEMenuItemElement | HTMLEMenuItemGroupElement)[];
+    readonly activeIndex: number;
+    readonly activeItem: HTMLEMenuItemElement | HTMLEMenuItemGroupElement | null;
+    focusItemAt(index: number, childMenu?: boolean): void;
+    focusItem(predicate: (item: HTMLEMenuItemElement) => boolean, subitems?: boolean): void;
+    reset(): void;
+    findItem(predicate: (item: HTMLEMenuItemElement) => boolean, subitems?: boolean): HTMLEMenuItemElement | null;
 }
 
 @RegisterCustomHTMLElement({
@@ -19,7 +34,7 @@ function isHTMLEMenuElement(elem: any): elem is HTMLEMenuElement {
     {name: "expanded", type: "boolean"},
     {name: "overflowing", type: "boolean"}
 ])
-class HTMLEMenuElement extends HTMLElement {
+class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
 
     public name!: string;
     public expanded!: boolean;
@@ -28,7 +43,7 @@ class HTMLEMenuElement extends HTMLElement {
     public parentItem: HTMLEMenuItemElement | null;
     public items: (HTMLEMenuItemElement | HTMLEMenuItemGroupElement)[];
 
-    private activeIndex: number;
+    private _activeIndex: number;
 
     constructor() {
         super();
@@ -43,8 +58,12 @@ class HTMLEMenuElement extends HTMLElement {
                     padding: 6px 0;
                     background-color: white;
                     cursor: initial;
-                }
 
+                    -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+                    -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+                    box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+                }
+                
                 :host(:focus) {
                     outline: none;
                 }
@@ -71,7 +90,11 @@ class HTMLEMenuElement extends HTMLElement {
 
         this.parentItem = null;
         this.items = [];
-        this.activeIndex = -1;
+        this._activeIndex = -1;
+    }
+
+    public get activeIndex(): number {
+        return this._activeIndex;
     }
 
     public get activeItem(): HTMLEMenuItemElement | HTMLEMenuItemGroupElement | null {
@@ -116,7 +139,7 @@ class HTMLEMenuElement extends HTMLElement {
                     this.focusItemAt(targetIndex, true);
                 }
                 else {
-                    this.activeIndex = targetIndex;
+                    this._activeIndex = targetIndex;
                 }
             }
         });
@@ -135,7 +158,7 @@ class HTMLEMenuElement extends HTMLElement {
 
         this.addEventListener("focusin", (event: FocusEvent) => {
             let target = event.target as any;
-            this.activeIndex = this.items.findIndex(
+            this._activeIndex = this.items.findIndex(
                 (item) => item.contains(target)
             );
             this.expanded = true;
@@ -238,7 +261,7 @@ class HTMLEMenuElement extends HTMLElement {
     public focusItemAt(index: number, childMenu?: boolean): void {
         let item = this.items[index];
         if (item) {
-            this.activeIndex = index;
+            this._activeIndex = index;
             item.focus();
             if (isHTMLEMenuItemElement(item)) {
                 if (childMenu && item.childMenu) {
@@ -258,9 +281,9 @@ class HTMLEMenuElement extends HTMLElement {
         }
     }
 
-    public reset() {
+    public reset(): void {
         let item = this.activeItem;
-        this.activeIndex = -1;
+        this._activeIndex = -1;
         if (isHTMLEMenuItemElement(item) && item.childMenu) {
             item.childMenu.reset();
         }

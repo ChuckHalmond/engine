@@ -1,5 +1,4 @@
 import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { addFocusCallbacks } from "engine/editor/elements/Snippets";
 import { HTMLEStatusItemElement, isHTMLEStatusItemElement } from "./StatusItem";
 
 export { HTMLEStatusBarElement };
@@ -77,7 +76,6 @@ class HTMLEStatusBarElement extends HTMLElement {
 
         const focusOutCallback = function(this: HTMLEStatusBarElement, keydownControls: (this: HTMLElement, ev: KeyboardEvent) => void) {
             this.removeEventListener("keydown", keydownControls);
-            this.unselectItem();
             this.active = false;
         };
 
@@ -108,13 +106,6 @@ class HTMLEStatusBarElement extends HTMLElement {
             }
         };
 
-        addFocusCallbacks(
-            this, {
-                focusInCallback: focusInCallback.bind(this, keydownControls),
-                focusOutCallback: focusOutCallback.bind(this, keydownControls)
-            }
-        );
-
         this.addEventListener("focus", () => {
             this.selectItem(0);
         });
@@ -136,7 +127,6 @@ class HTMLEStatusBarElement extends HTMLElement {
             this.selectItem(this.items.indexOf(item));
         });
         item.addEventListener("mouseleave", () => {
-            this.unselectItem();
         });
     }
 
@@ -163,7 +153,6 @@ class HTMLEStatusBarElement extends HTMLElement {
             this.clearSelection();
             let item = this.items[index];
             if (item) {
-                item.select();
                 this._selectedItemIndex = index;
             }
         }

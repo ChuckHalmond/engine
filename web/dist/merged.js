@@ -5,6 +5,544 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+define("engine/editor/elements/HTMLElement", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.setElementProperties = exports.setElementAttributes = exports.HTMLElementTemplate = exports.bindShadowRoot = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = void 0;
+    const RegisterCustomHTMLElement = function (args) {
+        return (elementCtor) => {
+            const { name, observedAttributes, options } = args;
+            if (observedAttributes) {
+                Object.defineProperty(elementCtor.prototype.constructor, 'observedAttributes', {
+                    get: () => {
+                        return observedAttributes;
+                    }
+                });
+            }
+            customElements.define(name, elementCtor, options);
+            return elementCtor;
+        };
+    };
+    exports.RegisterCustomHTMLElement = RegisterCustomHTMLElement;
+    const GenerateAttributeAccessors = function (attributes) {
+        return (elementCtor) => {
+            attributes.forEach((attr) => {
+                const { name, type } = attr;
+                switch (type) {
+                    case "boolean":
+                        Object.defineProperty(elementCtor.prototype, name, {
+                            get: function () {
+                                const val = this.getAttribute(name);
+                                return (val === "" || false);
+                            },
+                            set: function (value) {
+                                if (value) {
+                                    this.setAttribute(name, "");
+                                }
+                                else {
+                                    this.removeAttribute(name);
+                                }
+                            }
+                        });
+                        break;
+                    case "json":
+                        Object.defineProperty(elementCtor.prototype, name, {
+                            get: function () {
+                                const val = this.getAttribute(name);
+                                return (val !== null) ? JSON.parse(val) : void 0;
+                            },
+                            set: function (value) {
+                                if (value !== null) {
+                                    this.setAttribute(name, JSON.stringify(value));
+                                }
+                                else {
+                                    this.removeAttribute(name);
+                                }
+                            }
+                        });
+                        break;
+                    case "number":
+                    case "string":
+                    default:
+                        Object.defineProperty(elementCtor.prototype, name, {
+                            get: function () {
+                                const val = this.getAttribute(name);
+                                return val;
+                            },
+                            set: function (value) {
+                                if (value) {
+                                    this.setAttribute(name, value);
+                                }
+                                else {
+                                    this.removeAttribute(name);
+                                }
+                            }
+                        });
+                        break;
+                }
+            });
+            return elementCtor;
+        };
+    };
+    exports.GenerateAttributeAccessors = GenerateAttributeAccessors;
+    function bindShadowRoot(element, templateContent) {
+        const root = element.attachShadow({ mode: "open" });
+        const template = document.createElement("template");
+        if (typeof templateContent !== "undefined") {
+            template.innerHTML = templateContent;
+        }
+        root.appendChild(template.content.cloneNode(true));
+        return root;
+    }
+    exports.bindShadowRoot = bindShadowRoot;
+    function setElementProperties(element, props) {
+        const elementProps = element;
+        for (const prop in props) {
+            if (typeof elementProps[prop] === typeof props[prop] || typeof elementProps[prop] === "undefined" || elementProps[prop] === null) {
+                elementProps[prop] = props[prop];
+            }
+        }
+        return element;
+    }
+    exports.setElementProperties = setElementProperties;
+    function setElementAttributes(element, attr) {
+        const keys = Object.keys(attr);
+        keys.forEach((key) => {
+            const val = attr[key];
+            if (val) {
+                element.setAttribute(key, val.toString());
+            }
+        });
+        return element;
+    }
+    exports.setElementAttributes = setElementAttributes;
+    function HTMLElementTemplate(tagName, desc) {
+        const element = document.createElement(tagName, desc === null || desc === void 0 ? void 0 : desc.options);
+        if (desc) {
+            if (desc.props) {
+                setElementProperties(element, desc.props);
+            }
+            if (desc.attr) {
+                setElementAttributes(element, desc.attr);
+            }
+            if (desc.children && Array.isArray(desc.children)) {
+                desc.children.forEach((child) => {
+                    if (typeof child === "string" || child instanceof Node) {
+                        element.append(child);
+                    }
+                    else {
+                        if (child.desc) {
+                            element.append(HTMLElementTemplate(child.tagName, {
+                                options: child.desc.options,
+                                attr: child.desc.attr,
+                                children: child.desc.children
+                            }));
+                        }
+                    }
+                });
+            }
+        }
+        return element;
+    }
+    exports.HTMLElementTemplate = HTMLElementTemplate;
+    ;
+});
+define("engine/editor/elements/lib/controls/draganddrop/Draggable", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEDraggableElement = exports.isHTMLEDraggableElement = void 0;
+    function isHTMLEDraggableElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-draggable";
+    }
+    exports.isHTMLEDraggableElement = isHTMLEDraggableElement;
+    let BaseHTMLEDraggableElement = class BaseHTMLEDraggableElement extends HTMLElement {
+        constructor() {
+            super();
+            HTMLElement_1.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: inline-block;
+                    cursor: pointer;
+                }
+
+                :host(:hover) {
+                    display: inline-block;
+                    cursor: pointer;
+                }
+
+                slot {
+                    pointer-events: none;
+                    user-select: none;
+                }
+            </style>
+            <slot></slot>
+        `);
+            this.data = null;
+        }
+        connectedCallback() {
+            this.tabIndex = this.tabIndex;
+            this.draggable = true;
+            this.addEventListener("dragstart", (event) => {
+                let draggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                let draggablesData = [];
+                draggables.forEach((draggable) => {
+                    draggablesData.push(draggable.data);
+                });
+                let dataTransfer = event.dataTransfer;
+                if (dataTransfer !== null) {
+                    let data = JSON.stringify(draggablesData);
+                    dataTransfer.setData("text/plain", data);
+                }
+                this.dragged = true;
+            });
+            this.addEventListener("dragend", () => {
+                this.dragged = false;
+                let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                selectedDraggables.forEach((selectedDraggable) => {
+                    selectedDraggable.selected = false;
+                });
+            });
+            this.addEventListener("focusout", (event) => {
+                let relatedTarget = event.relatedTarget;
+                if (!isHTMLEDraggableElement(relatedTarget)) {
+                    let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                    selectedDraggables.forEach((selectedDrag) => {
+                        selectedDrag.selected = false;
+                    });
+                }
+            });
+            this.addEventListener("mousedown", (event) => {
+                if (!event.shiftKey) {
+                    if (!this.selected) {
+                        let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                        selectedDraggables.forEach((selectedDraggable) => {
+                            selectedDraggable.selected = false;
+                        });
+                        this.selected = true;
+                    }
+                }
+                else {
+                    this.selected = true;
+                }
+            });
+            this.addEventListener("mouseup", (event) => {
+                if (!event.shiftKey) {
+                    let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                    selectedDraggables.forEach((selectedDraggable) => {
+                        if (selectedDraggable !== this) {
+                            selectedDraggable.selected = false;
+                        }
+                    });
+                }
+            });
+        }
+    };
+    BaseHTMLEDraggableElement = __decorate([
+        HTMLElement_1.RegisterCustomHTMLElement({
+            name: "e-draggable"
+        }),
+        HTMLElement_1.GenerateAttributeAccessors([
+            { name: "dropaction", type: "string" },
+            { name: "ref", type: "string" },
+            { name: "selected", type: "boolean" },
+            { name: "dragged", type: "boolean" },
+            { name: "droppreview", type: "boolean" },
+            { name: "type", type: "string" }
+        ])
+    ], BaseHTMLEDraggableElement);
+    exports.BaseHTMLEDraggableElement = BaseHTMLEDraggableElement;
+});
+define("engine/editor/elements/lib/controls/draganddrop/Dropzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draganddrop/Draggable"], function (require, exports, HTMLElement_2, Draggable_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEDropzoneElement = exports.isHTMLEDropzoneElement = void 0;
+    function isHTMLEDropzoneElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-dropzone";
+    }
+    exports.isHTMLEDropzoneElement = isHTMLEDropzoneElement;
+    let BaseHTMLEDropzoneElement = class BaseHTMLEDropzoneElement extends HTMLElement {
+        constructor() {
+            super();
+            HTMLElement_2.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                }
+
+                [part~="clear"] {
+                    cursor: pointer;
+                }
+
+                :host [part~="placeholder"]::after {
+                    content: "Drag a column here..";
+                    font-size: 0.9em;
+                    display: inline-block;
+                }
+
+                :host(:empty) [part~="clear"],
+                :host(:not(:empty)) [part~="placeholder"] {
+                    display: none;
+                }
+
+                [part~="clear"]::after {
+                    display: inline-block;
+                    content: "[x]";
+                }
+
+                ::slotted(:not(e-draggable)) {
+                    pointer-events: none;
+                    user-select: none;
+                }
+            </style>
+            <slot id="draggables"></slot>
+            <span part="placeholder"/></span>
+            <span part="clear"/></span>
+        `);
+        }
+        connectedCallback() {
+            this.tabIndex = this.tabIndex;
+            const clear = this.shadowRoot.querySelector("[part~='clear']");
+            if (clear) {
+                clear.addEventListener("click", () => {
+                    this.dispatchEvent(new CustomEvent("cleardata", { bubbles: true }));
+                    let childDraggables = Array.from(this.children).filter(Draggable_1.isHTMLEDraggableElement);
+                    childDraggables.forEach((childDraggable) => {
+                        childDraggable.remove();
+                    });
+                });
+            }
+            this.addEventListener("dragover", (event) => {
+                event.preventDefault();
+            }, { capture: true });
+            this.shadowRoot.addEventListener("dragover", (event) => {
+                event.preventDefault();
+            }, { capture: true });
+            this.addEventListener("dragenter", (event) => {
+                let target = event.target;
+                this.draggedover = true;
+                if (target == this) {
+                    this.droppreview = true;
+                }
+                else if (Draggable_1.isHTMLEDraggableElement(target)) {
+                    target.droppreview = true;
+                }
+                event.preventDefault();
+            }, { capture: true });
+            this.shadowRoot.addEventListener("dragenter", (event) => {
+                event.preventDefault();
+            }, { capture: true });
+            this.addEventListener("dragleave", (event) => {
+                let target = event.target;
+                let relatedTarget = event.relatedTarget;
+                if (!this.contains(relatedTarget)) {
+                    this.draggedover = false;
+                }
+                if (target == this) {
+                    this.droppreview = false;
+                }
+                else if (Draggable_1.isHTMLEDraggableElement(target)) {
+                    target.droppreview = false;
+                }
+                event.preventDefault();
+            }, { capture: true });
+            this.addEventListener("drop", (event) => {
+                let target = event.target;
+                if (target == this) {
+                    this.droppreview = false;
+                }
+                else if (Draggable_1.isHTMLEDraggableElement(target)) {
+                    target.droppreview = false;
+                }
+                event.preventDefault();
+                let draggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                let dragged = document.querySelector("e-draggable[dragged]");
+                let draggablesTypes = new Set();
+                draggables.forEach((draggable) => {
+                    draggable.dragged = false;
+                    draggable.selected = false;
+                    draggablesTypes.add(draggable.type);
+                });
+                let thisAllowedTypes = new Set((this.allowedtypes || "").split(" "));
+                let success = thisAllowedTypes.has("*") ||
+                    Array.from(draggablesTypes.values()).every(type => thisAllowedTypes.has(type));
+                let position = -1;
+                if (success) {
+                    if (this.multiple) {
+                        draggables.forEach((draggable) => {
+                            let ref = (this.querySelector(`[ref="${draggable.ref}"]`) || draggable.cloneNode(true));
+                            if (target == this) {
+                                this.appendChild(ref);
+                                position = (position < 0) ? this.childElementCount - 1 : position;
+                            }
+                            else if (Draggable_1.isHTMLEDraggableElement(target)) {
+                                target.insertAdjacentElement("beforebegin", ref);
+                                position = (position < 0) ? Array.from(this.children).indexOf(target) - 1 : position;
+                            }
+                        });
+                    }
+                    else {
+                        if (dragged) {
+                            let ref = (this.querySelector(`[ref="${dragged.ref}"]`) || dragged.cloneNode(true));
+                            if (this.firstChild) {
+                                this.replaceChild(ref, this.firstChild);
+                            }
+                            else {
+                                this.appendChild(ref);
+                            }
+                        }
+                        position = 0;
+                    }
+                    let dataTransfer = event.dataTransfer;
+                    if (dataTransfer) {
+                        let data = JSON.parse(dataTransfer.getData("text/plain"));
+                        let event = new CustomEvent("datatransfer", {
+                            bubbles: true,
+                            detail: {
+                                draggables: draggables,
+                                position: position,
+                                success: success,
+                                data: data
+                            }
+                        });
+                        this.dispatchEvent(event);
+                    }
+                    this.draggedover = false;
+                }
+            });
+        }
+    };
+    BaseHTMLEDropzoneElement = __decorate([
+        HTMLElement_2.RegisterCustomHTMLElement({
+            name: "e-dropzone"
+        }),
+        HTMLElement_2.GenerateAttributeAccessors([
+            { name: "draggedover", type: "boolean" },
+            { name: "allowedtypes", type: "string" },
+            { name: "multiple", type: "boolean" },
+            { name: "droppreview", type: "boolean" },
+        ])
+    ], BaseHTMLEDropzoneElement);
+    exports.BaseHTMLEDropzoneElement = BaseHTMLEDropzoneElement;
+});
+define("engine/editor/elements/Snippets", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.pointIntersectsWithDOMRect = exports.setPropertyFromPath = exports.getPropertyFromPath = exports.forAllHierarchyElements = void 0;
+    function forAllHierarchyElements(element, func) {
+        func(element);
+        Array.from(element.children).forEach((child) => {
+            forAllHierarchyElements(child, func);
+        });
+    }
+    exports.forAllHierarchyElements = forAllHierarchyElements;
+    /*
+    function getPropertyFromPath(src: object, path: string): any {
+      const props = path.split(".");
+      let obj: {[key: string]: any} | undefined  = src;
+      props.forEach((prop) => {
+        if (typeof obj === "object" && prop in obj) {
+          obj = obj[prop];
+        }
+        else {
+          obj = void 0;
+        }
+      });
+      return obj;
+    }
+    
+    function setPropertyFromPath(src: object, path: string, value: any): object {
+      const props = path.split(".");
+      let obj: {[key: string]: any} = src;
+      let lastPropIdx = props.length - 1;
+      props.forEach((prop, idx) => {
+        if (idx === lastPropIdx) {
+          Object.assign(obj, {
+            [prop]: value
+          });
+        }
+        else {
+          if (typeof obj[prop] !== "object") {
+            Object.assign(obj, {
+              [prop]: {}
+            });
+          }
+          obj = obj[prop];
+        }
+      });
+      return src;
+    }
+    */
+    function getPropertyFromPath(src, path) {
+        const props = path.split(".");
+        let obj = src;
+        props.forEach((prop) => {
+            if (prop.includes("[")) {
+                let index = parseInt(prop.substring(prop.indexOf("[") + 1, prop.indexOf("]")));
+                if (Number.isNaN(index)) {
+                    console.error(`Wrong indexed path: ${prop}`);
+                }
+                prop = prop.substring(0, prop.indexOf("["));
+                if (typeof obj === "object" && prop in obj && Array.isArray(obj[prop])) {
+                    obj = obj[prop][index];
+                }
+            }
+            else if (typeof obj === "object" && prop in obj) {
+                obj = obj[prop];
+            }
+            else {
+                obj = void 0;
+            }
+        });
+        return obj;
+    }
+    exports.getPropertyFromPath = getPropertyFromPath;
+    function setPropertyFromPath(src, path, value) {
+        const props = path.split(".");
+        let obj = src;
+        let lastPropIdx = props.length - 1;
+        props.forEach((prop, idx) => {
+            if (prop.includes("[")) {
+                let index = parseInt(prop.substring(prop.indexOf("[") + 1, prop.indexOf("]")));
+                if (Number.isNaN(index)) {
+                    console.error(`Wrong indexed path: ${prop}`);
+                }
+                prop = prop.substring(0, prop.indexOf("["));
+                if (!Array.isArray(obj[prop])) {
+                    obj[prop] = [];
+                }
+                if (idx === lastPropIdx) {
+                    obj[prop][index] = value;
+                }
+                else {
+                    if (typeof obj[prop][index] !== "object") {
+                        obj[prop][index] = {};
+                    }
+                    obj = obj[prop][index];
+                }
+            }
+            else {
+                if (typeof obj[prop] !== "object") {
+                    obj[prop] = {};
+                }
+                if (idx === lastPropIdx) {
+                    obj[prop] = value;
+                }
+                else {
+                    obj = obj[prop];
+                }
+            }
+        });
+        return src;
+    }
+    exports.setPropertyFromPath = setPropertyFromPath;
+    function pointIntersectsWithDOMRect(x, y, rect) {
+        return !(rect.left > x ||
+            rect.right < x ||
+            rect.top > y ||
+            rect.bottom < y);
+    }
+    exports.pointIntersectsWithDOMRect = pointIntersectsWithDOMRect;
+});
 define("engine/libs/maths/MathError", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -493,1239 +1031,6 @@ define("engine/core/input/Input", ["require", "exports", "engine/libs/maths/alge
     Input.mousePos = new Vector2_1.Vector2();
     Input.wheelDelta = 0;
 });
-define("engine/editor/elements/Snippets", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.pointIntersectsWithDOMRect = exports.findDescendents = exports.setPropertyFromPath = exports.getPropertyFromPath = exports.addFocusChangeListener = exports.forEachDescendent = exports.isHTMLInputElement = exports.handleTabIndexes = void 0;
-    function handleTabIndexes() {
-        const tabIndexedElements = [];
-        let idx = 0;
-        const elements = document.getElementsByTagName('*');
-        for (let i = 0; i < elements.length; i++) {
-            const elem = elements[i];
-            if (elem.tabIndex === 0) {
-                tabIndexedElements.push(elem);
-            }
-        }
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Tab') {
-                if (!event.shiftKey) {
-                    tabIndexedElements[(++idx % tabIndexedElements.length)].focus();
-                }
-                else {
-                    tabIndexedElements[(--idx % tabIndexedElements.length)].focus();
-                }
-                event.preventDefault();
-            }
-        });
-    }
-    exports.handleTabIndexes = handleTabIndexes;
-    function isHTMLInputElement(elem) {
-        return elem.tagName.toLowerCase() === 'input';
-    }
-    exports.isHTMLInputElement = isHTMLInputElement;
-    function forEachDescendent(node, func) {
-        node.childNodes.forEach((child) => {
-            forEachDescendent(child, func);
-        });
-        func(node);
-    }
-    exports.forEachDescendent = forEachDescendent;
-    function findDescendents(node, filter) {
-        const descendants = [];
-        node.childNodes.forEach((child) => {
-            if (filter(child)) {
-                descendants.push(child);
-            }
-            descendants.push(...findDescendents(child, filter));
-        });
-        return descendants;
-    }
-    exports.findDescendents = findDescendents;
-    function addFocusChangeListener(elem, listener) {
-        const focusOutListener = () => {
-            if (!elem.contains(document.activeElement)) {
-                listener();
-                document.removeEventListener("focusin", focusOutListener);
-                addFocusInListener();
-            }
-        };
-        const addFocusInListener = () => {
-            elem.addEventListener("focusin", () => {
-                document.addEventListener("focusin", focusOutListener);
-            }, { once: true });
-        };
-        addFocusInListener();
-    }
-    exports.addFocusChangeListener = addFocusChangeListener;
-    function getPropertyFromPath(src, path) {
-        const props = path.split(".");
-        let obj = src;
-        props.forEach((prop) => {
-            if (typeof obj === "object" && prop in obj) {
-                obj = obj[prop];
-            }
-            else {
-                obj = void 0;
-            }
-        });
-        return obj;
-    }
-    exports.getPropertyFromPath = getPropertyFromPath;
-    function setPropertyFromPath(src, path, value) {
-        const props = path.split(".");
-        let obj = src;
-        let lastPropIdx = props.length - 1;
-        props.forEach((prop, idx) => {
-            if (idx === lastPropIdx) {
-                Object.assign(obj, {
-                    [prop]: value
-                });
-            }
-            else {
-                if (typeof obj[prop] !== "object") {
-                    Object.assign(obj, {
-                        [prop]: {}
-                    });
-                }
-                obj = obj[prop];
-            }
-        });
-        return src;
-    }
-    exports.setPropertyFromPath = setPropertyFromPath;
-    function pointIntersectsWithDOMRect(x, y, rect) {
-        return !(rect.left > x ||
-            rect.right < x ||
-            rect.top > y ||
-            rect.bottom < y);
-    }
-    exports.pointIntersectsWithDOMRect = pointIntersectsWithDOMRect;
-});
-define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_1, MenuItem_1, Snippets_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
-    function isHTMLEMenuItemGroupElement(elem) {
-        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menuitemgroup";
-    }
-    exports.isHTMLEMenuItemGroupElement = isHTMLEMenuItemGroupElement;
-    let HTMLEMenuItemGroupElement = class HTMLEMenuItemGroupElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_1.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: inline-block;
-                    position: relative;
-                    user-select: none;
-                }
-
-                :host(:focus) {
-                    outline: none;
-                }
-                
-                :host(:not([label])) [part~="li"] {
-                    display: none;
-                }
-
-                [part~="label"] {
-                    position: relative;
-                    display: inline-block;
-                    width: 100%;
-
-                    user-select: none;
-                    white-space: nowrap;
-
-                    padding: 2px 6px 6px 6px;
-                    font-weight: bold;
-                }
-
-                [part~="li"] {
-                    display: flex;
-                    height: 100%;
-                    list-style-type: none;
-                }
-
-                [part~="separator"] {
-                    margin: 6px 0;
-                }
-
-                :host(:first-child) [part~="separator"] {
-                    display: none;
-                }
-                
-                ::slotted(*) {
-                    display: block;
-                    width: 100%;
-                }
-            </style>
-            <div part="content">
-                <hr part="separator"/>
-                <li part="li">
-                    <span part="label"></span>
-                </li>
-                <slot></slot>
-            </div>
-        `);
-            this.activeIndex = -1;
-            this.parentMenu = null;
-            this.items = [];
-        }
-        get activeItem() {
-            return this.items[this.activeIndex] || null;
-        }
-        connectedCallback() {
-            var _a;
-            this.tabIndex = this.tabIndex;
-            const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
-            if (slot) {
-                slot.addEventListener("slotchange", () => {
-                    const items = slot.assignedElements()
-                        .filter(MenuItem_1.isHTMLEMenuItemElement);
-                    this.items = items;
-                    items.forEach((item) => {
-                        item.parentMenu = this.parentMenu;
-                        item.group = this;
-                    });
-                });
-            }
-            this.addEventListener("mousedown", (event) => {
-                let target = event.target;
-                if (this.items.includes(target)) {
-                    target.trigger();
-                }
-            });
-            this.addEventListener("mouseover", (event) => {
-                let target = event.target;
-                let targetIndex = this.items.indexOf(target);
-                if (this === target) {
-                    this.reset();
-                    this.focus();
-                }
-                else if (targetIndex >= 0) {
-                    this.focusItemAt(this.items.indexOf(target), true);
-                }
-            });
-            this.addEventListener("mouseout", (event) => {
-                let target = event.target;
-                let thisIntersectsWithMouse = Snippets_1.pointIntersectsWithDOMRect(event.clientX, event.clientY, this.getBoundingClientRect());
-                if ((this === target || this.items.includes(target)) && !thisIntersectsWithMouse) {
-                    this.reset();
-                    this.focus();
-                }
-            });
-            this.addEventListener("focusin", (event) => {
-                let target = event.target;
-                this.activeIndex = this.items.findIndex((item) => item.contains(target));
-            });
-            this.addEventListener("focusout", (event) => {
-                let newTarget = event.relatedTarget;
-                if (!this.contains(newTarget)) {
-                    this.reset();
-                }
-            });
-            this.addEventListener("change", (event) => {
-                let target = event.target;
-                if (MenuItem_1.isHTMLEMenuItemElement(target)) {
-                    let item = target;
-                    if (item.type === "radio" && item.checked) {
-                        let newCheckedRadio = item;
-                        let checkedRadio = this.findItem((item) => {
-                            return item.type === "radio" && item.checked && item !== newCheckedRadio;
-                        });
-                        if (checkedRadio) {
-                            checkedRadio.checked = false;
-                        }
-                    }
-                }
-            });
-            this.addEventListener("keydown", (event) => {
-                var _a;
-                switch (event.key) {
-                    case "ArrowUp":
-                        if (this.activeIndex > 0) {
-                            this.focusItemAt(this.activeIndex - 1);
-                            event.stopPropagation();
-                        }
-                        break;
-                    case "ArrowDown":
-                        if (this.activeIndex < this.items.length - 1) {
-                            this.focusItemAt(this.activeIndex + 1);
-                            event.stopPropagation();
-                        }
-                        break;
-                    case "Enter":
-                        if (this.activeItem) {
-                            this.activeItem.trigger();
-                            event.stopPropagation();
-                        }
-                        break;
-                    case "ArrowRight":
-                        if (this.items.includes(event.target)) {
-                            if ((_a = this.activeItem) === null || _a === void 0 ? void 0 : _a.childMenu) {
-                                this.activeItem.childMenu.focusItemAt(0);
-                                event.stopPropagation();
-                            }
-                        }
-                        break;
-                    case "Home":
-                        this.focusItemAt(0);
-                        break;
-                    case "End":
-                        this.focusItemAt(this.items.length - 1);
-                        break;
-                    case "Escape":
-                        this.reset();
-                        break;
-                }
-            });
-        }
-        attributeChangedCallback(name, oldValue, newValue) {
-            var _a;
-            if (oldValue !== newValue) {
-                switch (name) {
-                    case "label":
-                        if (oldValue !== newValue) {
-                            const label = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
-                            if (label) {
-                                label.textContent = newValue;
-                            }
-                        }
-                }
-            }
-        }
-        focusItemAt(index, childMenu) {
-            let item = this.items[index];
-            if (item) {
-                this.activeIndex = index;
-                item.focus();
-                if (childMenu && item.childMenu) {
-                    item.childMenu.focus();
-                }
-            }
-        }
-        reset() {
-            let item = this.activeItem;
-            this.activeIndex = -1;
-            if (item === null || item === void 0 ? void 0 : item.childMenu) {
-                item.childMenu.reset();
-            }
-        }
-        focusItem(predicate, subitems) {
-            let item = this.findItem(predicate, subitems);
-            if (item) {
-                item.focus();
-            }
-        }
-        findItem(predicate, subitems) {
-            let foundItem = null;
-            for (let idx = 0; idx < this.items.length; idx++) {
-                let item = this.items[idx];
-                if (predicate(item)) {
-                    return item;
-                }
-                if (subitems && item.childMenu) {
-                    foundItem = item.childMenu.findItem(predicate, subitems);
-                    if (foundItem) {
-                        return foundItem;
-                    }
-                }
-            }
-            return foundItem;
-        }
-    };
-    HTMLEMenuItemGroupElement = __decorate([
-        HTMLElement_1.RegisterCustomHTMLElement({
-            name: "e-menuitemgroup",
-            observedAttributes: ["label"]
-        }),
-        HTMLElement_1.GenerateAttributeAccessors([
-            { name: "label", type: "string" },
-            { name: "type", type: "string" },
-            { name: "name", type: "string" },
-            { name: "rows", type: "number" },
-            { name: "cells", type: "number" },
-        ])
-    ], HTMLEMenuItemGroupElement);
-    exports.HTMLEMenuItemGroupElement = HTMLEMenuItemGroupElement;
-});
-define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "exports", "engine/core/input/Input", "engine/editor/Editor", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/Menu"], function (require, exports, Input_1, Editor_1, HTMLElement_2, Menu_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.isHTMLEMenuItemElement = exports.HTMLEMenuItemElement = void 0;
-    function isHTMLEMenuItemElement(elem) {
-        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menuitem";
-    }
-    exports.isHTMLEMenuItemElement = isHTMLEMenuItemElement;
-    let HTMLEMenuItemElement = class HTMLEMenuItemElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_2.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    position: relative;
-                    display: inline-block;
-
-                    user-select: none;
-                    white-space: nowrap;
-
-                    padding: 3px 6px;
-                    background-color: white;
-                    cursor: pointer;
-                }
-                
-                :host(:focus) {
-                    outline: none;
-                }
-                
-                :host(:focus-within) {
-                    color: white;
-                    background-color: rgb(92, 92, 92);
-                }
-                
-                :host(:hover) [part~="visual"],
-                :host(:focus-within) [part~="visual"] {
-                    color: inherit;
-                }
-
-                :host([disabled]) {
-                    color: rgb(180, 180, 180);
-                }
-
-                :host(:focus-within[disabled]) {
-                    background-color: rgb(220, 220, 220);
-                }
-
-                :host([type="menu"]) ::slotted([slot="menu"]) {
-                    z-index: 1;
-                    position: absolute;
-                    color: initial;
-                    
-                    left: 100%;
-                    top: -6px;
-                }
-
-                :host([type="menu"]) ::slotted([slot="menu"][overflowing]) {
-                    right: 100%;
-                    left: auto;
-                }
-
-                :host([type="menu"]) ::slotted([slot="menu"]:not([expanded])) {
-                    opacity: 0;
-                    pointer-events: none !important;
-                }
-
-                [part~="li"] {
-                    display: flex;
-                    height: 100%;
-                    list-style-type: none;
-                }
-
-                [part~="content"] {
-                    font-size: 1em;
-                    flex: auto;
-                    display: flex;
-                }
-
-                [part~="icon"] {
-                    flex: none;
-                    display: none;
-                    width: 16px;
-                    margin-right: 2px;
-                }
-
-                [part~="state"] {
-                    flex: none;
-                    width: 16px;
-                    margin-right: 8px;
-                }
-
-                [part~="label"] {
-                    flex: auto;
-                    text-align: left;
-                }
-
-                [part~="hotkey"] {
-                    flex: none;
-                    text-align: right;
-                    margin-left: 16px;
-                }
-
-                [part~="hotkey"]:empty {
-                    display: none !important;
-                }
-
-                [part~="arrow"] {
-                    flex: none;
-                    margin-left: 8px;
-                }
-
-                [part~="visual"] {
-                    color: rgb(92, 92, 92);
-                    font-size: 1.6em;
-                    line-height: 0.625;
-                }
-
-                [part~="visual"]::after {
-                    pointer-events: none;
-                }
-
-                :host(:not([icon])) [part~="icon"],
-                :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
-                    visibility: hidden;
-                }
-
-                :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
-                    display: none;
-                }
-
-                :host(:not([type="menu"])) [part~="arrow"] {
-                    display: none !important;
-                }
-                
-                :host([type="checkbox"][checked]) [part~="state"]::after {
-                    content: "■";
-                }
-
-                :host([type="checkbox"]:not([checked])) [part~="state"]::after {
-                    content: "□";
-                }
-
-                :host([type="radio"][checked]) [part~="state"]::after {
-                    content: "●";
-                }
-
-                :host([type="radio"]:not([checked])) [part~="state"]::after {
-                    content: "○";
-                }
-
-                :host([type="menu"]) [part~="arrow"]::after {
-                    content: "»";
-                }
-            </style>
-            <li part="li">
-                <span part="content">
-                    <span part="visual icon"></span>
-                    <span part="visual state"></span>
-                    <span part="label"></span>
-                    <span part="hotkey"></span>
-                    <span part="description"></span>
-                    <span part="visual arrow"></span>
-                </span>
-                <slot name="menu"></slot>
-            </li>
-        `);
-            this.childMenu = null;
-            this.parentMenu = null;
-            this.group = null;
-            this.command = null;
-            this._hotkey = null;
-            this._hotkeyExec = null;
-        }
-        get hotkey() {
-            return this._hotkey;
-        }
-        set hotkey(hotkey) {
-            var _a;
-            if (this._hotkey !== null && this._hotkeyExec !== null) {
-                Editor_1.editor.removeHotkeyExec(this._hotkey, this._hotkeyExec);
-            }
-            if (!this._hotkeyExec) {
-                this._hotkeyExec = () => {
-                    if (this.command) {
-                        Editor_1.editor.executeCommand(this.command, this.commandArgs);
-                    }
-                };
-            }
-            if (hotkey instanceof Input_1.HotKey) {
-                this._hotkey = hotkey;
-                Editor_1.editor.addHotkeyExec(this._hotkey, this._hotkeyExec);
-            }
-            let hotkeyPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=hotkey]");
-            if (hotkeyPart) {
-                hotkeyPart.textContent = hotkey ? hotkey.toString() : "";
-            }
-        }
-        connectedCallback() {
-            var _a;
-            this.tabIndex = this.tabIndex;
-            this.setAttribute("aria-label", this.label);
-            const menuSlot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot[name=menu]");
-            if (menuSlot) {
-                menuSlot.addEventListener("slotchange", () => {
-                    const menuElem = menuSlot.assignedElements()[0];
-                    if (Menu_1.isHTMLEMenuElement(menuElem)) {
-                        this.childMenu = menuElem;
-                        menuElem.parentItem = this;
-                    }
-                });
-            }
-        }
-        disconnectedCallback() {
-            if (this._hotkey !== null && this._hotkeyExec !== null) {
-                Editor_1.editor.removeHotkeyExec(this._hotkey, this._hotkeyExec);
-            }
-        }
-        attributeChangedCallback(name, oldValue, newValue) {
-            var _a, _b;
-            if (newValue !== oldValue) {
-                switch (name) {
-                    case "label":
-                        if (oldValue !== newValue) {
-                            const labelPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
-                            if (labelPart) {
-                                labelPart.textContent = newValue;
-                            }
-                        }
-                        break;
-                    case "icon":
-                        if (oldValue !== newValue) {
-                            const iconPart = (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector("[part~=icon]");
-                            if (iconPart) {
-                                iconPart.dataset.value = newValue;
-                            }
-                        }
-                        break;
-                    case "checked":
-                        if (oldValue !== newValue) {
-                            switch (this.type) {
-                                case "checkbox":
-                                    this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
-                                    if (this.command) {
-                                        Editor_1.editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : { undo: true });
-                                    }
-                                    break;
-                                case "radio":
-                                    this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
-                                    if (this.command) {
-                                        Editor_1.editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : { undo: true });
-                                    }
-                                    break;
-                            }
-                        }
-                        break;
-                }
-            }
-        }
-        trigger() {
-            if (!this.disabled) {
-                switch (this.type) {
-                    case "button":
-                    default:
-                        if (this.command) {
-                            Editor_1.editor.executeCommand(this.command, this.commandArgs);
-                        }
-                        break;
-                    case "checkbox":
-                        this.checked = !this.checked;
-                        break;
-                    case "radio":
-                        this.checked = true;
-                        break;
-                    case "menu":
-                        if (this.childMenu) {
-                            this.childMenu.focusItemAt(0);
-                        }
-                        break;
-                }
-                this.dispatchEvent(new CustomEvent("trigger", { bubbles: true }));
-            }
-        }
-    };
-    HTMLEMenuItemElement = __decorate([
-        HTMLElement_2.RegisterCustomHTMLElement({
-            name: "e-menuitem",
-            observedAttributes: ["icon", "label", "checked"]
-        }),
-        HTMLElement_2.GenerateAttributeAccessors([
-            { name: "name", type: "string" },
-            { name: "label", type: "string" },
-            { name: "icon", type: "string" },
-            { name: "type", type: "string" },
-            { name: "disabled", type: "boolean" },
-            { name: "checked", type: "boolean" },
-            { name: "value", type: "string" },
-        ])
-    ], HTMLEMenuItemElement);
-    exports.HTMLEMenuItemElement = HTMLEMenuItemElement;
-});
-define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/menus/MenuItemGroup"], function (require, exports, HTMLElement_3, MenuItem_2, Snippets_2, MenuItemGroup_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLEMenuElement = exports.isHTMLEMenuElement = void 0;
-    function isHTMLEMenuElement(elem) {
-        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menu";
-    }
-    exports.isHTMLEMenuElement = isHTMLEMenuElement;
-    let HTMLEMenuElement = class HTMLEMenuElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_3.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: block;
-                    position: relative;
-                    user-select: none;
-
-                    padding: 6px 0;
-                    background-color: white;
-                    cursor: initial;
-                }
-
-                :host(:focus) {
-                    outline: none;
-                }
-
-                [part~="ul"] {
-                    display: block;
-                    list-style-type: none;
-                    padding: 0; margin: 0;
-                }
-
-                ::slotted(*) {
-                    display: block;
-                    width: 100%;
-                }
-
-                ::slotted(hr) {
-                    margin: 6px 0;
-                }
-            </style>
-            <ul part="ul">
-                <slot></slot>
-            </ul>
-        `);
-            this.parentItem = null;
-            this.items = [];
-            this.activeIndex = -1;
-        }
-        get activeItem() {
-            return this.items[this.activeIndex] || null;
-        }
-        connectedCallback() {
-            var _a;
-            this.tabIndex = this.tabIndex;
-            const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
-            if (slot) {
-                slot.addEventListener("slotchange", () => {
-                    const items = slot.assignedElements().filter(elem => MenuItem_2.isHTMLEMenuItemElement(elem) || MenuItemGroup_1.isHTMLEMenuItemGroupElement(elem));
-                    this.items = items;
-                    items.forEach((item) => {
-                        item.parentMenu = this;
-                    });
-                });
-            }
-            this.addEventListener("mousedown", (event) => {
-                let target = event.target;
-                if (MenuItem_2.isHTMLEMenuItemElement(target)) {
-                    let thisIncludesTarget = this.items.includes(target);
-                    if (thisIncludesTarget) {
-                        target.trigger();
-                    }
-                }
-            });
-            this.addEventListener("mouseover", (event) => {
-                let target = event.target;
-                let targetIndex = this.items.indexOf(target);
-                if (this === target) {
-                    this.reset();
-                    this.focus();
-                }
-                else if (targetIndex >= 0) {
-                    if (MenuItem_2.isHTMLEMenuItemElement(target)) {
-                        this.focusItemAt(targetIndex, true);
-                    }
-                    else {
-                        this.activeIndex = targetIndex;
-                    }
-                }
-            });
-            this.addEventListener("mouseout", (event) => {
-                let target = event.target;
-                let thisIntersectsWithMouse = Snippets_2.pointIntersectsWithDOMRect(event.clientX, event.clientY, this.getBoundingClientRect());
-                if ((this === target || this.items.includes(target)) && !thisIntersectsWithMouse) {
-                    this.reset();
-                    this.focus();
-                }
-            });
-            this.addEventListener("focusin", (event) => {
-                let target = event.target;
-                this.activeIndex = this.items.findIndex((item) => item.contains(target));
-                this.expanded = true;
-            });
-            this.addEventListener("focusout", (event) => {
-                let newTarget = event.relatedTarget;
-                if (!this.contains(newTarget)) {
-                    this.reset();
-                    this.expanded = false;
-                }
-            });
-            this.addEventListener("keydown", (event) => {
-                switch (event.key) {
-                    case "ArrowUp":
-                        this.focusItemAt((this.activeIndex <= 0) ? this.items.length - 1 : this.activeIndex - 1);
-                        if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
-                            this.activeItem.focusItemAt(this.activeItem.items.length - 1);
-                        }
-                        event.stopPropagation();
-                        break;
-                    case "ArrowDown":
-                        this.focusItemAt((this.activeIndex >= this.items.length - 1) ? 0 : this.activeIndex + 1);
-                        if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
-                            this.activeItem.focusItemAt(0);
-                        }
-                        event.stopPropagation();
-                        break;
-                    case "Home":
-                        this.focusItemAt(0);
-                        if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
-                            this.activeItem.focusItemAt(0);
-                        }
-                        event.stopPropagation();
-                        break;
-                    case "End":
-                        this.focusItemAt(this.items.length - 1);
-                        if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
-                            this.activeItem.focusItemAt(this.activeItem.items.length - 1);
-                        }
-                        event.stopPropagation();
-                        break;
-                    case "Enter":
-                        if (MenuItem_2.isHTMLEMenuItemElement(this.activeItem)) {
-                            this.activeItem.trigger();
-                            event.stopPropagation();
-                        }
-                        break;
-                    case "Escape":
-                        this.reset();
-                        break;
-                    case "ArrowLeft":
-                        if (this.parentItem) {
-                            let parentGroup = this.parentItem.group;
-                            let parentMenu = this.parentItem.parentMenu;
-                            if (isHTMLEMenuElement(parentMenu)) {
-                                if (parentGroup) {
-                                    parentGroup.focusItemAt(parentGroup.activeIndex);
-                                }
-                                else {
-                                    parentMenu.focusItemAt(parentMenu.activeIndex);
-                                }
-                                this.reset();
-                                event.stopPropagation();
-                            }
-                        }
-                        break;
-                    case "ArrowRight":
-                        if (this.items.includes(event.target)) {
-                            if (MenuItem_2.isHTMLEMenuItemElement(this.activeItem) && this.activeItem.childMenu) {
-                                this.activeItem.childMenu.focusItemAt(0);
-                                event.stopPropagation();
-                            }
-                        }
-                        break;
-                }
-            });
-        }
-        attributeChangedCallback(name, oldValue, newValue) {
-            if (newValue !== oldValue) {
-                switch (name) {
-                    case "expanded":
-                        if (newValue != null) {
-                            let thisRect = this.getBoundingClientRect();
-                            let thisIsOverflowing = thisRect.right > document.body.clientWidth;
-                            if (thisIsOverflowing) {
-                                this.overflowing = true;
-                            }
-                        }
-                        else {
-                            this.overflowing = false;
-                        }
-                        break;
-                }
-            }
-        }
-        focusItemAt(index, childMenu) {
-            let item = this.items[index];
-            if (item) {
-                this.activeIndex = index;
-                item.focus();
-                if (MenuItem_2.isHTMLEMenuItemElement(item)) {
-                    if (childMenu && item.childMenu) {
-                        item.childMenu.focus();
-                    }
-                }
-                else {
-                    item.focusItemAt(0);
-                }
-            }
-        }
-        focusItem(predicate, subitems) {
-            let item = this.findItem(predicate, subitems);
-            if (item) {
-                item.focus();
-            }
-        }
-        reset() {
-            let item = this.activeItem;
-            this.activeIndex = -1;
-            if (MenuItem_2.isHTMLEMenuItemElement(item) && item.childMenu) {
-                item.childMenu.reset();
-            }
-        }
-        findItem(predicate, subitems) {
-            let foundItem = null;
-            for (let idx = 0; idx < this.items.length; idx++) {
-                let item = this.items[idx];
-                if (MenuItem_2.isHTMLEMenuItemElement(item)) {
-                    if (predicate(item)) {
-                        return item;
-                    }
-                    if (subitems && item.childMenu) {
-                        foundItem = item.childMenu.findItem(predicate, subitems);
-                        if (foundItem) {
-                            return foundItem;
-                        }
-                    }
-                }
-                else if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(item)) {
-                    foundItem = item.findItem(predicate, subitems);
-                    if (foundItem) {
-                        return foundItem;
-                    }
-                }
-            }
-            return foundItem;
-        }
-    };
-    HTMLEMenuElement = __decorate([
-        HTMLElement_3.RegisterCustomHTMLElement({
-            name: "e-menu",
-            observedAttributes: ["expanded"]
-        }),
-        HTMLElement_3.GenerateAttributeAccessors([
-            { name: "name", type: "string" },
-            { name: "expanded", type: "boolean" },
-            { name: "overflowing", type: "boolean" }
-        ])
-    ], HTMLEMenuElement);
-    exports.HTMLEMenuElement = HTMLEMenuElement;
-});
-define("engine/editor/elements/HTMLElement", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.setHTMLElementProperties = exports.setHTMLElementAttributes = exports.HTMLElementTemplate = exports.bindShadowRoot = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = void 0;
-    const RegisterCustomHTMLElement = function (args) {
-        return (elementCtor) => {
-            const { name, observedAttributes, options } = args;
-            if (observedAttributes) {
-                Object.defineProperty(elementCtor.prototype.constructor, 'observedAttributes', {
-                    get: () => {
-                        return observedAttributes;
-                    }
-                });
-            }
-            customElements.define(name, elementCtor, options);
-            return elementCtor;
-        };
-    };
-    exports.RegisterCustomHTMLElement = RegisterCustomHTMLElement;
-    const GenerateAttributeAccessors = function (attributes) {
-        return (elementCtor) => {
-            attributes.forEach((attr) => {
-                const { name, type } = attr;
-                switch (type) {
-                    case "boolean":
-                        Object.defineProperty(elementCtor.prototype, name, {
-                            get: function () {
-                                const val = this.getAttribute(name);
-                                return (val === "" || false);
-                            },
-                            set: function (value) {
-                                if (value) {
-                                    this.setAttribute(name, "");
-                                }
-                                else {
-                                    this.removeAttribute(name);
-                                }
-                            }
-                        });
-                        break;
-                    case "json":
-                        Object.defineProperty(elementCtor.prototype, name, {
-                            get: function () {
-                                const val = this.getAttribute(name);
-                                return (val !== null) ? JSON.parse(val) : void 0;
-                            },
-                            set: function (value) {
-                                if (value !== null) {
-                                    this.setAttribute(name, JSON.stringify(value));
-                                }
-                                else {
-                                    this.removeAttribute(name);
-                                }
-                            }
-                        });
-                        break;
-                    case "number":
-                    case "string":
-                    default:
-                        Object.defineProperty(elementCtor.prototype, name, {
-                            get: function () {
-                                const val = this.getAttribute(name);
-                                return val;
-                            },
-                            set: function (value) {
-                                if (value) {
-                                    this.setAttribute(name, value);
-                                }
-                                else {
-                                    this.removeAttribute(name);
-                                }
-                            }
-                        });
-                        break;
-                }
-            });
-            return elementCtor;
-        };
-    };
-    exports.GenerateAttributeAccessors = GenerateAttributeAccessors;
-    function bindShadowRoot(element, templateContent) {
-        const root = element.attachShadow({ mode: "open" });
-        const template = document.createElement("template");
-        if (typeof templateContent !== "undefined") {
-            template.innerHTML = templateContent;
-        }
-        root.appendChild(template.content.cloneNode(true));
-        return root;
-    }
-    exports.bindShadowRoot = bindShadowRoot;
-    function setHTMLElementProperties(elem, props) {
-        const elemProps = elem;
-        for (const prop in props) {
-            if (typeof elemProps[prop] === typeof props[prop] || typeof elemProps[prop] === "undefined" || elemProps[prop] === null) {
-                elemProps[prop] = props[prop];
-            }
-        }
-        return elem;
-    }
-    exports.setHTMLElementProperties = setHTMLElementProperties;
-    function setHTMLElementAttributes(elem, attr) {
-        const keys = Object.keys(attr);
-        keys.forEach((key) => {
-            const val = attr[key];
-            if (val) {
-                elem.setAttribute(key, val.toString());
-            }
-        });
-        return elem;
-    }
-    exports.setHTMLElementAttributes = setHTMLElementAttributes;
-    const HTMLElementTemplate = function (tagName, args) {
-        const elem = document.createElement(tagName, args === null || args === void 0 ? void 0 : args.options);
-        if (args) {
-            if (args.props) {
-                setHTMLElementProperties(elem, args.props);
-            }
-            if (args.attr) {
-                setHTMLElementAttributes(elem, args.attr);
-            }
-            if (args.children && Array.isArray(args.children)) {
-                args.children.forEach((child) => {
-                    if (typeof child === "string" || child instanceof Node) {
-                        elem.append(child);
-                    }
-                    else {
-                        elem.append(HTMLElementTemplate(child.tagName, {
-                            options: child.options,
-                            attr: child.attr,
-                            children: child.children
-                        }));
-                    }
-                });
-            }
-        }
-        return elem;
-    };
-    exports.HTMLElementTemplate = HTMLElementTemplate;
-});
-define("engine/editor/elements/lib/containers/menus/MenuBar", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem"], function (require, exports, HTMLElement_4, MenuItem_3) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.isHTMLEMenuBarElement = exports.HTMLEMenuBarElement = void 0;
-    function isHTMLEMenuBarElement(elem) {
-        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menubar";
-    }
-    exports.isHTMLEMenuBarElement = isHTMLEMenuBarElement;
-    let HTMLEMenuBarElement = class HTMLEMenuBarElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_4.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: flex;
-                    position: relative; 
-                    user-select: none;
-
-                    background-color: white;
-                }
-
-                :host(:focus) {
-                    outline: 1px solid -webkit-focus-ring-color;
-                }
-
-                :host(:focus) ::slotted(:first-child),
-                :host(:not(:focus-within)) ::slotted(:hover) {
-                    background-color: rgb(92, 92, 92);
-                    color: white;
-                }
-
-                [part~="ul"] {
-                    display: block;
-                    list-style-type: none;
-                    padding: 0; margin: 0;
-                }
-            </style>
-            <ul part="ul">
-                <slot></slot>
-            </ul>
-        `);
-            this.items = [];
-            this.activeIndex = -1;
-        }
-        get activeItem() {
-            return this.items[this.activeIndex] || null;
-        }
-        connectedCallback() {
-            var _a;
-            this.tabIndex = this.tabIndex;
-            const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
-            if (slot) {
-                slot.addEventListener("slotchange", () => {
-                    const items = slot.assignedElements()
-                        .filter(MenuItem_3.isHTMLEMenuItemElement);
-                    this.items = items;
-                    items.forEach((item) => {
-                        item.parentMenu = this;
-                    });
-                });
-            }
-            this.addEventListener("mouseover", (event) => {
-                let targetIndex = this.items.indexOf(event.target);
-                if (targetIndex >= 0) {
-                    if (this.contains(document.activeElement)) {
-                        if (this.active) {
-                            this.focusItemAt(targetIndex, true);
-                        }
-                        else {
-                            this.activeIndex = targetIndex;
-                        }
-                    }
-                }
-            });
-            this.addEventListener("keydown", (event) => {
-                var _a, _b, _c;
-                switch (event.key) {
-                    case "ArrowLeft":
-                        this.focusItemAt((this.activeIndex <= 0) ? this.items.length - 1 : this.activeIndex - 1);
-                        if (this.active && ((_a = this.activeItem) === null || _a === void 0 ? void 0 : _a.childMenu)) {
-                            this.activeItem.childMenu.focusItemAt(0);
-                        }
-                        break;
-                    case "ArrowRight":
-                        this.focusItemAt((this.activeIndex >= this.items.length - 1) ? 0 : this.activeIndex + 1);
-                        if (this.active && ((_b = this.activeItem) === null || _b === void 0 ? void 0 : _b.childMenu)) {
-                            this.activeItem.childMenu.focusItemAt(0);
-                        }
-                        break;
-                    case "ArrowDown":
-                        this.focusItemAt(this.activeIndex);
-                        if (this.active && ((_c = this.activeItem) === null || _c === void 0 ? void 0 : _c.childMenu)) {
-                            this.activeItem.childMenu.focusItemAt(0);
-                        }
-                        break;
-                    case "Enter":
-                        this.active = true;
-                        if (this.activeItem) {
-                            this.activeItem.trigger();
-                        }
-                        break;
-                    case "Escape":
-                        this.focusItemAt(this.activeIndex);
-                        this.active = false;
-                        break;
-                }
-            });
-            this.addEventListener("mousedown", (event) => {
-                let targetIndex = this.items.indexOf(event.target);
-                if (targetIndex >= 0) {
-                    if (!this.contains(document.activeElement)) {
-                        this.active = true;
-                        this.focusItemAt(targetIndex, true);
-                    }
-                    else {
-                        this.active = false;
-                        document.body.focus();
-                    }
-                    event.preventDefault();
-                }
-            });
-            this.addEventListener("focus", () => {
-                this.activeIndex = 0;
-            });
-        }
-        focusItemAt(index, childMenu) {
-            let item = this.items[index];
-            if (item) {
-                this.activeIndex = index;
-                item.focus();
-                if (childMenu && item.childMenu) {
-                    item.childMenu.focus();
-                }
-            }
-        }
-        focusItem(predicate, subtree) {
-            let item = this.findItem(predicate, subtree);
-            if (item) {
-                item.focus();
-            }
-        }
-        reset() {
-            let item = this.activeItem;
-            this.activeIndex = -1;
-            if (item === null || item === void 0 ? void 0 : item.childMenu) {
-                item.childMenu.reset();
-            }
-        }
-        findItem(predicate, subtree) {
-            let foundItem = null;
-            for (let idx = 0; idx < this.items.length; idx++) {
-                let item = this.items[idx];
-                if (predicate(item)) {
-                    return item;
-                }
-                if (subtree && item.childMenu) {
-                    foundItem = item.childMenu.findItem(predicate, subtree);
-                    if (foundItem) {
-                        return foundItem;
-                    }
-                }
-            }
-            return foundItem;
-        }
-    };
-    HTMLEMenuBarElement = __decorate([
-        HTMLElement_4.RegisterCustomHTMLElement({
-            name: "e-menubar"
-        }),
-        HTMLElement_4.GenerateAttributeAccessors([
-            { name: "name", type: "string" },
-            { name: "active", type: "boolean" },
-        ])
-    ], HTMLEMenuBarElement);
-    exports.HTMLEMenuBarElement = HTMLEMenuBarElement;
-});
 define("engine/libs/patterns/commands/Command", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -2053,7 +1358,186 @@ define("engine/resources/Resources", ["require", "exports", "engine/resources/Re
     const Resources = ResourcesBase;
     exports.Resources = Resources;
 });
-define("engine/editor/elements/lib/containers/status/StatusItem", ["require", "exports", "engine/editor/Editor", "engine/editor/elements/HTMLElement"], function (require, exports, Editor_2, HTMLElement_5) {
+define("engine/editor/elements/lib/containers/menus/MenuBar", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem"], function (require, exports, HTMLElement_3, MenuItem_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEMenuBarElement = exports.isHTMLEMenuBarElement = void 0;
+    function isHTMLEMenuBarElement(elem) {
+        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menubar";
+    }
+    exports.isHTMLEMenuBarElement = isHTMLEMenuBarElement;
+    let BaseHTMLEMenuBarElement = class BaseHTMLEMenuBarElement extends HTMLElement {
+        constructor() {
+            super();
+            HTMLElement_3.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: flex;
+                    position: relative; 
+                    user-select: none;
+
+                    background-color: white;
+                }
+
+                :host(:focus) {
+                    outline: 1px solid -webkit-focus-ring-color;
+                }
+
+                :host(:focus) ::slotted(:first-child),
+                :host(:not(:focus-within)) ::slotted(:hover) {
+                    color: black;
+                    background-color: gainsboro;
+                }
+
+                [part~="ul"] {
+                    display: block;
+                    list-style-type: none;
+                    padding: 0; margin: 0;
+                }
+            </style>
+            <ul part="ul">
+                <slot></slot>
+            </ul>
+        `);
+            this.items = [];
+            this._activeIndex = -1;
+        }
+        get activeIndex() {
+            return this._activeIndex;
+        }
+        get activeItem() {
+            return this.items[this.activeIndex] || null;
+        }
+        connectedCallback() {
+            var _a;
+            this.tabIndex = this.tabIndex;
+            const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
+            if (slot) {
+                slot.addEventListener("slotchange", () => {
+                    const items = slot.assignedElements()
+                        .filter(MenuItem_1.isHTMLEMenuItemElement);
+                    this.items = items;
+                    items.forEach((item) => {
+                        item.parentMenu = this;
+                    });
+                });
+            }
+            this.addEventListener("mouseover", (event) => {
+                let targetIndex = this.items.indexOf(event.target);
+                if (targetIndex >= 0) {
+                    if (this.contains(document.activeElement)) {
+                        if (this.active) {
+                            this.focusItemAt(targetIndex, true);
+                        }
+                        else {
+                            this._activeIndex = targetIndex;
+                        }
+                    }
+                }
+            });
+            this.addEventListener("keydown", (event) => {
+                var _a, _b, _c;
+                switch (event.key) {
+                    case "ArrowLeft":
+                        this.focusItemAt((this.activeIndex <= 0) ? this.items.length - 1 : this.activeIndex - 1);
+                        if (this.active && ((_a = this.activeItem) === null || _a === void 0 ? void 0 : _a.childMenu)) {
+                            this.activeItem.childMenu.focusItemAt(0);
+                        }
+                        break;
+                    case "ArrowRight":
+                        this.focusItemAt((this.activeIndex >= this.items.length - 1) ? 0 : this.activeIndex + 1);
+                        if (this.active && ((_b = this.activeItem) === null || _b === void 0 ? void 0 : _b.childMenu)) {
+                            this.activeItem.childMenu.focusItemAt(0);
+                        }
+                        break;
+                    case "ArrowDown":
+                        this.focusItemAt(this.activeIndex);
+                        if (this.active && ((_c = this.activeItem) === null || _c === void 0 ? void 0 : _c.childMenu)) {
+                            this.activeItem.childMenu.focusItemAt(0);
+                        }
+                        break;
+                    case "Enter":
+                        this.active = true;
+                        if (this.activeItem) {
+                            this.activeItem.trigger();
+                        }
+                        break;
+                    case "Escape":
+                        this.focusItemAt(this.activeIndex);
+                        this.active = false;
+                        break;
+                }
+            });
+            this.addEventListener("mousedown", (event) => {
+                let targetIndex = this.items.indexOf(event.target);
+                if (targetIndex >= 0) {
+                    if (!this.contains(document.activeElement)) {
+                        this.active = true;
+                        this.focusItemAt(targetIndex, true);
+                    }
+                    else {
+                        this.active = false;
+                        document.body.focus();
+                    }
+                    event.preventDefault();
+                }
+            });
+            this.addEventListener("focus", () => {
+                this._activeIndex = 0;
+            });
+        }
+        focusItemAt(index, childMenu) {
+            let item = this.items[index];
+            if (item) {
+                this._activeIndex = index;
+                item.focus();
+                if (childMenu && item.childMenu) {
+                    item.childMenu.focus();
+                }
+            }
+        }
+        focusItem(predicate, subtree) {
+            let item = this.findItem(predicate, subtree);
+            if (item) {
+                item.focus();
+            }
+        }
+        reset() {
+            let item = this.activeItem;
+            this._activeIndex = -1;
+            if (item === null || item === void 0 ? void 0 : item.childMenu) {
+                item.childMenu.reset();
+            }
+        }
+        findItem(predicate, subtree) {
+            let foundItem = null;
+            for (let idx = 0; idx < this.items.length; idx++) {
+                let item = this.items[idx];
+                if (predicate(item)) {
+                    return item;
+                }
+                if (subtree && item.childMenu) {
+                    foundItem = item.childMenu.findItem(predicate, subtree);
+                    if (foundItem) {
+                        return foundItem;
+                    }
+                }
+            }
+            return foundItem;
+        }
+    };
+    BaseHTMLEMenuBarElement = __decorate([
+        HTMLElement_3.RegisterCustomHTMLElement({
+            name: "e-menubar"
+        }),
+        HTMLElement_3.GenerateAttributeAccessors([
+            { name: "name", type: "string" },
+            { name: "active", type: "boolean" },
+        ])
+    ], BaseHTMLEMenuBarElement);
+    exports.BaseHTMLEMenuBarElement = BaseHTMLEMenuBarElement;
+});
+define("engine/editor/elements/lib/containers/status/StatusItem", ["require", "exports", "engine/editor/Editor", "engine/editor/elements/HTMLElement"], function (require, exports, Editor_1, HTMLElement_4) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEStatusItemElement = exports.HTMLEStatusItemElement = void 0;
@@ -2065,7 +1549,7 @@ define("engine/editor/elements/lib/containers/status/StatusItem", ["require", "e
         // TODO: Add sync with Promise (icons, etc.)
         constructor() {
             super();
-            HTMLElement_5.bindShadowRoot(this, /*template*/ `
+            HTMLElement_4.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     position: relative;
@@ -2113,7 +1597,7 @@ define("engine/editor/elements/lib/containers/status/StatusItem", ["require", "e
         activate() {
             const command = this.command;
             if (command) {
-                Editor_2.editor.executeCommand(command);
+                Editor_1.editor.executeCommand(command);
             }
             this.dispatchEvent(new CustomEvent("activate"));
         }
@@ -2126,10 +1610,10 @@ define("engine/editor/elements/lib/containers/status/StatusItem", ["require", "e
         }
     };
     HTMLEStatusItemElement = __decorate([
-        HTMLElement_5.RegisterCustomHTMLElement({
+        HTMLElement_4.RegisterCustomHTMLElement({
             name: "e-statusitem",
         }),
-        HTMLElement_5.GenerateAttributeAccessors([
+        HTMLElement_4.GenerateAttributeAccessors([
             { name: "name", type: "string" },
             { name: "icon", type: "string" },
             { name: "type", type: "string" },
@@ -2137,7 +1621,7 @@ define("engine/editor/elements/lib/containers/status/StatusItem", ["require", "e
     ], HTMLEStatusItemElement);
     exports.HTMLEStatusItemElement = HTMLEStatusItemElement;
 });
-define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/status/StatusItem"], function (require, exports, HTMLElement_6, Snippets_3, StatusItem_1) {
+define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/status/StatusItem"], function (require, exports, HTMLElement_5, StatusItem_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEStatusBarElement = exports.HTMLEStatusBarElement = void 0;
@@ -2148,7 +1632,7 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
     let HTMLEStatusBarElement = class HTMLEStatusBarElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_6.bindShadowRoot(this, /*template*/ `
+            HTMLElement_5.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: flex;
@@ -2193,7 +1677,6 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
             };
             const focusOutCallback = function (keydownControls) {
                 this.removeEventListener("keydown", keydownControls);
-                this.unselectItem();
                 this.active = false;
             };
             const keydownControls = (event) => {
@@ -2222,10 +1705,6 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
                         break;
                 }
             };
-            Snippets_3.addFocusCallbacks(this, {
-                focusInCallback: focusInCallback.bind(this, keydownControls),
-                focusOutCallback: focusOutCallback.bind(this, keydownControls)
-            });
             this.addEventListener("focus", () => {
                 this.selectItem(0);
             });
@@ -2244,7 +1723,6 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
                 this.selectItem(this.items.indexOf(item));
             });
             item.addEventListener("mouseleave", () => {
-                this.unselectItem();
             });
         }
         findItem(predicate) {
@@ -2268,7 +1746,6 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
                 this.clearSelection();
                 let item = this.items[index];
                 if (item) {
-                    item.select();
                     this._selectedItemIndex = index;
                 }
             }
@@ -2281,27 +1758,278 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
         }
     };
     HTMLEStatusBarElement = __decorate([
-        HTMLElement_6.RegisterCustomHTMLElement({
+        HTMLElement_5.RegisterCustomHTMLElement({
             name: "e-statusbar"
         }),
-        HTMLElement_6.GenerateAttributeAccessors([
+        HTMLElement_5.GenerateAttributeAccessors([
             { name: "name", type: "string" },
             { name: "active", type: "boolean" },
         ])
     ], HTMLEStatusBarElement);
     exports.HTMLEStatusBarElement = HTMLEStatusBarElement;
 });
+define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_6, MenuItem_2, Snippets_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
+    function isHTMLEMenuItemGroupElement(elem) {
+        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menuitemgroup";
+    }
+    exports.isHTMLEMenuItemGroupElement = isHTMLEMenuItemGroupElement;
+    let BaseHTMLEMenuItemGroupElement = class BaseHTMLEMenuItemGroupElement extends HTMLElement {
+        constructor() {
+            super();
+            HTMLElement_6.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: inline-block;
+                    position: relative;
+                    user-select: none;
+                }
+
+                :host(:focus) {
+                    outline: none;
+                }
+                
+                :host(:not([label])) [part~="li"] {
+                    display: none;
+                }
+
+                [part~="label"] {
+                    position: relative;
+                    display: inline-block;
+                    width: 100%;
+
+                    user-select: none;
+                    white-space: nowrap;
+
+                    padding: 2px 6px 6px 6px;
+                    font-weight: bold;
+                }
+
+                [part~="li"] {
+                    display: flex;
+                    height: 100%;
+                    list-style-type: none;
+                }
+
+                [part~="separator"] {
+                    margin: 6px 0;
+                }
+
+                :host(:first-child) [part~="separator"] {
+                    display: none;
+                }
+                
+                ::slotted(*) {
+                    display: block;
+                    width: 100%;
+                }
+            </style>
+            <div part="content">
+                <hr part="separator"/>
+                <li part="li">
+                    <span part="label"></span>
+                </li>
+                <slot></slot>
+            </div>
+        `);
+            this._activeIndex = -1;
+            this.parentMenu = null;
+            this.items = [];
+        }
+        get activeIndex() {
+            return this._activeIndex;
+        }
+        get activeItem() {
+            return this.items[this.activeIndex] || null;
+        }
+        connectedCallback() {
+            var _a;
+            this.tabIndex = this.tabIndex;
+            const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
+            if (slot) {
+                slot.addEventListener("slotchange", () => {
+                    const items = slot.assignedElements()
+                        .filter(MenuItem_2.isHTMLEMenuItemElement);
+                    this.items = items;
+                    items.forEach((item) => {
+                        item.parentMenu = this.parentMenu;
+                        item.group = this;
+                    });
+                });
+            }
+            this.addEventListener("mousedown", (event) => {
+                let target = event.target;
+                if (this.items.includes(target)) {
+                    target.trigger();
+                }
+            });
+            this.addEventListener("mouseover", (event) => {
+                let target = event.target;
+                let targetIndex = this.items.indexOf(target);
+                if (this === target) {
+                    this.reset();
+                    this.focus();
+                }
+                else if (targetIndex >= 0) {
+                    this.focusItemAt(this.items.indexOf(target), true);
+                }
+            });
+            this.addEventListener("mouseout", (event) => {
+                let target = event.target;
+                let thisIntersectsWithMouse = Snippets_1.pointIntersectsWithDOMRect(event.clientX, event.clientY, this.getBoundingClientRect());
+                if ((this === target || this.items.includes(target)) && !thisIntersectsWithMouse) {
+                    this.reset();
+                    this.focus();
+                }
+            });
+            this.addEventListener("focusin", (event) => {
+                let target = event.target;
+                this._activeIndex = this.items.findIndex((item) => item.contains(target));
+            });
+            this.addEventListener("focusout", (event) => {
+                let newTarget = event.relatedTarget;
+                if (!this.contains(newTarget)) {
+                    this.reset();
+                }
+            });
+            this.addEventListener("change", (event) => {
+                let target = event.target;
+                if (MenuItem_2.isHTMLEMenuItemElement(target)) {
+                    let item = target;
+                    if (item.type === "radio" && item.checked) {
+                        let newCheckedRadio = item;
+                        let checkedRadio = this.findItem((item) => {
+                            return item.type === "radio" && item.checked && item !== newCheckedRadio;
+                        });
+                        if (checkedRadio) {
+                            checkedRadio.checked = false;
+                        }
+                    }
+                }
+            });
+            this.addEventListener("keydown", (event) => {
+                var _a;
+                switch (event.key) {
+                    case "ArrowUp":
+                        if (this.activeIndex > 0) {
+                            this.focusItemAt(this.activeIndex - 1);
+                            event.stopPropagation();
+                        }
+                        break;
+                    case "ArrowDown":
+                        if (this.activeIndex < this.items.length - 1) {
+                            this.focusItemAt(this.activeIndex + 1);
+                            event.stopPropagation();
+                        }
+                        break;
+                    case "Enter":
+                        if (this.activeItem) {
+                            this.activeItem.trigger();
+                            event.stopPropagation();
+                        }
+                        break;
+                    case "ArrowRight":
+                        if (this.items.includes(event.target)) {
+                            if ((_a = this.activeItem) === null || _a === void 0 ? void 0 : _a.childMenu) {
+                                this.activeItem.childMenu.focusItemAt(0);
+                                event.stopPropagation();
+                            }
+                        }
+                        break;
+                    case "Home":
+                        this.focusItemAt(0);
+                        break;
+                    case "End":
+                        this.focusItemAt(this.items.length - 1);
+                        break;
+                    case "Escape":
+                        this.reset();
+                        break;
+                }
+            });
+        }
+        attributeChangedCallback(name, oldValue, newValue) {
+            var _a;
+            if (oldValue !== newValue) {
+                switch (name) {
+                    case "label":
+                        if (oldValue !== newValue) {
+                            const label = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
+                            if (label) {
+                                label.textContent = newValue;
+                            }
+                        }
+                }
+            }
+        }
+        focusItemAt(index, childMenu) {
+            let item = this.items[index];
+            if (item) {
+                this._activeIndex = index;
+                item.focus();
+                if (childMenu && item.childMenu) {
+                    item.childMenu.focus();
+                }
+            }
+        }
+        reset() {
+            let item = this.activeItem;
+            this._activeIndex = -1;
+            if (item === null || item === void 0 ? void 0 : item.childMenu) {
+                item.childMenu.reset();
+            }
+        }
+        focusItem(predicate, subitems) {
+            let item = this.findItem(predicate, subitems);
+            if (item) {
+                item.focus();
+            }
+        }
+        findItem(predicate, subitems) {
+            let foundItem = null;
+            for (let idx = 0; idx < this.items.length; idx++) {
+                let item = this.items[idx];
+                if (predicate(item)) {
+                    return item;
+                }
+                if (subitems && item.childMenu) {
+                    foundItem = item.childMenu.findItem(predicate, subitems);
+                    if (foundItem) {
+                        return foundItem;
+                    }
+                }
+            }
+            return foundItem;
+        }
+    };
+    BaseHTMLEMenuItemGroupElement = __decorate([
+        HTMLElement_6.RegisterCustomHTMLElement({
+            name: "e-menuitemgroup",
+            observedAttributes: ["label"]
+        }),
+        HTMLElement_6.GenerateAttributeAccessors([
+            { name: "label", type: "string" },
+            { name: "type", type: "string" },
+            { name: "name", type: "string" },
+            { name: "rows", type: "number" },
+            { name: "cells", type: "number" },
+        ])
+    ], BaseHTMLEMenuItemGroupElement);
+    exports.BaseHTMLEMenuItemGroupElement = BaseHTMLEMenuItemGroupElement;
+});
 define("engine/editor/templates/menus/MenuItemGroupTemplate", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/templates/menus/MenuItemTemplate"], function (require, exports, HTMLElement_7, MenuItemTemplate_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenuItemGroupTemplate = void 0;
-    const HTMLEMenuItemGroupTemplate = (args) => {
-        const items = args.items.map((itemArgs) => MenuItemTemplate_1.HTMLEMenuItemTemplate(itemArgs));
+    const HTMLEMenuItemGroupTemplate = (desc) => {
+        const items = desc.items.map((descArgs) => MenuItemTemplate_1.HTMLEMenuItemTemplate(descArgs));
         return HTMLElement_7.HTMLElementTemplate('e-menuitemgroup', {
             props: {
-                id: args.id,
-                className: args.className,
-                name: args.name
+                id: desc.id,
+                className: desc.className,
+                name: desc.name
             },
             children: items
         });
@@ -2312,52 +2040,52 @@ define("engine/editor/templates/menus/MenuTemplate", ["require", "exports", "eng
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenuTemplate = void 0;
-    const HTMLEMenuTemplate = (args) => {
-        const items = args.items.map((itemArgs) => {
-            if ("isGroup" in itemArgs) {
-                return MenuItemGroupTemplate_1.HTMLEMenuItemGroupTemplate(itemArgs);
+    const HTMLEMenuTemplate = (desc) => {
+        const items = desc.items.map((itemDesc) => {
+            if ("isGroup" in itemDesc) {
+                return MenuItemGroupTemplate_1.HTMLEMenuItemGroupTemplate(itemDesc);
             }
             else {
-                return MenuItemTemplate_2.HTMLEMenuItemTemplate(itemArgs);
+                return MenuItemTemplate_2.HTMLEMenuItemTemplate(itemDesc);
             }
         });
         return HTMLElement_8.HTMLElementTemplate('e-menu', {
             props: {
-                id: args.id,
-                className: args.className,
-                name: args.name,
+                id: desc.id,
+                className: desc.className,
+                name: desc.name,
             },
             children: items
         });
     };
     exports.HTMLEMenuTemplate = HTMLEMenuTemplate;
 });
-define("engine/editor/templates/menus/MenuItemTemplate", ["require", "exports", "engine/core/input/Input", "engine/editor/elements/HTMLElement", "engine/editor/templates/menus/MenuTemplate"], function (require, exports, Input_2, HTMLElement_9, MenuTemplate_1) {
+define("engine/editor/templates/menus/MenuItemTemplate", ["require", "exports", "engine/core/input/Input", "engine/editor/elements/HTMLElement", "engine/editor/templates/menus/MenuTemplate"], function (require, exports, Input_1, HTMLElement_9, MenuTemplate_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenuItemTemplate = void 0;
-    const HTMLEMenuItemTemplate = (args) => {
+    const HTMLEMenuItemTemplate = (desc) => {
         let slotted = [];
-        if (args.menu) {
-            slotted.push(HTMLElement_9.setHTMLElementAttributes(MenuTemplate_1.HTMLEMenuTemplate(args.menu), {
+        if (desc.menu) {
+            slotted.push(HTMLElement_9.setElementAttributes(MenuTemplate_1.HTMLEMenuTemplate(desc.menu), {
                 slot: 'menu'
             }));
         }
         const menuItem = HTMLElement_9.HTMLElementTemplate('e-menuitem', {
             props: {
-                id: args.id,
-                className: args.className,
-                name: args.name,
-                title: args.title,
-                type: args.type,
-                label: args.label,
-                disabled: args.disabled,
-                icon: args.icon,
-                value: args.value,
-                checked: args.checked,
-                command: args.command,
-                commandArgs: args.commandArgs,
-                hotkey: args.hotkey ? new Input_2.HotKey(args.hotkey.key, args.hotkey.mod1, args.hotkey.mod2) : void 0
+                id: desc.id,
+                className: desc.className,
+                name: desc.name,
+                title: desc.title,
+                type: desc.type,
+                label: desc.label,
+                disabled: desc.disabled,
+                icon: desc.icon,
+                value: desc.value,
+                checked: desc.checked,
+                command: desc.command,
+                commandArgs: desc.commandArgs,
+                hotkey: desc.hotkey ? new Input_1.HotKey(desc.hotkey.key, desc.hotkey.mod1, desc.hotkey.mod2) : void 0
             },
             children: [
                 ...slotted
@@ -2371,22 +2099,22 @@ define("engine/editor/templates/menus/MenubarTemplate", ["require", "exports", "
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenubarTemplate = void 0;
-    const HTMLEMenubarTemplate = (args) => {
-        const items = args.items.map((itemArgs) => {
-            return MenuItemTemplate_3.HTMLEMenuItemTemplate(itemArgs);
+    const HTMLEMenubarTemplate = (desc) => {
+        const items = desc.items.map((itemDesc) => {
+            return MenuItemTemplate_3.HTMLEMenuItemTemplate(itemDesc);
         });
         return HTMLElement_10.HTMLElementTemplate('e-menubar', {
             props: {
-                id: args.id,
-                className: args.className,
-                tabIndex: args.tabIndex
+                id: desc.id,
+                className: desc.className,
+                tabIndex: desc.tabIndex
             },
             children: items
         });
     };
     exports.HTMLEMenubarTemplate = HTMLEMenubarTemplate;
 });
-define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/commands/Command", "engine/libs/patterns/messaging/events/EventDispatcher", "engine/resources/ResourceFetcher", "engine/editor/elements/Snippets", "engine/editor/templates/menus/MenubarTemplate"], function (require, exports, Command_1, EventDispatcher_1, ResourceFetcher_2, Snippets_4, MenubarTemplate_1) {
+define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/commands/Command", "engine/libs/patterns/messaging/events/EventDispatcher", "engine/resources/ResourceFetcher", "engine/editor/elements/Snippets", "engine/editor/templates/menus/MenubarTemplate"], function (require, exports, Command_1, EventDispatcher_1, ResourceFetcher_2, Snippets_2, MenubarTemplate_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EditorBase = exports.editor = void 0;
@@ -2477,11 +2205,11 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
             }
         }
         getState(key) {
-            return Snippets_4.getPropertyFromPath(this._state, key);
+            return Snippets_2.getPropertyFromPath(this._state, key);
         }
         //TODO: Create a listeners object with the same structure as the state object
         setState(key, value) {
-            Snippets_4.setPropertyFromPath(this._state, key, value);
+            Snippets_2.setPropertyFromPath(this._state, key, value);
             const listenedStates = Array.from(this._stateListeners.keys());
             listenedStates.filter((state) => {
                 return (state.startsWith(key) && (state.charAt(key.length) === "." || state.charAt(key.length) === "")) ||
@@ -2490,8 +2218,8 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
                 let stateListeners = this._stateListeners.get(state);
                 if (stateListeners) {
                     let newStateValue = (state.length === key.length) ? value :
-                        (state.length >= key.length) ? Snippets_4.getPropertyFromPath(value, state.substring(key.length + 1)) :
-                            Snippets_4.getPropertyFromPath(this._state, state);
+                        (state.length >= key.length) ? Snippets_2.getPropertyFromPath(value, state.substring(key.length + 1)) :
+                            Snippets_2.getPropertyFromPath(this._state, state);
                     stateListeners.forEach((stateListener) => {
                         stateListener(newStateValue);
                     });
@@ -2584,6 +2312,911 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
     exports.EditorBase = EditorBase;
     var editor = new EditorBase();
     exports.editor = editor;
+});
+define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "exports", "engine/core/input/Input", "engine/editor/Editor", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/Menu"], function (require, exports, Input_2, Editor_2, HTMLElement_11, Menu_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEMenuItemElement = exports.isHTMLEMenuItemElement = void 0;
+    function isHTMLEMenuItemElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-menuitem";
+    }
+    exports.isHTMLEMenuItemElement = isHTMLEMenuItemElement;
+    let BaseHTMLEMenuItemElement = class BaseHTMLEMenuItemElement extends HTMLElement {
+        constructor() {
+            super();
+            HTMLElement_11.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    position: relative;
+                    display: inline-block;
+
+                    user-select: none;
+                    white-space: nowrap;
+
+                    padding: 2px 6px;
+                    cursor: pointer;
+                }
+
+                :host(:focus) {
+                    outline: none;
+                }
+
+                :host(:focus-within) {
+                    color: white;
+                    background-color: dimgray;
+                }
+                                
+                :host([type="menu"]:focus-within) {
+                    color: black;
+                    background-color: gainsboro;
+                }
+
+                :host([type="menu"]:focus-within) [part~="arrow"] {
+                    color: dimgray;
+                }
+                
+                :host(:focus-within) [part~="visual"] {
+                    color: gainsboro;
+                }
+
+                :host([disabled]) {
+                    color: lightgray;
+                }
+
+                :host([type="submenu"]) ::slotted([slot="menu"]),
+                :host([type="menu"]) ::slotted([slot="menu"]) {
+                    z-index: 1;
+                    position: absolute;
+                    color: initial;
+                }
+
+                :host([type="menu"]) ::slotted([slot="menu"]) {
+                    top: 100%;
+                    left: 0;
+                }
+
+                :host([type="submenu"]) ::slotted([slot="menu"]) {
+                    left: 100%;
+                    top: -6px;
+                }
+                
+                :host([type="submenu"]) ::slotted([slot="menu"][overflowing]) {
+                    right: 100%;
+                    left: auto;
+                }
+                
+                :host([type="menu"]) ::slotted([slot="menu"][overflowing]) {
+                    right: 0;
+                    left: auto;
+                }
+
+                :host([type="menu"]) ::slotted([slot="menu"]:not([expanded])),
+                :host([type="submenu"]) ::slotted([slot="menu"]:not([expanded])) {
+                    opacity: 0;
+                    pointer-events: none !important;
+                }
+
+                [part~="li"] {
+                    display: flex;
+                    height: 100%;
+                    list-style-type: none;
+                }
+
+                [part~="content"] {
+                    font-size: 1em;
+                    flex: auto;
+                    display: flex;
+                }
+
+                [part~="icon"] {
+                    flex: none;
+                    display: none;
+                    width: 16px;
+                    margin-right: 2px;
+                }
+
+                [part~="state"] {
+                    flex: none;
+                    width: 16px;
+                    margin-right: 8px;
+                }
+
+                [part~="label"] {
+                    flex: auto;
+                    text-align: left;
+                }
+
+                [part~="hotkey"] {
+                    flex: none;
+                    text-align: right;
+                    margin-left: 16px;
+                }
+
+                [part~="hotkey"]:empty {
+                    display: none !important;
+                }
+
+                [part~="arrow"] {
+                    flex: none;
+                    margin-left: 8px;
+                }
+
+                [part~="visual"] {
+                    color: dimgray;
+                    font-size: 1.6em;
+                    line-height: 0.625;
+                }
+
+                [part~="visual"]::after {
+                    pointer-events: none;
+                }
+
+                :host(:not([icon])) [part~="icon"],
+                :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
+                    visibility: hidden;
+                }
+
+                :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
+                    display: none;
+                }
+
+                :host(:not([type="submenu"])) [part~="arrow"] {
+                    display: none !important;
+                }
+                
+                :host([type="checkbox"][checked]) [part~="state"]::after {
+                    content: "■";
+                }
+
+                :host([type="checkbox"]:not([checked])) [part~="state"]::after {
+                    content: "□";
+                }
+
+                :host([type="radio"][checked]) [part~="state"]::after {
+                    content: "●";
+                }
+
+                :host([type="radio"]:not([checked])) [part~="state"]::after {
+                    content: "○";
+                }
+
+                :host([type="submenu"]) [part~="arrow"]::after {
+                    content: "›";
+                }
+            </style>
+            <li part="li">
+                <span part="content">
+                    <span part="visual icon"></span>
+                    <span part="visual state"></span>
+                    <span part="label"></span>
+                    <span part="hotkey"></span>
+                    <span part="description"></span>
+                    <span part="visual arrow"></span>
+                </span>
+                <slot name="menu"></slot>
+            </li>
+        `);
+            this.childMenu = null;
+            this.parentMenu = null;
+            this.group = null;
+            this.command = null;
+            this._hotkey = null;
+            this._hotkeyExec = null;
+        }
+        get hotkey() {
+            return this._hotkey;
+        }
+        set hotkey(hotkey) {
+            var _a;
+            if (this._hotkey !== null && this._hotkeyExec !== null) {
+                Editor_2.editor.removeHotkeyExec(this._hotkey, this._hotkeyExec);
+            }
+            if (!this._hotkeyExec) {
+                this._hotkeyExec = () => {
+                    if (this.command) {
+                        Editor_2.editor.executeCommand(this.command, this.commandArgs);
+                    }
+                };
+            }
+            if (hotkey instanceof Input_2.HotKey) {
+                this._hotkey = hotkey;
+                Editor_2.editor.addHotkeyExec(this._hotkey, this._hotkeyExec);
+            }
+            let hotkeyPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=hotkey]");
+            if (hotkeyPart) {
+                hotkeyPart.textContent = hotkey ? hotkey.toString() : "";
+            }
+        }
+        connectedCallback() {
+            var _a;
+            this.tabIndex = this.tabIndex;
+            this.setAttribute("aria-label", this.label);
+            const menuSlot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot[name=menu]");
+            if (menuSlot) {
+                menuSlot.addEventListener("slotchange", () => {
+                    const menuElem = menuSlot.assignedElements()[0];
+                    if (Menu_1.isHTMLEMenuElement(menuElem)) {
+                        this.childMenu = menuElem;
+                        menuElem.parentItem = this;
+                    }
+                });
+            }
+        }
+        disconnectedCallback() {
+            if (this._hotkey !== null && this._hotkeyExec !== null) {
+                Editor_2.editor.removeHotkeyExec(this._hotkey, this._hotkeyExec);
+            }
+        }
+        attributeChangedCallback(name, oldValue, newValue) {
+            var _a, _b;
+            if (newValue !== oldValue) {
+                switch (name) {
+                    case "label":
+                        if (oldValue !== newValue) {
+                            const labelPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
+                            if (labelPart) {
+                                labelPart.textContent = newValue;
+                            }
+                        }
+                        break;
+                    case "icon":
+                        if (oldValue !== newValue) {
+                            const iconPart = (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector("[part~=icon]");
+                            if (iconPart) {
+                                iconPart.dataset.value = newValue;
+                            }
+                        }
+                        break;
+                    case "checked":
+                        if (oldValue !== newValue) {
+                            switch (this.type) {
+                                case "checkbox":
+                                    this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
+                                    if (this.command) {
+                                        Editor_2.editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : { undo: true });
+                                    }
+                                    break;
+                                case "radio":
+                                    this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
+                                    if (this.command) {
+                                        Editor_2.editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : { undo: true });
+                                    }
+                                    break;
+                            }
+                        }
+                        break;
+                }
+            }
+        }
+        trigger() {
+            if (!this.disabled) {
+                switch (this.type) {
+                    case "button":
+                    default:
+                        if (this.command) {
+                            Editor_2.editor.executeCommand(this.command, this.commandArgs);
+                        }
+                        break;
+                    case "checkbox":
+                        this.checked = !this.checked;
+                        break;
+                    case "radio":
+                        this.checked = true;
+                        break;
+                    case "menu":
+                        if (this.childMenu) {
+                            this.childMenu.focusItemAt(0);
+                        }
+                        break;
+                }
+                this.dispatchEvent(new CustomEvent("trigger", { bubbles: true }));
+            }
+        }
+    };
+    BaseHTMLEMenuItemElement = __decorate([
+        HTMLElement_11.RegisterCustomHTMLElement({
+            name: "e-menuitem",
+            observedAttributes: ["icon", "label", "checked"]
+        }),
+        HTMLElement_11.GenerateAttributeAccessors([
+            { name: "name", type: "string" },
+            { name: "label", type: "string" },
+            { name: "icon", type: "string" },
+            { name: "type", type: "string" },
+            { name: "disabled", type: "boolean" },
+            { name: "checked", type: "boolean" },
+            { name: "value", type: "string" },
+        ])
+    ], BaseHTMLEMenuItemElement);
+    exports.BaseHTMLEMenuItemElement = BaseHTMLEMenuItemElement;
+});
+define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/menus/MenuItemGroup"], function (require, exports, HTMLElement_12, MenuItem_3, Snippets_3, MenuItemGroup_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEMenuElement = exports.isHTMLEMenuElement = void 0;
+    function isHTMLEMenuElement(elem) {
+        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menu";
+    }
+    exports.isHTMLEMenuElement = isHTMLEMenuElement;
+    let BaseHTMLEMenuElement = class BaseHTMLEMenuElement extends HTMLElement {
+        constructor() {
+            super();
+            HTMLElement_12.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                    position: relative;
+                    user-select: none;
+
+                    padding: 6px 0;
+                    background-color: white;
+                    cursor: initial;
+
+                    -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+                    -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+                    box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+                }
+                
+                :host(:focus) {
+                    outline: none;
+                }
+
+                [part~="ul"] {
+                    display: block;
+                    list-style-type: none;
+                    padding: 0; margin: 0;
+                }
+
+                ::slotted(*) {
+                    display: block;
+                    width: 100%;
+                }
+
+                ::slotted(hr) {
+                    margin: 6px 0;
+                }
+            </style>
+            <ul part="ul">
+                <slot></slot>
+            </ul>
+        `);
+            this.parentItem = null;
+            this.items = [];
+            this._activeIndex = -1;
+        }
+        get activeIndex() {
+            return this._activeIndex;
+        }
+        get activeItem() {
+            return this.items[this.activeIndex] || null;
+        }
+        connectedCallback() {
+            var _a;
+            this.tabIndex = this.tabIndex;
+            const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
+            if (slot) {
+                slot.addEventListener("slotchange", () => {
+                    const items = slot.assignedElements().filter(elem => MenuItem_3.isHTMLEMenuItemElement(elem) || MenuItemGroup_1.isHTMLEMenuItemGroupElement(elem));
+                    this.items = items;
+                    items.forEach((item) => {
+                        item.parentMenu = this;
+                    });
+                });
+            }
+            this.addEventListener("mousedown", (event) => {
+                let target = event.target;
+                if (MenuItem_3.isHTMLEMenuItemElement(target)) {
+                    let thisIncludesTarget = this.items.includes(target);
+                    if (thisIncludesTarget) {
+                        target.trigger();
+                    }
+                }
+            });
+            this.addEventListener("mouseover", (event) => {
+                let target = event.target;
+                let targetIndex = this.items.indexOf(target);
+                if (this === target) {
+                    this.reset();
+                    this.focus();
+                }
+                else if (targetIndex >= 0) {
+                    if (MenuItem_3.isHTMLEMenuItemElement(target)) {
+                        this.focusItemAt(targetIndex, true);
+                    }
+                    else {
+                        this._activeIndex = targetIndex;
+                    }
+                }
+            });
+            this.addEventListener("mouseout", (event) => {
+                let target = event.target;
+                let thisIntersectsWithMouse = Snippets_3.pointIntersectsWithDOMRect(event.clientX, event.clientY, this.getBoundingClientRect());
+                if ((this === target || this.items.includes(target)) && !thisIntersectsWithMouse) {
+                    this.reset();
+                    this.focus();
+                }
+            });
+            this.addEventListener("focusin", (event) => {
+                let target = event.target;
+                this._activeIndex = this.items.findIndex((item) => item.contains(target));
+                this.expanded = true;
+            });
+            this.addEventListener("focusout", (event) => {
+                let newTarget = event.relatedTarget;
+                if (!this.contains(newTarget)) {
+                    this.reset();
+                    this.expanded = false;
+                }
+            });
+            this.addEventListener("keydown", (event) => {
+                switch (event.key) {
+                    case "ArrowUp":
+                        this.focusItemAt((this.activeIndex <= 0) ? this.items.length - 1 : this.activeIndex - 1);
+                        if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
+                            this.activeItem.focusItemAt(this.activeItem.items.length - 1);
+                        }
+                        event.stopPropagation();
+                        break;
+                    case "ArrowDown":
+                        this.focusItemAt((this.activeIndex >= this.items.length - 1) ? 0 : this.activeIndex + 1);
+                        if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
+                            this.activeItem.focusItemAt(0);
+                        }
+                        event.stopPropagation();
+                        break;
+                    case "Home":
+                        this.focusItemAt(0);
+                        if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
+                            this.activeItem.focusItemAt(0);
+                        }
+                        event.stopPropagation();
+                        break;
+                    case "End":
+                        this.focusItemAt(this.items.length - 1);
+                        if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
+                            this.activeItem.focusItemAt(this.activeItem.items.length - 1);
+                        }
+                        event.stopPropagation();
+                        break;
+                    case "Enter":
+                        if (MenuItem_3.isHTMLEMenuItemElement(this.activeItem)) {
+                            this.activeItem.trigger();
+                            event.stopPropagation();
+                        }
+                        break;
+                    case "Escape":
+                        this.reset();
+                        break;
+                    case "ArrowLeft":
+                        if (this.parentItem) {
+                            let parentGroup = this.parentItem.group;
+                            let parentMenu = this.parentItem.parentMenu;
+                            if (isHTMLEMenuElement(parentMenu)) {
+                                if (parentGroup) {
+                                    parentGroup.focusItemAt(parentGroup.activeIndex);
+                                }
+                                else {
+                                    parentMenu.focusItemAt(parentMenu.activeIndex);
+                                }
+                                this.reset();
+                                event.stopPropagation();
+                            }
+                        }
+                        break;
+                    case "ArrowRight":
+                        if (this.items.includes(event.target)) {
+                            if (MenuItem_3.isHTMLEMenuItemElement(this.activeItem) && this.activeItem.childMenu) {
+                                this.activeItem.childMenu.focusItemAt(0);
+                                event.stopPropagation();
+                            }
+                        }
+                        break;
+                }
+            });
+        }
+        attributeChangedCallback(name, oldValue, newValue) {
+            if (newValue !== oldValue) {
+                switch (name) {
+                    case "expanded":
+                        if (newValue != null) {
+                            let thisRect = this.getBoundingClientRect();
+                            let thisIsOverflowing = thisRect.right > document.body.clientWidth;
+                            if (thisIsOverflowing) {
+                                this.overflowing = true;
+                            }
+                        }
+                        else {
+                            this.overflowing = false;
+                        }
+                        break;
+                }
+            }
+        }
+        focusItemAt(index, childMenu) {
+            let item = this.items[index];
+            if (item) {
+                this._activeIndex = index;
+                item.focus();
+                if (MenuItem_3.isHTMLEMenuItemElement(item)) {
+                    if (childMenu && item.childMenu) {
+                        item.childMenu.focus();
+                    }
+                }
+                else {
+                    item.focusItemAt(0);
+                }
+            }
+        }
+        focusItem(predicate, subitems) {
+            let item = this.findItem(predicate, subitems);
+            if (item) {
+                item.focus();
+            }
+        }
+        reset() {
+            let item = this.activeItem;
+            this._activeIndex = -1;
+            if (MenuItem_3.isHTMLEMenuItemElement(item) && item.childMenu) {
+                item.childMenu.reset();
+            }
+        }
+        findItem(predicate, subitems) {
+            let foundItem = null;
+            for (let idx = 0; idx < this.items.length; idx++) {
+                let item = this.items[idx];
+                if (MenuItem_3.isHTMLEMenuItemElement(item)) {
+                    if (predicate(item)) {
+                        return item;
+                    }
+                    if (subitems && item.childMenu) {
+                        foundItem = item.childMenu.findItem(predicate, subitems);
+                        if (foundItem) {
+                            return foundItem;
+                        }
+                    }
+                }
+                else if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(item)) {
+                    foundItem = item.findItem(predicate, subitems);
+                    if (foundItem) {
+                        return foundItem;
+                    }
+                }
+            }
+            return foundItem;
+        }
+    };
+    BaseHTMLEMenuElement = __decorate([
+        HTMLElement_12.RegisterCustomHTMLElement({
+            name: "e-menu",
+            observedAttributes: ["expanded"]
+        }),
+        HTMLElement_12.GenerateAttributeAccessors([
+            { name: "name", type: "string" },
+            { name: "expanded", type: "boolean" },
+            { name: "overflowing", type: "boolean" }
+        ])
+    ], BaseHTMLEMenuElement);
+    exports.BaseHTMLEMenuElement = BaseHTMLEMenuElement;
+});
+define("engine/editor/elements/lib/containers/tabs/TabPanel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_13) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLETabPanelElement = void 0;
+    let BaseHTMLETabPanelElement = class BaseHTMLETabPanelElement extends HTMLElement {
+        constructor() {
+            super();
+            HTMLElement_13.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                }
+
+                :host([hidden]) {
+                    display: none;
+                }
+            </style>
+            <slot></slot>
+        `);
+        }
+        connectedCallback() {
+            this.tabIndex = this.tabIndex;
+            this.dispatchEvent(new CustomEvent("connected"));
+        }
+    };
+    BaseHTMLETabPanelElement = __decorate([
+        HTMLElement_13.RegisterCustomHTMLElement({
+            name: "e-tabpanel"
+        }),
+        HTMLElement_13.GenerateAttributeAccessors([
+            { name: "name", type: "string" }
+        ])
+    ], BaseHTMLETabPanelElement);
+    exports.BaseHTMLETabPanelElement = BaseHTMLETabPanelElement;
+});
+define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_14) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLETabElement = exports.isHTMLETabElement = void 0;
+    function isHTMLETabElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-tab";
+    }
+    exports.isHTMLETabElement = isHTMLETabElement;
+    let BaseHTMLETabElement = class BaseHTMLETabElement extends HTMLElement {
+        constructor() {
+            super();
+            HTMLElement_14.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                    user-select: none;
+                    white-space: nowrap;
+                    padding: 2px 6px;
+                    border-left: 4px solid transparent;
+                    cursor: pointer;
+                }
+
+                :host([disabled]) {
+                    color: grey;
+                }
+
+                :host(:hover:not([active])) {
+                    font-weight: bold;
+                    border-left: 4px solid lightgrey;
+                }
+
+                :host([active]) {
+                    font-weight: bold;
+                    border-left: 4px solid dimgray;
+                }
+            </style>
+            <slot></slot>
+        `);
+            this.panel = null;
+        }
+        connectedCallback() {
+            this.tabIndex = this.tabIndex;
+            this.panel = document.querySelector(`#${this.controls}`);
+            if (this.panel !== null) {
+                this.panel.addEventListener("connected", (event) => {
+                    let panel = event.target;
+                    panel.hidden = !this.active;
+                }, { once: true });
+            }
+        }
+        attributeChangedCallback(name, oldValue, newValue) {
+            switch (name) {
+                case "controls":
+                    if (oldValue !== newValue) {
+                        this.panel = document.querySelector(`#${newValue}`);
+                    }
+                    break;
+                case "active":
+                    if (this.panel) {
+                        this.panel.hidden = !this.active;
+                    }
+                    break;
+            }
+        }
+        show() {
+            this.active = true;
+        }
+        hide() {
+            this.active = false;
+        }
+    };
+    BaseHTMLETabElement = __decorate([
+        HTMLElement_14.RegisterCustomHTMLElement({
+            name: "e-tab",
+            observedAttributes: ["active", "controls"]
+        }),
+        HTMLElement_14.GenerateAttributeAccessors([
+            { name: "name", type: "string" },
+            { name: "active", type: "boolean" },
+            { name: "controls", type: "string" },
+        ])
+    ], BaseHTMLETabElement);
+    exports.BaseHTMLETabElement = BaseHTMLETabElement;
+});
+define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/tabs/Tab"], function (require, exports, HTMLElement_15, Tab_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLETabListElement = void 0;
+    let BaseHTMLETabListElement = class BaseHTMLETabListElement extends HTMLElement {
+        constructor() {
+            super();
+            HTMLElement_15.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                }
+            </style>
+            <slot></slot>
+        `);
+            this.tabs = [];
+            const slot = this.shadowRoot.querySelector("slot");
+            slot.addEventListener("slotchange", (event) => {
+                const tabs = event.target.assignedElements().filter(Tab_1.isHTMLETabElement);
+                this.tabs = tabs;
+            });
+            this.addEventListener("tabchange", ((event) => {
+                this.tabs.forEach((tab) => {
+                    if ((event.detail.tab === tab.name)) {
+                        tab.show();
+                    }
+                    else {
+                        tab.hide();
+                    }
+                });
+            }));
+            this.addEventListener("click", (event) => {
+                let target = event.target;
+                if (Tab_1.isHTMLETabElement(target)) {
+                    this.dispatchEvent(new CustomEvent("tabchange", {
+                        detail: {
+                            tab: target.name
+                        },
+                        bubbles: true
+                    }));
+                }
+            });
+        }
+        connectedCallback() {
+            this.tabIndex = this.tabIndex;
+        }
+    };
+    BaseHTMLETabListElement = __decorate([
+        HTMLElement_15.RegisterCustomHTMLElement({
+            name: "e-tablist"
+        })
+    ], BaseHTMLETabListElement);
+    exports.BaseHTMLETabListElement = BaseHTMLETabListElement;
+});
+define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_4) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.StructuredFormData = void 0;
+    class StructuredFormData {
+        constructor(form) {
+            this.form = form;
+        }
+        getStructuredFormData() {
+            let structuredData = {};
+            let formData = new FormData(this.form);
+            let keys = Array.from(formData.keys());
+            keys.forEach((key) => {
+                Snippets_4.setPropertyFromPath(structuredData, key, formData.get(key));
+            });
+            return structuredData;
+        }
+    }
+    exports.StructuredFormData = StructuredFormData;
+});
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draganddrop/Draggable", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "engine/editor/objects/StructuredFormData"], function (require, exports, Menu_2, MenuBar_1, MenuItem_4, MenuItemGroup_2, Tab_2, TabList_1, TabPanel_1, Draggable_2, Dropzone_1, StructuredFormData_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.mockup = void 0;
+    Tab_2.BaseHTMLETabElement;
+    TabList_1.BaseHTMLETabListElement;
+    TabPanel_1.BaseHTMLETabPanelElement;
+    Draggable_2.BaseHTMLEDraggableElement;
+    Dropzone_1.BaseHTMLEDropzoneElement;
+    MenuBar_1.BaseHTMLEMenuBarElement;
+    Menu_2.BaseHTMLEMenuElement;
+    MenuItemGroup_2.BaseHTMLEMenuItemGroupElement;
+    MenuItem_4.BaseHTMLEMenuItemElement;
+    const body = /*template*/ `
+    <link rel="stylesheet" href="../css/mockup.css"/>
+    <div class="main flex-rows">
+        <nav class="flex-cols flex-none">
+            <e-menubar tabindex="0">
+                <e-menuitem name="canvas-menu-item" type="menu" label="Canvas" tabindex="-1" aria-label="Canvas">
+                    <e-menu slot="menu" tabindex="-1">
+                        <e-menuitemgroup tabindex="-1">
+                            <e-menuitem name="canvas-play-item" type="button" label="Play" icon="play_arrow" value="play"
+                                tabindex="-1" aria-label="Play"></e-menuitem>
+                            <e-menuitem name="canvas-pause-item" type="button" label="Pause" icon="pause" value="pause"
+                                tabindex="-1" aria-label="Pause"></e-menuitem>
+                        </e-menuitemgroup>
+                        <e-menuitemgroup tabindex="-1">
+                            <e-menuitem name="show-fps-item" type="checkbox" label="Show FPS" icon="60fps" tabindex="-1"
+                                aria-label="Show FPS"></e-menuitem>
+                        </e-menuitemgroup>
+                        <e-menuitem name="letters-menu" type="submenu" label="Letters" tabindex="-1" aria-label="Letters">
+                            <e-menu slot="menu" tabindex="-1">
+                                <e-menuitemgroup name="favorite-letter" tabindex="-1">
+                                    <e-menuitem name="a-item" type="radio" label="Letter A" value="a" tabindex="-1"
+                                        aria-label="Letter A" checked=""></e-menuitem>
+                                    <e-menuitem name="b-item" type="radio" label="Letter B" value="b" tabindex="-1"
+                                        aria-label="Letter B"></e-menuitem>
+                                </e-menuitemgroup>
+                            </e-menu>
+                        </e-menuitem>
+                    </e-menu>
+                </e-menuitem>
+            </e-menubar>
+        </nav>
+        <div class="flex-cols flex-auto">
+            <div id="tabs-col" class="flex-none padded">
+                <e-tablist id="tablist">
+                    <e-tab name="extract" controls="extract-panel" active>Extract</e-tab>
+                    <e-tab name="transform" controls="transform-panel">Transform</e-tab>
+                    <e-tab name="export" controls="export-panel">Export</e-tab>
+                </e-tablist>
+            </div>
+            <div id="columns-col" class="flex-none padded">
+                <details open>
+                    <summary>Dataset 1</summary>
+                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="A">Column A<input name="A" value="Column_A" hidden></input></e-draggable>
+                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="B">Column B<input name="B" value="Column_B" hidden></input></e-draggable>
+                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="C">Column C<input name="C" value="Column_C" hidden></input></e-draggable>
+                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D">Column D<input name="D" value="Column_D" hidden></input></e-draggable>
+                </details>
+                <details open>
+                    <summary>Dataset 1</summary>
+                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="A">Column A<input name="A" value="Column_A" hidden></input></e-draggable>
+                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="B">Column B<input name="B" value="Column_B" hidden></input></e-draggable>
+                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="C">Column C<input name="C" value="Column_C" hidden></input></e-draggable>
+                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D">Column D<input name="D" value="Column_D" hidden></input></e-draggable>
+                </details>
+            </div>
+            <div id ="panels-col" class="flex-auto padded">
+                <e-tabpanel id="extract-panel" class="padded">
+                    <label for="file">Choose a data file</label><br/>
+                    <input name="file" type="file"/>
+                </e-tabpanel>
+                <e-tabpanel id="transform-panel" class="padded">
+                    <form>
+                        <details open>
+                            <summary>Transformation
+                                <select data-class="toggler-select">
+                                    <option value="aggregate" selected>Aggregate</option>
+                                    <option value="median_imputer">Median imputer</option>
+                                </select>
+                            </summary>
+                            <fieldset id="aggregate" class="indented">
+                                <label>Columns</label><br/>
+                                <e-dropzone data-class="input-dropzone" data-input-dropzone-name="name" allowedtypes="*" multiple></e-dropzone><br/>
+                            </fieldset>
+                            <fieldset id="median_imputer" class="indented">
+                                <label>Median</label><input class="indented" name="median" type="number" value="1" min="0" max="100"></input><br/>
+                            </fieldset>
+                        </details>
+                    </form>
+                </e-tabpanel>
+                <e-tabpanel id="export-panel" class="padded">
+                    <button id="download-btn">Download</button>
+                </e-tab-panel>
+            </div>
+        </div>
+    </div>
+`;
+    async function mockup() {
+        const bodyTemplate = document.createElement("template");
+        bodyTemplate.innerHTML = body;
+        document.body.insertBefore(bodyTemplate.content, document.body.firstChild);
+        // let columns = await fetch("json/columns.json").then((resp) => {
+        //     if (resp.ok) {
+        //         return resp.json();
+        //     }
+        // });
+        // columns.forEach((col) => {
+        // });
+        let downloadBtn = document.getElementById("download-btn");
+        if (downloadBtn) {
+            downloadBtn.addEventListener("click", () => {
+                let form = document.querySelector("form");
+                if (form) {
+                    let structuredFormData = new StructuredFormData_1.StructuredFormData(form).getStructuredFormData();
+                    let dataBlob = new Blob([JSON.stringify(structuredFormData, null, 4)], { type: "application/json" });
+                    let donwloadAnchor = document.createElement("a");
+                    donwloadAnchor.href = URL.createObjectURL(dataBlob);
+                    donwloadAnchor.download = "config.json";
+                    donwloadAnchor.click();
+                }
+            });
+        }
+    }
+    exports.mockup = mockup;
 });
 define("engine/libs/maths/Snippets", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -9634,105 +10267,7 @@ define("engine/core/rendering/webgl/WebGLRendererUtilities", ["require", "export
     }
     exports.WebGLRendererUtilities = WebGLRendererUtilities;
 });
-define("engine/editor/elements/forms/Snippets", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.isSelectElement = exports.isInputElement = exports.setFormState = exports.getFormState = void 0;
-    ;
-    const getFormState = (form) => {
-        const elements = Array.from(form.elements);
-        let state = {};
-        elements.forEach((element) => {
-            if (isInputElement(element)) {
-                if (element.type === "radio") {
-                    if (!(element.name in state)) {
-                        state[element.name] = {
-                            type: "radio",
-                            nodes: [{
-                                    value: element.value,
-                                    checked: element.checked
-                                }]
-                        };
-                    }
-                    else {
-                        const elem = state[element.name];
-                        if ("nodes" in elem) {
-                            elem.nodes.push({
-                                value: element.value,
-                                checked: element.checked
-                            });
-                        }
-                    }
-                }
-                else if (element.type === "checkbox") {
-                    state[element.name] = {
-                        type: "checkbox",
-                        checked: element.checked
-                    };
-                }
-                else {
-                    state[element.name] = {
-                        value: element.value,
-                    };
-                }
-            }
-            else if (isSelectElement(element)) {
-                state[element.name] = {
-                    value: element.value,
-                };
-            }
-            else if (isTextAreaElement(element)) {
-                state[element.name] = {
-                    value: element.value,
-                };
-            }
-        });
-        return state;
-    };
-    exports.getFormState = getFormState;
-    const setFormState = (form, state) => {
-        const elements = Array.from(form.elements);
-        const names = Object.keys(state);
-        names.forEach((name) => {
-            const elemState = state[name];
-            if ("type" in elemState) {
-                if (elemState.type === "checkbox") {
-                    let element = elements.find((elem) => elem.name === name);
-                    if (element && isInputElement(element)) {
-                        element.checked = elemState.checked;
-                    }
-                }
-                else if (elemState.type === "radio") {
-                    elemState.nodes.forEach((radioNode) => {
-                        let element = elements.find((elem) => elem.name === name && elem.value === radioNode.value);
-                        if (element && isInputElement(element)) {
-                            element.checked = radioNode.checked;
-                        }
-                    });
-                }
-            }
-            else {
-                let element = elements.find((elem) => elem.name === name);
-                if (element && (isInputElement(element) || isSelectElement(element) || isTextAreaElement(element))) {
-                    element.value = elemState.value;
-                }
-            }
-        });
-    };
-    exports.setFormState = setFormState;
-    function isInputElement(elem) {
-        return elem.tagName.toLowerCase() === "input";
-    }
-    exports.isInputElement = isInputElement;
-    function isTextAreaElement(elem) {
-        return elem.tagName.toLowerCase() === "textarea";
-    }
-    function isSelectElement(elem) {
-        return elem.tagName.toLowerCase() === "select";
-    }
-    exports.isSelectElement = isSelectElement;
-});
-define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_11) {
+define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_16) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isStateElement = exports.ButtonStateElement = void 0;
@@ -9746,10 +10281,10 @@ define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", 
         }
     };
     ButtonStateElement = __decorate([
-        HTMLElement_11.RegisterCustomHTMLElement({
+        HTMLElement_16.RegisterCustomHTMLElement({
             name: 'e-button-state'
         }),
-        HTMLElement_11.GenerateAttributeAccessors([
+        HTMLElement_16.GenerateAttributeAccessors([
             { name: 'name', type: 'string' },
             { name: 'next', type: 'string' },
             { name: 'active', type: 'boolean' },
@@ -9757,14 +10292,14 @@ define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", 
     ], ButtonStateElement);
     exports.ButtonStateElement = ButtonStateElement;
 });
-define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/buttons/ButtonState"], function (require, exports, HTMLElement_12, ButtonState_1) {
+define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/buttons/ButtonState"], function (require, exports, HTMLElement_17, ButtonState_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StatefulButtonElement = void 0;
     let StatefulButtonElement = class StatefulButtonElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_12.bindShadowRoot(this, /*template*/ `
+            HTMLElement_17.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -9808,23 +10343,23 @@ define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require
         }
     };
     StatefulButtonElement = __decorate([
-        HTMLElement_12.RegisterCustomHTMLElement({
+        HTMLElement_17.RegisterCustomHTMLElement({
             name: 'e-stateful-button'
         }),
-        HTMLElement_12.GenerateAttributeAccessors([
+        HTMLElement_17.GenerateAttributeAccessors([
             { name: 'state', type: 'string' },
         ])
     ], StatefulButtonElement);
     exports.StatefulButtonElement = StatefulButtonElement;
 });
-define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_13) {
+define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_18) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelElement = void 0;
     let PanelElement = class PanelElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_13.bindShadowRoot(this, /*template*/ `
+            HTMLElement_18.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -9900,25 +10435,25 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
         }
     };
     PanelElement = __decorate([
-        HTMLElement_13.RegisterCustomHTMLElement({
+        HTMLElement_18.RegisterCustomHTMLElement({
             name: 'e-panel',
             observedAttributes: ['state']
         }),
-        HTMLElement_13.GenerateAttributeAccessors([
+        HTMLElement_18.GenerateAttributeAccessors([
             { name: 'label', type: 'string' },
             { name: 'state', type: 'string' },
         ])
     ], PanelElement);
     exports.PanelElement = PanelElement;
 });
-define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_14) {
+define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_19) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelGroupElement = void 0;
     let PanelGroupElement = class PanelGroupElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_14.bindShadowRoot(this, /*template*/ `
+            HTMLElement_19.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -9979,212 +10514,24 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
     };
     PanelGroupElement.observedAttributes = ['state'];
     PanelGroupElement = __decorate([
-        HTMLElement_14.RegisterCustomHTMLElement({
+        HTMLElement_19.RegisterCustomHTMLElement({
             name: 'e-panel-group'
         }),
-        HTMLElement_14.GenerateAttributeAccessors([
+        HTMLElement_19.GenerateAttributeAccessors([
             { name: 'label', type: 'string' },
             { name: 'state', type: 'string' },
         ])
     ], PanelGroupElement);
     exports.PanelGroupElement = PanelGroupElement;
 });
-define("engine/editor/elements/lib/containers/tabs/TabPanel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_15) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.TabPanelElement = void 0;
-    let TabPanelElement = class TabPanelElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_15.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: block;
-                    padding: 2px 6px;
-                }
-
-                :host(:not([active])) {
-                    display: none;
-                }
-            </style>
-            <slot></slot>
-        `);
-        }
-        connectedCallback() {
-            this.dispatchEvent(new CustomEvent("connected"));
-        }
-        show() {
-            this.active = true;
-        }
-        hide() {
-            this.active = false;
-        }
-    };
-    TabPanelElement = __decorate([
-        HTMLElement_15.RegisterCustomHTMLElement({
-            name: "e-tab-panel"
-        }),
-        HTMLElement_15.GenerateAttributeAccessors([
-            { name: "name", type: "string" },
-            { name: "active", type: "boolean" },
-        ])
-    ], TabPanelElement);
-    exports.TabPanelElement = TabPanelElement;
-});
-define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_16) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.isTabElement = exports.TabElement = void 0;
-    function isTabElement(elem) {
-        return elem.tagName === "E-TAB";
-    }
-    exports.isTabElement = isTabElement;
-    let TabElement = class TabElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_16.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: inline-block;
-                    user-select: none;
-                    white-space: nowrap;
-                    padding: 2px 6px;
-                    border-bottom: 4px solid transparent;
-                    cursor: pointer;
-                }
-
-                :host([disabled]) {
-                    color: grey;
-                }
-
-                :host(:hover:not([active])) {
-                    border-bottom: 4px solid lightgrey;
-                }
-
-                :host([active]) {
-                    font-weight: bold;
-                    border-bottom: 4px solid rgb(92, 92, 92);
-                }
-            </style>
-            <slot></slot>
-        `);
-            this.panel = null;
-        }
-        connectedCallback() {
-            this.tabIndex = this.tabIndex;
-            this.panel = document.getElementById(this.controls);
-            if (this.panel) {
-                this.panel.addEventListener("connected", () => {
-                    if (this.active) {
-                        this.show();
-                    }
-                    else {
-                        this.hide();
-                    }
-                }, { once: true });
-            }
-        }
-        show() {
-            this.active = true;
-        }
-        hide() {
-            this.active = false;
-        }
-        attributeChangedCallback(name, oldValue, newValue) {
-            switch (name) {
-                case "controls":
-                    if (oldValue !== newValue) {
-                        this.panel = document.getElementById(newValue);
-                    }
-                    break;
-                case "active":
-                    if (this.panel) {
-                        if (this.active) {
-                            this.panel.show();
-                        }
-                        else {
-                            this.panel.hide();
-                        }
-                    }
-                    break;
-            }
-        }
-    };
-    TabElement = __decorate([
-        HTMLElement_16.RegisterCustomHTMLElement({
-            name: "e-tab",
-            observedAttributes: ["active", "controls"]
-        }),
-        HTMLElement_16.GenerateAttributeAccessors([
-            { name: "name", type: "string" },
-            { name: "active", type: "boolean" },
-            { name: "controls", type: "string" },
-        ])
-    ], TabElement);
-    exports.TabElement = TabElement;
-});
-define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/tabs/Tab"], function (require, exports, HTMLElement_17, Tab_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.TabListElement = void 0;
-    let TabListElement = class TabListElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_17.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: block;
-                }
-            </style>
-            <slot id="tabs"></slot>
-        `);
-            this.tabs = [];
-            const tabsSlot = this.shadowRoot.getElementById("tabs");
-            tabsSlot.addEventListener("slotchange", (event) => {
-                const tabs = event.target.assignedElements().filter(Tab_1.isTabElement);
-                this.tabs = tabs;
-            });
-            this.addEventListener("tabchange", ((event) => {
-                this.tabs.forEach((tab) => {
-                    if ((event.detail.tab === tab.name)) {
-                        tab.show();
-                    }
-                    else {
-                        tab.hide();
-                    }
-                });
-            }));
-            this.addEventListener("click", (event) => {
-                let target = event.target;
-                if (Tab_1.isTabElement(target)) {
-                    this.dispatchEvent(new CustomEvent("tabchange", {
-                        detail: {
-                            tab: target.name
-                        },
-                        bubbles: true
-                    }));
-                }
-            });
-        }
-        connectedCallback() {
-            this.tabIndex = this.tabIndex;
-        }
-    };
-    TabListElement = __decorate([
-        HTMLElement_17.RegisterCustomHTMLElement({
-            name: "e-tab-list"
-        })
-    ], TabListElement);
-    exports.TabListElement = TabListElement;
-});
-define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_18) {
+define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_20) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RangeElement = void 0;
     let RangeElement = class RangeElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_18.bindShadowRoot(this, /*template*/ `
+            HTMLElement_20.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -10203,16 +10550,16 @@ define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engi
         }
     };
     RangeElement = __decorate([
-        HTMLElement_18.RegisterCustomHTMLElement({
+        HTMLElement_20.RegisterCustomHTMLElement({
             name: 'e-range'
         }),
-        HTMLElement_18.GenerateAttributeAccessors([
+        HTMLElement_20.GenerateAttributeAccessors([
             { name: 'value', type: 'number' },
         ])
     ], RangeElement);
     exports.RangeElement = RangeElement;
 });
-define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_19) {
+define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_21) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ImportElement = void 0;
@@ -10238,10 +10585,10 @@ define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine
         }
     };
     ImportElement = __decorate([
-        HTMLElement_19.RegisterCustomHTMLElement({
+        HTMLElement_21.RegisterCustomHTMLElement({
             name: 'e-import'
         }),
-        HTMLElement_19.GenerateAttributeAccessors([
+        HTMLElement_21.GenerateAttributeAccessors([
             { name: 'src', type: 'string' }
         ])
     ], ImportElement);
@@ -10353,214 +10700,6 @@ define("engine/libs/graphics/colors/Color", ["require", "exports"], function (re
     const Color = ColorBase;
     exports.Color = Color;
 });
-define("engine/editor/templates/form/FormTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_20) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLFormTemplate = void 0;
-    const HTMLFieldSetTemplate = (props) => {
-        let fieldset = HTMLElement_20.HTMLElement('fieldset');
-        let label;
-        let input;
-        let select;
-        fieldset.append(HTMLElement_20.HTMLElement('legend', {
-            props: props.legend
-        }));
-        props.elements.forEach((elem) => {
-            label = null;
-            input = null;
-            select = null;
-            if ('label' in elem) {
-                label = HTMLElement_20.HTMLElement('label', {
-                    props: {
-                        htmlFor: elem.name,
-                    }
-                });
-                switch (elem.elem) {
-                    case 'input':
-                        input = HTMLElement_20.HTMLElement('input', {
-                            props: elem
-                        });
-                        label.append(input);
-                        break;
-                    case 'select':
-                        select = HTMLElement_20.HTMLElement('select', {
-                            props: {
-                                name: elem.name,
-                                value: elem.value,
-                            },
-                            children: elem.options.map((props) => {
-                                return HTMLElement_20.HTMLElement('option', {
-                                    props: props
-                                });
-                            })
-                        });
-                        label.append(select);
-                        break;
-                }
-                if (elem.label.pos === 'before') {
-                    label.prepend(elem.label.textContent);
-                }
-                else {
-                    label.append(elem.label.textContent);
-                }
-                fieldset.append(label);
-            }
-            else {
-                fieldset.append(HTMLElement_20.HTMLElement(elem.tagName, { props: elem.props, attr: elem.attr, children: elem.children }));
-            }
-        });
-        return fieldset;
-    };
-    const HTMLFormTemplate = (props) => {
-        let form = HTMLElement_20.HTMLElement('form', {
-            props: {
-                id: props.id,
-                className: props.className,
-                name: props.name,
-                title: props.title,
-            },
-            attr: {
-                type: props.type
-            }
-        });
-        let fieldset;
-        let button;
-        props.elements.forEach((elem) => {
-            switch (elem.elem) {
-                case 'button':
-                    button = HTMLElement_20.HTMLElement('button', {
-                        props: elem
-                    });
-                    form.append(button);
-                    break;
-                case 'fieldset':
-                    fieldset = HTMLFieldSetTemplate(elem);
-                    form.append(fieldset);
-                    break;
-            }
-        });
-        return form;
-    };
-    exports.HTMLFormTemplate = HTMLFormTemplate;
-});
-define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_21) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLTableTemplate = void 0;
-    const HTMLTableTemplate = (desc) => {
-        const thead = HTMLElement_21.HTMLElementTemplate('thead', {
-            children: [
-                HTMLElement_21.HTMLElementTemplate('tr', {
-                    props: {
-                        id: desc.id,
-                        className: desc.className,
-                    },
-                    children: desc.headerCells.map((cell) => {
-                        return HTMLElement_21.HTMLElementTemplate('th', {
-                            props: {
-                                scope: 'col'
-                            },
-                            children: [
-                                cell
-                            ]
-                        });
-                    })
-                })
-            ]
-        });
-        const tbody = HTMLElement_21.HTMLElementTemplate('tbody', {
-            children: desc.bodyCells.map((row) => {
-                return HTMLElement_21.HTMLElementTemplate('tr', {
-                    props: {
-                        id: desc.id,
-                        className: desc.className,
-                    },
-                    children: row.map((cell) => {
-                        if ((typeof cell === 'object') && !(cell instanceof Node) && ('type' in cell)) {
-                            switch (cell.type) {
-                                case 'data':
-                                default:
-                                    return HTMLElement_21.HTMLElementTemplate('td', {
-                                        children: [
-                                            cell.content
-                                        ]
-                                    });
-                                case 'header':
-                                    return HTMLElement_21.HTMLElementTemplate('th', {
-                                        props: {
-                                            scope: 'row'
-                                        },
-                                        children: [
-                                            cell.content
-                                        ]
-                                    });
-                            }
-                        }
-                        else {
-                            return HTMLElement_21.HTMLElementTemplate('td', {
-                                children: [
-                                    cell
-                                ]
-                            });
-                        }
-                    })
-                });
-            })
-        });
-        const tfoot = HTMLElement_21.HTMLElementTemplate('tfoot', {
-            children: [
-                HTMLElement_21.HTMLElementTemplate('tr', {
-                    props: {
-                        id: desc.id,
-                        className: desc.className,
-                    },
-                    children: desc.footerCells.map((cell) => {
-                        if ((typeof cell === 'object') && !(cell instanceof Node) && ('type' in cell)) {
-                            switch (cell.type) {
-                                case 'data':
-                                default:
-                                    return HTMLElement_21.HTMLElementTemplate('td', {
-                                        children: [
-                                            cell.content
-                                        ]
-                                    });
-                                case 'header':
-                                    return HTMLElement_21.HTMLElementTemplate('th', {
-                                        props: {
-                                            scope: 'row'
-                                        },
-                                        children: [
-                                            cell.content
-                                        ]
-                                    });
-                            }
-                        }
-                        else {
-                            return HTMLElement_21.HTMLElementTemplate('td', {
-                                children: [
-                                    cell
-                                ]
-                            });
-                        }
-                    })
-                })
-            ]
-        });
-        const table = HTMLElement_21.HTMLElementTemplate('table', {
-            props: {
-                id: desc.id,
-                className: desc.className,
-            },
-            children: [
-                thead,
-                tbody,
-                tfoot
-            ]
-        });
-        return table;
-    };
-    exports.HTMLTableTemplate = HTMLTableTemplate;
-});
 define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_22) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -10653,15 +10792,15 @@ define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "e
     ], HTMLEDropdownElement);
     exports.HTMLEDropdownElement = HTMLEDropdownElement;
 });
-define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/Menu"], function (require, exports, HTMLElement_23, Menu_2) {
+define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/Menu"], function (require, exports, HTMLElement_23, Menu_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.isHTMLEMenuButtonElement = exports.HTMLEMenuButtonElement = void 0;
+    exports.BaseHTMLEMenuButtonElement = exports.isHTMLEMenuButtonElement = void 0;
     function isHTMLEMenuButtonElement(elem) {
         return elem.tagName.toLowerCase() === "e-menubutton";
     }
     exports.isHTMLEMenuButtonElement = isHTMLEMenuButtonElement;
-    let HTMLEMenuButtonElement = class HTMLEMenuButtonElement extends HTMLElement {
+    let BaseHTMLEMenuButtonElement = class BaseHTMLEMenuButtonElement extends HTMLElement {
         constructor() {
             super();
             HTMLElement_23.bindShadowRoot(this, /*template*/ `
@@ -10849,14 +10988,14 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
             if (menuSlot) {
                 menuSlot.addEventListener("slotchange", () => {
                     const menuElem = menuSlot.assignedElements()[0];
-                    if (Menu_2.isHTMLEMenuElement(menuElem)) {
+                    if (Menu_3.isHTMLEMenuElement(menuElem)) {
                         this.childMenu = menuElem;
                     }
                 });
             }
         }
     };
-    HTMLEMenuButtonElement = __decorate([
+    BaseHTMLEMenuButtonElement = __decorate([
         HTMLElement_23.RegisterCustomHTMLElement({
             name: "e-menubutton",
             observedAttributes: ["icon", "label", "checked"]
@@ -10869,8 +11008,8 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
             { name: "type", type: "string" },
             { name: "disabled", type: "boolean" },
         ])
-    ], HTMLEMenuButtonElement);
-    exports.HTMLEMenuButtonElement = HTMLEMenuButtonElement;
+    ], BaseHTMLEMenuButtonElement);
+    exports.BaseHTMLEMenuButtonElement = BaseHTMLEMenuButtonElement;
 });
 define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
     "use strict";
@@ -11057,257 +11196,7 @@ define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", ["requi
     ], HTMLEBreadcrumbTrailElement);
     exports.HTMLEBreadcrumbTrailElement = HTMLEBreadcrumbTrailElement;
 });
-define("engine/editor/elements/lib/controls/draganddrop/Draggable", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_27) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLEDraggableElement = exports.isHTMLEDraggableElement = void 0;
-    function isHTMLEDraggableElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-draggable";
-    }
-    exports.isHTMLEDraggableElement = isHTMLEDraggableElement;
-    let HTMLEDraggableElement = class HTMLEDraggableElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_27.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: inline-block;
-                }
-
-                slot {
-                    pointer-events: none;
-                    user-select: none;
-                }
-            </style>
-            <slot></slot>
-        `);
-            this.data = null;
-        }
-        connectedCallback() {
-            this.tabIndex = this.tabIndex;
-            this.draggable = true;
-            this.addEventListener("dragstart", (event) => {
-                let draggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                let draggablesData = [];
-                draggables.forEach((draggable) => {
-                    draggablesData.push(draggable.data);
-                });
-                let dataTransfer = event.dataTransfer;
-                if (dataTransfer !== null) {
-                    let data = JSON.stringify(draggablesData);
-                    dataTransfer.setData("text/plain", data);
-                }
-                this.dragged = true;
-            });
-            this.addEventListener("dragend", () => {
-                this.dragged = false;
-                let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                selectedDraggables.forEach((selectedDraggable) => {
-                    selectedDraggable.selected = false;
-                });
-            });
-            this.addEventListener("focusout", (event) => {
-                let relatedTarget = event.relatedTarget;
-                if (!isHTMLEDraggableElement(relatedTarget)) {
-                    let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                    selectedDraggables.forEach((selectedDrag) => {
-                        selectedDrag.selected = false;
-                    });
-                }
-            });
-            this.addEventListener("mousedown", (event) => {
-                if (!event.shiftKey) {
-                    if (!this.selected) {
-                        let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                        selectedDraggables.forEach((selectedDraggable) => {
-                            selectedDraggable.selected = false;
-                        });
-                        this.selected = true;
-                    }
-                }
-                else {
-                    this.selected = true;
-                }
-            });
-            this.addEventListener("mouseup", (event) => {
-                if (!event.shiftKey) {
-                    let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                    selectedDraggables.forEach((selectedDraggable) => {
-                        if (selectedDraggable !== this) {
-                            selectedDraggable.selected = false;
-                        }
-                    });
-                }
-            });
-        }
-    };
-    HTMLEDraggableElement = __decorate([
-        HTMLElement_27.RegisterCustomHTMLElement({
-            name: "e-draggable"
-        }),
-        HTMLElement_27.GenerateAttributeAccessors([
-            { name: "dropaction", type: "string" },
-            { name: "ref", type: "string" },
-            { name: "selected", type: "boolean" },
-            { name: "dragged", type: "boolean" },
-            { name: "droppreview", type: "boolean" },
-            { name: "type", type: "string" }
-        ])
-    ], HTMLEDraggableElement);
-    exports.HTMLEDraggableElement = HTMLEDraggableElement;
-});
-define("engine/editor/elements/lib/controls/draganddrop/Dropzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draganddrop/Draggable"], function (require, exports, HTMLElement_28, Draggable_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLEDropzoneElement = exports.isHTMLEDropzoneElement = void 0;
-    function isHTMLEDropzoneElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-dropzone";
-    }
-    exports.isHTMLEDropzoneElement = isHTMLEDropzoneElement;
-    let HTMLEDropzoneElement = class HTMLEDropzoneElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_28.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: block;
-                }
-
-                [part~="clear"] {
-                    cursor: pointer;
-                }
-
-                [part~="clear"]::after {
-                    display: inline-block;
-                    content: "[x]";
-                }
-
-                ::slotted(:not(e-draggable)) {
-                    pointer-events: none;
-                    user-select: none;
-                }
-            </style>
-            <slot id="draggables"></slot>
-            <span part="clear"/></span>
-        `);
-        }
-        connectedCallback() {
-            this.tabIndex = this.tabIndex;
-            const clear = this.shadowRoot.querySelector("[part~='clear']");
-            if (clear) {
-                clear.addEventListener("click", () => {
-                    this.dispatchEvent(new CustomEvent("cleardata", { bubbles: true }));
-                    let childDraggables = Array.from(this.children).filter(Draggable_1.isHTMLEDraggableElement);
-                    childDraggables.forEach((childDraggable) => {
-                        childDraggable.remove();
-                    });
-                });
-            }
-            this.addEventListener("dragover", (event) => {
-                event.preventDefault();
-            });
-            this.addEventListener("dragenter", (event) => {
-                let target = event.target;
-                this.draggedover = true;
-                if (target == this) {
-                    this.droppreview = true;
-                }
-                else if (Draggable_1.isHTMLEDraggableElement(target)) {
-                    target.droppreview = true;
-                }
-            });
-            this.addEventListener("dragleave", (event) => {
-                let target = event.target;
-                let relatedTarget = event.relatedTarget;
-                if (!this.contains(relatedTarget)) {
-                    this.draggedover = false;
-                }
-                if (target == this) {
-                    this.droppreview = false;
-                }
-                else if (Draggable_1.isHTMLEDraggableElement(target)) {
-                    target.droppreview = false;
-                }
-            });
-            this.addEventListener("drop", (event) => {
-                let target = event.target;
-                if (target == this) {
-                    this.droppreview = false;
-                }
-                else if (Draggable_1.isHTMLEDraggableElement(target)) {
-                    target.droppreview = false;
-                }
-                let draggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                let dragged = document.querySelector("e-draggable[dragged]");
-                let draggablesTypes = new Set();
-                draggables.forEach((draggable) => {
-                    draggable.dragged = false;
-                    draggable.selected = false;
-                    draggablesTypes.add(draggable.type);
-                });
-                let thisAllowedTypes = new Set((this.allowedtypes || "").split(" "));
-                let success = thisAllowedTypes.has("*") ||
-                    Array.from(draggablesTypes.values()).every(type => thisAllowedTypes.has(type));
-                let position = -1;
-                if (success) {
-                    if (this.multiple) {
-                        draggables.forEach((draggable) => {
-                            let ref = (this.querySelector(`[ref="${draggable.ref}"]`) || draggable.cloneNode(true));
-                            if (target == this) {
-                                this.appendChild(ref);
-                                position = (position < 0) ? this.childElementCount - 1 : position;
-                            }
-                            else if (Draggable_1.isHTMLEDraggableElement(target)) {
-                                target.insertAdjacentElement("beforebegin", ref);
-                                position = (position < 0) ? Array.from(this.children).indexOf(target) - 1 : position;
-                            }
-                        });
-                    }
-                    else {
-                        if (dragged) {
-                            let ref = (this.querySelector(`[ref="${dragged.ref}"]`) || dragged.cloneNode(true));
-                            if (this.firstChild) {
-                                this.replaceChild(ref, this.firstChild);
-                            }
-                            else {
-                                this.appendChild(ref);
-                            }
-                        }
-                        position = 0;
-                    }
-                    let dataTransfer = event.dataTransfer;
-                    if (dataTransfer) {
-                        let data = JSON.parse(dataTransfer.getData("text/plain"));
-                        let event = new CustomEvent("datatransfer", {
-                            bubbles: true,
-                            detail: {
-                                draggables: draggables,
-                                position: position,
-                                success: success,
-                                data: data
-                            }
-                        });
-                        this.dispatchEvent(event);
-                    }
-                    this.draggedover = false;
-                }
-            });
-        }
-    };
-    HTMLEDropzoneElement = __decorate([
-        HTMLElement_28.RegisterCustomHTMLElement({
-            name: "e-dropzone"
-        }),
-        HTMLElement_28.GenerateAttributeAccessors([
-            { name: "draggedover", type: "boolean" },
-            { name: "allowedtypes", type: "string" },
-            { name: "multiple", type: "boolean" },
-            { name: "droppreview", type: "boolean" },
-        ])
-    ], HTMLEDropzoneElement);
-    exports.HTMLEDropzoneElement = HTMLEDropzoneElement;
-});
-define("engine/editor/elements/lib/containers/formdata/FormDataObject", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_29) {
+define("engine/editor/elements/lib/containers/formdata/FormDataObject", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_27) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEFormDataObjectElement = exports.HTMLEFormDataObjectElement = void 0;
@@ -11318,7 +11207,7 @@ define("engine/editor/elements/lib/containers/formdata/FormDataObject", ["requir
     let HTMLEFormDataObjectElement = class HTMLEFormDataObjectElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_29.bindShadowRoot(this, /*template*/ `
+            HTMLElement_27.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -11358,17 +11247,17 @@ define("engine/editor/elements/lib/containers/formdata/FormDataObject", ["requir
         }
     };
     HTMLEFormDataObjectElement = __decorate([
-        HTMLElement_29.RegisterCustomHTMLElement({
+        HTMLElement_27.RegisterCustomHTMLElement({
             name: "e-fdobject"
         }),
-        HTMLElement_29.GenerateAttributeAccessors([
+        HTMLElement_27.GenerateAttributeAccessors([
             { name: "name", type: "string" },
             { name: "disabled", type: "boolean" },
         ])
     ], HTMLEFormDataObjectElement);
     exports.HTMLEFormDataObjectElement = HTMLEFormDataObjectElement;
 });
-define("engine/editor/elements/lib/containers/formdata/FormDataArray", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_30) {
+define("engine/editor/elements/lib/containers/formdata/FormDataArray", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_28) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEFormDataArrayElement = exports.HTMLEFormDataArrayElement = void 0;
@@ -11379,7 +11268,7 @@ define("engine/editor/elements/lib/containers/formdata/FormDataArray", ["require
     let HTMLEFormDataArrayElement = class HTMLEFormDataArrayElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_30.bindShadowRoot(this, /*template*/ `
+            HTMLElement_28.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -11446,57 +11335,27 @@ define("engine/editor/elements/lib/containers/formdata/FormDataArray", ["require
         }
     };
     HTMLEFormDataArrayElement = __decorate([
-        HTMLElement_30.RegisterCustomHTMLElement({
+        HTMLElement_28.RegisterCustomHTMLElement({
             name: "e-fdarray"
         }),
-        HTMLElement_30.GenerateAttributeAccessors([
+        HTMLElement_28.GenerateAttributeAccessors([
             { name: "name", type: "string" },
         ])
     ], HTMLEFormDataArrayElement);
     exports.HTMLEFormDataArrayElement = HTMLEFormDataArrayElement;
 });
-define("engine/editor/elements/lib/controls/draganddrop/input/InputDropzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draganddrop/Dropzone"], function (require, exports, HTMLElement_31, Dropzone_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLEInputDropzoneElement = exports.isHTMLEInputDropzoneElement = void 0;
-    function isHTMLEInputDropzoneElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-input-dropzone";
-    }
-    exports.isHTMLEInputDropzoneElement = isHTMLEInputDropzoneElement;
-    let HTMLEInputDropzoneElement = class HTMLEInputDropzoneElement extends Dropzone_1.HTMLEDropzoneElement {
-        constructor() {
-            super();
-        }
-        connectedCallback() {
-            super.connectedCallback();
-        }
-    };
-    HTMLEInputDropzoneElement = __decorate([
-        HTMLElement_31.RegisterCustomHTMLElement({
-            name: "e-input-dropzone"
-        }),
-        HTMLElement_31.GenerateAttributeAccessors([
-            { name: "name", type: "string" }
-        ])
-    ], HTMLEInputDropzoneElement);
-    exports.HTMLEInputDropzoneElement = HTMLEInputDropzoneElement;
-});
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/buttons/ButtonState", "engine/editor/elements/lib/containers/buttons/StatefulButton", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/Range", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draganddrop/Draggable", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "engine/editor/elements/lib/containers/formdata/FormDataArray", "engine/editor/elements/lib/containers/formdata/FormDataObject", "engine/editor/elements/lib/controls/draganddrop/input/InputDropzone"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, ButtonState_2, StatefulButton_1, Menu_3, MenuBar_1, MenuItem_4, Panel_1, PanelGroup_1, Tab_2, TabList_1, TabPanel_1, Range_1, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_13, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_2, Dropzone_2, FormDataArray_1, FormDataObject_1, InputDropzone_1) {
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/buttons/ButtonState", "engine/editor/elements/lib/containers/buttons/StatefulButton", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/Range", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draganddrop/Draggable", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "engine/editor/elements/lib/containers/formdata/FormDataArray", "engine/editor/elements/lib/containers/formdata/FormDataObject"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, ButtonState_2, StatefulButton_1, Menu_4, MenuBar_2, MenuItem_5, Panel_1, PanelGroup_1, Tab_3, TabList_2, TabPanel_2, Range_1, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_13, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_3, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_3, Dropzone_2, FormDataArray_1, FormDataObject_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.launchScene = exports.start = void 0;
-    MenuButton_1.HTMLEMenuButtonElement;
     StatusBar_1.HTMLEStatusBarElement;
     StatusItem_2.HTMLEStatusItemElement;
     Import_1.ImportElement;
-    MenuBar_1.HTMLEMenuBarElement;
-    Menu_3.HTMLEMenuElement;
-    MenuItem_4.HTMLEMenuItemElement;
     Panel_1.PanelElement;
     PanelGroup_1.PanelGroupElement;
-    Tab_2.TabElement;
-    TabList_1.TabListElement;
-    TabPanel_1.TabPanelElement;
+    Tab_3.BaseHTMLETabElement;
+    TabList_2.BaseHTMLETabListElement;
+    TabPanel_2.BaseHTMLETabPanelElement;
     Range_1.RangeElement;
     StatefulButton_1.StatefulButtonElement;
     ButtonState_2.ButtonStateElement;
@@ -11504,18 +11363,23 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     BreadcrumbTrail_1.HTMLEBreadcrumbTrailElement;
     BreadcrumbItem_2.HTMLEBreadcrumbItemElement;
     Palette_1.PaletteElement;
-    Draggable_2.HTMLEDraggableElement;
-    Dropzone_2.HTMLEDropzoneElement;
     FormDataArray_1.HTMLEFormDataArrayElement;
     FormDataObject_1.HTMLEFormDataObjectElement;
-    InputDropzone_1.HTMLEInputDropzoneElement;
+    Draggable_3.BaseHTMLEDraggableElement;
+    MenuBar_2.BaseHTMLEMenuBarElement;
+    MenuButton_1.BaseHTMLEMenuButtonElement;
+    Menu_4.BaseHTMLEMenuElement;
+    MenuItem_5.BaseHTMLEMenuItemElement;
+    Dropzone_2.BaseHTMLEDropzoneElement;
+    MenuItemGroup_3.BaseHTMLEMenuItemGroupElement;
+    MenuItem_5.BaseHTMLEMenuItemElement;
     const simpleSceneDOM = /*template*/ `
 <link rel="stylesheet" href="../css/main.css"/>
   <div>
 
     <div class="flex-rows">
 
-      <e-import src="html/samples/menus.html"></e-import>
+      <!--<e-import src="html/samples/menus.html"></e-import>-->
       <nav class="flex-cols">
           <div id="menubar-container"></div>
         <!--<button data-command="get">get</button>
@@ -11582,12 +11446,8 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                   </e-fdobject>
                 </e-fdarray>
               </e-fdobject>-->
-              <input type="number" name="temp-radio" value="1" data-change="test"></input>
-              <e-dropzone id="input-dropzone" data-name="myname" allowedtypes="df_column" multiple></e-dropzone>
-              <form id="form">
-                <input name="text[1]" value="t1" hidden></input>
-                <input name="text[0]" value="t2" hidden></input>
-              </form>
+              <input type="number" name="temp-radio" value="1"></input>
+              <e-dropzone data-class="input-dropzone" data-name="test" allowedtypes="df_column" multiple></e-dropzone>
             </e-tab-panel>
               
             <section>
@@ -11681,7 +11541,6 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
       </e-statusbar>
     </div>
   </div>`;
-    window["editor"] = Editor_3.editor;
     async function start() {
         const template = document.createElement('template');
         template.innerHTML = simpleSceneDOM;
@@ -11695,8 +11554,6 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
             });
         })).then(function () {
             Editor_3.editor.setup().then(() => {
-                //handleTabIndexes();
-                //test();
                 launchScene();
             });
         });
@@ -11730,6 +11587,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     
       document.querySelector('#play-panel')!.append(table);
     }*/
+    window["editor"] = Editor_3.editor;
     async function launchScene() {
         var _a, _b, _c;
         let frameRequest;
@@ -11833,20 +11691,23 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
             showFPSAction(showFpsCheckbox.checked);
           });
         }*/
-        const dropzone1 = document.querySelector("e-dropzone#dropzone1");
-        dropzone1 === null || dropzone1 === void 0 ? void 0 : dropzone1.addEventListener("datatransfer", ((event) => {
-            console.log(event.detail.data);
-            console.log(event.detail.success);
-            console.log(event.detail.position);
-        }));
-        const draggableA = document.querySelector("e-draggable#draggableA");
+        /*const dropzone1 = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone1");
+        dropzone1?.addEventListener("datatransfer", ((event: EDataTransferEvent) => {
+          console.log(event.detail.data);
+          console.log(event.detail.success);
+          console.log(event.detail.position);
+        }) as EventListener);*/
+        /*
+        const draggableA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");
         if (draggableA) {
-            draggableA.data = "A";
+          draggableA.data = "A";
+          
         }
-        const draggableB = document.querySelector("e-draggable#draggableB");
+      
+        const draggableB = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableB");
         if (draggableB) {
-            draggableB.data = "B";
-        }
+          draggableB.data = "B";
+        }*/
         const canvas = document.getElementById('canvas');
         if (!canvas) {
             return;
@@ -12160,122 +12021,177 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     }
     exports.launchScene = launchScene;
 });
-define("samples/Sandbox", ["require", "exports", "engine/editor/Editor", "engine/editor/elements/Snippets", "samples/scenes/SimpleScene"], function (require, exports, Editor_4, Snippets_14, SimpleScene_1) {
+define("samples/Sandbox", ["require", "exports", "engine/editor/elements/lib/controls/draganddrop/Dropzone", "engine/editor/elements/Snippets", "samples/scenes/Mockup"], function (require, exports, Dropzone_3, Snippets_14, Mockup_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.sandbox = void 0;
     function isElement(obj) {
         return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
     }
-    class AttributeMutationHandler {
-        constructor(eventListener, setCallback, removeCallback) {
-            this.eventListener = eventListener;
-            this.setCallback = setCallback;
-            this.removeCallback = removeCallback;
-        }
+    function isTagElement(tagName, obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() == tagName;
     }
-    const createCallback = (mutationHandlers) => {
+    const createMutationCallback = (mixins) => {
         return (mutationsList) => {
             mutationsList.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
-                    Snippets_14.forEachDescendent(node, (node) => {
-                        if (isElement(node)) {
-                            [...node.attributes].forEach((attr) => {
-                                const attrName = attr.name;
-                                if (attrName in mutationHandlers) {
-                                    let handler = mutationHandlers[attrName];
-                                    handler.setCallback.call(handler, node);
-                                }
-                            });
-                        }
-                    });
-                });
-                if (mutation.target.nodeType === 1) {
-                    let node = mutation.target;
                     if (isElement(node)) {
-                        const attrName = mutation.attributeName;
-                        if (attrName && attrName in mutationHandlers) {
-                            if (node.hasAttribute(attrName)) {
-                                let handler = mutationHandlers[attrName];
-                                mutationHandlers[attrName].setCallback.call(handler, node);
+                        let element = node;
+                        Snippets_14.forAllHierarchyElements(element, (childElement) => {
+                            [...childElement.attributes].forEach((attr) => {
+                                let matchingMixins = mixins.filter(mixin => match(mixin.attributeType, mixin.attributeName, mixin.attributeValue, attr.name, attr.value));
+                                matchingMixins.forEach((mixin) => {
+                                    mixin.attach(childElement);
+                                });
+                            });
+                        });
+                    }
+                });
+                const target = mutation.target;
+                if (isElement(target)) {
+                    let attrName = mutation.attributeName;
+                    if (attrName) {
+                        let relatedMixins = mixins.filter(mixin => mixin.attributeName === attrName);
+                        relatedMixins.forEach((mixin) => {
+                            if (match(mixin.attributeType, mixin.attributeName, mixin.attributeValue, attrName, target.getAttribute(attrName))) {
+                                mixin.attach(target);
                             }
                             else {
-                                let handler = mutationHandlers[attrName];
-                                mutationHandlers[attrName].removeCallback.call(handler, node);
+                                mixin.detach(target);
                             }
-                        }
+                        });
                     }
                 }
             });
         };
     };
-    const dataChangeAttributeMutationHandler = new AttributeMutationHandler((event) => {
-        let target = event.target;
-        if (isElement(target)) {
-            const changeValue = target.getAttribute("change");
-            if (changeValue !== null) {
-                Editor_4.editor.executeCommand(changeValue);
+    function match(refAttributeType, refAttrName, refAttrValue, attrName, attrValue) {
+        if (refAttrName == attrName) {
+            switch (refAttributeType) {
+                case "boolean":
+                    return refAttrValue == "" && attrValue == "";
+                case "string":
+                    return refAttrValue !== "" && (refAttrValue === attrValue);
+                case "listitem":
+                    return (refAttrValue !== "" && attrValue !== null) && new RegExp(`${refAttrValue}\s*?`, "g").test(attrValue);
             }
         }
-    }, function (element) {
-        element.addEventListener("change", this.eventListener);
-    }, function (element) {
-        element.removeEventListener("change", this.eventListener);
-    });
-    const dataCommandAttributeMutationHandler = new AttributeMutationHandler((event) => {
-        let target = event.target;
-        if (isElement(target)) {
-            const changeValue = target.getAttribute("command");
-            if (changeValue !== null) {
-                Editor_4.editor.executeCommand(changeValue);
+        return false;
+    }
+    class BaseAttributeMutationMixin {
+        constructor(attributeName, attributeType = "boolean", attributeValue = "") {
+            this.attributeName = attributeName;
+            this.attributeType = attributeType;
+            this.attributeValue = attributeValue;
+        }
+    }
+    class DataClassMixin extends BaseAttributeMutationMixin {
+        constructor(attributeValue) {
+            super("data-class", "listitem", attributeValue);
+        }
+    }
+    class TestDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("test");
+        }
+        attach(element) {
+            element.addEventListener("click", TestDataClassMixin._clickEventListener);
+        }
+        detach(element) {
+            element.removeEventListener("click", TestDataClassMixin._clickEventListener);
+        }
+    }
+    TestDataClassMixin._clickEventListener = () => {
+        alert("data-class test");
+    };
+    class InputDropzoneDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("input-dropzone");
+            this.datatransferEventListener = (event) => {
+                let target = event.target;
+                if (Dropzone_3.isHTMLEDropzoneElement(target)) {
+                    this.handlePostdatatransferInputNaming(target);
+                }
+            };
+        }
+        attach(element) {
+            if (Dropzone_3.isHTMLEDropzoneElement(element)) {
+                this.handlePostdatatransferInputNaming(element);
+            }
+            element.addEventListener("datatransfer", this.datatransferEventListener);
+        }
+        detach(element) {
+            element.removeEventListener("datatransfer", this.datatransferEventListener);
+        }
+        handlePostdatatransferInputNaming(dropzone) {
+            let name = dropzone.getAttribute("data-input-dropzone-name");
+            if (name) {
+                if (dropzone.multiple) {
+                    let inputs = Array.from(dropzone.querySelectorAll("input"));
+                    inputs.forEach((input, index) => {
+                        input.name = `${name}[${index}]`;
+                    });
+                }
+                else {
+                    let input = dropzone.querySelector("input");
+                    if (input) {
+                        input.name = name;
+                    }
+                }
             }
         }
-    }, function (element) {
-        element.addEventListener("click", this.eventListener);
-    }, function (element) {
-        element.removeEventListener("click", this.eventListener);
-    });
-    const callback = createCallback({
-        "data-command": dataCommandAttributeMutationHandler,
-        "data-change": dataChangeAttributeMutationHandler
-    });
-    const obs = new MutationObserver(callback);
-    obs.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributeFilter: ["data-command", "data-change"]
-    });
-    async function sandbox() {
-        await SimpleScene_1.start();
-        Editor_4.editor.registerCommand("test", {
-            exec: () => {
-                alert("test");
-            },
-            context: "default"
-        });
-        const inputDropzone = document.querySelector("#input-dropzone");
-        if (inputDropzone) {
-            inputDropzone.addEventListener("datatransfer", () => {
-                let name = inputDropzone.dataset.name;
-                if (name) {
-                    if (inputDropzone.multiple) {
-                        let inputs = Array.from(inputDropzone.querySelectorAll("input"));
-                        inputs.forEach((input, index) => {
-                            input.name = `${name}[${index}]`;
-                        });
-                    }
-                    else {
-                        let input = inputDropzone.querySelector("input");
-                        if (input) {
-                            input.name = name;
-                        }
-                    }
+    }
+    class TogglerSelectDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("toggler-select");
+            this.changeEventListener = (event) => {
+                let target = event.target;
+                if (isTagElement("select", target)) {
+                    this.handlePostchangeToggle(target);
+                }
+            };
+        }
+        attach(element) {
+            element.addEventListener("change", this.changeEventListener);
+            this.handlePostchangeToggle(element);
+        }
+        detach(element) {
+            element.removeEventListener("change", this.changeEventListener);
+        }
+        handlePostchangeToggle(select) {
+            let fieldsetElement = null;
+            Array.from(select.options).forEach((option, index) => {
+                fieldsetElement = document.getElementById(option.value);
+                if (fieldsetElement) {
+                    fieldsetElement.hidden = (index !== select.selectedIndex);
                 }
             });
         }
-        window.addEventListener("blur", () => {
-            document.body.focus();
-        });
+    }
+    const attributeMutationMixins = [
+        new TestDataClassMixin(),
+        new InputDropzoneDataClassMixin(),
+        new TogglerSelectDataClassMixin()
+    ];
+    const mainObserver = new MutationObserver(createMutationCallback(attributeMutationMixins));
+    mainObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributeFilter: attributeMutationMixins.map((mixin => mixin.attributeName))
+    });
+    async function sandbox() {
+        await Mockup_1.mockup();
+        //await start();
+        /*
+        editor.registerCommand("test", {
+          exec: () => {
+            alert("test");
+          },
+          context: "default"
+        });*/
+        /*window.addEventListener("blur", () => {
+          document.body.focus();
+        });*/
         /*const myWindow = window.open("http://localhost:8080/", "MsgWindow", "width=200,height=100");
         if (myWindow) {
         myWindow.document.write("<p>This is 'MsgWindow'. I am 200px wide and 100px tall!</p>");
@@ -14342,7 +14258,105 @@ define("engine/editor/attributes/Tooltip", ["require", "exports"], function (req
     };
     exports.TooltipAttributeExtension = TooltipAttributeExtension;
 });
-define("engine/editor/elements/lib/builtins/inputs/CallbackedInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
+define("engine/editor/elements/forms/Snippets", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.isSelectElement = exports.isInputElement = exports.setFormState = exports.getFormState = void 0;
+    ;
+    const getFormState = (form) => {
+        const elements = Array.from(form.elements);
+        let state = {};
+        elements.forEach((element) => {
+            if (isInputElement(element)) {
+                if (element.type === "radio") {
+                    if (!(element.name in state)) {
+                        state[element.name] = {
+                            type: "radio",
+                            nodes: [{
+                                    value: element.value,
+                                    checked: element.checked
+                                }]
+                        };
+                    }
+                    else {
+                        const elem = state[element.name];
+                        if ("nodes" in elem) {
+                            elem.nodes.push({
+                                value: element.value,
+                                checked: element.checked
+                            });
+                        }
+                    }
+                }
+                else if (element.type === "checkbox") {
+                    state[element.name] = {
+                        type: "checkbox",
+                        checked: element.checked
+                    };
+                }
+                else {
+                    state[element.name] = {
+                        value: element.value,
+                    };
+                }
+            }
+            else if (isSelectElement(element)) {
+                state[element.name] = {
+                    value: element.value,
+                };
+            }
+            else if (isTextAreaElement(element)) {
+                state[element.name] = {
+                    value: element.value,
+                };
+            }
+        });
+        return state;
+    };
+    exports.getFormState = getFormState;
+    const setFormState = (form, state) => {
+        const elements = Array.from(form.elements);
+        const names = Object.keys(state);
+        names.forEach((name) => {
+            const elemState = state[name];
+            if ("type" in elemState) {
+                if (elemState.type === "checkbox") {
+                    let element = elements.find((elem) => elem.name === name);
+                    if (element && isInputElement(element)) {
+                        element.checked = elemState.checked;
+                    }
+                }
+                else if (elemState.type === "radio") {
+                    elemState.nodes.forEach((radioNode) => {
+                        let element = elements.find((elem) => elem.name === name && elem.value === radioNode.value);
+                        if (element && isInputElement(element)) {
+                            element.checked = radioNode.checked;
+                        }
+                    });
+                }
+            }
+            else {
+                let element = elements.find((elem) => elem.name === name);
+                if (element && (isInputElement(element) || isSelectElement(element) || isTextAreaElement(element))) {
+                    element.value = elemState.value;
+                }
+            }
+        });
+    };
+    exports.setFormState = setFormState;
+    function isInputElement(elem) {
+        return elem.tagName.toLowerCase() === "input";
+    }
+    exports.isInputElement = isInputElement;
+    function isTextAreaElement(elem) {
+        return elem.tagName.toLowerCase() === "textarea";
+    }
+    function isSelectElement(elem) {
+        return elem.tagName.toLowerCase() === "select";
+    }
+    exports.isSelectElement = isSelectElement;
+});
+define("engine/editor/elements/lib/builtins/inputs/CallbackedInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_29) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CallbackedInputElement = void 0;
@@ -14364,7 +14378,7 @@ define("engine/editor/elements/lib/builtins/inputs/CallbackedInput", ["require",
         }
     };
     CallbackedInputElement = __decorate([
-        HTMLElement_32.RegisterCustomHTMLElement({
+        HTMLElement_29.RegisterCustomHTMLElement({
             name: 'callbacked-input',
             options: {
                 extends: 'input'
@@ -14374,7 +14388,7 @@ define("engine/editor/elements/lib/builtins/inputs/CallbackedInput", ["require",
     ], CallbackedInputElement);
     exports.CallbackedInputElement = CallbackedInputElement;
 });
-define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_33) {
+define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_30) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.NumberInputElement = void 0;
@@ -14411,19 +14425,19 @@ define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "ex
         }
     };
     NumberInputElement = __decorate([
-        HTMLElement_33.RegisterCustomHTMLElement({
+        HTMLElement_30.RegisterCustomHTMLElement({
             name: 'number-input',
             options: {
                 extends: 'input'
             }
         }),
-        HTMLElement_33.GenerateAttributeAccessors([
+        HTMLElement_30.GenerateAttributeAccessors([
             { name: 'cache' }
         ])
     ], NumberInputElement);
     exports.NumberInputElement = NumberInputElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem"], function (require, exports, HTMLElement_34, MenuItem_5) {
+define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_31) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuBarElement = exports.HTMLEMenuBarElement = void 0;
@@ -14432,193 +14446,20 @@ define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exp
     }
     exports.isHTMLEMenuBarElement = isHTMLEMenuBarElement;
     let HTMLEMenuBarElement = class HTMLEMenuBarElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_34.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: flex;
-                    position: relative; 
-                    user-select: none;
-
-                    background-color: white;
-                }
-
-                :host(:focus-within) {
-                    outline: 2px solid -webkit-focus-ring-color;
-                }
-
-                :host(:focus) ::slotted(:first-child),
-                :host(:not(:focus-within)) ::slotted(:hover) {
-                    background-color: rgb(180, 180, 180);
-                }
-
-                [part~="ul"] {
-                    display: block;
-                    list-style-type: none;
-                    padding: 0; margin: 0;
-                }
-            </style>
-            <ul part="ul">
-                <slot></slot>
-            </ul>
-        `);
-            this.items = [];
-            this._selectedItemIndex = -1;
-        }
-        get selectedItemIndex() {
-            return this._selectedItemIndex;
-        }
-        get selectedItem() {
-            return this.items[this.selectedItemIndex] || null;
-        }
-        connectedCallback() {
-            var _a;
-            this.tabIndex = this.tabIndex;
-            const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
-            if (slot) {
-                slot.addEventListener("slotchange", () => {
-                    const items = slot.assignedElements();
-                    items.forEach((item) => {
-                        if (MenuItem_5.isHTMLEMenuItemElement(item)) {
-                            this.items.push(item);
-                            item.parentMenu = this;
-                            item.addEventListener("mouseenter", () => {
-                                this.selectItem(this.items.indexOf(item), { passive: !this.active });
-                                if (this.active && this.selectedItem && this.selectedItem.childMenu) {
-                                    this.selectedItem.childMenu.focus();
-                                }
-                            });
-                            item.addEventListener("disconnected", () => {
-                                this.clearSelection();
-                                this.items.splice(this.items.indexOf(item), 1);
-                            });
-                        }
-                    });
-                });
-            }
-            this.addEventListener("keydown", (event) => {
-                let selectedItem;
-                switch (event.key) {
-                    case "ArrowLeft":
-                        this.selectItem((this.selectedItemIndex <= 0) ? this.items.length - 1 : this.selectedItemIndex - 1);
-                        if (this.active && this.selectedItem && this.selectedItem.childMenu) {
-                            this.selectedItem.childMenu.selectItem(0);
-                        }
-                        break;
-                    case "ArrowRight":
-                        this.selectItem((this.selectedItemIndex >= this.items.length - 1) ? 0 : this.selectedItemIndex + 1);
-                        if (this.active && this.selectedItem && this.selectedItem.childMenu) {
-                            this.selectedItem.childMenu.selectItem(0);
-                        }
-                        break;
-                    case "ArrowDown":
-                        this.selectItem(this.selectedItemIndex);
-                        if (this.active && this.selectedItem && this.selectedItem.childMenu) {
-                            this.selectedItem.childMenu.selectItem(0);
-                        }
-                        break;
-                    case "Enter":
-                        selectedItem = this.selectedItem;
-                        if (selectedItem) {
-                            if (!this.active) {
-                                this.active = true;
-                            }
-                            selectedItem.activate();
-                        }
-                        break;
-                    case "Escape":
-                        this.selectItem(this.selectedItemIndex);
-                        this.active = false;
-                        break;
-                }
-            });
-            this.addEventListener("click", (event) => {
-                if (this.items.indexOf(event.target) >= 0) {
-                    let selectedItem = this.selectedItem;
-                    if (!this.active) {
-                        this.active = true;
-                        if (selectedItem && selectedItem.childMenu) {
-                            selectedItem.childMenu.focus();
-                        }
-                    }
-                    else {
-                        this.active = false;
-                        if (selectedItem && selectedItem.childMenu) {
-                            selectedItem.childMenu.clearSelection();
-                        }
-                    }
-                    event.stopPropagation();
-                }
-            }, { capture: true });
-            this.addEventListener("focus", () => {
-                this.selectItem(0, { passive: true });
-            });
-            this.addEventListener("blur", (event) => {
-                let containsNewFocus = (event.relatedTarget !== null) && this.contains(event.relatedTarget);
-                if (!containsNewFocus) {
-                    this.active = false;
-                }
-            }, { capture: true });
-        }
-        selectItem(index, opts) {
-            let item = this.items[index];
-            if (opts === null || opts === void 0 ? void 0 : opts.passive) {
-                if (item) {
-                    this._selectedItemIndex = index;
-                }
-            }
-            else {
-                if (this._selectedItemIndex !== index) {
-                    this.clearSelection();
-                }
-                if (item) {
-                    this._selectedItemIndex = index;
-                    if (!(opts === null || opts === void 0 ? void 0 : opts.passive)) {
-                        item.focus();
-                    }
-                }
-            }
-        }
-        clearSelection() {
-            let item = this.selectedItem;
-            if (item) {
-                this._selectedItemIndex = -1;
-                if (item.childMenu) {
-                    item.childMenu.clearSelection();
-                }
-            }
-        }
-        findItem(predicate) {
-            let foundItem = null;
-            for (let idx = 0; idx < this.items.length; idx++) {
-                let item = this.items[idx];
-                if (predicate(item)) {
-                    return item;
-                }
-                if (item.childMenu) {
-                    foundItem = item.childMenu.findItem(predicate);
-                    if (foundItem) {
-                        return foundItem;
-                    }
-                }
-            }
-            return foundItem;
-        }
     };
     HTMLEMenuBarElement = __decorate([
-        HTMLElement_34.RegisterCustomHTMLElement({
+        HTMLElement_31.RegisterCustomHTMLElement({
             name: "e-menubar",
             observedAttributes: ["active"]
         }),
-        HTMLElement_34.GenerateAttributeAccessors([
+        HTMLElement_31.GenerateAttributeAccessors([
             { name: "name", type: "string" },
             { name: "active", type: "boolean" },
         ])
     ], HTMLEMenuBarElement);
     exports.HTMLEMenuBarElement = HTMLEMenuBarElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/Editor", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/Menu"], function (require, exports, Editor_5, HTMLElement_35, Menu_4) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuItemElement = exports.HTMLEMenuItemElement = void 0;
@@ -14627,284 +14468,13 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
     }
     exports.isHTMLEMenuItemElement = isHTMLEMenuItemElement;
     let HTMLEMenuItemElement = class HTMLEMenuItemElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_35.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    position: relative;
-                    display: inline-block;
-
-                    user-select: none;
-                    white-space: nowrap;
-
-                    padding: 2px 6px;
-                    background-color: white;
-                    cursor: pointer;
-                    pointer-events: auto;
-                }
-                
-                :host(:focus-within) {
-                    outline: none;
-                    background-color: rgb(180, 180, 180);
-                }
-
-                :host([disabled]),
-                :host([disabled]) [part~="visual"] {
-                    color: rgb(180, 180, 180);
-                }
-
-                :host(:focus-within[disabled]) {
-                    background-color: rgb(220, 220, 220);
-                }
-
-                :host([type="menu"]) ::slotted([slot="menu"]) {
-                    z-index: 1;
-                    position: absolute;
-                    
-                    left: 100%;
-                    top: -6px;
-
-                    max-width: 0;
-                    max-height: 0;
-                    overflow: clip;
-                }
-                
-                :host([type="menu"]:not(:focus):focus-within) ::slotted([slot="menu"]) {            
-                    max-width: none;
-                    max-height: none;
-                    overflow: visible;
-                }
-
-                [part~="li"] {
-                    display: flex;
-                    height: 100%;
-                    list-style-type: none;
-                }
-
-                [part~="content"] {
-                    font-size: 1em;
-                    flex: auto;
-                    display: flex;
-                }
-
-                [part~="icon"] {
-                    flex: none;
-                    display: none;
-                    width: 16px;
-                    margin-right: 2px;
-                }
-
-                [part~="state"] {
-                    flex: none;
-                    width: 16px;
-                    margin-right: 8px;
-                }
-
-                [part~="label"] {
-                    flex: auto;
-                    text-align: left;
-                }
-
-                [part~="hotkey"] {
-                    flex: none;
-                    text-align: right;
-                    margin-left: 16px;
-                }
-
-                [part~="hotkey"]:empty {
-                    display: none !important;
-                }
-
-                [part~="arrow"] {
-                    flex: none;
-                    margin-left: 8px;
-                }
-
-                [part~="visual"] {
-                    color: grey;
-                    font-size: 1.6em;
-                    line-height: 0.625;
-                }
-
-                [part~="visual"]::after {
-                    pointer-events: none;
-                }
-
-                :host(:not([icon])) [part~="icon"],
-                :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
-                    visibility: hidden;
-                }
-
-                :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
-                    display: none;
-                }
-
-                :host(:not([type="menu"])) [part~="arrow"] {
-                    display: none !important;
-                }
-                
-                :host([type="checkbox"][checked]) [part~="state"]::after {
-                    content: "■";
-                }
-
-                :host([type="checkbox"]:not([checked])) [part~="state"]::after {
-                    content: "□";
-                }
-
-                :host([type="radio"][checked]) [part~="state"]::after {
-                    content: "●";
-                }
-
-                :host([type="radio"]:not([checked])) [part~="state"]::after {
-                    content: "○";
-                }
-
-                :host([type="menu"]) [part~="arrow"]::after {
-                    content: "»";
-                }
-            </style>
-            <li part="li">
-                <span part="content">
-                    <span part="visual icon"></span>
-                    <span part="visual state"></span>
-                    <span part="label"></span>
-                    <span part="hotkey"></span>
-                    <span part="description"></span>
-                    <span part="visual arrow"></span>
-                </span>
-                <slot name="menu"></slot>
-            </li>
-        `);
-            this.childMenu = null;
-            this.parentMenu = null;
-            this.group = null;
-            this.command = null;
-            this._hotkey = null;
-            this._hotkeyEventListener = null;
-        }
-        get hotkey() {
-            return this._hotkey;
-        }
-        set hotkey(hotkey) {
-            var _a;
-            if (this._hotkey && this._hotkeyEventListener) {
-                document.removeEventListener("keydown", this._hotkeyEventListener);
-            }
-            this._hotkey = hotkey;
-            let hotkeyPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=hotkey]");
-            if (hotkeyPart) {
-                hotkeyPart.textContent = hotkey ? hotkey.toString() : "";
-            }
-            if (hotkey) {
-                this._hotkeyEventListener = (event) => {
-                    if (this._hotkey && this._hotkey.test(event)) {
-                        this.activate();
-                    }
-                };
-                document.addEventListener("keydown", this._hotkeyEventListener);
-            }
-        }
-        connectedCallback() {
-            var _a;
-            this.tabIndex = this.tabIndex;
-            const menuSlot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot[name=menu]");
-            if (menuSlot) {
-                menuSlot.addEventListener("slotchange", () => {
-                    const menuElem = menuSlot.assignedElements()[0];
-                    if (Menu_4.isHTMLEMenuElement(menuElem)) {
-                        this.childMenu = menuElem;
-                        menuElem.parentItem = this;
-                    }
-                });
-            }
-            this.addEventListener("click", (event) => {
-                this.activate();
-                event.stopPropagation();
-            });
-        }
-        disconnectedCallback() {
-            if (this._hotkeyEventListener) {
-                document.removeEventListener("keydown", this._hotkeyEventListener);
-            }
-            this.dispatchEvent(new CustomEvent("disconnected", { bubbles: false }));
-        }
-        attributeChangedCallback(name, oldValue, newValue) {
-            var _a, _b;
-            if (newValue !== oldValue) {
-                switch (name) {
-                    case "label":
-                        if (oldValue !== newValue) {
-                            const labelPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
-                            if (labelPart) {
-                                labelPart.textContent = newValue;
-                            }
-                        }
-                        break;
-                    case "icon":
-                        if (oldValue !== newValue) {
-                            const iconPart = (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector("[part~=icon]");
-                            if (iconPart) {
-                                iconPart.dataset.value = newValue;
-                            }
-                        }
-                        break;
-                    case "checked":
-                        if (oldValue !== newValue) {
-                            switch (this.type) {
-                                case "checkbox":
-                                    this.dispatchEvent(new CustomEvent("change"));
-                                    if (this.command) {
-                                        Editor_5.editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : { undo: true });
-                                    }
-                                    break;
-                                case "radio":
-                                    this.dispatchEvent(new CustomEvent("change"));
-                                    if (this.command) {
-                                        Editor_5.editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : { undo: true });
-                                    }
-                                    break;
-                            }
-                        }
-                        break;
-                }
-            }
-        }
-        activate() {
-            if (!this.disabled) {
-                switch (this.type) {
-                    case "button":
-                    default:
-                        if (this.command) {
-                            Editor_5.editor.executeCommand(this.command, this.commandArgs);
-                        }
-                        break;
-                    case "checkbox":
-                        this.checked = !this.checked;
-                        break;
-                    case "radio":
-                        this.checked = true;
-                        break;
-                    case "menu":
-                        if (this.childMenu) {
-                            this.childMenu.selectItem(0);
-                        }
-                        break;
-                }
-            }
-        }
-        clearFocus() {
-            if (this.childMenu) {
-                this.childMenu.clearSelection();
-            }
-        }
     };
     HTMLEMenuItemElement = __decorate([
-        HTMLElement_35.RegisterCustomHTMLElement({
+        HTMLElement_32.RegisterCustomHTMLElement({
             name: "e-menuitem",
             observedAttributes: ["icon", "label", "checked"]
         }),
-        HTMLElement_35.GenerateAttributeAccessors([
+        HTMLElement_32.GenerateAttributeAccessors([
             { name: "name", type: "string" },
             { name: "label", type: "string" },
             { name: "icon", type: "string" },
@@ -14916,7 +14486,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
     ], HTMLEMenuItemElement);
     exports.HTMLEMenuItemElement = HTMLEMenuItemElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem"], function (require, exports, HTMLElement_36, MenuItem_6) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_33) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
@@ -14925,217 +14495,13 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
     }
     exports.isHTMLEMenuItemGroupElement = isHTMLEMenuItemGroupElement;
     let HTMLEMenuItemGroupElement = class HTMLEMenuItemGroupElement extends HTMLElement {
-        constructor() {
-            super();
-            HTMLElement_36.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: inline-block;
-                    position: relative;
-                    user-select: none;
-                }
-
-                :host(:focus) {
-                    outline: none;
-                }
-                
-                :host(:not([label])) [part~="li"] {
-                    display: none;
-                }
-
-                [part~="label"] {
-                    position: relative;
-                    display: inline-block;
-                    width: 100%;
-
-                    user-select: none;
-                    white-space: nowrap;
-
-                    padding: 2px 6px 6px 6px;
-                    font-weight: bold;
-                }
-
-                [part~="li"] {
-                    display: flex;
-                    height: 100%;
-                    list-style-type: none;
-                }
-                
-                ::slotted(*) {
-                    display: block;
-                    width: 100%;
-                }
-            </style>
-            <div part="content">
-                <li part="li">
-                    <span part="label"></span>
-                </li>
-                <slot></slot>
-            </div>
-        `);
-            this._selectedItemIndex = -1;
-            this.parentMenu = null;
-            this.items = [];
-        }
-        get selectedItemIndex() {
-            return this._selectedItemIndex;
-        }
-        get selectedItem() {
-            return this.items[this.selectedItemIndex] || null;
-        }
-        connectedCallback() {
-            var _a;
-            this.tabIndex = this.tabIndex;
-            const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
-            if (slot) {
-                slot.addEventListener("slotchange", () => {
-                    const items = slot.assignedElements().filter(MenuItem_6.isHTMLEMenuItemElement);
-                    items.forEach((item) => {
-                        if (!this.items.includes(item)) {
-                            this.items.push(item);
-                            item.group = this;
-                            item.parentMenu = this.parentMenu;
-                            item.addEventListener("mouseenter", () => {
-                                this.selectItem(this.items.indexOf(item));
-                                if (this.selectedItem && this.selectedItem.childMenu) {
-                                    this.selectedItem.childMenu.focus();
-                                }
-                            });
-                            item.addEventListener("change", () => {
-                                if (item.type === "radio" && item.checked) {
-                                    let newCheckedRadio = item;
-                                    let checkedRadio = this.findItem((item) => {
-                                        return item.type === "radio" && item.checked && item !== newCheckedRadio;
-                                    });
-                                    if (checkedRadio) {
-                                        checkedRadio.checked = false;
-                                    }
-                                }
-                            });
-                            item.addEventListener("disconnected", () => {
-                                this.clearFocus();
-                                this.items.splice(this.items.indexOf(item), 1);
-                            });
-                        }
-                    });
-                });
-            }
-            this.addEventListener("keydown", (event) => {
-                let selectedItem;
-                switch (event.key) {
-                    case "ArrowUp":
-                        if (this.selectedItemIndex > 0) {
-                            this.selectItem(this.selectedItemIndex - 1);
-                            event.stopPropagation();
-                        }
-                        break;
-                    case "ArrowDown":
-                        if (this.selectedItemIndex < this.items.length - 1) {
-                            this.selectItem(this.selectedItemIndex + 1);
-                            event.stopPropagation();
-                        }
-                        break;
-                    case "Enter":
-                        selectedItem = this.selectedItem;
-                        if (selectedItem) {
-                            selectedItem.activate();
-                            event.stopPropagation();
-                        }
-                        break;
-                    case "ArrowRight":
-                        selectedItem = this.selectedItem;
-                        if (this.items.indexOf(event.target) >= 0) {
-                            if (selectedItem && MenuItem_6.isHTMLEMenuItemElement(selectedItem) && selectedItem.childMenu) {
-                                selectedItem.childMenu.selectItem(0);
-                                event.stopPropagation();
-                            }
-                        }
-                        break;
-                    case "Home":
-                        this.selectItem(0);
-                        break;
-                    case "End":
-                        this.selectItem(this.items.length - 1);
-                        break;
-                    case "Escape":
-                        this.clearFocus();
-                        break;
-                }
-            });
-            this.addEventListener("focus", () => {
-                this.selectItem(0);
-            });
-        }
-        disconnectedCallback() {
-            this.dispatchEvent(new CustomEvent("disconnected", { bubbles: false }));
-        }
-        attributeChangedCallback(name, oldValue, newValue) {
-            var _a;
-            if (oldValue !== newValue) {
-                switch (name) {
-                    case "label":
-                        if (oldValue !== newValue) {
-                            const label = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
-                            if (label) {
-                                label.textContent = newValue;
-                            }
-                        }
-                }
-            }
-        }
-        clearFocus() {
-            this.clearSelection();
-            this.blur();
-        }
-        selectItem(index, opts) {
-            let item = this.items[index];
-            if (opts === null || opts === void 0 ? void 0 : opts.passive) {
-                if (item) {
-                    this._selectedItemIndex = index;
-                }
-            }
-            else {
-                if (this._selectedItemIndex !== index) {
-                    this.clearSelection();
-                }
-                if (item) {
-                    this._selectedItemIndex = index;
-                    if (!(opts === null || opts === void 0 ? void 0 : opts.passive)) {
-                        item.focus();
-                    }
-                }
-            }
-        }
-        clearSelection() {
-            let item = this.selectedItem;
-            if (item) {
-                this._selectedItemIndex = -1;
-                item.clearFocus();
-            }
-        }
-        findItem(predicate) {
-            let foundItem = null;
-            for (let idx = 0; idx < this.items.length; idx++) {
-                let item = this.items[idx];
-                if (predicate(item)) {
-                    return item;
-                }
-                if (item.childMenu) {
-                    foundItem = item.childMenu.findItem(predicate);
-                    if (foundItem) {
-                        return foundItem;
-                    }
-                }
-            }
-            return foundItem;
-        }
     };
     HTMLEMenuItemGroupElement = __decorate([
-        HTMLElement_36.RegisterCustomHTMLElement({
+        HTMLElement_33.RegisterCustomHTMLElement({
             name: "e-menuitemgroup",
             observedAttributes: ["label", "active"]
         }),
-        HTMLElement_36.GenerateAttributeAccessors([
+        HTMLElement_33.GenerateAttributeAccessors([
             { name: "active", type: "boolean" },
             { name: "label", type: "string" },
             { name: "type", type: "string" },
@@ -15146,14 +14512,14 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
     ], HTMLEMenuItemGroupElement);
     exports.HTMLEMenuItemGroupElement = HTMLEMenuItemGroupElement;
 });
-define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_37) {
+define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_34) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.WindowElement = void 0;
     let WindowElement = class WindowElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_37.bindShadowRoot(this, /*template*/ `
+            HTMLElement_34.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -15230,10 +14596,10 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
         }
     };
     WindowElement = __decorate([
-        HTMLElement_37.RegisterCustomHTMLElement({
+        HTMLElement_34.RegisterCustomHTMLElement({
             name: 'e-window'
         }),
-        HTMLElement_37.GenerateAttributeAccessors([
+        HTMLElement_34.GenerateAttributeAccessors([
             { name: 'title', type: 'string' },
             { name: 'tooltip', type: 'string' },
             { name: 'toggled', type: 'boolean' }
@@ -15241,14 +14607,14 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
     ], WindowElement);
     exports.WindowElement = WindowElement;
 });
-define("engine/editor/elements/lib/controls/ComboBox", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_38) {
+define("engine/editor/elements/lib/controls/ComboBox", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_35) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ComboBoxElement = void 0;
     let ComboBoxElement = class ComboBoxElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_38.bindShadowRoot(this, /*template*/ `
+            HTMLElement_35.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -15267,23 +14633,23 @@ define("engine/editor/elements/lib/controls/ComboBox", ["require", "exports", "e
         }
     };
     ComboBoxElement = __decorate([
-        HTMLElement_38.RegisterCustomHTMLElement({
+        HTMLElement_35.RegisterCustomHTMLElement({
             name: 'e-combobox'
         }),
-        HTMLElement_38.GenerateAttributeAccessors([
+        HTMLElement_35.GenerateAttributeAccessors([
             { name: 'value', type: 'number' },
         ])
     ], ComboBoxElement);
     exports.ComboBoxElement = ComboBoxElement;
 });
-define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3", "engine/editor/attributes/Tooltip"], function (require, exports, HTMLElement_39, Vector3_8, Tooltip_1) {
+define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3", "engine/editor/attributes/Tooltip"], function (require, exports, HTMLElement_36, Vector3_8, Tooltip_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3InputElement = void 0;
     let Vector3InputElement = class Vector3InputElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_39.bindShadowRoot(this, /*template*/ `
+            HTMLElement_36.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -15341,21 +14707,21 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
         }
     };
     Vector3InputElement = __decorate([
-        HTMLElement_39.RegisterCustomHTMLElement({
+        HTMLElement_36.RegisterCustomHTMLElement({
             name: 'e-vector3-input'
         }),
-        HTMLElement_39.GenerateAttributeAccessors([{ name: 'label' }, { name: 'tooltip' }])
+        HTMLElement_36.GenerateAttributeAccessors([{ name: 'label' }, { name: 'tooltip' }])
     ], Vector3InputElement);
     exports.Vector3InputElement = Vector3InputElement;
 });
-define("engine/editor/elements/lib/misc/LogsFeed", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_40) {
+define("engine/editor/elements/lib/misc/LogsFeed", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_37) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.LogsFeedElement = void 0;
     let LogsFeedElement = class LogsFeedElement extends HTMLElement {
         constructor() {
             super();
-            HTMLElement_40.bindShadowRoot(this, /*template*/ `
+            HTMLElement_37.bindShadowRoot(this, /*template*/ `
             <style>
                 p {
                     margin: 0;
@@ -15376,278 +14742,129 @@ define("engine/editor/elements/lib/misc/LogsFeed", ["require", "exports", "engin
         }
     };
     LogsFeedElement = __decorate([
-        HTMLElement_40.RegisterCustomHTMLElement({
+        HTMLElement_37.RegisterCustomHTMLElement({
             name: 'e-logs-feed',
         })
     ], LogsFeedElement);
     exports.LogsFeedElement = LogsFeedElement;
 });
-function getPropertyFromPath(src, path) {
-    const props = path.split(".");
-    let obj = src;
-    props.forEach((prop) => {
-        if (prop.includes("[")) {
-            let index = parseInt(prop.substring(prop.indexOf("[") + 1, prop.indexOf("]")));
-            if (Number.isNaN(index)) {
-                console.error(`Wrong indexed path: ${prop}`);
-            }
-            prop = prop.substring(0, prop.indexOf("["));
-            if (typeof obj === "object" && prop in obj && Array.isArray(obj[prop])) {
-                obj = obj[prop][index];
-            }
-        }
-        else if (typeof obj === "object" && prop in obj) {
-            obj = obj[prop];
-        }
-        else {
-            obj = void 0;
-        }
-    });
-    return obj;
-}
-function setPropertyFromPath(src, path, value) {
-    const props = path.split(".");
-    let obj = src;
-    let lastPropIdx = props.length - 1;
-    props.forEach((prop, idx) => {
-        if (prop.includes("[")) {
-            let index = parseInt(prop.substring(prop.indexOf("[") + 1, prop.indexOf("]")));
-            if (Number.isNaN(index)) {
-                console.error(`Wrong indexed path: ${prop}`);
-            }
-            prop = prop.substring(0, prop.indexOf("["));
-            if (!Array.isArray(obj[prop])) {
-                obj[prop] = [];
-            }
-            if (idx === lastPropIdx) {
-                obj[prop][index] = value;
-            }
-            else {
-                if (typeof obj[prop][index] !== "object") {
-                    obj[prop][index] = {};
-                }
-                obj = obj[prop][index];
-            }
-        }
-        else {
-            if (typeof obj[prop] !== "object") {
-                obj[prop] = {};
-            }
-            if (idx === lastPropIdx) {
-                obj[prop] = value;
-            }
-            else {
-                obj = obj[prop];
-            }
-        }
-    });
-    return src;
-}
-class StructuredFormData {
-    constructor(form) {
-        this.form = form;
-    }
-    // data-scope on parent and name change on children + data-scope-indexed ?
-    getScopedFormData(form) {
-        let structuredData = {};
-        let formData = new FormData(this.form);
-        let closestScope = form.closest("[data-scoped]");
-        while (closestScope !== null) {
-        }
-        let keys = Array.from(formData.keys());
-        keys.forEach((key) => {
-            setPropertyFromPath(structuredData, key, formData.get(key));
-        });
-        return structuredData;
-    }
-    setFormElementsNameScope(rootElement, scope) {
-        let elements = Array.from(rootElement.querySelectorAll("*[name]"));
-        elements.forEach((element) => {
-            let name = element.getAttribute("name");
-            element.setAttribute("data-scope", scope);
-            element.setAttribute("name", `${scope}.${name}`);
-        });
-    }
-    resetFormElementsNameScope(rootElement) {
-        let elements = Array.from(rootElement.querySelectorAll("*[data-scope]"));
-        elements.forEach((element) => {
-            let name = element.getAttribute("name");
-            let scope = element.getAttribute("data-scope") + ".";
-            if (name && scope && name.includes(scope)) {
-                element.setAttribute("name", name.substring(name.indexOf(scope)));
-                element.removeAttribute("data-scope");
-            }
-        });
-    }
-    set() {
-    }
-}
-define("engine/editor/templates/form/temp", ["require", "exports"], function (require, exports) {
+define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_38) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    const RegisterCustomHTMLElement = function (args) {
-        return (elementCtor) => {
-            const { name, observedAttributes, options } = args;
-            if (observedAttributes) {
-                Object.defineProperty(elementCtor.prototype.constructor, 'observedAttributes', {
-                    get: () => {
-                        return observedAttributes;
-                    }
+    exports.HTMLTableTemplate = void 0;
+    const HTMLTableTemplate = (desc) => {
+        const thead = HTMLElement_38.HTMLElementTemplate('thead', {
+            children: [
+                HTMLElement_38.HTMLElementTemplate('tr', {
+                    props: {
+                        id: desc.id,
+                        className: desc.className,
+                    },
+                    children: desc.headerCells.map((cell) => {
+                        return HTMLElement_38.HTMLElementTemplate('th', {
+                            props: {
+                                scope: 'col'
+                            },
+                            children: [
+                                cell
+                            ]
+                        });
+                    })
+                })
+            ]
+        });
+        const tbody = HTMLElement_38.HTMLElementTemplate('tbody', {
+            children: desc.bodyCells.map((row) => {
+                return HTMLElement_38.HTMLElementTemplate('tr', {
+                    props: {
+                        id: desc.id,
+                        className: desc.className,
+                    },
+                    children: row.map((cell) => {
+                        if ((typeof cell === 'object') && !(cell instanceof Node) && ('type' in cell)) {
+                            switch (cell.type) {
+                                case 'data':
+                                default:
+                                    return HTMLElement_38.HTMLElementTemplate('td', {
+                                        children: [
+                                            cell.content
+                                        ]
+                                    });
+                                case 'header':
+                                    return HTMLElement_38.HTMLElementTemplate("th", {
+                                        props: {
+                                            scope: 'row'
+                                        },
+                                        children: [
+                                            cell.content
+                                        ]
+                                    });
+                            }
+                        }
+                        else {
+                            return HTMLElement_38.HTMLElementTemplate('td', {
+                                children: [
+                                    cell
+                                ]
+                            });
+                        }
+                    })
                 });
-            }
-            customElements.define(name, elementCtor, options);
-            return elementCtor;
-        };
-    };
-    const GenerateAttributeAccessors = function (attributes) {
-        return (elementCtor) => {
-            attributes.forEach((attr) => {
-                const { name, type } = attr;
-                switch (type) {
-                    case "boolean":
-                        Object.defineProperty(elementCtor.prototype, name, {
-                            get: function () {
-                                const val = this.getAttribute(name);
-                                return (val === "" || false);
-                            },
-                            set: function (value) {
-                                if (value) {
-                                    this.setAttribute(name, "");
-                                }
-                                else {
-                                    this.removeAttribute(name);
-                                }
-                            }
-                        });
-                        break;
-                    case "json":
-                        Object.defineProperty(elementCtor.prototype, name, {
-                            get: function () {
-                                const val = this.getAttribute(name);
-                                return (val !== null) ? JSON.parse(val) : void 0;
-                            },
-                            set: function (value) {
-                                if (value !== null) {
-                                    this.setAttribute(name, JSON.stringify(value));
-                                }
-                                else {
-                                    this.removeAttribute(name);
-                                }
-                            }
-                        });
-                        break;
-                    case "number":
-                    case "string":
-                    default:
-                        Object.defineProperty(elementCtor.prototype, name, {
-                            get: function () {
-                                const val = this.getAttribute(name);
-                                return val;
-                            },
-                            set: function (value) {
-                                if (value) {
-                                    this.setAttribute(name, value);
-                                }
-                                else {
-                                    this.removeAttribute(name);
-                                }
-                            }
-                        });
-                        break;
-                }
-            });
-            return elementCtor;
-        };
-    };
-    function bindShadowRoot(element, templateContent) {
-        const root = element.attachShadow({ mode: "open" });
-        const template = document.createElement("template");
-        if (typeof templateContent !== "undefined") {
-            template.innerHTML = templateContent;
-        }
-        root.appendChild(template.content.cloneNode(true));
-        return root;
-    }
-    function setHTMLElementProperties(elem, props) {
-        const elemProps = elem;
-        for (const prop in props) {
-            if (typeof elemProps[prop] === typeof props[prop] || typeof elemProps[prop] === "undefined" || elemProps[prop] === null) {
-                elemProps[prop] = props[prop];
-            }
-        }
-        return elem;
-    }
-    function setHTMLElementAttributes(elem, attr) {
-        const keys = Object.keys(attr);
-        keys.forEach((key) => {
-            const val = attr[key];
-            if (val) {
-                elem.setAttribute(key, val.toString());
-            }
+            })
         });
-        return elem;
-    }
-    const HTMLElementTemplate = function (tagName, args) {
-        const elem = document.createElement(tagName, args === null || args === void 0 ? void 0 : args.options);
-        if (args) {
-            if (args.props) {
-                setHTMLElementProperties(elem, args.props);
-            }
-            if (args.attr) {
-                setHTMLElementAttributes(elem, args.attr);
-            }
-            if (args.children && Array.isArray(args.children)) {
-                args.children.forEach((child) => {
-                    if (typeof child === "string" || child instanceof Node) {
-                        elem.append(child);
-                    }
-                    else {
-                        elem.append(HTMLElementTemplate(child.tagName, {
-                            options: child.options,
-                            attr: child.attr,
-                            children: child.children
-                        }));
-                    }
-                });
-            }
-        }
-        return elem;
-    };
-    class Registry {
-        constructor() {
-            this.values = new Map();
-        }
-        register(value, key) {
-            this.values.set(key, value);
-        }
-        get(key) {
-            return this.values.get(key) || null;
-        }
-    }
-    const templatesRegistry = new Registry();
-    const HTMLFieldTemplate = (props) => {
-        if ("type" in props && typeof props.type == "string") {
-            if (Array.from(templatesRegistry.values.keys()).indexOf(props.type) > -1) {
-                let template = templatesRegistry.get(props.type);
-                return template(props);
-            }
-        }
-    };
-    const HTMLSelectFieldTemplate = (props) => {
-        let options = (props.options || [])
-            .map((option) => {
-            return HTMLElementTemplate('option', {
-                props: {
-                    innerText: option
-                }
-            });
+        const tfoot = HTMLElement_38.HTMLElementTemplate('tfoot', {
+            children: [
+                HTMLElement_38.HTMLElementTemplate('tr', {
+                    props: {
+                        id: desc.id,
+                        className: desc.className,
+                    },
+                    children: desc.footerCells.map((cell) => {
+                        if ((typeof cell === 'object') && !(cell instanceof Node) && ('type' in cell)) {
+                            switch (cell.type) {
+                                case 'data':
+                                default:
+                                    return HTMLElement_38.HTMLElementTemplate('td', {
+                                        children: [
+                                            cell.content
+                                        ]
+                                    });
+                                case 'header':
+                                    return HTMLElement_38.HTMLElementTemplate('th', {
+                                        props: {
+                                            scope: 'row'
+                                        },
+                                        children: [
+                                            cell.content
+                                        ]
+                                    });
+                            }
+                        }
+                        else {
+                            return HTMLElement_38.HTMLElementTemplate('td', {
+                                children: [
+                                    cell
+                                ]
+                            });
+                        }
+                    })
+                })
+            ]
         });
-        let select = HTMLElementTemplate('select', {
-            children: options
+        const table = HTMLElement_38.HTMLElementTemplate('table', {
+            props: {
+                id: desc.id,
+                className: desc.className,
+            },
+            children: [
+                thead,
+                tbody,
+                tfoot
+            ]
         });
-        return select;
+        return table;
     };
-    templatesRegistry.register(HTMLSelectFieldTemplate, "select");
+    exports.HTMLTableTemplate = HTMLTableTemplate;
 });
 define("engine/extras/profiler/Profiler", ["require", "exports"], function (require, exports) {
     "use strict";

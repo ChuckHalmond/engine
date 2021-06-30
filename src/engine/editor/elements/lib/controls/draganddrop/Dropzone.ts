@@ -4,9 +4,17 @@ import { HTMLEDraggableElement, isHTMLEDraggableElement } from "./Draggable";
 export { EDataTransferEvent };
 export { isHTMLEDropzoneElement };
 export { HTMLEDropzoneElement };
+export { BaseHTMLEDropzoneElement };
 
 function isHTMLEDropzoneElement(obj: any): obj is HTMLEDropzoneElement {
     return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-dropzone";
+}
+
+interface HTMLEDropzoneElement extends HTMLElement {
+    draggedover: boolean;
+    allowedtypes: string;
+    multiple: boolean;
+    droppreview: boolean;
 }
 
 type EDataTransferEvent = CustomEvent<{
@@ -25,13 +33,13 @@ type EDataTransferEvent = CustomEvent<{
     {name: "multiple", type: "boolean"},
     {name: "droppreview", type: "boolean"},
 ])
-class HTMLEDropzoneElement extends HTMLElement {
+class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneElement {
 
     public draggedover!: boolean;
     public allowedtypes!: string;
     public multiple!: boolean;
     public droppreview!: boolean;
-    
+
     constructor() {
         super();
 
@@ -45,6 +53,17 @@ class HTMLEDropzoneElement extends HTMLElement {
                     cursor: pointer;
                 }
 
+                :host [part~="placeholder"]::after {
+                    content: "Drag a column here..";
+                    font-size: 0.9em;
+                    display: inline-block;
+                }
+
+                :host(:empty) [part~="clear"],
+                :host(:not(:empty)) [part~="placeholder"] {
+                    display: none;
+                }
+
                 [part~="clear"]::after {
                     display: inline-block;
                     content: "[x]";
@@ -56,6 +75,7 @@ class HTMLEDropzoneElement extends HTMLElement {
                 }
             </style>
             <slot id="draggables"></slot>
+            <span part="placeholder"/></span>
             <span part="clear"/></span>
         `);
     }
@@ -76,7 +96,11 @@ class HTMLEDropzoneElement extends HTMLElement {
 
         this.addEventListener("dragover", (event: DragEvent) => {
             event.preventDefault();
-        });
+        }, {capture: true});
+
+        this.shadowRoot!.addEventListener("dragover", (event) => {
+            event.preventDefault();
+        }, {capture: true});
         
         this.addEventListener("dragenter", (event: DragEvent) => {
             let target = event.target as any;
@@ -87,7 +111,12 @@ class HTMLEDropzoneElement extends HTMLElement {
             else if (isHTMLEDraggableElement(target)) {
                 target.droppreview = true;
             }
-        });
+            event.preventDefault();
+        }, {capture: true});
+        
+        this.shadowRoot!.addEventListener("dragenter", (event) => {
+            event.preventDefault();
+        }, {capture: true});
         
         this.addEventListener("dragleave", (event: DragEvent) => {
             let target = event.target as any;
@@ -101,7 +130,8 @@ class HTMLEDropzoneElement extends HTMLElement {
             else if (isHTMLEDraggableElement(target)) {
                 target.droppreview = false;
             }
-        });
+            event.preventDefault();
+        }, {capture: true});
         
         this.addEventListener("drop", (event: DragEvent) => {
             let target = event.target as any;
@@ -112,6 +142,7 @@ class HTMLEDropzoneElement extends HTMLElement {
             else if (isHTMLEDraggableElement(target)) {
                 target.droppreview = false;
             }
+            event.preventDefault();
 
             let draggables = Array.from(
                 document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]")

@@ -14,16 +14,16 @@ interface HTMLEMenuItemGroupTemplate {
     (desc: HTMLEMenuItemGroupTemplateDescription): HTMLEMenuItemGroupElement;
 }
 
-const HTMLEMenuItemGroupTemplate: HTMLEMenuItemGroupTemplate = (args: HTMLEMenuItemGroupTemplateDescription) => {
+const HTMLEMenuItemGroupTemplate: HTMLEMenuItemGroupTemplate = (desc: HTMLEMenuItemGroupTemplateDescription) => {
     
-    const items = args.items.map((itemArgs) => HTMLEMenuItemTemplate(itemArgs));
+    const items = desc.items.map((descArgs) => HTMLEMenuItemTemplate(descArgs));
 
-    return HTMLElementTemplate(
+    return HTMLElementTemplate<HTMLEMenuItemGroupElement>(
         'e-menuitemgroup', {
             props: {
-                id: args.id,
-                className: args.className,
-                name: args.name
+                id: desc.id,
+                className: desc.className,
+                name: desc.name
             },
             children: items
         }

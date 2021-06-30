@@ -1,5 +1,5 @@
 import { Transform } from "engine/core/general/Transform";
-import { HotKey, Input, Key, KeyModifier, MouseButton } from "engine/core/input/Input";
+import { Input, MouseButton } from "engine/core/input/Input";
 import { PerspectiveCamera } from "engine/core/rendering/scenes/cameras/PerspectiveCamera";
 import { CubeGeometry } from "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry";
 import { IcosahedronGeometry } from "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry";
@@ -11,65 +11,48 @@ import { WebGLProgramUtilties } from "engine/core/rendering/webgl/WebGLProgramUt
 import { WebGLRenderbufferUtilities } from "engine/core/rendering/webgl/WebGLRenderbuffersUtilities";
 import { WebGLRendererUtilities } from "engine/core/rendering/webgl/WebGLRendererUtilities";
 import { WebGLTextureUtilities } from "engine/core/rendering/webgl/WebGLTextureUtilities";
-import { HTMLEMenubarTemplate } from "engine/editor/templates/menus/MenubarTemplate";
 import { editor } from "engine/editor/Editor";
-import { FormState, getFormState, setFormState } from "engine/editor/elements/forms/Snippets";
-import { HTMLElementTemplate } from "engine/editor/elements/HTMLElement";
 import { ButtonStateElement } from "engine/editor/elements/lib/containers/buttons/ButtonState";
 import { StatefulButtonElement } from "engine/editor/elements/lib/containers/buttons/StatefulButton";
-import { HTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Menu";
-import { HTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
-import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
+import { BaseHTMLEMenuElement, HTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Menu";
+import { BaseHTMLEMenuBarElement, HTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
+import { BaseHTMLEMenuItemElement, HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { PanelElement } from "engine/editor/elements/lib/containers/panels/Panel";
 import { PanelGroupElement } from "engine/editor/elements/lib/containers/panels/PanelGroup";
-import { TabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
-import { TabListElement } from "engine/editor/elements/lib/containers/tabs/TabList";
-import { TabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
+import { BaseHTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
+import { BaseHTMLETabListElement } from "engine/editor/elements/lib/containers/tabs/TabList";
+import { BaseHTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
 import { RangeElement } from "engine/editor/elements/lib/controls/Range";
 import { ImportElement } from "engine/editor/elements/lib/utils/Import";
-import { handleTabIndexes } from "engine/editor/elements/Snippets";
 import { Color } from "engine/libs/graphics/colors/Color";
 import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
 import { Vector2 } from "engine/libs/maths/algebra/vectors/Vector2";
 import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
 import { clamp } from "engine/libs/maths/Snippets";
-import { Command } from "engine/libs/patterns/commands/Command";
-//import { Event } from "engine/libs/patterns/messaging/events/EventDispatcher";
 import { Resources } from "engine/resources/Resources";
-import { HTMLFormTemplate } from "engine/editor/templates/form/FormTemplate";
-import { HTMLTableTemplate } from "engine/editor/templates/table/TableTemplate";
 import { HTMLEStatusBarElement } from "engine/editor/elements/lib/containers/status/StatusBar";
 import { HTMLEDropdownElement } from "engine/editor/elements/lib/containers/dropdown/Dropdown";
-import { formatDiagnostic } from "typescript";
 import { HTMLEStatusItemElement } from "engine/editor/elements/lib/containers/status/StatusItem";
-import { HTMLEMenuItemTemplate } from "engine/editor/templates/menus/MenuItemTemplate";
-import { HTMLEMenuItemGroupElement } from "engine/editor/elements/lib/containers/menus/MenuItemGroup";
-import { HTMLEMenuButtonElement } from "engine/editor/elements/lib/containers/menus/MenuButton";
+import { BaseHTMLEMenuItemGroupElement, HTMLEMenuItemGroupElement } from "engine/editor/elements/lib/containers/menus/MenuItemGroup";
+import { BaseHTMLEMenuButtonElement, HTMLEMenuButtonElement } from "engine/editor/elements/lib/containers/menus/MenuButton";
 import { PaletteElement } from "engine/editor/elements/lib/misc/Palette";
 import { HTMLEBreadcrumbTrailElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail";
 import { HTMLEBreadcrumbItemElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem";
-import { HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
-import { EDataTransferEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
+import { BaseHTMLEDraggableElement, HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
+import { BaseHTMLEDropzoneElement, EDataTransferEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
 import { HTMLEFormDataArrayElement } from "engine/editor/elements/lib/containers/formdata/FormDataArray";
 import { HTMLEFormDataObjectElement } from "engine/editor/elements/lib/containers/formdata/FormDataObject";
-import { HTMLEInputDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/input/InputDropzone";
 
-
-HTMLEMenuButtonElement;
 HTMLEStatusBarElement;
 HTMLEStatusItemElement;
 ImportElement;
 
-HTMLEMenuBarElement;
-HTMLEMenuElement;
-HTMLEMenuItemElement;
-
 PanelElement;
 PanelGroupElement;
 
-TabElement;
-TabListElement;
-TabPanelElement;
+BaseHTMLETabElement;
+BaseHTMLETabListElement;
+BaseHTMLETabPanelElement;
 
 RangeElement;
 
@@ -81,13 +64,17 @@ HTMLEBreadcrumbTrailElement;
 HTMLEBreadcrumbItemElement;
 PaletteElement;
 
-HTMLEDraggableElement;
-HTMLEDropzoneElement;
-
 HTMLEFormDataArrayElement;
 HTMLEFormDataObjectElement;
 
-HTMLEInputDropzoneElement;
+BaseHTMLEDraggableElement;
+BaseHTMLEMenuBarElement;
+BaseHTMLEMenuButtonElement
+BaseHTMLEMenuElement;
+BaseHTMLEMenuItemElement;
+BaseHTMLEDropzoneElement;
+BaseHTMLEMenuItemGroupElement;
+BaseHTMLEMenuItemElement;
 
 const simpleSceneDOM = /*template*/`
 <link rel="stylesheet" href="../css/main.css"/>
@@ -95,7 +82,7 @@ const simpleSceneDOM = /*template*/`
 
     <div class="flex-rows">
 
-      <e-import src="html/samples/menus.html"></e-import>
+      <!--<e-import src="html/samples/menus.html"></e-import>-->
       <nav class="flex-cols">
           <div id="menubar-container"></div>
         <!--<button data-command="get">get</button>
@@ -162,12 +149,8 @@ const simpleSceneDOM = /*template*/`
                   </e-fdobject>
                 </e-fdarray>
               </e-fdobject>-->
-              <input type="number" name="temp-radio" value="1" data-change="test"></input>
-              <e-dropzone id="input-dropzone" data-name="myname" allowedtypes="df_column" multiple></e-dropzone>
-              <form id="form">
-                <input name="text[1]" value="t1" hidden></input>
-                <input name="text[0]" value="t2" hidden></input>
-              </form>
+              <input type="number" name="temp-radio" value="1"></input>
+              <e-dropzone data-class="input-dropzone" data-name="test" allowedtypes="df_column" multiple></e-dropzone>
             </e-tab-panel>
               
             <section>
@@ -262,8 +245,6 @@ const simpleSceneDOM = /*template*/`
     </div>
   </div>`;
 
-(window as {[key: string]: any})["editor"] = editor;
-
 export async function start() {
 
   const template = document.createElement('template');
@@ -280,10 +261,6 @@ export async function start() {
     })
   })).then(function(){ 
     editor.setup().then(() => {
-      //handleTabIndexes();
-
-      //test();
-      
       launchScene();
     });
   });
@@ -317,8 +294,8 @@ function test() {
   document.querySelector('#play-panel')!.append(table);
 }*/
 
+(window as any)["editor"] = editor;
 export async function launchScene() {
-
   let frameRequest: number;
   let render: (time: number) => void;
   let fps: number = 0;
@@ -339,7 +316,7 @@ export async function launchScene() {
     },
     context: 'default'
   });
-  
+
   const showFpsMenuItem = editor.menubar?.findItem((item) => item.name === "show-fps-item");
   const canvasFPS = document.getElementById("canvas-fps");
 
@@ -442,13 +419,13 @@ export async function launchScene() {
 
 
 
-  const dropzone1 = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone1");
+  /*const dropzone1 = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone1");
   dropzone1?.addEventListener("datatransfer", ((event: EDataTransferEvent) => {
     console.log(event.detail.data);
     console.log(event.detail.success);
     console.log(event.detail.position);
-  }) as EventListener);
-
+  }) as EventListener);*/
+  /*
   const draggableA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");
   if (draggableA) {
     draggableA.data = "A";
@@ -458,7 +435,7 @@ export async function launchScene() {
   const draggableB = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableB");
   if (draggableB) {
     draggableB.data = "B";
-  }
+  }*/
 
 
 

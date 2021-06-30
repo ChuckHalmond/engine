@@ -1,13 +1,18 @@
-import { bindShadowRoot, GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
-import { isTabElement, TabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
+import { bindShadowRoot, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
+import { isHTMLETabElement, HTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
 
-export { TabListElement };
+export { HTMLETabListElement };
+export { BaseHTMLETabListElement };
+
+interface HTMLETabListElement extends HTMLElement {
+    tabs: HTMLETabElement[];
+}
 
 @RegisterCustomHTMLElement({
-    name: "e-tab-list"
+    name: "e-tablist"
 })
-class TabListElement extends HTMLElement {
-    public tabs: TabElement[];
+class BaseHTMLETabListElement extends HTMLElement implements HTMLETabListElement {
+    public tabs: HTMLETabElement[];
     
     constructor() {
         super();
@@ -18,14 +23,14 @@ class TabListElement extends HTMLElement {
                     display: block;
                 }
             </style>
-            <slot id="tabs"></slot>
+            <slot></slot>
         `);
 
         this.tabs = [];
         
-        const tabsSlot = this.shadowRoot!.getElementById("tabs")!;
-        tabsSlot.addEventListener("slotchange", (event: Event) => {
-            const tabs = (event.target as HTMLSlotElement).assignedElements().filter(isTabElement);
+        const slot = this.shadowRoot!.querySelector("slot")!;
+        slot.addEventListener("slotchange", (event: Event) => {
+            const tabs = (event.target as HTMLSlotElement).assignedElements().filter(isHTMLETabElement);
             this.tabs = tabs;
         });
         
@@ -42,7 +47,7 @@ class TabListElement extends HTMLElement {
         
         this.addEventListener("click", (event) => {
             let target = event.target as any;
-            if (isTabElement(target)) {
+            if (isHTMLETabElement(target)) {
                 this.dispatchEvent(new CustomEvent<{tab: string}>("tabchange", {
                     detail: {
                         tab: target.name
@@ -53,7 +58,7 @@ class TabListElement extends HTMLElement {
         });
     }
 
-    public connectedCallback() {
+    public connectedCallback(): void {
         this.tabIndex = this.tabIndex;
     }
 }

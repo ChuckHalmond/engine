@@ -1,17 +1,20 @@
 import { bindShadowRoot, GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
 
-export { TabPanelElement };
+export { HTMLETabPanelElement };
+export { BaseHTMLETabPanelElement };
+
+interface HTMLETabPanelElement extends HTMLElement {
+    name: string;
+}
 
 @RegisterCustomHTMLElement({
-    name: "e-tab-panel"
+    name: "e-tabpanel"
 })
 @GenerateAttributeAccessors([
-    {name: "name", type: "string"},
-    {name: "active", type: "boolean"},
+    {name: "name", type: "string"}
 ])
-class TabPanelElement extends HTMLElement {
+class BaseHTMLETabPanelElement extends HTMLElement implements HTMLETabPanelElement {
 
-    public active!: boolean;
     public name!: string;
 
     constructor() {
@@ -21,10 +24,9 @@ class TabPanelElement extends HTMLElement {
             <style>
                 :host {
                     display: block;
-                    padding: 2px 6px;
                 }
 
-                :host(:not([active])) {
+                :host([hidden]) {
                     display: none;
                 }
             </style>
@@ -32,15 +34,9 @@ class TabPanelElement extends HTMLElement {
         `);
     }
 
-    public connectedCallback() {
+    public connectedCallback(): void {
+        this.tabIndex = this.tabIndex;
+        
         this.dispatchEvent(new CustomEvent("connected"));
-    }
-
-    public show() {
-        this.active = true;
-    }
-
-    public hide() {
-        this.active = false;
     }
 }

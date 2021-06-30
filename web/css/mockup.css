@@ -1,0 +1,113 @@
+@font-face {	
+	font-family: 'Roboto';
+	src: url('../assets/editor/fonts/Roboto_Mono/RobotoMono-VariableFont_wght.ttf') format('truetype');
+}
+
+* {
+    box-sizing: border-box;
+}
+
+i {
+    font-style: normal;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font-family: "Roboto";
+    font-size: 16px;
+    overflow: hidden;
+}
+
+.main {
+    width: 100%;
+    height: 100%;
+}
+
+.flex-rows {
+    display: flex;
+    flex-flow: column nowrap;
+}
+
+.flex-cols {
+    display: flex;
+    flex-flow: row nowrap;
+}
+
+.flex-none {
+    flex: none;
+}
+
+.flex-auto {
+    flex: auto;
+}
+
+.padded {
+    padding: 4px;
+}
+
+.indented {
+    margin-left: 12px;
+}
+
+/*
+fieldset {
+    border: none;
+}
+
+e-draggable {
+    position: relative;
+    display: block;
+    padding: 2px 4px;
+    border-radius: 4px;
+    border: 1px solid black;
+    margin: 10px 0;
+}
+
+e-draggable:focus,
+e-draggable[selected] {
+    font-weight: bold;
+    outline: none;
+}
+
+e-dropzone[droppreview] > e-draggable:last-child::after,
+e-draggable[droppreview]::before {
+    content: "";
+    pointer-events: none;
+    display: block;
+    position: absolute;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    background-color: black;
+}
+
+e-dropzone[droppreview] > e-draggable:last-child::after {
+    top: 100%;
+    margin-top: 8px;
+}
+
+e-draggable[droppreview]::before {
+    top: 0;
+    margin-top: -8px;
+}
+
+e-dropzone {
+    display: inline-block;
+    border-radius: 4px;
+    min-width: 32px;
+    padding: 6px;
+    margin: 8px 0;
+    border: 1px dashed black;
+    outline: 1px solid transparent;
+}
+
+e-dropzone:focus,
+e-dropzone[draggedover] {
+    border: 2px solid black;
+}*/
