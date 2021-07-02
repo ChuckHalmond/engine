@@ -66,17 +66,10 @@ const body = /*template*/`
             <div id="data-col" class="flex-none padded">
                 <details class="indented" open>
                     <summary>Dataset 1</summary>
-                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A">Column A<input name="D1A" value="Column_D1A" hidden></input></e-draggable>
-                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B">Column B<input name="D1B" value="Column_D1B" hidden></input></e-draggable>
-                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C">Column C<input name="D1C" value="Column_D1C" hidden></input></e-draggable>
-                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D">Column D<input name="D1D" value="Column_D1D" hidden></input></e-draggable>
-                </details>
-                <details class="indented" open>
-                    <summary>Dataset 2</summary>
-                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D2A">Column A<input name="D2A" value="Column_D2A" hidden></input></e-draggable>
-                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D2B">Column B<input name="D2B" value="Column_D2B" hidden></input></e-draggable>
-                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D2C">Column C<input name="D2C" value="Column_D2C" hidden></input></e-draggable>
-                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D2D">Column D<input name="D2D" value="Column_D2D" hidden></input></e-draggable>
+                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A" value="Column_D1A">Column A</e-draggable>
+                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B" value="Column_D1B">Column B</e-draggable>
+                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C" value="Column_D1C">Column C</e-draggable>
+                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D" value="Column_D1D">Column D</e-draggable>
                 </details>
             </div>
             <div id ="panels-col" class="flex-auto padded">
@@ -98,7 +91,10 @@ const body = /*template*/`
                                     <summary>
                                         Columns
                                     </summary>
-                                    <e-dropzone data-class="input-dropzone" data-input-dropzone-name="name" allowedtypes="*" multiple></e-dropzone><br/>
+                                    <e-dropzone allowedtypes="*" multiple>
+                                        <input slot="input" type="text" name="columns"></input>
+                                    </e-dropzone>
+                                    <br/>
                                 </details>
                             </fieldset>
                             <fieldset id="median_imputer">

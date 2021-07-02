@@ -361,17 +361,12 @@ define("engine/editor/elements/lib/controls/draganddrop/Draggable", ["require", 
         connectedCallback() {
             this.tabIndex = this.tabIndex;
             this.draggable = true;
-            this.addEventListener("dragstart", (event) => {
-                let draggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                let draggablesData = [];
-                draggables.forEach((draggable) => {
-                    draggablesData.push(draggable.data);
+            this.addEventListener("dragstart", () => {
+                let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                let selectedData = [];
+                selectedDraggables.forEach((selectedDraggable) => {
+                    selectedData.push(selectedDraggable.data);
                 });
-                let dataTransfer = event.dataTransfer;
-                if (dataTransfer !== null) {
-                    let data = JSON.stringify(draggablesData);
-                    dataTransfer.setData("text/plain", data);
-                }
                 this.dragged = true;
             });
             this.addEventListener("dragend", () => {
@@ -425,8 +420,9 @@ define("engine/editor/elements/lib/controls/draganddrop/Draggable", ["require", 
             { name: "ref", type: "string" },
             { name: "selected", type: "boolean" },
             { name: "dragged", type: "boolean" },
-            { name: "droppreview", type: "boolean" },
-            { name: "type", type: "string" }
+            { name: "dragovered", type: "boolean" },
+            { name: "type", type: "string" },
+            { name: "value", type: "string" },
         ])
     ], BaseHTMLEDraggableElement);
     exports.BaseHTMLEDraggableElement = BaseHTMLEDraggableElement;
@@ -448,32 +444,44 @@ define("engine/editor/elements/lib/controls/draganddrop/Dropzone", ["require", "
                     display: block;
                 }
 
-                [part~="clear"] {
-                    cursor: pointer;
-                }
-
-                :host(:empty) [part~="clear"],
-                :host(:not(:empty)) [part~="placeholder"] {
+                ::slotted(input) {
                     display: none;
                 }
             </style>
-            <slot id="draggables"></slot>
-            <span part="placeholder"/></span>
-            <span part="clear"/></span>
+            <slot id="draggables">
+                <span part="placeholder"/></span>
+            </slot>
+            <slot name="input"></slot>
+            <div part="appendarea"></div>
         `);
         }
         connectedCallback() {
             this.tabIndex = this.tabIndex;
-            const clear = this.shadowRoot.querySelector("[part~='clear']");
-            if (clear) {
-                clear.addEventListener("click", () => {
-                    this.dispatchEvent(new CustomEvent("cleardata", { bubbles: true }));
-                    let childDraggables = Array.from(this.children).filter(Draggable_1.isHTMLEDraggableElement);
-                    childDraggables.forEach((childDraggable) => {
-                        childDraggable.remove();
-                    });
+            const inputSlot = this.shadowRoot.querySelector("slot[name='input']");
+            if (inputSlot) {
+                inputSlot.addEventListener("slotchange", () => {
+                    const input = inputSlot.assignedElements()[0];
+                    if (HTMLElement_2.isTagElement("input", input)) {
+                        this.addEventListener("datatransfer", (() => {
+                            let thisDraggables = Array.from(this.querySelectorAll("e-draggable"));
+                            input.value = `[${thisDraggables.map(draggable => `"${draggable.value}"`).join(", ")}]`;
+                        }));
+                        this.addEventListener("dataclear", (() => {
+                            let thisDraggables = Array.from(this.querySelectorAll("e-draggable"));
+                            input.value = `[${thisDraggables.map(draggable => `"${draggable.value}"`).join(", ")}]`;
+                        }));
+                    }
                 });
             }
+            this.addEventListener("keydown", (event) => {
+                switch (event.key) {
+                    case "Delete":
+                        let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                        this.removeDraggables(selectedDraggables);
+                        event.stopPropagation();
+                        break;
+                }
+            });
             this.addEventListener("dragover", (event) => {
                 event.preventDefault();
             }, { capture: true });
@@ -482,96 +490,122 @@ define("engine/editor/elements/lib/controls/draganddrop/Dropzone", ["require", "
             }, { capture: true });
             this.addEventListener("dragenter", (event) => {
                 let target = event.target;
-                this.draggedover = true;
-                if (target == this) {
-                    this.droppreview = true;
+                if (Draggable_1.isHTMLEDraggableElement(target)) {
+                    let dragoveredDraggable = this.querySelector("e-draggable[dragovered]");
+                    if (dragoveredDraggable) {
+                        dragoveredDraggable.dragovered = false;
+                    }
+                    target.dragovered = true;
                 }
-                else if (Draggable_1.isHTMLEDraggableElement(target)) {
-                    target.droppreview = true;
+                else {
+                    this.dragovered = true;
                 }
                 event.preventDefault();
             }, { capture: true });
             this.shadowRoot.addEventListener("dragenter", (event) => {
+                let target = event.target;
+                if (!Draggable_1.isHTMLEDraggableElement(target)) {
+                    let dragoveredDraggable = this.querySelector("e-draggable[dragovered]");
+                    if (dragoveredDraggable) {
+                        dragoveredDraggable.dragovered = false;
+                    }
+                    this.dragovered = true;
+                }
                 event.preventDefault();
             }, { capture: true });
             this.addEventListener("dragleave", (event) => {
-                let target = event.target;
                 let relatedTarget = event.relatedTarget;
-                if (!this.contains(relatedTarget)) {
-                    this.draggedover = false;
+                if (!(this.contains(relatedTarget) || this.shadowRoot.contains(relatedTarget))) {
+                    let dragoveredDraggable = this.querySelector("e-draggable[dragovered]");
+                    if (dragoveredDraggable) {
+                        dragoveredDraggable.dragovered = false;
+                    }
                 }
-                if (target == this) {
-                    this.droppreview = false;
-                }
-                else if (Draggable_1.isHTMLEDraggableElement(target)) {
-                    target.droppreview = false;
-                }
+                this.dragovered = false;
                 event.preventDefault();
             }, { capture: true });
-            this.addEventListener("drop", (event) => {
-                let target = event.target;
-                if (target == this) {
-                    this.droppreview = false;
+            this.addEventListener("drop", () => {
+                let thisDraggables = Array.from(this.children).filter(Draggable_1.isHTMLEDraggableElement);
+                let dragoveredDraggable = this.querySelector("e-draggable[dragovered]");
+                let dragoveredDraggableIndex = thisDraggables.length;
+                if (dragoveredDraggable) {
+                    dragoveredDraggable.dragovered = false;
+                    dragoveredDraggableIndex = Array.from(thisDraggables).indexOf(dragoveredDraggable);
                 }
-                else if (Draggable_1.isHTMLEDraggableElement(target)) {
-                    target.droppreview = false;
-                }
-                event.preventDefault();
-                let draggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                let dragged = document.querySelector("e-draggable[dragged]");
+                let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                selectedDraggables.forEach((selectedDraggable) => {
+                    selectedDraggable.dragged = false;
+                    selectedDraggable.selected = false;
+                });
+                this.addDraggables(selectedDraggables, dragoveredDraggableIndex);
+                this.dragovered = false;
+            });
+        }
+        addDraggables(draggables, position) {
+            if (draggables.length > 0) {
+                let lastDraggable = draggables[draggables.length - 1];
                 let draggablesTypes = new Set();
                 draggables.forEach((draggable) => {
-                    draggable.dragged = false;
-                    draggable.selected = false;
                     draggablesTypes.add(draggable.type);
                 });
-                let thisAllowedTypes = new Set((this.allowedtypes || "").split(" "));
-                let success = thisAllowedTypes.has("*") ||
-                    Array.from(draggablesTypes.values()).every(type => thisAllowedTypes.has(type));
-                let position = -1;
-                if (success) {
+                let thisAllowedtypes = new Set((this.allowedtypes || "").split(" "));
+                let dataTransferSuccess = thisAllowedtypes.has("*") ||
+                    Array.from(draggablesTypes.values()).every(type => thisAllowedtypes.has(type));
+                let insertionIndex = -1;
+                if (dataTransferSuccess) {
+                    let thisDraggables = Array.from(this.children).filter(Draggable_1.isHTMLEDraggableElement);
+                    let thisLastDraggable = thisDraggables[thisDraggables.length - 1];
                     if (this.multiple) {
                         draggables.forEach((draggable) => {
-                            let ref = (this.querySelector(`[ref="${draggable.ref}"]`) || draggable.cloneNode(true));
-                            if (target == this) {
-                                this.appendChild(ref);
-                                position = (position < 0) ? this.childElementCount - 1 : position;
+                            let draggableRef = (this.querySelector(`[ref="${draggable.ref}"]`) || draggable.cloneNode(true));
+                            if (position > -1 && position < thisDraggables.length) {
+                                let pivotDraggable = thisDraggables[position];
+                                pivotDraggable.insertAdjacentElement("beforebegin", draggableRef);
+                                insertionIndex = (insertionIndex < 0) ? position : insertionIndex;
                             }
-                            else if (Draggable_1.isHTMLEDraggableElement(target)) {
-                                target.insertAdjacentElement("beforebegin", ref);
-                                position = (position < 0) ? Array.from(this.children).indexOf(target) - 1 : position;
+                            else {
+                                this.appendChild(draggableRef);
+                                insertionIndex = (insertionIndex < 0) ? thisDraggables.length - 1 : insertionIndex;
                             }
                         });
                     }
                     else {
-                        if (dragged) {
-                            let ref = (this.querySelector(`[ref="${dragged.ref}"]`) || dragged.cloneNode(true));
-                            if (this.firstChild) {
-                                this.replaceChild(ref, this.firstChild);
+                        if (position > -1 && position < thisDraggables.length) {
+                            let pivotDraggable = thisDraggables[position];
+                            pivotDraggable.insertAdjacentElement("beforebegin", lastDraggable);
+                            insertionIndex = position;
+                        }
+                        else {
+                            let ref = (this.querySelector(`[ref="${lastDraggable.ref}"]`) || lastDraggable.cloneNode(true));
+                            if (thisLastDraggable) {
+                                this.replaceChild(ref, thisLastDraggable);
                             }
                             else {
                                 this.appendChild(ref);
                             }
+                            insertionIndex = 0;
                         }
-                        position = 0;
                     }
-                    let dataTransfer = event.dataTransfer;
-                    if (dataTransfer) {
-                        let data = JSON.parse(dataTransfer.getData("text/plain"));
-                        let event = new CustomEvent("datatransfer", {
-                            bubbles: true,
-                            detail: {
-                                draggables: draggables,
-                                position: position,
-                                success: success,
-                                data: data
-                            }
-                        });
-                        this.dispatchEvent(event);
-                    }
-                    this.draggedover = false;
+                    let dataTransferEvent = new CustomEvent("datatransfer", {
+                        bubbles: true,
+                        detail: {
+                            draggables: draggables,
+                            position: insertionIndex,
+                            success: dataTransferSuccess,
+                        }
+                    });
+                    this.dispatchEvent(dataTransferEvent);
+                }
+            }
+        }
+        removeDraggables(draggables) {
+            let thisDraggables = Array.from(this.children).filter(Draggable_1.isHTMLEDraggableElement);
+            thisDraggables.forEach((draggable) => {
+                if (draggables.includes(draggable)) {
+                    draggable.remove();
                 }
             });
+            this.dispatchEvent(new CustomEvent("dataclear", { bubbles: true }));
         }
     };
     BaseHTMLEDropzoneElement = __decorate([
@@ -579,10 +613,9 @@ define("engine/editor/elements/lib/controls/draganddrop/Dropzone", ["require", "
             name: "e-dropzone"
         }),
         HTMLElement_2.GenerateAttributeAccessors([
-            { name: "draggedover", type: "boolean" },
+            { name: "dragovered", type: "boolean" },
             { name: "allowedtypes", type: "string" },
             { name: "multiple", type: "boolean" },
-            { name: "droppreview", type: "boolean" },
         ])
     ], BaseHTMLEDropzoneElement);
     exports.BaseHTMLEDropzoneElement = BaseHTMLEDropzoneElement;
@@ -3219,17 +3252,10 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
             <div id="data-col" class="flex-none padded">
                 <details class="indented" open>
                     <summary>Dataset 1</summary>
-                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A">Column A<input name="D1A" value="Column_D1A" hidden></input></e-draggable>
-                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B">Column B<input name="D1B" value="Column_D1B" hidden></input></e-draggable>
-                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C">Column C<input name="D1C" value="Column_D1C" hidden></input></e-draggable>
-                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D">Column D<input name="D1D" value="Column_D1D" hidden></input></e-draggable>
-                </details>
-                <details class="indented" open>
-                    <summary>Dataset 2</summary>
-                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D2A">Column A<input name="D2A" value="Column_D2A" hidden></input></e-draggable>
-                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D2B">Column B<input name="D2B" value="Column_D2B" hidden></input></e-draggable>
-                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D2C">Column C<input name="D2C" value="Column_D2C" hidden></input></e-draggable>
-                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D2D">Column D<input name="D2D" value="Column_D2D" hidden></input></e-draggable>
+                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A" value="Column_D1A">Column A</e-draggable>
+                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B" value="Column_D1B">Column B</e-draggable>
+                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C" value="Column_D1C">Column C</e-draggable>
+                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D" value="Column_D1D">Column D</e-draggable>
                 </details>
             </div>
             <div id ="panels-col" class="flex-auto padded">
@@ -3251,7 +3277,10 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                                     <summary>
                                         Columns
                                     </summary>
-                                    <e-dropzone data-class="input-dropzone" data-input-dropzone-name="name" allowedtypes="*" multiple></e-dropzone><br/>
+                                    <e-dropzone allowedtypes="*" multiple>
+                                        <input slot="input" type="text" name="columns"></input>
+                                    </e-dropzone>
+                                    <br/>
                                 </details>
                             </fieldset>
                             <fieldset id="median_imputer">

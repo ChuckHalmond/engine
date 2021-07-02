@@ -13,7 +13,8 @@ interface HTMLEDraggableElement extends HTMLElement {
     dragged: boolean;
     ref: string;
     type: string;
-    droppreview: boolean;
+    value: string;
+    dragovered: boolean;
     data: any;
 }
 
@@ -25,8 +26,9 @@ interface HTMLEDraggableElement extends HTMLElement {
     {name: "ref", type: "string"},
     {name: "selected", type: "boolean"},
     {name: "dragged", type: "boolean"},
-    {name: "droppreview", type: "boolean"},
-    {name: "type", type: "string"}
+    {name: "dragovered", type: "boolean"},
+    {name: "type", type: "string"},
+    {name: "value", type: "string"},
 ])
 class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableElement {
     
@@ -35,7 +37,8 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
 
     public ref!: string;
     public type!: string;
-    public droppreview!: boolean;
+    public dragovered!: boolean;
+    public value!: string;
 
     public data: any;
 
@@ -64,19 +67,14 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
         this.tabIndex = this.tabIndex;
         this.draggable = true;
 
-        this.addEventListener("dragstart", (event: DragEvent) => {
-            let draggables = Array.from(
+        this.addEventListener("dragstart", () => {
+            let selectedDraggables = Array.from(
                 document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]")
             );
-            let draggablesData: any[] = [];
-            draggables.forEach((draggable) => {
-                draggablesData.push(draggable.data);
+            let selectedData: any[] = [];
+            selectedDraggables.forEach((selectedDraggable) => {
+                selectedData.push(selectedDraggable.data);
             });
-            let dataTransfer = event.dataTransfer;
-            if (dataTransfer !== null) {
-                let data = JSON.stringify(draggablesData);
-                dataTransfer.setData("text/plain", data);
-            }
             this.dragged = true;
         });
         

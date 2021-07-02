@@ -55,8 +55,8 @@ e-draggable[selected] {
     outline: none;
 }
 
-e-dropzone[droppreview] > e-draggable:last-child::after,
-e-draggable[droppreview]::before {
+e-dropzone[dragovered] > e-draggable:last-child::after,
+e-draggable[dragovered]::before {
     content: "";
     pointer-events: none;
     display: block;
@@ -67,12 +67,12 @@ e-draggable[droppreview]::before {
     background-color: black;
 }
 
-e-dropzone[droppreview] > e-draggable:last-child::after {
+e-dropzone[dragovered] > e-draggable:last-child::after {
     left: 100%;
     transform: translateX(calc(100%));
 }
 
-e-draggable[droppreview]::before {
+e-draggable[dragovered]::before {
     left: 0;
     transform: translateX(calc(-100%));
 }
@@ -84,7 +84,7 @@ e-dropzone {
 }
 
 e-dropzone:focus,
-e-dropzone[draggedover] {
+e-dropzone[dragovered] {
     border: 2px solid black;
 }
 
