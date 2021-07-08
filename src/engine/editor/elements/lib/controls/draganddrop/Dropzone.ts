@@ -1,5 +1,6 @@
-import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors, isTagElement } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors, isTagElement, HTMLElementConstructor, createTemplate } from "engine/editor/elements/HTMLElement";
 import { HTMLEDraggableElement, isHTMLEDraggableElement } from "./Draggable";
+import { BaseHTMLEDragzoneElement, HTMLEDragzoneElement } from "./Dragzone";
 
 export { EDataTransferEvent };
 export { isHTMLEDropzoneElement };
@@ -10,7 +11,7 @@ function isHTMLEDropzoneElement(obj: any): obj is HTMLEDropzoneElement {
     return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-dropzone";
 }
 
-interface HTMLEDropzoneElement extends HTMLElement {
+interface HTMLEDropzoneElement extends HTMLEDragzoneElement {
     dragovered: boolean;
     allowedtypes: string;
     multiple: boolean;
@@ -32,7 +33,7 @@ type EDataTransferEvent = CustomEvent<{
     {name: "allowedtypes", type: "string"},
     {name: "multiple", type: "boolean"},
 ])
-class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneElement {
+class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLEDropzoneElement {
 
     public dragovered!: boolean;
     public allowedtypes!: string;
@@ -40,27 +41,25 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
 
     constructor() {
         super();
-
-        bindShadowRoot(this, /*template*/`
-            <style>
-                :host {
-                    display: block;
-                }
-
-                ::slotted(input) {
+        
+        this.shadowRoot!.querySelector("style")?.insertAdjacentHTML("beforeend",
+            /*css*/`
+                ::slotted([slot="input"]) {
                     display: none;
                 }
-            </style>
-            <slot id="draggables">
-                <span part="placeholder"/></span>
-            </slot>
-            <slot name="input"></slot>
-            <div part="appendarea"></div>
-        `);
+            `
+        );
+
+        this.shadowRoot!.querySelector("slot#draggables")?.insertAdjacentHTML("afterend",
+            /*template*/`
+                <slot name="input"></slot>
+                <div part="appendarea"></div>
+            `
+        );
     }
     
     public connectedCallback() {
-        this.tabIndex = this.tabIndex;
+        super.connectedCallback();
 
         const inputSlot = this.shadowRoot!.querySelector<HTMLSlotElement>("slot[name='input']");
         if (inputSlot) {

@@ -4,6 +4,7 @@ export { isElement };
 export { isTagElement };
 export { RegisterCustomHTMLElement };
 export { GenerateAttributeAccessors };
+export { createTemplate };
 export { bindShadowRoot };
 export { HTMLElementDescription };
 export { HTMLElementConstructor };
@@ -136,6 +137,14 @@ const GenerateAttributeAccessors: GenerateAttributeAccessorsDecorator = function
 
         return elementCtor;
     }
+}
+
+function createTemplate<E extends Element | DocumentFragment>(templateContent?: string): E {
+    const template = document.createElement("template");
+    if (typeof templateContent !== "undefined") {
+        template.innerHTML = templateContent;
+    }
+    return template.content as E;
 }
 
 function bindShadowRoot(element: HTMLElement, templateContent?: string): ShadowRoot {

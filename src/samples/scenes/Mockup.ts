@@ -6,6 +6,7 @@ import { BaseHTMLETabElement } from "engine/editor/elements/lib/containers/tabs/
 import { BaseHTMLETabListElement } from "engine/editor/elements/lib/containers/tabs/TabList";
 import { BaseHTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
 import { BaseHTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
+import { BaseHTMLEDragzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dragzone";
 import { BaseHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
 import { StructuredFormData } from "engine/editor/objects/StructuredFormData";
 import { HTMLDraggableInputTemplate } from "engine/editor/templates/other/DraggableInputTemplate";
@@ -16,6 +17,7 @@ BaseHTMLETabPanelElement;
 
 BaseHTMLEDraggableElement;
 BaseHTMLEDropzoneElement;
+BaseHTMLEDragzoneElement;
 
 BaseHTMLEMenuBarElement;
 BaseHTMLEMenuElement;
@@ -66,10 +68,12 @@ const body = /*template*/`
             <div id="data-col" class="flex-none padded">
                 <details class="indented" open>
                     <summary>Dataset 1</summary>
-                    <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A" value="Column_D1A">Column A</e-draggable>
-                    <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B" value="Column_D1B">Column B</e-draggable>
-                    <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C" value="Column_D1C">Column C</e-draggable>
-                    <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D" value="Column_D1D">Column D</e-draggable>
+                    <e-dragzone>
+                        <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A" value="Column_D1A">Column A</e-draggable>
+                        <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B" value="Column_D1B">Column B</e-draggable>
+                        <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C" value="Column_D1C">Column C</e-draggable>
+                        <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D" value="Column_D1D">Column D</e-draggable>
+                    </e-dragzone>
                 </details>
             </div>
             <div id ="panels-col" class="flex-auto padded">

@@ -1,4 +1,6 @@
 import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors } from "engine/editor/elements/HTMLElement";
+import { HTMLEDragzoneElement } from "./Dragzone";
+import { HTMLEDropzoneElement } from "./Dropzone";
 
 export { isHTMLEDraggableElement };
 export { HTMLEDraggableElement };
@@ -42,6 +44,9 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
 
     public data: any;
 
+    public dragzone: HTMLEDragzoneElement | null;
+    public dropzone: HTMLEDropzoneElement | null;
+
     constructor() {
         super();
 
@@ -61,13 +66,15 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
         `);
 
         this.data = null;
+        this.dragzone = null;
+        this.dropzone = null;
     }
     
     public connectedCallback() {
         this.tabIndex = this.tabIndex;
         this.draggable = true;
 
-        this.addEventListener("dragstart", () => {
+        /*this.addEventListener("dragstart", () => {
             let selectedDraggables = Array.from(
                 document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]")
             );
@@ -128,6 +135,6 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
                     }
                 });
             }
-        });
+        });*/
     }
 }
