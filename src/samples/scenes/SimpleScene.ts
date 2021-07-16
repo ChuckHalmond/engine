@@ -38,10 +38,8 @@ import { BaseHTMLEMenuButtonElement, HTMLEMenuButtonElement } from "engine/edito
 import { PaletteElement } from "engine/editor/elements/lib/misc/Palette";
 import { HTMLEBreadcrumbTrailElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail";
 import { HTMLEBreadcrumbItemElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem";
-import { BaseHTMLEDraggableElement, HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
-import { BaseHTMLEDropzoneElement, EDataTransferEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
-import { HTMLEFormDataArrayElement } from "engine/editor/elements/lib/containers/formdata/FormDataArray";
-import { HTMLEFormDataObjectElement } from "engine/editor/elements/lib/containers/formdata/FormDataObject";
+import { BaseHTMLEDraggableElement, HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
+import { BaseHTMLEDropzoneElement, EDataTransferEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 
 HTMLEStatusBarElement;
 HTMLEStatusItemElement;
@@ -63,9 +61,6 @@ HTMLEDropdownElement;
 HTMLEBreadcrumbTrailElement;
 HTMLEBreadcrumbItemElement;
 PaletteElement;
-
-HTMLEFormDataArrayElement;
-HTMLEFormDataObjectElement;
 
 BaseHTMLEDraggableElement;
 BaseHTMLEMenuBarElement;
@@ -142,13 +137,6 @@ const simpleSceneDOM = /*template*/`
                 </fieldset>
                 </fieldset>
               </details>-->
-              <!--<e-fdobject>
-                <e-fdarray name="array">
-                  <e-fdobject slot="prototype">
-                    <e-dropzone id="dropzone1" tabindex="-1" allowedtypes="df_column" multiple></e-dropzone>
-                  </e-fdobject>
-                </e-fdarray>
-              </e-fdobject>-->
               <input type="number" name="temp-radio" value="1"></input>
               <e-dropzone data-class="input-dropzone" data-name="test" allowedtypes="df_column" multiple></e-dropzone>
             </e-tab-panel>

@@ -1,3 +1,4 @@
+import { HTMLEDuplicableElementBase } from "engine/editor/elements/lib/containers/duplicable/Duplicable";
 import { BaseHTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Menu";
 import { BaseHTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
 import { BaseHTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
@@ -5,9 +6,9 @@ import { BaseHTMLEMenuItemGroupElement } from "engine/editor/elements/lib/contai
 import { BaseHTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
 import { BaseHTMLETabListElement } from "engine/editor/elements/lib/containers/tabs/TabList";
 import { BaseHTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
-import { BaseHTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
-import { BaseHTMLEDragzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dragzone";
-import { BaseHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draganddrop/Dropzone";
+import { BaseHTMLEDraggableElement, HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
+import { BaseHTMLEDragzoneElement } from "engine/editor/elements/lib/controls/draggable/Dragzone";
+import { BaseHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { StructuredFormData } from "engine/editor/objects/StructuredFormData";
 import { HTMLDraggableInputTemplate } from "engine/editor/templates/other/DraggableInputTemplate";
 
@@ -24,8 +25,11 @@ BaseHTMLEMenuElement;
 BaseHTMLEMenuItemGroupElement;
 BaseHTMLEMenuItemElement;
 
+HTMLEDuplicableElementBase;
+
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <div id="root" class="flex-rows">
         <header class="flex-cols flex-none padded">
             <e-menubar tabindex="0">
@@ -60,8 +64,8 @@ const body = /*template*/`
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="flex-none">
                 <e-tablist id="tablist">
-                    <e-tab name="extract" controls="extract-panel" active>Extract</e-tab>
-                    <e-tab name="transform" controls="transform-panel">Transform</e-tab>
+                    <e-tab name="extract" controls="extract-panel">Extract</e-tab>
+                    <e-tab name="transform" controls="transform-panel" active>Transform</e-tab>
                     <e-tab name="export" controls="export-panel">Export</e-tab>
                 </e-tablist>
             </div>
@@ -69,23 +73,36 @@ const body = /*template*/`
                 <details class="indented" open>
                     <summary>Dataset 1</summary>
                     <e-dragzone>
-                        <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A" value="Column_D1A">Column A</e-draggable>
-                        <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B" value="Column_D1B">Column B</e-draggable>
-                        <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C" value="Column_D1C">Column C</e-draggable>
-                        <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D" value="Column_D1D">Column D</e-draggable>
+                        <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A">Column A</e-draggable>
+                        <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B">Column B</e-draggable>
+                        <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C">Column C</e-draggable>
+                        <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D">Column D</e-draggable>
                     </e-dragzone>
                 </details>
             </div>
             <div id ="panels-col" class="flex-auto padded">
-                <e-tabpanel id="extract-panel" class="padded">
+                <e-tabpanel id="extract-panel">
                     <label for="file">Choose a data file</label><br/>
                     <input name="file" type="file"/>
+                    <!--<e-duplicable>
+                        <input slot="input" type="number" value="1" min="0"></input>
+                        <div slot="prototype">
+                            <label>Item <span data-duplicate-index></span></label>
+                            <input type="number"/>
+                        </div>
+                    </e-duplicable>-->
                 </e-tabpanel>
-                <e-tabpanel id="transform-panel" class="padded">
+                <e-tabpanel id="transform-panel">
                     <form>
                         <details class="indented" open>
-                            <summary>Transformation
+                            <summary>
+                                Transformer
+                                <!--<select data-class="toggler-select">
+                                    <option value="aggregate" selected>Transformer</option>
+                                    <option value="median_imputer">Median imputer</option>
+                                </select>-->
                                 <select data-class="toggler-select">
+                                    <option value="">...</option>
                                     <option value="aggregate" selected>Aggregate</option>
                                     <option value="median_imputer">Median imputer</option>
                                 </select>
@@ -112,10 +129,11 @@ const body = /*template*/`
                         </details>
                     </form>
                 </e-tabpanel>
-                <e-tabpanel id="export-panel" class="padded">
+                <e-tabpanel id="export-panel">
                     <button id="download-btn">Download</button>
                 </e-tab-panel>
             </div>
+            <div id="doc-col" class="flex-none padded"></div>
         </main>
         <footer class="flex-cols flex-none padded">
         </footer>
@@ -126,6 +144,25 @@ export async function mockup() {
     const bodyTemplate = document.createElement("template");
     bodyTemplate.innerHTML = body;
     document.body.insertBefore(bodyTemplate.content, document.body.firstChild);
+    
+    /*const docCol = document.getElementById("doc-col");
+    if (docCol) {
+        docCol.innerText = marked('# Marked in the browser\n\nRendered by **marked**.');
+    }*/
+    
+    const dragA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");
+    if (dragA) {
+        dragA.value = JSON.stringify({
+            value: "dragA"
+        });
+    }
+
+    const dragB = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableB");
+    if (dragB) {
+        dragB.value = JSON.stringify({
+            lol: "lol"
+        });
+    }
 
     // let columns = await fetch("json/columns.json").then((resp) => {
     //     if (resp.ok) {
@@ -150,6 +187,8 @@ export async function mockup() {
             let form = document.querySelector("form");
             if (form) {
                 let structuredFormData = new StructuredFormData(form).getStructuredFormData();
+                console.log(structuredFormData);
+                return;
                 let dataBlob = new Blob([JSON.stringify(structuredFormData, null, 4)], {type: "application/json"});
 
                 let donwloadAnchor = document.createElement("a");

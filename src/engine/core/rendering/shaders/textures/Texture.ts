@@ -2,7 +2,7 @@ import { Vector2 } from "engine/libs/maths/algebra/vectors/Vector2";
 import { UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator";
 import { SingleTopicMessageBroker, SingleTopicMessageSubscriber } from "engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker";
 
-import { TextureTarget, PixelFormat, PixelType, TextureMinFilters, TextureMagFilters, TextureWrapMode } from "../../webgl/WebGLConstants";
+import { TextureTarget, PixelFormat, PixelType, TextureWrapMode, TextureMinFilter, TextureMagFilter } from "../../webgl/WebGLConstants";
 import { TexturePixels } from "../../webgl/WebGLTextureUtilities";
 
 export { TextureProperties };
@@ -45,8 +45,8 @@ type TextureProperties = {
     format: PixelFormat;
     type: PixelType;
     
-    min?: TextureMinFilters;
-    mag?: TextureMagFilters;
+    min?: TextureMinFilter;
+    mag?: TextureMagFilter;
 
     wrapS?: TextureWrapMode;
     wrapT?: TextureWrapMode;
@@ -83,8 +83,8 @@ class BaseTexture implements Texture {
     public format: PixelFormat;
     public type: PixelType;
     
-    public min?: TextureMinFilters;
-    public mag?: TextureMagFilters;
+    public min?: TextureMinFilter;
+    public mag?: TextureMagFilter;
 
     public wrapS?: TextureWrapMode;
     public wrapT?: TextureWrapMode;
@@ -195,19 +195,19 @@ export class TextureWrapper implements Texture {
         this.internal.type = type;
     }
 
-    public get min(): TextureMinFilters | undefined {
+    public get min(): TextureMinFilter | undefined {
         return this.internal.min;
     }
 
-    public set min(min: TextureMinFilters | undefined) {
+    public set min(min: TextureMinFilter | undefined) {
         this.internal.min = min;
     }
 
-    public get mag(): TextureMagFilters | undefined {
+    public get mag(): TextureMagFilter | undefined {
         return this.internal.mag;
     }
 
-    public set mag(mag: TextureMagFilters | undefined) {
+    public set mag(mag: TextureMagFilter | undefined) {
         this.internal.mag = mag;
     }
 
@@ -340,12 +340,12 @@ export class ObservableTexture extends TextureWrapper implements Texture {
         this.changes.publish(TexturePropertyKeys.type);
     }
 
-    public set min(min: TextureMinFilters | undefined) {
+    public set min(min: TextureMinFilter | undefined) {
         this.internal.min = min;
         this.changes.publish(TexturePropertyKeys.min);
     }
 
-    public set mag(mag: TextureMagFilters | undefined) {
+    public set mag(mag: TextureMagFilter | undefined) {
         this.internal.mag = mag;
         this.changes.publish(TexturePropertyKeys.mag);
     }

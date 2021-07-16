@@ -1,4 +1,4 @@
-import { TransformOrigin, Transform } from "engine/core/general/Transform";
+import { Transform } from "engine/core/general/Transform";
 import { Camera } from "engine/core/rendering/scenes/cameras/Camera";
 import { UniformsList } from "engine/core/rendering/webgl/WebGLUniformUtilities";
 import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
@@ -33,10 +33,10 @@ class WorldViewUBO extends UBOBase<WorldViewUBOReferences> implements WorldViewU
     public getUniformValues(): UniformsList {
 
         let values: UniformsList = {};
-        Matrix4Pool.acquireTemp(4, ([worldInverseTranspose, worldViewProjection, cameraWorld, meshWorld]: Tuple<Matrix4, 4>) => {
+        Matrix4Pool.acquireTemp(4, (worldInverseTranspose: Matrix4, worldViewProjection: Matrix4, cameraWorld: Matrix4, meshWorld: Matrix4) => {
             
-            this._references.camera.transform.getMatrix(cameraWorld, TransformOrigin.GLOBAL);
-            this._references.meshTransform.getMatrix(meshWorld, TransformOrigin.GLOBAL);
+            cameraWorld.copy(this._references.camera.transform.globalMatrix);
+            meshWorld.copy(this._references.meshTransform.globalMatrix);
             worldInverseTranspose.copy(meshWorld).invert().transpose();
 
             this._references.camera.getProjection(worldViewProjection).mult(cameraWorld).mult(meshWorld);

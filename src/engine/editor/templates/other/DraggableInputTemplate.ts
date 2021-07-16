@@ -1,5 +1,5 @@
 import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
-import { HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draganddrop/Draggable";
+import { HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
 
 export { HTMLDraggableInputTemplateDescription };
 export { HTMLDraggableInputTemplate };

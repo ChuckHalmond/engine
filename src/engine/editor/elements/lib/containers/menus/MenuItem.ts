@@ -37,7 +37,7 @@ interface HTMLEMenuItemElement extends HTMLElement {
 
 @RegisterCustomHTMLElement({
     name: "e-menuitem",
-    observedAttributes: ["icon", "label", "checked"]
+    observedAttributes: ["icon", "label", "checked", "type"]
 })
 @GenerateAttributeAccessors([
     {name: "name", type: "string"},
@@ -46,7 +46,6 @@ interface HTMLEMenuItemElement extends HTMLElement {
     {name: "type", type: "string"},
     {name: "disabled", type: "boolean"},
     {name: "checked", type: "boolean"},
-    {name: "value", type: "string"},
 ])
 class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemElement {
 
@@ -96,14 +95,16 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                 :host(:focus-within) [part~="visual"] {
                     color: white;
                 }
-                                
-                :host([type="menu"]:focus-within) {
+                     
+                :host([type="menu"]:focus-within),
+                :host([type="submenu"]:focus-within) {
                     color: black;
-                    background-color: gainsboro;
+                    background-color: lightgray;
                 }
 
-                :host([type="menu"]:focus-within) [part~="arrow"] {
-                    color: dimgray;
+                :host([type="menu"]:focus-within) [part~="arrow"],
+                :host([type="submenu"]:focus-within) [part~="arrow"] {
+                    color: black;
                 }
 
                 :host([disabled]) {
@@ -158,7 +159,8 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                 [part~="icon"] {
                     flex: none;
                     display: none;
-                    width: 16px;
+                    width: 14px;
+                    height: 14px;
                     margin-right: 2px;
                 }
 
@@ -166,6 +168,14 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                     flex: none;
                     width: 16px;
                     margin-right: 8px;
+                }
+
+                [part~="input"] {
+                    flex: none;
+                    width: 14px;
+                    height: 14px;
+                    margin-right: 8px;
+                    pointer-events: none;
                 }
 
                 [part~="label"] {
@@ -196,6 +206,10 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
 
                 [part~="visual"]::after {
                     pointer-events: none;
+                }
+
+                :host(:not([type="checkbox"]):not([type="radio"])) [part~="input"] {
+                    display: none;
                 }
 
                 :host(:not([icon])) [part~="icon"],
@@ -234,7 +248,8 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
             <li part="li">
                 <span part="content">
                     <span part="visual icon"></span>
-                    <span part="visual state"></span>
+                    <!--<span part="visual state"></span>-->
+                    <input part="input" type="hidden" tabindex="-1"></input>
                     <span part="label"></span>
                     <span part="hotkey"></span>
                     <span part="description"></span>
@@ -323,6 +338,10 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                     break;
                 case "checked":
                     if (oldValue !== newValue) {
+                        const inputPart = this.shadowRoot?.querySelector<HTMLInputElement>("[part~=input]");
+                        if (inputPart) {
+                            inputPart.checked = (newValue !== null);
+                        }
                         switch (this.type) {
                             case "checkbox":
                                 this.dispatchEvent(new CustomEvent("change", {bubbles: true}));
@@ -339,6 +358,25 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                         }
                     }
                     break;
+                case "type":
+                    if (oldValue !== newValue) {
+                        const inputPart = this.shadowRoot?.querySelector<HTMLInputElement>("[part~=input]");
+                        if (inputPart) {
+                            switch (this.type) {
+                                case "button":
+                                    inputPart.type = "button";
+                                case "checkbox":
+                                    inputPart.type = "checkbox";
+                                    break;
+                                case "radio":
+                                    inputPart.type = "radio";
+                                    break;
+                                default:
+                                    inputPart.type = "hidden";
+                                    break;
+                            }
+                        }
+                    }
             }
         }
     }

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
-    "scripts": {
+  "scripts": {
     "start": "node main.js",
     "gulp-node-to-lib": "gulp node-to-lib",
     "test": "echo \"Error: no test specified\" && exit 1"

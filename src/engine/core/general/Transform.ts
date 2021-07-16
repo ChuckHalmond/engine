@@ -29,6 +29,9 @@ interface Transform extends Node<Transform> {
     rotation: Quaternion;
     localScale: Vector3;
 
+    localMatrix: Matrix4;
+    globalMatrix: Matrix4;
+
     left: Vector3;
     up: Vector3;
     forward: Vector3;
@@ -102,10 +105,17 @@ class TransformBase extends NodeBase<TransformBase> implements Transform {
         this._hasChanged = true;
     }
 
+    public get localMatrix(): Matrix4 {
+        return this._localMatrix;
+    }
+
     public get localPosition(): Vector3 {
         return this._localPosition.setValues([
             this._localMatrixArray[12], this._localMatrixArray[13], this._localMatrixArray[14]
         ]);
+    }
+    public get globalMatrix(): Matrix4 {
+        return this._globalMatrix;
     }
 
     public set localPosition(position: Vector3) {

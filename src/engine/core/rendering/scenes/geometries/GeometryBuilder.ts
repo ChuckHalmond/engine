@@ -141,4 +141,4 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
     }
 }
 
-new GeometryBuilderBase(new GeometryBase()).attribute('indices', new Float32Array(), Vector2List).build().indices
+//new GeometryBuilderBase(new GeometryBase()).attribute('indices', new Float32Array(), Vector2List).build().indices

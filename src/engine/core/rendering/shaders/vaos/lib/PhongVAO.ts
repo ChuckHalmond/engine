@@ -39,7 +39,7 @@ enum PhongVAOBufferSections {
     a_uv
 }
 
-type BufferAttributesInfo = [keyof PhongVAOAttributesList, TypedArray, AttributeProperties];
+type BufferAttributesInfo = [keyof PhongVAOAttributesList, ArrayLike<number>, AttributeProperties];
 
 class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements PhongVAO {
     
@@ -51,11 +51,11 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
         const geometry = this._references.geometry;
 
         this.buffersAttributes = [
-            ['a_position', geometry.vertices.buffer, { numComponents: 3 }],
-            ['a_normal', geometry.verticesNormals.buffer, { numComponents: 3 }],
-            ['a_tangent', geometry.tangents.buffer, { numComponents: 3 }],
-            ['a_bitangent', geometry.bitangents.buffer, { numComponents: 3 }],
-            ['a_uv', geometry.uvs.buffer, { numComponents: 3 }]
+            ['a_position', geometry.vertices.array, { numComponents: 3 }],
+            ['a_normal', geometry.verticesNormals.array, { numComponents: 3 }],
+            ['a_tangent', geometry.tangents.array, { numComponents: 3 }],
+            ['a_bitangent', geometry.bitangents.array, { numComponents: 3 }],
+            ['a_uv', geometry.uvs.array, { numComponents: 3 }]
         ];
     }
 
@@ -71,10 +71,10 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
                 this.buffersAttributes.reduce((result, item) => {
                 return {
                   ...result,
-                  [item[0]]: { array: item[1].array, props: item[2] },
+                  [item[0]]: { array: item[1], props: item[2] },
                 }
             }, {} as PhongVAOAttributesList),
-            indices: new Uint8Array(geometry.indices.buffer.array),
+            indices: new Uint8Array(geometry.indices.buffer),
         };
         
         return this._values;
