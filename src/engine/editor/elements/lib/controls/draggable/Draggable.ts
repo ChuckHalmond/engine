@@ -23,22 +23,23 @@ interface HTMLEDraggableElement extends HTMLElement {
     name: "e-draggable"
 })
 @GenerateAttributeAccessors([
-    {name: "dropaction", type: "string"},
-    {name: "ref", type: "string"},
     {name: "selected", type: "boolean"},
     {name: "dragged", type: "boolean"},
     {name: "dragovered", type: "boolean"},
-    {name: "value", type: "string"},
+    {name: "disabled", type: "boolean"},
+    {name: "ref", type: "string"},
     {name: "type", type: "string"},
+    {name: "value", type: "string"},
 ])
 class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableElement {
     
     public selected!: boolean;
+    public dragovered!: boolean;
     public dragged!: boolean;
+    public disabled!: boolean;
 
     public ref!: string;
     public type!: string;
-    public dragovered!: boolean;
     public value!: string;
 
     public dragzone: HTMLEDragzoneElement | null;
@@ -57,6 +58,12 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
                     border: 1px solid black;
                     margin-top: 6px;
                     cursor: pointer;
+                }
+
+                :host([disabled]) {
+                    pointer-events: none;
+                    color: gray;
+                    border-color: gray;
                 }
 
                 :host(:focus),
