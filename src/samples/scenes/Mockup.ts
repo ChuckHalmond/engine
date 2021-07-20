@@ -127,7 +127,7 @@ const body = /*template*/`
                             </summary>
                             <fieldset id="aggregate">
                                 <label>Columns</label><br/>
-                                <e-dropzone id="dropzone" allowedtypes="*" multiple>
+                                <e-dropzone id="dropzone" multiple tabindex="0">
                                     <input slot="input" type="text" name="columns"></input>
                                 </e-dropzone>
                             </fieldset>

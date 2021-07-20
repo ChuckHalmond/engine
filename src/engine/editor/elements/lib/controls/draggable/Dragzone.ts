@@ -70,7 +70,7 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
         
         this.addEventListener("focusout", (event: FocusEvent) => {
             let relatedTarget = event.relatedTarget as any;
-            if (!this.contains(relatedTarget)) {
+            if (this == relatedTarget || !this.contains(relatedTarget)) {
                 this.draggables.forEach((thisSelectedDraggable) => {
                     thisSelectedDraggable.selected = false;
                 });

@@ -431,7 +431,7 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
                 });
                 this.addEventListener("focusout", (event) => {
                     let relatedTarget = event.relatedTarget;
-                    if (!this.contains(relatedTarget)) {
+                    if (this == relatedTarget || !this.contains(relatedTarget)) {
                         this.draggables.forEach((thisSelectedDraggable) => {
                             thisSelectedDraggable.selected = false;
                         });
@@ -500,13 +500,18 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 :host {
                     position: relative;
                     display: inline-block;
-                    border-radius: 4px;
+                    border-radius: 2px;
                     min-width: 32px;
                     min-height: 32px;
                     padding: 4px;
                     margin-top: 8px;
                     border: 1px dashed black;
                     outline: 1px solid transparent;
+                }
+
+                :host(:focus) {
+                    border-color: transparent;
+                    outline: 2px solid black;
                 }
 
                 :host [part~="appendarea"] {
@@ -559,7 +564,12 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                     switch (event.key) {
                         case "Delete":
                             let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                            this.removeDraggables(selectedDraggables);
+                            if (selectedDraggables.length == 0) {
+                                this.removeDraggables(this.draggables);
+                            }
+                            else {
+                                this.removeDraggables(selectedDraggables);
+                            }
                             event.stopPropagation();
                             break;
                     }
@@ -3601,7 +3611,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                             </summary>
                             <fieldset id="aggregate">
                                 <label>Columns</label><br/>
-                                <e-dropzone id="dropzone" allowedtypes="*" multiple>
+                                <e-dropzone id="dropzone" multiple tabindex="0">
                                     <input slot="input" type="text" name="columns"></input>
                                 </e-dropzone>
                             </fieldset>
