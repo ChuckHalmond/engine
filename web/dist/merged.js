@@ -458,6 +458,12 @@ define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "e
                     cursor: pointer;
                 }
 
+                :host([disabled]) {
+                    pointer-events: none;
+                    color: gray;
+                    border-color: gray;
+                }
+
                 :host(:focus),
                 :host([selected]) {
                     font-weight: bold;
@@ -499,13 +505,13 @@ define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "e
                 name: "e-draggable"
             }),
             HTMLElement_2.GenerateAttributeAccessors([
-                { name: "dropaction", type: "string" },
-                { name: "ref", type: "string" },
                 { name: "selected", type: "boolean" },
                 { name: "dragged", type: "boolean" },
                 { name: "dragovered", type: "boolean" },
-                { name: "value", type: "string" },
+                { name: "disabled", type: "boolean" },
+                { name: "ref", type: "string" },
                 { name: "type", type: "string" },
+                { name: "value", type: "string" },
             ])
         ], BaseHTMLEDraggableElement);
         return BaseHTMLEDraggableElement;
