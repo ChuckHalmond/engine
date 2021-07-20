@@ -13,8 +13,8 @@ function isHTMLEDropzoneElement(obj: any): obj is HTMLEDropzoneElement {
 
 interface HTMLEDropzoneElement extends HTMLEDragzoneElement {
     dragovered: boolean;
-    allowedtypes: string;
     multiple: boolean;
+    droptest: ((draggable: HTMLEDraggableElement) => void) | null;
     addDraggables(draggables: HTMLEDraggableElement[], position: number): void;
     removeDraggables(draggables: HTMLEDraggableElement[]): void;
 }
@@ -23,6 +23,7 @@ type EDataTransferEvent = CustomEvent<{
     draggables: HTMLEDraggableElement[],
     position: number,
     success: boolean,
+    statusText: string
 }>
 
 @RegisterCustomHTMLElement({
@@ -30,14 +31,14 @@ type EDataTransferEvent = CustomEvent<{
 })
 @GenerateAttributeAccessors([
     {name: "dragovered", type: "boolean"},
-    {name: "allowedtypes", type: "string"},
     {name: "multiple", type: "boolean"},
 ])
 class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLEDropzoneElement {
 
     public dragovered!: boolean;
-    public allowedtypes!: string;
     public multiple!: boolean;
+
+    public droptest!: ((draggable: HTMLEDraggableElement) => void) | null;
 
     constructor() {
         super();
@@ -89,6 +90,8 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
                 <div part="appendarea"></div>
             `
         );
+
+        this.droptest = null;
     }
     
     public connectedCallback() {
@@ -203,24 +206,23 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
         if (draggables.length > 0) {
             let lastDraggable = draggables[draggables.length - 1];
 
-            let draggablesTypes = new Set<string>();
-            draggables.forEach((draggable) => {
-                draggablesTypes.add(draggable.type);
-            });
-
-            let thisAllowedtypes = new Set((this.allowedtypes || "").split(" "));
-            
-            let dataTransferSuccess = thisAllowedtypes.has("*") ||
-                Array.from(
-                    draggablesTypes.values()
-                ).every(
-                    type => thisAllowedtypes.has(type)
-                );
+            let dataTransferSuccess = true;
+            let dataTransferStatusText = "";
+            try {
+                draggables.forEach((draggable) => {
+                    if (this.droptest) {
+                        this.droptest(draggable);
+                    }
+                });
+            }
+            catch (error: any) {
+                dataTransferStatusText = error.message;
+                dataTransferSuccess = false;
+            }
             
             let insertionIndex = -1;
             if (dataTransferSuccess) {
                 let thisDraggables = Array.from(this.children).filter(isHTMLEDraggableElement);
-                let thisLastDraggable = thisDraggables[thisDraggables.length - 1];
                 if (this.multiple) {
                     draggables.forEach((draggable) => {
                         let draggableRef = (this.querySelector(`[ref="${draggable.ref}"]`) || draggable.cloneNode(true)) as HTMLElement;
@@ -243,8 +245,8 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
                     }
                     else {
                         let ref = (this.querySelector(`[ref="${lastDraggable.ref}"]`) || lastDraggable.cloneNode(true)) as HTMLElement;
-                        if (thisLastDraggable) {
-                            this.replaceChild(ref, thisLastDraggable);
+                        if (thisDraggables.length > 0) {
+                            this.replaceChild(ref, thisDraggables[thisDraggables.length - 1]);
                         }
                         else {
                             this.appendChild(ref);
@@ -252,17 +254,18 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
                         insertionIndex = 0;
                     }
                 }
-                
-                let dataTransferEvent: EDataTransferEvent = new CustomEvent("datatransfer", {
-                    bubbles: true,
-                    detail: {
-                        draggables: draggables,
-                        position: insertionIndex,
-                        success: dataTransferSuccess,
-                    } 
-                });
-                this.dispatchEvent(dataTransferEvent);
             }
+
+            let dataTransferEvent: EDataTransferEvent = new CustomEvent("datatransfer", {
+                bubbles: true,
+                detail: {
+                    draggables: draggables,
+                    position: insertionIndex,
+                    success: dataTransferSuccess,
+                    statusText: dataTransferStatusText,
+                } 
+            });
+            this.dispatchEvent(dataTransferEvent);
         }
     }
 

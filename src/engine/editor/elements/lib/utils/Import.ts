@@ -1,16 +1,26 @@
 import { GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
 
-export { ImportElement };
+export { isHTMLEImportElement };
+export { HTMLEImportElement };
+export { BaseHTMLEImportElement };
+
+function isHTMLEImportElement(obj: any): obj is HTMLEImportElement {
+    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-import";
+}
+
+interface HTMLEImportElement extends HTMLElement {
+    src: string;
+}
 
 @RegisterCustomHTMLElement({
-    name: 'e-import'
+    name: "e-import"
 })
 @GenerateAttributeAccessors([
-    {name: 'src', type: 'string'}
+    {name: "src", type: "string"}
 ])
-class ImportElement extends HTMLElement {
+class BaseHTMLEImportElement extends HTMLElement {
 
-    public src!: string | null;
+    public src!: string;
 
     constructor() {
         super();
@@ -18,17 +28,15 @@ class ImportElement extends HTMLElement {
     
     public connectedCallback(): void {
         const importRequest = async (src: string) => {
-            this.innerHTML = new DOMParser().parseFromString(
-                await fetch(src).then((response: Response) => {
-                    if (response.ok) {
-                        return response.text();
-                    }
-                    else {
-                        throw new Error(response.statusText);
-                    }
-                }), "text/html"
-            ).body.innerHTML;
-            this.dispatchEvent(new Event('loaded'));
+            this.outerHTML = await fetch(src).then((response: Response) => {
+                if (response.ok) {
+                    return response.text();
+                }
+                else {
+                    throw new Error(response.statusText);
+                }
+            });
+            this.dispatchEvent(new Event("loaded"));
         }
         if (this.src) {
             importRequest(this.src);

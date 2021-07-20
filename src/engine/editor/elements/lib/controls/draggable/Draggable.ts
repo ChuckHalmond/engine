@@ -1,6 +1,4 @@
 import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors } from "engine/editor/elements/HTMLElement";
-import { HTMLEDragzoneElement } from "./Dragzone";
-import { HTMLEDropzoneElement } from "./Dropzone";
 
 export { isHTMLEDraggableElement };
 export { HTMLEDraggableElement };
@@ -14,7 +12,6 @@ interface HTMLEDraggableElement extends HTMLElement {
     selected: boolean;
     dragged: boolean;
     ref: string;
-    type: string;
     value: string;
     dragovered: boolean;
 }
@@ -28,7 +25,6 @@ interface HTMLEDraggableElement extends HTMLElement {
     {name: "dragovered", type: "boolean"},
     {name: "disabled", type: "boolean"},
     {name: "ref", type: "string"},
-    {name: "type", type: "string"},
     {name: "value", type: "string"},
 ])
 class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableElement {
@@ -39,11 +35,7 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
     public disabled!: boolean;
 
     public ref!: string;
-    public type!: string;
     public value!: string;
-
-    public dragzone: HTMLEDragzoneElement | null;
-    public dropzone: HTMLEDropzoneElement | null;
 
     constructor() {
         super();
@@ -94,9 +86,6 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
             </style>
             <slot></slot>
         `);
-        
-        this.dragzone = null;
-        this.dropzone = null;
     }
     
     public connectedCallback() {

@@ -1,14 +1,15 @@
-import { NumberInputElement } from "engine/editor/elements/lib/builtins/inputs/NumberInput";
 import { bindShadowRoot, GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
 import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { TooltipAttributeExtension } from "engine/editor/attributes/Tooltip";
 
 export { Vector3InputElement };
 
 @RegisterCustomHTMLElement({
     name: 'e-vector3-input'
 })
-@GenerateAttributeAccessors([{name: 'label'}, {name: 'tooltip'}])
+@GenerateAttributeAccessors([
+    {name: 'label'},
+    {name: 'tooltip'}
+])
 class Vector3InputElement extends HTMLElement {
 
     public readonly vector: Vector3;
@@ -24,7 +25,7 @@ class Vector3InputElement extends HTMLElement {
                     /*font-size: 1em;*/
                 }
 
-                input {
+                [part~="input"] {
                     padding: var(--container-padding);
                     border-radius: var(--container-border-radius);
         
@@ -37,19 +38,19 @@ class Vector3InputElement extends HTMLElement {
                     outline: 0;
                 }
         
-                input::selection {
+                [part~="input"]::selection {
                     background-color: var(--theme-color-200);
                 }
                 
-                input:focus {
+                [part~="input"]:focus {
                     border: 1px solid var(--theme-on-color);
                 }
             </style>
         
             <span id="label"></span> 
-            X <input id="x" is="number-input" type="text" spellcheck="false" value="0"/>
-            Y <input id="y" is="number-input" type="text" spellcheck="false" value="0"/>
-            Z <input id="z" is="number-input" type="text" spellcheck="false" value="0"/>
+            X <input part="input" id="x" is="number-input" type="text" spellcheck="false" value="0"/>
+            Y <input part="input" id="y" is="number-input" type="text" spellcheck="false" value="0"/>
+            Z <input part="input" id="z" is="number-input" type="text" spellcheck="false" value="0"/>
         `);
         
         this.vector = new Vector3();
@@ -68,8 +69,6 @@ class Vector3InputElement extends HTMLElement {
 
         this.shadowRoot!.getElementById('label')!.innerText = this.label;
         this.tooltip = this.label;
-
-        TooltipAttributeExtension.enable(this);
     }
 
     public refresh() {

@@ -1,7 +1,6 @@
 import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors, isTagElement } from "engine/editor/elements/HTMLElement";
 import { HTMLEDraggableElement, isHTMLEDraggableElement } from "./Draggable";
 
-export { EDataTransferEvent };
 export { isHTMLEDragzoneElement };
 export { HTMLEDragzoneElement };
 export { BaseHTMLEDragzoneElement };
@@ -13,12 +12,6 @@ function isHTMLEDragzoneElement(obj: any): obj is HTMLEDragzoneElement {
 interface HTMLEDragzoneElement extends HTMLElement {
     draggables: HTMLEDraggableElement[];
 }
-
-type EDataTransferEvent = CustomEvent<{
-    draggables: HTMLEDraggableElement[],
-    position: number,
-    success: boolean,
-}>
 
 @RegisterCustomHTMLElement({
     name: "e-dragzone"

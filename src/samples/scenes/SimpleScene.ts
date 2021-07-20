@@ -23,7 +23,7 @@ import { BaseHTMLETabElement } from "engine/editor/elements/lib/containers/tabs/
 import { BaseHTMLETabListElement } from "engine/editor/elements/lib/containers/tabs/TabList";
 import { BaseHTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
 import { RangeElement } from "engine/editor/elements/lib/controls/Range";
-import { ImportElement } from "engine/editor/elements/lib/utils/Import";
+import { BaseHTMLEImportElement } from "engine/editor/elements/lib/utils/Import";
 import { Color } from "engine/libs/graphics/colors/Color";
 import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
 import { Vector2 } from "engine/libs/maths/algebra/vectors/Vector2";
@@ -43,7 +43,7 @@ import { BaseHTMLEDropzoneElement, EDataTransferEvent, HTMLEDropzoneElement } fr
 
 HTMLEStatusBarElement;
 HTMLEStatusItemElement;
-ImportElement;
+BaseHTMLEImportElement;
 
 PanelElement;
 PanelGroupElement;

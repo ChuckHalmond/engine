@@ -9,6 +9,7 @@ import { BaseHTMLETabPanelElement } from "engine/editor/elements/lib/containers/
 import { BaseHTMLEDraggableElement, HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
 import { BaseHTMLEDragzoneElement } from "engine/editor/elements/lib/controls/draggable/Dragzone";
 import { BaseHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
+import { BaseHTMLEImportElement } from "engine/editor/elements/lib/utils/Import";
 import { StructuredFormData } from "engine/editor/objects/StructuredFormData";
 import { HTMLDraggableInputTemplate } from "engine/editor/templates/other/DraggableInputTemplate";
 
@@ -27,11 +28,14 @@ BaseHTMLEMenuItemElement;
 
 HTMLEDuplicableElementBase;
 
+BaseHTMLEImportElement;
+
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <div id="root" class="flex-rows">
         <header class="flex-cols flex-none padded">
+            <!--<e-import src="../html/samples/menus.html"></e-import>-->
             <!--<e-menubar tabindex="0">
                 <e-menuitem name="canvas-menu-item" type="menu" label="Canvas" tabindex="-1" aria-label="Canvas">
                     <e-menu slot="menu" tabindex="-1">
@@ -73,10 +77,10 @@ const body = /*template*/`
                 <details class="indented" open>
                     <summary>Dataset 1</summary>
                     <e-dragzone>
-                        <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A">Column A</e-draggable>
-                        <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B">Column B</e-draggable>
-                        <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C">Column C</e-draggable>
-                        <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D">Column D</e-draggable>
+                        <e-draggable id="draggableA" tabindex="-1" ref="D1A">Column A</e-draggable>
+                        <e-draggable id="draggableB" tabindex="-1" ref="D1B">Column B</e-draggable>
+                        <e-draggable id="draggableC" tabindex="-1" ref="D1C">Column C</e-draggable>
+                        <e-draggable id="draggableD" tabindex="-1" ref="D1D">Column D</e-draggable>
                     </e-dragzone>
                 </details>
             </div>
@@ -91,10 +95,7 @@ const body = /*template*/`
                             </select>
                         </summary>
                         <fieldset id="netezza">
-                            <label for="filepath">Filepath</label>
-                            <input name="filepath" type="file"/>
-                            <label for="filepath">Filepath</label>
-                            <input name="filepath" type="file"/>
+                            
                         </fieldset>
                         <fieldset id="csv">
                             <label for="filepath">Filepath</label>
@@ -126,7 +127,7 @@ const body = /*template*/`
                             </summary>
                             <fieldset id="aggregate">
                                 <label>Columns</label><br/>
-                                <e-dropzone allowedtypes="*" multiple>
+                                <e-dropzone id="dropzone" allowedtypes="*" multiple>
                                     <input slot="input" type="text" name="columns"></input>
                                 </e-dropzone>
                             </fieldset>
@@ -156,6 +157,20 @@ export async function mockup() {
     /*const docCol = document.getElementById("doc-col");
     if (docCol) {
         docCol.innerText = marked('# Marked in the browser\n\nRendered by **marked**.');
+    }*/
+
+    /*const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone");
+    if (dropzone) {
+        dropzone.droptest = (draggable) => {
+            if (draggable.ref !== "D1A")
+                throw new Error("Only D1A draggable is allowed here");
+        };
+        dropzone.addEventListener("datatransfer", ((event: EDataTransferEvent) => {
+            console.log(event.detail);
+            if (!event.detail.success) {
+                alert(event.detail.statusText);
+            }
+        }) as EventListener)
     }*/
     
     const dragA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");

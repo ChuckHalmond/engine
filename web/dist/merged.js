@@ -16,43 +16,6 @@ define("engine/editor/elements/Snippets", ["require", "exports"], function (requ
         });
     }
     exports.forAllHierarchyElements = forAllHierarchyElements;
-    /*
-    function getPropertyFromPath(src: object, path: string): any {
-      const props = path.split(".");
-      let obj: {[key: string]: any} | undefined  = src;
-      props.forEach((prop) => {
-        if (typeof obj === "object" && prop in obj) {
-          obj = obj[prop];
-        }
-        else {
-          obj = void 0;
-        }
-      });
-      return obj;
-    }
-    
-    function setPropertyFromPath(src: object, path: string, value: any): object {
-      const props = path.split(".");
-      let obj: {[key: string]: any} = src;
-      let lastPropIdx = props.length - 1;
-      props.forEach((prop, idx) => {
-        if (idx === lastPropIdx) {
-          Object.assign(obj, {
-            [prop]: value
-          });
-        }
-        else {
-          if (typeof obj[prop] !== "object") {
-            Object.assign(obj, {
-              [prop]: {}
-            });
-          }
-          obj = obj[prop];
-        }
-      });
-      return src;
-    }
-    */
     function getPropertyFromPath(src, path) {
         const props = path.split(".");
         let obj = src;
@@ -339,7 +302,88 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
     }
     exports.createMutationObserverCallback = createMutationObserverCallback;
 });
-define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Draggable"], function (require, exports, HTMLElement_1, Draggable_1) {
+define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEDraggableElement = exports.isHTMLEDraggableElement = void 0;
+    function isHTMLEDraggableElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-draggable";
+    }
+    exports.isHTMLEDraggableElement = isHTMLEDraggableElement;
+    let BaseHTMLEDraggableElement = /** @class */ (() => {
+        let BaseHTMLEDraggableElement = class BaseHTMLEDraggableElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_1.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    position: relative;
+                    display: block;
+                    padding: 2px 4px;
+                    border-radius: 4px;
+                    border: 1px solid black;
+                    margin-top: 6px;
+                    cursor: pointer;
+                }
+
+                :host([disabled]) {
+                    pointer-events: none;
+                    color: gray;
+                    border-color: gray;
+                }
+
+                :host(:focus),
+                :host([selected]) {
+                    font-weight: bold;
+                    outline: none;
+                }
+
+                :host([dragovered]) {
+                    margin-top: 20px;
+                }
+
+                :host([dragovered])::before {
+                    content: "";
+                    pointer-events: none;
+                    display: block;
+                    position: absolute;
+                    left: 0;
+                    top: -11px;
+                    width: 100%;
+                    border: 1px solid black;
+                }
+
+                slot {
+                    pointer-events: none;
+                    user-select: none;
+                }
+            </style>
+            <slot></slot>
+        `);
+            }
+            connectedCallback() {
+                this.tabIndex = this.tabIndex;
+                this.draggable = true;
+            }
+        };
+        BaseHTMLEDraggableElement = __decorate([
+            HTMLElement_1.RegisterCustomHTMLElement({
+                name: "e-draggable"
+            }),
+            HTMLElement_1.GenerateAttributeAccessors([
+                { name: "selected", type: "boolean" },
+                { name: "dragged", type: "boolean" },
+                { name: "dragovered", type: "boolean" },
+                { name: "disabled", type: "boolean" },
+                { name: "ref", type: "string" },
+                { name: "value", type: "string" },
+            ])
+        ], BaseHTMLEDraggableElement);
+        return BaseHTMLEDraggableElement;
+    })();
+    exports.BaseHTMLEDraggableElement = BaseHTMLEDraggableElement;
+});
+define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Draggable"], function (require, exports, HTMLElement_2, Draggable_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEDragzoneElement = exports.isHTMLEDragzoneElement = void 0;
@@ -351,7 +395,7 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
         let BaseHTMLEDragzoneElement = class BaseHTMLEDragzoneElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_1.bindShadowRoot(this, /*template*/ `
+                HTMLElement_2.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -421,10 +465,10 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
             }
         };
         BaseHTMLEDragzoneElement = __decorate([
-            HTMLElement_1.RegisterCustomHTMLElement({
+            HTMLElement_2.RegisterCustomHTMLElement({
                 name: "e-dragzone"
             }),
-            HTMLElement_1.GenerateAttributeAccessors([
+            HTMLElement_2.GenerateAttributeAccessors([
                 { name: "dragovered", type: "boolean" },
                 { name: "allowedtypes", type: "string" },
                 { name: "multiple", type: "boolean" },
@@ -433,90 +477,6 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
         return BaseHTMLEDragzoneElement;
     })();
     exports.BaseHTMLEDragzoneElement = BaseHTMLEDragzoneElement;
-});
-define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_2) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEDraggableElement = exports.isHTMLEDraggableElement = void 0;
-    function isHTMLEDraggableElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-draggable";
-    }
-    exports.isHTMLEDraggableElement = isHTMLEDraggableElement;
-    let BaseHTMLEDraggableElement = /** @class */ (() => {
-        let BaseHTMLEDraggableElement = class BaseHTMLEDraggableElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_2.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    position: relative;
-                    display: block;
-                    padding: 2px 4px;
-                    border-radius: 4px;
-                    border: 1px solid black;
-                    margin-top: 6px;
-                    cursor: pointer;
-                }
-
-                :host([disabled]) {
-                    pointer-events: none;
-                    color: gray;
-                    border-color: gray;
-                }
-
-                :host(:focus),
-                :host([selected]) {
-                    font-weight: bold;
-                    outline: none;
-                }
-
-                :host([dragovered]) {
-                    margin-top: 20px;
-                }
-
-                :host([dragovered])::before {
-                    content: "";
-                    pointer-events: none;
-                    display: block;
-                    position: absolute;
-                    left: 0;
-                    top: -11px;
-                    width: 100%;
-                    border: 1px solid black;
-                }
-
-                slot {
-                    pointer-events: none;
-                    user-select: none;
-                }
-            </style>
-            <slot></slot>
-        `);
-                this.dragzone = null;
-                this.dropzone = null;
-            }
-            connectedCallback() {
-                this.tabIndex = this.tabIndex;
-                this.draggable = true;
-            }
-        };
-        BaseHTMLEDraggableElement = __decorate([
-            HTMLElement_2.RegisterCustomHTMLElement({
-                name: "e-draggable"
-            }),
-            HTMLElement_2.GenerateAttributeAccessors([
-                { name: "selected", type: "boolean" },
-                { name: "dragged", type: "boolean" },
-                { name: "dragovered", type: "boolean" },
-                { name: "disabled", type: "boolean" },
-                { name: "ref", type: "string" },
-                { name: "type", type: "string" },
-                { name: "value", type: "string" },
-            ])
-        ], BaseHTMLEDraggableElement);
-        return BaseHTMLEDraggableElement;
-    })();
-    exports.BaseHTMLEDraggableElement = BaseHTMLEDraggableElement;
 });
 define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone"], function (require, exports, HTMLElement_3, Draggable_2, Dragzone_1) {
     "use strict";
@@ -575,6 +535,7 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 <slot name="input"></slot>
                 <div part="appendarea"></div>
             `);
+                this.droptest = null;
             }
             connectedCallback() {
                 super.connectedCallback();
@@ -668,17 +629,22 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
             addDraggables(draggables, position) {
                 if (draggables.length > 0) {
                     let lastDraggable = draggables[draggables.length - 1];
-                    let draggablesTypes = new Set();
-                    draggables.forEach((draggable) => {
-                        draggablesTypes.add(draggable.type);
-                    });
-                    let thisAllowedtypes = new Set((this.allowedtypes || "").split(" "));
-                    let dataTransferSuccess = thisAllowedtypes.has("*") ||
-                        Array.from(draggablesTypes.values()).every(type => thisAllowedtypes.has(type));
+                    let dataTransferSuccess = true;
+                    let dataTransferStatusText = "";
+                    try {
+                        draggables.forEach((draggable) => {
+                            if (this.droptest) {
+                                this.droptest(draggable);
+                            }
+                        });
+                    }
+                    catch (error) {
+                        dataTransferStatusText = error.message;
+                        dataTransferSuccess = false;
+                    }
                     let insertionIndex = -1;
                     if (dataTransferSuccess) {
                         let thisDraggables = Array.from(this.children).filter(Draggable_2.isHTMLEDraggableElement);
-                        let thisLastDraggable = thisDraggables[thisDraggables.length - 1];
                         if (this.multiple) {
                             draggables.forEach((draggable) => {
                                 let draggableRef = (this.querySelector(`[ref="${draggable.ref}"]`) || draggable.cloneNode(true));
@@ -701,8 +667,8 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                             }
                             else {
                                 let ref = (this.querySelector(`[ref="${lastDraggable.ref}"]`) || lastDraggable.cloneNode(true));
-                                if (thisLastDraggable) {
-                                    this.replaceChild(ref, thisLastDraggable);
+                                if (thisDraggables.length > 0) {
+                                    this.replaceChild(ref, thisDraggables[thisDraggables.length - 1]);
                                 }
                                 else {
                                     this.appendChild(ref);
@@ -710,16 +676,17 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                                 insertionIndex = 0;
                             }
                         }
-                        let dataTransferEvent = new CustomEvent("datatransfer", {
-                            bubbles: true,
-                            detail: {
-                                draggables: draggables,
-                                position: insertionIndex,
-                                success: dataTransferSuccess,
-                            }
-                        });
-                        this.dispatchEvent(dataTransferEvent);
                     }
+                    let dataTransferEvent = new CustomEvent("datatransfer", {
+                        bubbles: true,
+                        detail: {
+                            draggables: draggables,
+                            position: insertionIndex,
+                            success: dataTransferSuccess,
+                            statusText: dataTransferStatusText,
+                        }
+                    });
+                    this.dispatchEvent(dataTransferEvent);
                 }
             }
             removeDraggables(draggables) {
@@ -738,7 +705,6 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
             }),
             HTMLElement_3.GenerateAttributeAccessors([
                 { name: "dragovered", type: "boolean" },
-                { name: "allowedtypes", type: "string" },
                 { name: "multiple", type: "boolean" },
             ])
         ], BaseHTMLEDropzoneElement);
@@ -3430,6 +3396,48 @@ define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "export
     })();
     exports.BaseHTMLETabListElement = BaseHTMLETabListElement;
 });
+define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_18) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEImportElement = exports.isHTMLEImportElement = void 0;
+    function isHTMLEImportElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-import";
+    }
+    exports.isHTMLEImportElement = isHTMLEImportElement;
+    let BaseHTMLEImportElement = /** @class */ (() => {
+        let BaseHTMLEImportElement = class BaseHTMLEImportElement extends HTMLElement {
+            constructor() {
+                super();
+            }
+            connectedCallback() {
+                const importRequest = async (src) => {
+                    this.outerHTML = await fetch(src).then((response) => {
+                        if (response.ok) {
+                            return response.text();
+                        }
+                        else {
+                            throw new Error(response.statusText);
+                        }
+                    });
+                    this.dispatchEvent(new Event("loaded"));
+                };
+                if (this.src) {
+                    importRequest(this.src);
+                }
+            }
+        };
+        BaseHTMLEImportElement = __decorate([
+            HTMLElement_18.RegisterCustomHTMLElement({
+                name: "e-import"
+            }),
+            HTMLElement_18.GenerateAttributeAccessors([
+                { name: "src", type: "string" }
+            ])
+        ], BaseHTMLEImportElement);
+        return BaseHTMLEImportElement;
+    })();
+    exports.BaseHTMLEImportElement = BaseHTMLEImportElement;
+});
 define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -3453,12 +3461,12 @@ define("engine/editor/objects/StructuredFormData", ["require", "exports", "engin
     }
     exports.StructuredFormData = StructuredFormData;
 });
-define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_18) {
+define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_19) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLDraggableInputTemplate = void 0;
     const HTMLDraggableInputTemplate = (desc) => {
-        return HTMLElement_18.HTMLElementConstructor("e-draggable", {
+        return HTMLElement_19.HTMLElementConstructor("e-draggable", {
             props: {
                 id: desc.id,
                 className: desc.className,
@@ -3466,7 +3474,7 @@ define("engine/editor/templates/other/DraggableInputTemplate", ["require", "expo
                 type: desc.type
             },
             children: [
-                HTMLElement_18.HTMLElementConstructor("input", {
+                HTMLElement_19.HTMLElementConstructor("input", {
                     props: {
                         name: desc.name,
                         hidden: true
@@ -3480,7 +3488,7 @@ define("engine/editor/templates/other/DraggableInputTemplate", ["require", "expo
     };
     exports.HTMLDraggableInputTemplate = HTMLDraggableInputTemplate;
 });
-define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/objects/StructuredFormData", "engine/editor/templates/other/DraggableInputTemplate"], function (require, exports, Duplicable_1, Menu_2, MenuBar_1, MenuItem_4, MenuItemGroup_2, Tab_2, TabList_1, TabPanel_1, Draggable_3, Dragzone_2, Dropzone_1, StructuredFormData_1, DraggableInputTemplate_1) {
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/objects/StructuredFormData", "engine/editor/templates/other/DraggableInputTemplate"], function (require, exports, Duplicable_1, Menu_2, MenuBar_1, MenuItem_4, MenuItemGroup_2, Tab_2, TabList_1, TabPanel_1, Draggable_3, Dragzone_2, Dropzone_1, Import_1, StructuredFormData_1, DraggableInputTemplate_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.mockup = void 0;
@@ -3495,11 +3503,13 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
     MenuItemGroup_2.BaseHTMLEMenuItemGroupElement;
     MenuItem_4.BaseHTMLEMenuItemElement;
     Duplicable_1.HTMLEDuplicableElementBase;
+    Import_1.BaseHTMLEImportElement;
     const body = /*template*/ `
     <link rel="stylesheet" href="../css/mockup.css"/>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <div id="root" class="flex-rows">
         <header class="flex-cols flex-none padded">
+            <!--<e-import src="../html/samples/menus.html"></e-import>-->
             <!--<e-menubar tabindex="0">
                 <e-menuitem name="canvas-menu-item" type="menu" label="Canvas" tabindex="-1" aria-label="Canvas">
                     <e-menu slot="menu" tabindex="-1">
@@ -3541,10 +3551,10 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                 <details class="indented" open>
                     <summary>Dataset 1</summary>
                     <e-dragzone>
-                        <e-draggable id="draggableA" tabindex="-1" type="column" ref="D1A">Column A</e-draggable>
-                        <e-draggable id="draggableB" tabindex="-1" type="column" ref="D1B">Column B</e-draggable>
-                        <e-draggable id="draggableC" tabindex="-1" type="column" ref="D1C">Column C</e-draggable>
-                        <e-draggable id="draggableD" tabindex="-1" type="column" ref="D1D">Column D</e-draggable>
+                        <e-draggable id="draggableA" tabindex="-1" ref="D1A">Column A</e-draggable>
+                        <e-draggable id="draggableB" tabindex="-1" ref="D1B">Column B</e-draggable>
+                        <e-draggable id="draggableC" tabindex="-1" ref="D1C">Column C</e-draggable>
+                        <e-draggable id="draggableD" tabindex="-1" ref="D1D">Column D</e-draggable>
                     </e-dragzone>
                 </details>
             </div>
@@ -3553,19 +3563,16 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                     <details class="indented" open>
                         <summary>
                             Extractor
-                            <!--<select data-class="toggler-select">
-                                <option value="aggregate" selected>Transformer</option>
-                                <option value="median_imputer">Median imputer</option>
-                            </select>-->
                             <select data-class="toggler-select">
                                 <option value="netezza" selected>Netezza</option>
                                 <option value="csv">CSV</option>
                             </select>
                         </summary>
                         <fieldset id="netezza">
+                            
                         </fieldset>
                         <fieldset id="csv">
-                            <label for="filepath">Filepath</label><br/>
+                            <label for="filepath">Filepath</label>
                             <input name="filepath" type="file"/>
                         </fieldset>
                     </details>
@@ -3594,7 +3601,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                             </summary>
                             <fieldset id="aggregate">
                                 <label>Columns</label><br/>
-                                <e-dropzone allowedtypes="*" multiple>
+                                <e-dropzone id="dropzone" allowedtypes="*" multiple>
                                     <input slot="input" type="text" name="columns"></input>
                                 </e-dropzone>
                             </fieldset>
@@ -3622,6 +3629,19 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
         /*const docCol = document.getElementById("doc-col");
         if (docCol) {
             docCol.innerText = marked('# Marked in the browser\n\nRendered by **marked**.');
+        }*/
+        /*const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone");
+        if (dropzone) {
+            dropzone.droptest = (draggable) => {
+                if (draggable.ref !== "D1A")
+                    throw new Error("Only D1A draggable is allowed here");
+            };
+            dropzone.addEventListener("datatransfer", ((event: EDataTransferEvent) => {
+                console.log(event.detail);
+                if (!event.detail.success) {
+                    alert(event.detail.statusText);
+                }
+            }) as EventListener)
         }*/
         const dragA = document.querySelector("e-draggable#draggableA");
         if (dragA) {
@@ -10723,7 +10743,7 @@ define("engine/core/rendering/webgl/WebGLRendererUtilities", ["require", "export
     }
     exports.WebGLRendererUtilities = WebGLRendererUtilities;
 });
-define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_19) {
+define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_20) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isStateElement = exports.ButtonStateElement = void 0;
@@ -10738,10 +10758,10 @@ define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", 
             }
         };
         ButtonStateElement = __decorate([
-            HTMLElement_19.RegisterCustomHTMLElement({
+            HTMLElement_20.RegisterCustomHTMLElement({
                 name: 'e-button-state'
             }),
-            HTMLElement_19.GenerateAttributeAccessors([
+            HTMLElement_20.GenerateAttributeAccessors([
                 { name: 'name', type: 'string' },
                 { name: 'next', type: 'string' },
                 { name: 'active', type: 'boolean' },
@@ -10751,7 +10771,7 @@ define("engine/editor/elements/lib/containers/buttons/ButtonState", ["require", 
     })();
     exports.ButtonStateElement = ButtonStateElement;
 });
-define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/buttons/ButtonState"], function (require, exports, HTMLElement_20, ButtonState_1) {
+define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/buttons/ButtonState"], function (require, exports, HTMLElement_21, ButtonState_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StatefulButtonElement = void 0;
@@ -10759,7 +10779,7 @@ define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require
         let StatefulButtonElement = class StatefulButtonElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_20.bindShadowRoot(this, /*template*/ `
+                HTMLElement_21.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -10803,10 +10823,10 @@ define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require
             }
         };
         StatefulButtonElement = __decorate([
-            HTMLElement_20.RegisterCustomHTMLElement({
+            HTMLElement_21.RegisterCustomHTMLElement({
                 name: 'e-stateful-button'
             }),
-            HTMLElement_20.GenerateAttributeAccessors([
+            HTMLElement_21.GenerateAttributeAccessors([
                 { name: 'state', type: 'string' },
             ])
         ], StatefulButtonElement);
@@ -10814,7 +10834,7 @@ define("engine/editor/elements/lib/containers/buttons/StatefulButton", ["require
     })();
     exports.StatefulButtonElement = StatefulButtonElement;
 });
-define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_21) {
+define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_22) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelElement = void 0;
@@ -10822,7 +10842,7 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
         let PanelElement = class PanelElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_21.bindShadowRoot(this, /*template*/ `
+                HTMLElement_22.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -10898,11 +10918,11 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
             }
         };
         PanelElement = __decorate([
-            HTMLElement_21.RegisterCustomHTMLElement({
+            HTMLElement_22.RegisterCustomHTMLElement({
                 name: 'e-panel',
                 observedAttributes: ['state']
             }),
-            HTMLElement_21.GenerateAttributeAccessors([
+            HTMLElement_22.GenerateAttributeAccessors([
                 { name: 'label', type: 'string' },
                 { name: 'state', type: 'string' },
             ])
@@ -10911,7 +10931,7 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
     })();
     exports.PanelElement = PanelElement;
 });
-define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_22) {
+define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_23) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelGroupElement = void 0;
@@ -10919,7 +10939,7 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
         let PanelGroupElement = class PanelGroupElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_22.bindShadowRoot(this, /*template*/ `
+                HTMLElement_23.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -10980,10 +11000,10 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
         };
         PanelGroupElement.observedAttributes = ['state'];
         PanelGroupElement = __decorate([
-            HTMLElement_22.RegisterCustomHTMLElement({
+            HTMLElement_23.RegisterCustomHTMLElement({
                 name: 'e-panel-group'
             }),
-            HTMLElement_22.GenerateAttributeAccessors([
+            HTMLElement_23.GenerateAttributeAccessors([
                 { name: 'label', type: 'string' },
                 { name: 'state', type: 'string' },
             ])
@@ -10992,7 +11012,7 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
     })();
     exports.PanelGroupElement = PanelGroupElement;
 });
-define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_23) {
+define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RangeElement = void 0;
@@ -11000,7 +11020,7 @@ define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engi
         let RangeElement = class RangeElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_23.bindShadowRoot(this, /*template*/ `
+                HTMLElement_24.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -11019,54 +11039,16 @@ define("engine/editor/elements/lib/controls/Range", ["require", "exports", "engi
             }
         };
         RangeElement = __decorate([
-            HTMLElement_23.RegisterCustomHTMLElement({
+            HTMLElement_24.RegisterCustomHTMLElement({
                 name: 'e-range'
             }),
-            HTMLElement_23.GenerateAttributeAccessors([
+            HTMLElement_24.GenerateAttributeAccessors([
                 { name: 'value', type: 'number' },
             ])
         ], RangeElement);
         return RangeElement;
     })();
     exports.RangeElement = RangeElement;
-});
-define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ImportElement = void 0;
-    let ImportElement = /** @class */ (() => {
-        let ImportElement = class ImportElement extends HTMLElement {
-            constructor() {
-                super();
-            }
-            connectedCallback() {
-                const importRequest = async (src) => {
-                    this.innerHTML = new DOMParser().parseFromString(await fetch(src).then((response) => {
-                        if (response.ok) {
-                            return response.text();
-                        }
-                        else {
-                            throw new Error(response.statusText);
-                        }
-                    }), "text/html").body.innerHTML;
-                    this.dispatchEvent(new Event('loaded'));
-                };
-                if (this.src) {
-                    importRequest(this.src);
-                }
-            }
-        };
-        ImportElement = __decorate([
-            HTMLElement_24.RegisterCustomHTMLElement({
-                name: 'e-import'
-            }),
-            HTMLElement_24.GenerateAttributeAccessors([
-                { name: 'src', type: 'string' }
-            ])
-        ], ImportElement);
-        return ImportElement;
-    })();
-    exports.ImportElement = ImportElement;
 });
 define("engine/libs/graphics/colors/Color", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -11688,13 +11670,13 @@ define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", ["requi
     })();
     exports.HTMLEBreadcrumbTrailElement = HTMLEBreadcrumbTrailElement;
 });
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/buttons/ButtonState", "engine/editor/elements/lib/containers/buttons/StatefulButton", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/Range", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, ButtonState_2, StatefulButton_1, Menu_4, MenuBar_2, MenuItem_5, Panel_1, PanelGroup_1, Tab_3, TabList_2, TabPanel_2, Range_1, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_14, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_3, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_4, Dropzone_2) {
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/buttons/ButtonState", "engine/editor/elements/lib/containers/buttons/StatefulButton", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/Range", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, ButtonState_2, StatefulButton_1, Menu_4, MenuBar_2, MenuItem_5, Panel_1, PanelGroup_1, Tab_3, TabList_2, TabPanel_2, Range_1, Import_2, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_14, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_3, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_4, Dropzone_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.launchScene = exports.start = void 0;
     StatusBar_1.HTMLEStatusBarElement;
     StatusItem_2.HTMLEStatusItemElement;
-    Import_1.ImportElement;
+    Import_2.BaseHTMLEImportElement;
     Panel_1.PanelElement;
     PanelGroup_1.PanelGroupElement;
     Tab_3.BaseHTMLETabElement;
@@ -14498,53 +14480,6 @@ define("engine/core/systems/RenderingSystem", ["require", "exports", "engine/cor
     }
     exports.RenderingSystem = RenderingSystem;
 });
-define("engine/editor/attributes/Tooltip", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.TooltipAttributeExtension = void 0;
-    const statusBarMouseenterListenerKey = '__statusBarMouseenterListener';
-    const statusBarMouseleaveListenerKey = '__statusBarMouseleaveListener';
-    const TooltipAttributeExtension = {
-        attributeName: 'tooltip',
-        enable: function (element) {
-            const tooltip = element.getAttribute(TooltipAttributeExtension.attributeName);
-            const colliderId = element.getAttribute('tooltip-collider');
-            const collider = document.getElementById(`#${colliderId}`) || element;
-            if (tooltip) {
-                const mouseenterListener = () => {
-                    if (TooltipAttributeExtension.__statusBar) {
-                        TooltipAttributeExtension.__statusBar.innerHTML = tooltip;
-                    }
-                };
-                const mouseleaveListener = () => {
-                    if (TooltipAttributeExtension.__statusBar) {
-                        TooltipAttributeExtension.__statusBar.innerHTML = '';
-                    }
-                };
-                collider.addEventListener('mouseenter', mouseenterListener, { capture: true });
-                collider.addEventListener('mouseleave', mouseleaveListener, { capture: true });
-                Object.assign(element, {
-                    [statusBarMouseenterListenerKey]: mouseenterListener,
-                    [statusBarMouseleaveListenerKey]: mouseleaveListener
-                });
-            }
-        },
-        disable: function (element, collider) {
-            element.removeAttribute(TooltipAttributeExtension.attributeName);
-            if (typeof element[statusBarMouseenterListenerKey] !== 'undefined') {
-                collider.removeEventListener('mouseenter', element[statusBarMouseenterListenerKey]);
-            }
-            if (typeof element[statusBarMouseleaveListenerKey] !== 'undefined') {
-                collider.removeEventListener('mouseleave', element[statusBarMouseleaveListenerKey]);
-            }
-        },
-        setStatusBar(statusBar) {
-            TooltipAttributeExtension.__statusBar = statusBar;
-        },
-        __statusBar: null
-    };
-    exports.TooltipAttributeExtension = TooltipAttributeExtension;
-});
 define("engine/editor/elements/forms/Snippets", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -14950,7 +14885,7 @@ define("engine/editor/elements/lib/controls/ComboBox", ["require", "exports", "e
     })();
     exports.ComboBoxElement = ComboBoxElement;
 });
-define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3", "engine/editor/attributes/Tooltip"], function (require, exports, HTMLElement_38, Vector3_8, Tooltip_1) {
+define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3"], function (require, exports, HTMLElement_38, Vector3_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3InputElement = void 0;
@@ -14965,7 +14900,7 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
                     /*font-size: 1em;*/
                 }
 
-                input {
+                [part~="input"] {
                     padding: var(--container-padding);
                     border-radius: var(--container-border-radius);
         
@@ -14978,19 +14913,19 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
                     outline: 0;
                 }
         
-                input::selection {
+                [part~="input"]::selection {
                     background-color: var(--theme-color-200);
                 }
                 
-                input:focus {
+                [part~="input"]:focus {
                     border: 1px solid var(--theme-on-color);
                 }
             </style>
         
             <span id="label"></span> 
-            X <input id="x" is="number-input" type="text" spellcheck="false" value="0"/>
-            Y <input id="y" is="number-input" type="text" spellcheck="false" value="0"/>
-            Z <input id="z" is="number-input" type="text" spellcheck="false" value="0"/>
+            X <input part="input" id="x" is="number-input" type="text" spellcheck="false" value="0"/>
+            Y <input part="input" id="y" is="number-input" type="text" spellcheck="false" value="0"/>
+            Z <input part="input" id="z" is="number-input" type="text" spellcheck="false" value="0"/>
         `);
                 this.vector = new Vector3_8.Vector3();
                 this.shadowRoot.getElementById('x').addEventListener('input', (event) => {
@@ -15004,7 +14939,6 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
                 });
                 this.shadowRoot.getElementById('label').innerText = this.label;
                 this.tooltip = this.label;
-                Tooltip_1.TooltipAttributeExtension.enable(this);
             }
             refresh() {
                 this.shadowRoot.getElementById('x').value = this.vector.x.toString();
@@ -15019,7 +14953,10 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
             HTMLElement_38.RegisterCustomHTMLElement({
                 name: 'e-vector3-input'
             }),
-            HTMLElement_38.GenerateAttributeAccessors([{ name: 'label' }, { name: 'tooltip' }])
+            HTMLElement_38.GenerateAttributeAccessors([
+                { name: 'label' },
+                { name: 'tooltip' }
+            ])
         ], Vector3InputElement);
         return Vector3InputElement;
     })();
