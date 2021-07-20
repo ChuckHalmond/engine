@@ -32,7 +32,7 @@ const body = /*template*/`
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <div id="root" class="flex-rows">
         <header class="flex-cols flex-none padded">
-            <e-menubar tabindex="0">
+            <!--<e-menubar tabindex="0">
                 <e-menuitem name="canvas-menu-item" type="menu" label="Canvas" tabindex="-1" aria-label="Canvas">
                     <e-menu slot="menu" tabindex="-1">
                         <e-menuitemgroup tabindex="-1">
@@ -59,7 +59,7 @@ const body = /*template*/`
                         </e-menuitemgroup>
                     </e-menu>
                 </e-menuitem>
-            </e-menubar>
+            </e-menubar>-->
         </header>
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="flex-none">
@@ -82,8 +82,29 @@ const body = /*template*/`
             </div>
             <div id ="panels-col" class="flex-auto padded">
                 <e-tabpanel id="extract-panel">
-                    <label for="file">Choose a data file</label><br/>
-                    <input name="file" type="file"/>
+                    <details class="indented" open>
+                        <summary>
+                            Extractor
+                            <select data-class="toggler-select">
+                                <option value="netezza" selected>Netezza</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                        </summary>
+                        <fieldset id="netezza">
+                            <label for="filepath">Filepath</label>
+                            <input name="filepath" type="file"/>
+                            <label for="filepath">Filepath</label>
+                            <input name="filepath" type="file"/>
+                        </fieldset>
+                        <fieldset id="csv">
+                            <label for="filepath">Filepath</label>
+                            <input name="filepath" type="file"/>
+                        </fieldset>
+                    </details>
+
+                    <!--<label for="file">Choose a data file</label><br/>
+                    <input name="file" type="file"/>-->
+
                     <!--<e-duplicable>
                         <input slot="input" type="number" value="1" min="0"></input>
                         <div slot="prototype">
@@ -91,40 +112,27 @@ const body = /*template*/`
                             <input type="number"/>
                         </div>
                     </e-duplicable>-->
+
                 </e-tabpanel>
                 <e-tabpanel id="transform-panel">
                     <form>
                         <details class="indented" open>
                             <summary>
                                 Transformer
-                                <!--<select data-class="toggler-select">
-                                    <option value="aggregate" selected>Transformer</option>
-                                    <option value="median_imputer">Median imputer</option>
-                                </select>-->
                                 <select data-class="toggler-select">
-                                    <option value="">...</option>
                                     <option value="aggregate" selected>Aggregate</option>
                                     <option value="median_imputer">Median imputer</option>
                                 </select>
                             </summary>
                             <fieldset id="aggregate">
-                                <details class="indented" open>
-                                    <summary>
-                                        Columns
-                                    </summary>
-                                    <e-dropzone allowedtypes="*" multiple>
-                                        <input slot="input" type="text" name="columns"></input>
-                                    </e-dropzone>
-                                    <br/>
-                                </details>
+                                <label>Columns</label><br/>
+                                <e-dropzone allowedtypes="*" multiple>
+                                    <input slot="input" type="text" name="columns"></input>
+                                </e-dropzone>
                             </fieldset>
                             <fieldset id="median_imputer">
-                                <details class="indented" open>
-                                    <summary>
-                                        Median
-                                    </summary>
-                                    <input name="median" type="number" value="1" min="0" max="100"></input>
-                                </details>
+                                <label>Median</label>
+                                <input name="median" type="number" value="1" min="0" max="100"></input>
                             </fieldset>
                         </details>
                     </form>
