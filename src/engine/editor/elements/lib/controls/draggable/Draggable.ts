@@ -58,7 +58,8 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
                 }
 
                 :host(:focus),
-                :host([selected]) {
+                :host([selected]),
+                :host([dragovered]) {
                     font-weight: bold;
                     outline: none;
                 }

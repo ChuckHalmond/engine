@@ -332,7 +332,8 @@ define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "e
                 }
 
                 :host(:focus),
-                :host([selected]) {
+                :host([selected]),
+                :host([dragovered]) {
                     font-weight: bold;
                     outline: none;
                 }
@@ -384,14 +385,20 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
                 :host {
                     display: inline-flex;
                     flex-direction: column;
+                    vertical-align: top;
+                }
+
+                [part="label"] {
+                    pointer-events: none;
+                    padding-bottom: 4px;
                 }
                 
-                :host ::slotted(e-draggable) {
+                ::slotted(e-draggable:not(:only-child):not(:first-child)) {
                     margin-top: 6px;
                 }
             </style>
+            <span part="label"/></span>
             <slot id="draggables">
-                <span part="placeholder"/></span>
             </slot>
         `);
                 this.draggables = [];
@@ -452,13 +459,30 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
                     }
                 });
             }
+            attributeChangedCallback(name, oldValue, newValue) {
+                var _a;
+                if (newValue !== oldValue) {
+                    switch (name) {
+                        case "label":
+                            if (oldValue !== newValue) {
+                                const labelPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
+                                if (labelPart) {
+                                    labelPart.textContent = newValue;
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
         };
         BaseHTMLEDragzoneElement = __decorate([
             HTMLElement_2.RegisterCustomHTMLElement({
-                name: "e-dragzone"
+                name: "e-dragzone",
+                observedAttributes: ["label"]
             }),
             HTMLElement_2.GenerateAttributeAccessors([
                 { name: "dragovered", type: "boolean" },
+                { name: "label", type: "string" },
                 { name: "allowedtypes", type: "string" },
                 { name: "multiple", type: "boolean" },
             ])
@@ -487,62 +511,28 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 }
 
                 :host {
-                    border-radius: 2px;
-                    min-width: 32px;
-                    min-height: 32px;
+                    min-width: 120px;
+                    min-height: 1.5em;
                     padding: 4px;
-                    margin-top: 8px;
-                    border: 1px dashed black;
-                    outline: 1px solid transparent;
-                }
-                
-                :host ::slotted(e-draggable[dragovered]) {
-                    margin-top: 20px;
+                    border: 1px dashed gray;
                 }
 
-                :host ::slotted(e-draggable[dragovered])::before {
-                    content: "";
-                    pointer-events: none;
-                    display: block;
-                    position: absolute;
-                    left: 0;
-                    top: -11px;
-                    width: 100%;
-                    border: 1px solid black;
+                [part~="label"] {
+                    color: gray;
+                    font-size: 0.8em;
                 }
 
-                :host(:focus) {
+                :host([dragovered]) {
                     border-color: transparent;
-                    outline: 2px solid black;
-                }
-
-                :host [part~="appendarea"] {
-                    position: relative;
-                    height: 10px;
-                    margin-top: 8px;
-                }
-
-                :host([dragovered]) [part~="appendarea"] {
-                    margin-top: 20px;
-                }
-
-                :host([dragovered]) [part~="appendarea"]::before {
-                    content: "";
-                    pointer-events: none;
-                    display: block;
-                    position: absolute;
-                    left: 0;
-                    top: -11px;
-                    width: 100%;
-                    border: 1px solid black;
+                    outline: 1px auto black;
                 }
             `);
                 (_b = this.shadowRoot.querySelector("slot#draggables")) === null || _b === void 0 ? void 0 : _b.insertAdjacentHTML("afterend", 
                 /*template*/ `
                 <slot name="input"></slot>
-                <div part="appendarea"></div>
             `);
                 this.droptest = null;
+                this.dragoveredDraggables = null;
             }
             connectedCallback() {
                 super.connectedCallback();
@@ -578,64 +568,41 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 });
                 this.addEventListener("dragover", (event) => {
                     event.preventDefault();
-                }, { capture: true });
-                this.shadowRoot.addEventListener("dragover", (event) => {
-                    event.preventDefault();
-                }, { capture: true });
+                });
                 this.addEventListener("dragenter", (event) => {
                     let target = event.target;
                     if (Draggable_2.isHTMLEDraggableElement(target)) {
-                        let dragoveredDraggable = this.querySelector("e-draggable[dragovered]");
-                        if (dragoveredDraggable) {
-                            dragoveredDraggable.dragovered = false;
-                        }
                         target.dragovered = true;
                     }
-                    else {
-                        this.dragovered = true;
-                    }
+                    this.dragovered = true;
                     event.preventDefault();
-                }, { capture: true });
-                this.shadowRoot.addEventListener("dragenter", (event) => {
-                    let target = event.target;
-                    if (!Draggable_2.isHTMLEDraggableElement(target)) {
-                        let dragoveredDraggable = this.querySelector("e-draggable[dragovered]");
-                        if (dragoveredDraggable) {
-                            dragoveredDraggable.dragovered = false;
-                        }
-                        this.dragovered = true;
-                    }
-                    event.preventDefault();
-                }, { capture: true });
-                this.shadowRoot.addEventListener("dragleave", (event) => {
-                    event.preventDefault();
-                }, { capture: true });
+                });
                 this.addEventListener("dragleave", (event) => {
                     let relatedTarget = event.relatedTarget;
-                    if (!(this.contains(relatedTarget) || this.shadowRoot.contains(relatedTarget))) {
-                        let dragoveredDraggable = this.querySelector("e-draggable[dragovered]");
-                        if (dragoveredDraggable) {
-                            dragoveredDraggable.dragovered = false;
-                        }
+                    let target = event.target;
+                    if (Draggable_2.isHTMLEDraggableElement(target)) {
+                        target.dragovered = false;
                     }
-                    this.dragovered = false;
+                    if (!this.contains(relatedTarget)) {
+                        this.dragovered = false;
+                    }
                     event.preventDefault();
-                }, { capture: true });
-                this.addEventListener("drop", () => {
-                    let thisDraggables = Array.from(this.children).filter(Draggable_2.isHTMLEDraggableElement);
-                    let dragoveredDraggable = this.querySelector("e-draggable[dragovered]");
-                    let dragoveredDraggableIndex = 0;
-                    if (dragoveredDraggable) {
-                        dragoveredDraggable.dragovered = false;
-                        dragoveredDraggableIndex = Array.from(thisDraggables).indexOf(dragoveredDraggable);
-                    }
+                });
+                this.addEventListener("drop", (event) => {
                     let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
+                    let dropIndex = this.draggables.length;
+                    let target = event.target;
+                    if (Draggable_2.isHTMLEDraggableElement(target)) {
+                        target.dragovered = false;
+                        dropIndex = this.draggables.indexOf(target);
+                    }
                     selectedDraggables.forEach((selectedDraggable) => {
                         selectedDraggable.dragged = false;
                         selectedDraggable.selected = false;
                     });
-                    this.addDraggables(selectedDraggables, dragoveredDraggableIndex);
+                    this.addDraggables(selectedDraggables, dropIndex);
                     this.dragovered = false;
+                    event.preventDefault();
                 });
             }
             addDraggables(draggables, position) {
@@ -672,21 +639,14 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                             });
                         }
                         else {
-                            if (position > -1 && position < thisDraggables.length) {
-                                let pivotDraggable = thisDraggables[position];
-                                pivotDraggable.insertAdjacentElement("beforebegin", lastDraggable);
-                                insertionIndex = position;
+                            let ref = (this.querySelector(`[ref="${lastDraggable.ref}"]`) || lastDraggable.cloneNode(true));
+                            if (thisDraggables.length > 0) {
+                                this.replaceChild(ref, thisDraggables[thisDraggables.length - 1]);
                             }
                             else {
-                                let ref = (this.querySelector(`[ref="${lastDraggable.ref}"]`) || lastDraggable.cloneNode(true));
-                                if (thisDraggables.length > 0) {
-                                    this.replaceChild(ref, thisDraggables[thisDraggables.length - 1]);
-                                }
-                                else {
-                                    this.appendChild(ref);
-                                }
-                                insertionIndex = 0;
+                                this.appendChild(ref);
                             }
+                            insertionIndex = 0;
                         }
                     }
                     let dataTransferEvent = new CustomEvent("datatransfer", {
@@ -2865,6 +2825,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                                     }
                                 }
                             }
+                            break;
                     }
                 }
             }
@@ -3220,7 +3181,74 @@ define("engine/editor/elements/lib/containers/tabs/TabPanel", ["require", "expor
     })();
     exports.BaseHTMLETabPanelElement = BaseHTMLETabPanelElement;
 });
-define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_16) {
+define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/tabs/Tab"], function (require, exports, HTMLElement_16, Tab_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLETabListElement = void 0;
+    let BaseHTMLETabListElement = /** @class */ (() => {
+        let BaseHTMLETabListElement = class BaseHTMLETabListElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_16.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                }
+            </style>
+            <slot></slot>
+        `);
+                this.tabs = [];
+                this._activeIndex = 1;
+            }
+            get activeTab() {
+                return this.tabs[this._activeIndex] || null;
+            }
+            connectedCallback() {
+                this.tabIndex = this.tabIndex;
+                const slot = this.shadowRoot.querySelector("slot");
+                if (slot) {
+                    slot.addEventListener("slotchange", (event) => {
+                        const tabs = event.target.assignedElements().filter(Tab_1.isHTMLETabElement);
+                        this.tabs = tabs;
+                        this._activeIndex = this.tabs.findIndex(tab => tab.active);
+                    });
+                }
+                this.addEventListener("click", (event) => {
+                    let target = event.target;
+                    if (Tab_1.isHTMLETabElement(target)) {
+                        target.active = true;
+                    }
+                });
+                this.addEventListener("tabchange", ((event) => {
+                    let targetIndex = this.tabs.indexOf(event.detail.tab);
+                    this._activeIndex = targetIndex;
+                    this.tabs.forEach((thisTab, thisTabIndex) => {
+                        if (thisTabIndex !== targetIndex) {
+                            thisTab.active = false;
+                        }
+                    });
+                }));
+            }
+            findTab(predicate) {
+                return this.tabs.find(predicate) || null;
+            }
+            activateTab(predicate) {
+                let tab = this.tabs.find(predicate);
+                if (tab) {
+                    tab.active = true;
+                }
+            }
+        };
+        BaseHTMLETabListElement = __decorate([
+            HTMLElement_16.RegisterCustomHTMLElement({
+                name: "e-tablist"
+            })
+        ], BaseHTMLETabListElement);
+        return BaseHTMLETabListElement;
+    })();
+    exports.BaseHTMLETabListElement = BaseHTMLETabListElement;
+});
+define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_17) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLETabElement = exports.isHTMLETabElement = void 0;
@@ -3232,7 +3260,7 @@ define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", 
         let BaseHTMLETabElement = class BaseHTMLETabElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_16.bindShadowRoot(this, /*template*/ `
+                HTMLElement_17.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -3242,9 +3270,10 @@ define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", 
                     border-left: 4px solid transparent;
                     cursor: pointer;
                 }
-
+                
                 :host([disabled]) {
                     color: grey;
+                    pointer-events: none;
                 }
 
                 :host(:hover:not([active])) {
@@ -3265,10 +3294,15 @@ define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", 
                 this.tabIndex = this.tabIndex;
                 this.panel = document.querySelector(`#${this.controls}`);
                 if (this.panel !== null) {
-                    this.panel.addEventListener("connected", (event) => {
-                        let panel = event.target;
-                        panel.hidden = !this.active;
-                    }, { once: true });
+                    if (this.panel.isConnected) {
+                        this.panel.hidden = !this.active;
+                    }
+                    else {
+                        this.panel.addEventListener("connected", (event) => {
+                            let panel = event.target;
+                            panel.hidden = !this.active;
+                        }, { once: true });
+                    }
                 }
             }
             attributeChangedCallback(name, oldValue, newValue) {
@@ -3279,90 +3313,31 @@ define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", 
                         }
                         break;
                     case "active":
+                        if (this.active) {
+                            this.dispatchEvent(new CustomEvent("tabchange", { detail: { tab: this }, bubbles: true }));
+                        }
                         if (this.panel) {
                             this.panel.hidden = !this.active;
                         }
                         break;
                 }
             }
-            show() {
-                this.active = true;
-            }
-            hide() {
-                this.active = false;
-            }
         };
         BaseHTMLETabElement = __decorate([
-            HTMLElement_16.RegisterCustomHTMLElement({
+            HTMLElement_17.RegisterCustomHTMLElement({
                 name: "e-tab",
                 observedAttributes: ["active", "controls"]
             }),
-            HTMLElement_16.GenerateAttributeAccessors([
+            HTMLElement_17.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
                 { name: "active", type: "boolean" },
+                { name: "disabled", type: "boolean" },
                 { name: "controls", type: "string" },
             ])
         ], BaseHTMLETabElement);
         return BaseHTMLETabElement;
     })();
     exports.BaseHTMLETabElement = BaseHTMLETabElement;
-});
-define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/tabs/Tab"], function (require, exports, HTMLElement_17, Tab_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLETabListElement = void 0;
-    let BaseHTMLETabListElement = /** @class */ (() => {
-        let BaseHTMLETabListElement = class BaseHTMLETabListElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_17.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: block;
-                }
-            </style>
-            <slot></slot>
-        `);
-                this.tabs = [];
-                const slot = this.shadowRoot.querySelector("slot");
-                slot.addEventListener("slotchange", (event) => {
-                    const tabs = event.target.assignedElements().filter(Tab_1.isHTMLETabElement);
-                    this.tabs = tabs;
-                });
-                this.addEventListener("tabchange", ((event) => {
-                    this.tabs.forEach((tab) => {
-                        if ((event.detail.tab === tab.name)) {
-                            tab.show();
-                        }
-                        else {
-                            tab.hide();
-                        }
-                    });
-                }));
-                this.addEventListener("click", (event) => {
-                    let target = event.target;
-                    if (Tab_1.isHTMLETabElement(target)) {
-                        this.dispatchEvent(new CustomEvent("tabchange", {
-                            detail: {
-                                tab: target.name
-                            },
-                            bubbles: true
-                        }));
-                    }
-                });
-            }
-            connectedCallback() {
-                this.tabIndex = this.tabIndex;
-            }
-        };
-        BaseHTMLETabListElement = __decorate([
-            HTMLElement_17.RegisterCustomHTMLElement({
-                name: "e-tablist"
-            })
-        ], BaseHTMLETabListElement);
-        return BaseHTMLETabListElement;
-    })();
-    exports.BaseHTMLETabListElement = BaseHTMLETabListElement;
 });
 define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_18) {
     "use strict";
@@ -3509,9 +3484,9 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="flex-none">
                 <e-tablist id="tablist">
-                    <e-tab name="extract" controls="extract-panel">Extract</e-tab>
-                    <e-tab name="transform" controls="transform-panel" active>Transform</e-tab>
-                    <e-tab name="export" controls="export-panel">Export</e-tab>
+                    <e-tab name="extract" controls="extract-panel" active>Extract</e-tab>
+                    <e-tab name="transform" controls="transform-panel" disabled>Transform</e-tab>
+                    <e-tab name="export" controls="export-panel" disabled>Export</e-tab>
                 </e-tablist>
             </div>
             <div id="data-col" class="flex-none padded">
@@ -3543,7 +3518,9 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                             <input name="filepath" type="file"/>
                         </fieldset>
                     </details>
-
+                    <input type="radio"/>Constant <input type="text"/><br/>
+                    <input type="radio"/>Reference <e-dropzone label="Columns" multiple></e-dropzone><br/>
+                    <button id="extract-button">Extract</button>
                     <!--<label for="file">Choose a data file</label><br/>
                     <input name="file" type="file"/>-->
 
@@ -3593,6 +3570,16 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
         const bodyTemplate = document.createElement("template");
         bodyTemplate.innerHTML = body;
         document.body.insertBefore(bodyTemplate.content, document.body.firstChild);
+        const transformTab = document.querySelector("e-tab[name='transform']");
+        const extractButton = document.getElementById("extract-button");
+        if (extractButton) {
+            extractButton.addEventListener("click", () => {
+                if (transformTab) {
+                    transformTab.disabled = false;
+                    transformTab.active = true;
+                }
+            });
+        }
         /*const docCol = document.getElementById("doc-col");
         if (docCol) {
             docCol.innerText = marked('# Marked in the browser\n\nRendered by **marked**.');
@@ -12319,7 +12306,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     }
     exports.launchScene = launchScene;
 });
-define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Dropzone", "samples/scenes/SimpleScene"], function (require, exports, HTMLElement_29, Dropzone_3, SimpleScene_1) {
+define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Dropzone", "samples/scenes/Mockup"], function (require, exports, HTMLElement_29, Dropzone_3, Mockup_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.sandbox = void 0;
@@ -12421,8 +12408,8 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
         attributeFilter: attributeMutationMixins.map((mixin => mixin.attributeName))
     });
     async function sandbox() {
-        //await mockup();
-        await SimpleScene_1.start();
+        await Mockup_1.mockup();
+        //await start();
         /*
         editor.registerCommand("test", {
           exec: () => {

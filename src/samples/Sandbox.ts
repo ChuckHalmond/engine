@@ -124,8 +124,8 @@ mainObserver.observe(document.body, {
 
 export async function sandbox(): Promise<void> {
 
-  //await mockup();
-  await start();
+  await mockup();
+  //await start();
   
   /*
   editor.registerCommand("test", {

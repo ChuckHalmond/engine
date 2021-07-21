@@ -1,8 +1,8 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
 import { HTMLEDraggableElement, isHTMLEDraggableElement } from "./Draggable";
 import { BaseHTMLEDragzoneElement, HTMLEDragzoneElement } from "./Dragzone";
 
-export { EDataTransferEvent };
+export { DataTransferEvent };
 export { isHTMLEDropzoneElement };
 export { HTMLEDropzoneElement };
 export { BaseHTMLEDropzoneElement };
@@ -19,11 +19,11 @@ interface HTMLEDropzoneElement extends HTMLEDragzoneElement {
     removeDraggables(draggables: HTMLEDraggableElement[]): void;
 }
 
-type EDataTransferEvent = CustomEvent<{
-    draggables: HTMLEDraggableElement[],
-    position: number,
-    success: boolean,
-    statusText: string
+type DataTransferEvent = CustomEvent<{
+    draggables: HTMLEDraggableElement[];
+    position: number;
+    success: boolean;
+    statusText: string;
 }>
 
 @RegisterCustomHTMLElement({
@@ -40,6 +40,8 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
 
     public droptest!: ((draggable: HTMLEDraggableElement) => void) | null;
 
+    public dragoveredDraggables: HTMLEDraggableElement | null;
+
     constructor() {
         super();
         
@@ -50,54 +52,20 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
                 }
 
                 :host {
-                    border-radius: 2px;
-                    min-width: 32px;
-                    min-height: 32px;
+                    min-width: 120px;
+                    min-height: 1.5em;
                     padding: 4px;
-                    margin-top: 8px;
-                    border: 1px dashed black;
-                    outline: 1px solid transparent;
-                }
-                
-                :host ::slotted(e-draggable[dragovered]) {
-                    margin-top: 20px;
+                    border: 1px dashed gray;
                 }
 
-                :host ::slotted(e-draggable[dragovered])::before {
-                    content: "";
-                    pointer-events: none;
-                    display: block;
-                    position: absolute;
-                    left: 0;
-                    top: -11px;
-                    width: 100%;
-                    border: 1px solid black;
+                [part~="label"] {
+                    color: gray;
+                    font-size: 0.8em;
                 }
 
-                :host(:focus) {
+                :host([dragovered]) {
                     border-color: transparent;
-                    outline: 2px solid black;
-                }
-
-                :host [part~="appendarea"] {
-                    position: relative;
-                    height: 10px;
-                    margin-top: 8px;
-                }
-
-                :host([dragovered]) [part~="appendarea"] {
-                    margin-top: 20px;
-                }
-
-                :host([dragovered]) [part~="appendarea"]::before {
-                    content: "";
-                    pointer-events: none;
-                    display: block;
-                    position: absolute;
-                    left: 0;
-                    top: -11px;
-                    width: 100%;
-                    border: 1px solid black;
+                    outline: 1px auto black;
                 }
             `
         );
@@ -105,11 +73,11 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
         this.shadowRoot!.querySelector("slot#draggables")?.insertAdjacentHTML("afterend",
             /*template*/`
                 <slot name="input"></slot>
-                <div part="appendarea"></div>
             `
         );
 
         this.droptest = null;
+        this.dragoveredDraggables = null;
     }
     
     public connectedCallback() {
@@ -151,77 +119,50 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
 
         this.addEventListener("dragover", (event: DragEvent) => {
             event.preventDefault();
-        }, {capture: true});
+        });
 
-        this.shadowRoot!.addEventListener("dragover", (event) => {
-            event.preventDefault();
-        }, {capture: true});
-        
         this.addEventListener("dragenter", (event: DragEvent) => {
             let target = event.target as any;
             if (isHTMLEDraggableElement(target)) {
-                let dragoveredDraggable = this.querySelector<HTMLEDraggableElement>("e-draggable[dragovered]");
-                if (dragoveredDraggable) {
-                    dragoveredDraggable.dragovered = false;
-                }
                 target.dragovered = true;
             }
-            else {
-                this.dragovered = true;
-            }
+            this.dragovered = true;
             event.preventDefault();
-        }, {capture: true});
-        
-        this.shadowRoot!.addEventListener("dragenter", (event) => {
-            let target = event.target;
-            if (!isHTMLEDraggableElement(target)) {
-                let dragoveredDraggable = this.querySelector<HTMLEDraggableElement>("e-draggable[dragovered]");
-                if (dragoveredDraggable) {
-                    dragoveredDraggable.dragovered = false;
-                }
-                this.dragovered = true;
-            }
-            event.preventDefault();
-        }, {capture: true});
+        });
 
-        this.shadowRoot!.addEventListener("dragleave", (event) => {
-            event.preventDefault();
-        }, {capture: true});
-        
         this.addEventListener("dragleave", (event: DragEvent) => {
             let relatedTarget = event.relatedTarget as any;
-            if (!(this.contains(relatedTarget) || this.shadowRoot!.contains(relatedTarget))) {
-                let dragoveredDraggable = this.querySelector<HTMLEDraggableElement>("e-draggable[dragovered]");
-                if (dragoveredDraggable) {
-                    dragoveredDraggable.dragovered = false;
-                }
+            let target = event.target as any;
+            if (isHTMLEDraggableElement(target)) {
+                target.dragovered = false;
             }
-            this.dragovered = false;
+            if (!this.contains(relatedTarget)) {
+                this.dragovered = false;
+            }
             event.preventDefault();
-        }, {capture: true});
+        });
         
-        this.addEventListener("drop", () => {
-            let thisDraggables = Array.from(this.children).filter(isHTMLEDraggableElement);
-            let dragoveredDraggable = this.querySelector<HTMLEDraggableElement>("e-draggable[dragovered]");
-            let dragoveredDraggableIndex = 0;
-
-            if (dragoveredDraggable) {
-                dragoveredDraggable.dragovered = false;
-                dragoveredDraggableIndex = Array.from(thisDraggables).indexOf(dragoveredDraggable);
-            }
-
+        this.addEventListener("drop", (event) => {
             let selectedDraggables = Array.from(
                 document.querySelectorAll<HTMLEDraggableElement>("e-draggable[selected]")
             );
+            let dropIndex = this.draggables.length;
+            
+            let target = event.target as any;
+            if (isHTMLEDraggableElement(target)) {
+                target.dragovered = false;
+                dropIndex = this.draggables.indexOf(target);
+            }
             
             selectedDraggables.forEach((selectedDraggable) => {
                 selectedDraggable.dragged = false;
                 selectedDraggable.selected = false;
             });
 
-            this.addDraggables(selectedDraggables, dragoveredDraggableIndex);
+            this.addDraggables(selectedDraggables, dropIndex);
 
             this.dragovered = false;
+            event.preventDefault();
         });
     }
 
@@ -261,25 +202,18 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
                     });
                 }
                 else {
-                    if (position > -1 && position < thisDraggables.length) {
-                        let pivotDraggable = thisDraggables[position];
-                        pivotDraggable.insertAdjacentElement("beforebegin", lastDraggable);
-                        insertionIndex = position;
+                    let ref = (this.querySelector(`[ref="${lastDraggable.ref}"]`) || lastDraggable.cloneNode(true)) as HTMLElement;
+                    if (thisDraggables.length > 0) {
+                        this.replaceChild(ref, thisDraggables[thisDraggables.length - 1]);
                     }
                     else {
-                        let ref = (this.querySelector(`[ref="${lastDraggable.ref}"]`) || lastDraggable.cloneNode(true)) as HTMLElement;
-                        if (thisDraggables.length > 0) {
-                            this.replaceChild(ref, thisDraggables[thisDraggables.length - 1]);
-                        }
-                        else {
-                            this.appendChild(ref);
-                        }
-                        insertionIndex = 0;
+                        this.appendChild(ref);
                     }
+                    insertionIndex = 0;
                 }
             }
 
-            let dataTransferEvent: EDataTransferEvent = new CustomEvent("datatransfer", {
+            let dataTransferEvent: DataTransferEvent = new CustomEvent("datatransfer", {
                 bubbles: true,
                 detail: {
                     draggables: draggables,

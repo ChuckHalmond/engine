@@ -1,5 +1,6 @@
 import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
 import { HTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
+import { HTMLETabListElement, TabChangeEvent } from "./TabList";
 
 export { isHTMLETabElement };
 export { HTMLETabElement };
@@ -12,10 +13,9 @@ function isHTMLETabElement(obj: any): obj is HTMLETabElement {
 interface HTMLETabElement extends HTMLElement {
     name: string;
     active: boolean;
+    disabled: boolean;
     controls: string;
     panel: HTMLETabPanelElement | null;
-    show(): void;
-    hide(): void;
 }
 
 @RegisterCustomHTMLElement({
@@ -25,11 +25,13 @@ interface HTMLETabElement extends HTMLElement {
 @GenerateAttributeAccessors([
     {name: "name", type: "string"},
     {name: "active", type: "boolean"},
+    {name: "disabled", type: "boolean"},
     {name: "controls", type: "string"},
 ])
 class BaseHTMLETabElement extends HTMLElement implements HTMLETabElement {
 
     public name!: string;
+    public disabled!: boolean;
     public active!: boolean;
     public controls!: string;
 
@@ -48,9 +50,10 @@ class BaseHTMLETabElement extends HTMLElement implements HTMLETabElement {
                     border-left: 4px solid transparent;
                     cursor: pointer;
                 }
-
+                
                 :host([disabled]) {
                     color: grey;
+                    pointer-events: none;
                 }
 
                 :host(:hover:not([active])) {
@@ -65,7 +68,6 @@ class BaseHTMLETabElement extends HTMLElement implements HTMLETabElement {
             </style>
             <slot></slot>
         `);
-
         this.panel = null;
     }
 
@@ -74,10 +76,15 @@ class BaseHTMLETabElement extends HTMLElement implements HTMLETabElement {
         this.panel = document.querySelector<HTMLETabPanelElement>(`#${this.controls}`);
 
         if (this.panel !== null) {
-            this.panel.addEventListener("connected", (event) => {
-                let panel = event.target as HTMLETabPanelElement;
-                panel.hidden = !this.active;
-            }, {once: true});
+            if (this.panel.isConnected) {
+                this.panel.hidden = !this.active;
+            }
+            else {
+                this.panel.addEventListener("connected", (event) => {
+                    let panel = event.target as HTMLETabPanelElement;
+                    panel.hidden = !this.active;
+                }, {once: true});
+            }
         }
     }
     
@@ -89,18 +96,13 @@ class BaseHTMLETabElement extends HTMLElement implements HTMLETabElement {
                 }
                 break;
             case "active":
+                if (this.active) {
+                    this.dispatchEvent(new CustomEvent("tabchange", {detail: {tab: this}, bubbles: true}) as TabChangeEvent);
+                }
                 if (this.panel) {
                     this.panel.hidden = !this.active;
                 }
                 break;
         }
-    }
-
-    public show(): void {
-        this.active = true;
-    }
-
-    public hide(): void {
-        this.active = false;
     }
 }

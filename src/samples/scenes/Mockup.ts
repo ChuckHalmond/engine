@@ -3,8 +3,8 @@ import { BaseHTMLEMenuElement } from "engine/editor/elements/lib/containers/menu
 import { BaseHTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
 import { BaseHTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { BaseHTMLEMenuItemGroupElement } from "engine/editor/elements/lib/containers/menus/MenuItemGroup";
-import { BaseHTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
-import { BaseHTMLETabListElement } from "engine/editor/elements/lib/containers/tabs/TabList";
+import { BaseHTMLETabElement, HTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
+import { BaseHTMLETabListElement, HTMLETabListElement } from "engine/editor/elements/lib/containers/tabs/TabList";
 import { BaseHTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
 import { BaseHTMLEDraggableElement, HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
 import { BaseHTMLEDragzoneElement } from "engine/editor/elements/lib/controls/draggable/Dragzone";
@@ -68,9 +68,9 @@ const body = /*template*/`
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="flex-none">
                 <e-tablist id="tablist">
-                    <e-tab name="extract" controls="extract-panel">Extract</e-tab>
-                    <e-tab name="transform" controls="transform-panel" active>Transform</e-tab>
-                    <e-tab name="export" controls="export-panel">Export</e-tab>
+                    <e-tab name="extract" controls="extract-panel" active>Extract</e-tab>
+                    <e-tab name="transform" controls="transform-panel" disabled>Transform</e-tab>
+                    <e-tab name="export" controls="export-panel" disabled>Export</e-tab>
                 </e-tablist>
             </div>
             <div id="data-col" class="flex-none padded">
@@ -102,7 +102,9 @@ const body = /*template*/`
                             <input name="filepath" type="file"/>
                         </fieldset>
                     </details>
-
+                    <input type="radio"/>Constant <input type="text"/><br/>
+                    <input type="radio"/>Reference <e-dropzone label="Columns" multiple></e-dropzone><br/>
+                    <button id="extract-button">Extract</button>
                     <!--<label for="file">Choose a data file</label><br/>
                     <input name="file" type="file"/>-->
 
@@ -154,6 +156,16 @@ export async function mockup() {
     bodyTemplate.innerHTML = body;
     document.body.insertBefore(bodyTemplate.content, document.body.firstChild);
     
+    const transformTab = document.querySelector<HTMLETabElement>("e-tab[name='transform']");
+    const extractButton = document.getElementById("extract-button");
+    if (extractButton) {
+        extractButton.addEventListener("click", () => {
+            if (transformTab) {
+                transformTab.disabled = false;
+                transformTab.active = true;
+            }
+        });
+    }
     /*const docCol = document.getElementById("doc-col");
     if (docCol) {
         docCol.innerText = marked('# Marked in the browser\n\nRendered by **marked**.');

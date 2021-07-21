@@ -363,6 +363,7 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                             }
                         }
                     }
+                    break;
             }
         }
     }

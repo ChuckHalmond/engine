@@ -14,10 +14,12 @@ interface HTMLEDragzoneElement extends HTMLElement {
 }
 
 @RegisterCustomHTMLElement({
-    name: "e-dragzone"
+    name: "e-dragzone",
+    observedAttributes: ["label"]
 })
 @GenerateAttributeAccessors([
     {name: "dragovered", type: "boolean"},
+    {name: "label", type: "string"},
     {name: "allowedtypes", type: "string"},
     {name: "multiple", type: "boolean"},
 ])
@@ -33,14 +35,20 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
                 :host {
                     display: inline-flex;
                     flex-direction: column;
+                    vertical-align: top;
+                }
+
+                [part="label"] {
+                    pointer-events: none;
+                    padding-bottom: 4px;
                 }
                 
-                :host ::slotted(e-draggable) {
+                ::slotted(e-draggable:not(:only-child):not(:first-child)) {
                     margin-top: 6px;
                 }
             </style>
+            <span part="label"/></span>
             <slot id="draggables">
-                <span part="placeholder"/></span>
             </slot>
         `);
         this.draggables = [];
@@ -108,5 +116,20 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
                 }
             }
         });
+    }
+
+    public attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
+        if (newValue !== oldValue) {
+            switch (name) {
+                case "label":
+                    if (oldValue !== newValue) {
+                        const labelPart = this.shadowRoot?.querySelector("[part~=label]");
+                        if (labelPart) {
+                            labelPart.textContent = newValue;
+                        }
+                    }
+                    break;
+            }
+        }
     }
 }
