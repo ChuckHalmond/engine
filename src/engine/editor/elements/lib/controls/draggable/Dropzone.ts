@@ -50,8 +50,6 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
                 }
 
                 :host {
-                    position: relative;
-                    display: inline-block;
                     border-radius: 2px;
                     min-width: 32px;
                     min-height: 32px;
@@ -59,6 +57,21 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
                     margin-top: 8px;
                     border: 1px dashed black;
                     outline: 1px solid transparent;
+                }
+                
+                :host ::slotted(e-draggable[dragovered]) {
+                    margin-top: 20px;
+                }
+
+                :host ::slotted(e-draggable[dragovered])::before {
+                    content: "";
+                    pointer-events: none;
+                    display: block;
+                    position: absolute;
+                    left: 0;
+                    top: -11px;
+                    width: 100%;
+                    border: 1px solid black;
                 }
 
                 :host(:focus) {
@@ -190,7 +203,7 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
         this.addEventListener("drop", () => {
             let thisDraggables = Array.from(this.children).filter(isHTMLEDraggableElement);
             let dragoveredDraggable = this.querySelector<HTMLEDraggableElement>("e-draggable[dragovered]");
-            let dragoveredDraggableIndex = thisDraggables.length;
+            let dragoveredDraggableIndex = 0;
 
             if (dragoveredDraggable) {
                 dragoveredDraggable.dragovered = false;
@@ -225,7 +238,7 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
                     }
                 });
             }
-            catch (error: any) {
+            catch (error) {
                 dataTransferStatusText = error.message;
                 dataTransferSuccess = false;
             }

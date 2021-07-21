@@ -8,97 +8,6 @@
 a {
     color: rgb(0, 128, 255);
 }
-/*
-e-menubar > e-menuitem[type="menu"] > [slot="menu"] {
-    left: 0;
-    top: 100%;
-}
-
-e-menubar > e-menuitem[type="menu"]::part(visual) {
-    transform: rotate(90deg);
-}
-
-e-menubutton > [slot="menu"] > [slot="menu"],
-e-menu > e-menuitem[type="menu"] > [slot="menu"] {
-    left: 100%;
-    top: -6px;
-}
-
-e-menubar > e-menuitem[type="menu"] > [slot="menu"][overflowing],
-e-menubutton > [slot="menu"] > [slot="menu"][overflowing] {
-    right: 0;
-    left: auto;
-}
-
-e-menu > e-menuitem[type="menu"] > [slot="menu"][overflowing] {
-    right: 100%;
-    left: auto;
-}
-
-e-menu {
-    -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
-    -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
-    box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
-}*/
-
-e-draggable {
-    position: relative;
-    display: inline-block;
-    box-sizing: content-box;
-    background-clip: content-box;
-    padding: 6px;
-}
-
-e-draggable:focus,
-e-draggable[selected] {
-    font-weight: bold;
-    outline: none;
-}
-
-e-dropzone[dragovered] > e-draggable:last-child::after,
-e-draggable[dragovered]::before {
-    content: "";
-    pointer-events: none;
-    display: block;
-    position: absolute;
-    top: 0;
-    width: 2px;
-    height: 100%;
-    background-color: black;
-}
-
-e-dropzone[dragovered] > e-draggable:last-child::after {
-    left: 100%;
-    transform: translateX(calc(100%));
-}
-
-e-draggable[dragovered]::before {
-    left: 0;
-    transform: translateX(calc(-100%));
-}
-
-e-dropzone {
-    display: block;
-    padding: 10px;
-    border: 2px solid transparent;
-}
-
-e-dropzone:focus,
-e-dropzone[dragovered] {
-    border: 2px solid black;
-}
-
-
-/*
-e-menuitem::part(visual) {
-    visibility: visible;
-    display: inline-block;
-    width: 20px;
-    line-height: 22px;
-    font-size: 22px;
-    font-family: "Material Icons Round";
-    -webkit-font-smoothing: antialiased;
-}*/
 
 .statusbar-dropdown [slot="content"] {
     top: unset;
@@ -106,9 +15,6 @@ e-menuitem::part(visual) {
     max-width: 100%;
     overflow: hidden;
 }
-
-
-
 
 .hidden {
     display: none !important;

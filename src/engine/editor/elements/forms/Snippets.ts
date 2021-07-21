@@ -1,8 +1,8 @@
+import { isTagElement } from "../HTMLElement";
+
 export { FormState };
 export { getFormState };
 export { setFormState };
-export { isInputElement };
-export { isSelectElement };
 
 interface FormState {
     [name: string]: ({
@@ -24,7 +24,7 @@ const getFormState = (form: HTMLFormElement) => {
     let state: FormState = {};
 
     elements.forEach((element) => {
-        if (isInputElement(element)) {
+        if (isTagElement("input", element)) {
             if (element.type === "radio") {
                 if (!(element.name in state)) {
                     state[element.name] = {
@@ -57,12 +57,12 @@ const getFormState = (form: HTMLFormElement) => {
                 };
             }
         }
-        else if (isSelectElement(element)) {
+        else if (isTagElement("select", element)) {
             state[element.name] = {
                 value: element.value,
             };
         }
-        else if (isTextAreaElement(element)) {
+        else if (isTagElement("textarea", element)) {
             state[element.name] = {
                 value: element.value,
             };
@@ -81,14 +81,14 @@ const setFormState = (form: HTMLFormElement, state: FormState) => {
         if ("type" in elemState) {
             if (elemState.type === "checkbox") {
                 let element = elements.find((elem) => (elem as any).name === name);
-                if (element && isInputElement(element)) {
+                if (element && isTagElement("input", element)) {
                     element.checked = elemState.checked;
                 }
             }
             else if (elemState.type === "radio") {
                 elemState.nodes.forEach((radioNode) => {
                     let element = elements.find((elem) => (elem as any).name === name && (elem as any).value === radioNode.value);
-                    if (element && isInputElement(element)) {
+                    if (element && isTagElement("input", element)) {
                         element.checked = radioNode.checked;
                     }
                 });
@@ -96,21 +96,9 @@ const setFormState = (form: HTMLFormElement, state: FormState) => {
         }
         else {
             let element = elements.find((elem) => (elem as any).name === name);
-            if (element && (isInputElement(element) || isSelectElement(element) || isTextAreaElement(element))) {
+            if (element && (isTagElement("input", element) || isTagElement("select", element) || isTagElement("textarea", element))) {
                 element.value = elemState.value;
             }
         }
     });
-}
-
-function isInputElement(elem: Element): elem is HTMLInputElement {
-    return elem.tagName.toLowerCase() === "input";
-}
-
-function isTextAreaElement(elem: Element): elem is HTMLTextAreaElement {
-    return elem.tagName.toLowerCase() === "textarea";
-}
-
-function isSelectElement(elem: Element): elem is HTMLSelectElement {
-    return elem.tagName.toLowerCase() === "select";
 }

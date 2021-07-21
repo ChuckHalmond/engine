@@ -198,7 +198,6 @@ export async function mockup() {
 
     console.log(HTMLDraggableInputTemplate({
         id:"draggableD",
-        type:"column",
         ref:"D2D",
         name:"D2D",
         value:"Column_D2D"

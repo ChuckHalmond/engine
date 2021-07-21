@@ -12,17 +12,14 @@ import { WebGLRenderbufferUtilities } from "engine/core/rendering/webgl/WebGLRen
 import { WebGLRendererUtilities } from "engine/core/rendering/webgl/WebGLRendererUtilities";
 import { WebGLTextureUtilities } from "engine/core/rendering/webgl/WebGLTextureUtilities";
 import { editor } from "engine/editor/Editor";
-import { ButtonStateElement } from "engine/editor/elements/lib/containers/buttons/ButtonState";
-import { StatefulButtonElement } from "engine/editor/elements/lib/containers/buttons/StatefulButton";
-import { BaseHTMLEMenuElement, HTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Menu";
-import { BaseHTMLEMenuBarElement, HTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
-import { BaseHTMLEMenuItemElement, HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
+import { BaseHTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Menu";
+import { BaseHTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
+import { BaseHTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { PanelElement } from "engine/editor/elements/lib/containers/panels/Panel";
 import { PanelGroupElement } from "engine/editor/elements/lib/containers/panels/PanelGroup";
 import { BaseHTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
 import { BaseHTMLETabListElement } from "engine/editor/elements/lib/containers/tabs/TabList";
 import { BaseHTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
-import { RangeElement } from "engine/editor/elements/lib/controls/Range";
 import { BaseHTMLEImportElement } from "engine/editor/elements/lib/utils/Import";
 import { Color } from "engine/libs/graphics/colors/Color";
 import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
@@ -34,12 +31,15 @@ import { HTMLEStatusBarElement } from "engine/editor/elements/lib/containers/sta
 import { HTMLEDropdownElement } from "engine/editor/elements/lib/containers/dropdown/Dropdown";
 import { HTMLEStatusItemElement } from "engine/editor/elements/lib/containers/status/StatusItem";
 import { BaseHTMLEMenuItemGroupElement, HTMLEMenuItemGroupElement } from "engine/editor/elements/lib/containers/menus/MenuItemGroup";
-import { BaseHTMLEMenuButtonElement, HTMLEMenuButtonElement } from "engine/editor/elements/lib/containers/menus/MenuButton";
+import { BaseHTMLEMenuButtonElement } from "engine/editor/elements/lib/containers/menus/MenuButton";
 import { PaletteElement } from "engine/editor/elements/lib/misc/Palette";
 import { HTMLEBreadcrumbTrailElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail";
 import { HTMLEBreadcrumbItemElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem";
-import { BaseHTMLEDraggableElement, HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
-import { BaseHTMLEDropzoneElement, EDataTransferEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
+import { BaseHTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
+import { BaseHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
+import { HTMLEMenuTemplate } from "engine/editor/templates/menus/MenuTemplate";
+import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
+import { BaseHTMLELoaderElement } from "engine/editor/elements/lib/utils/Loader";
 
 HTMLEStatusBarElement;
 HTMLEStatusItemElement;
@@ -51,11 +51,6 @@ PanelGroupElement;
 BaseHTMLETabElement;
 BaseHTMLETabListElement;
 BaseHTMLETabPanelElement;
-
-RangeElement;
-
-StatefulButtonElement;
-ButtonStateElement;
 
 HTMLEDropdownElement;
 HTMLEBreadcrumbTrailElement;
@@ -70,6 +65,8 @@ BaseHTMLEMenuItemElement;
 BaseHTMLEDropzoneElement;
 BaseHTMLEMenuItemGroupElement;
 BaseHTMLEMenuItemElement;
+
+BaseHTMLELoaderElement;
 
 const simpleSceneDOM = /*template*/`
 <link rel="stylesheet" href="../css/main.css"/>
@@ -93,12 +90,15 @@ const simpleSceneDOM = /*template*/`
 
         <e-panel id="panel-1" class="flex-rows flex-none" state="opened" label="L.Panel">
 
-            <e-tab-list id="list">
-              <e-tab name="play" controls="play-panel">Play tab</e-tab>
-              <e-tab name="pause" controls="pause-panel" active>Pause Tab</e-tab>
-            </e-tab-list>
-            <e-tab-panel id="play-panel">assets/editor/icons/play.svg</e-tab-panel>
-            <e-tab-panel id="pause-panel">
+            <e-tablist id="list">
+              <e-tab name="play" controls="play-panel" active>Play tab</e-tab>
+              <e-tab name="pause" controls="pause-panel">Pause Tab</e-tab>
+            </e-tablist>
+            <e-tabpanel id="play-panel">
+              <e-loader></e-loader>
+              assets/editor/icons/play.svg
+            </e-tabpanel>
+            <e-tabpanel id="pause-panel">
               <!--<e-palette cols="5" colors='[
                 "var(--theme-color-50)",
                 "var(--theme-color-100)",
@@ -118,13 +118,13 @@ const simpleSceneDOM = /*template*/`
                 <e-breadcrumbitem label="label 1"></e-breadcrumbitem>
                 <e-breadcrumbitem label="label 2"></e-breadcrumbitem>
               </e-breadcrumbtrail>
-              <e-draggable id="draggableA" tabindex="-1" type="df_column" ref="A">
-                A<input name="text" value="A" hidden></input>
-              </e-draggable>
-              <e-draggable id="draggableB" tabindex="-1" type="df_column" ref="B">B<input name="text" value="B" hidden></input></e-draggable>
-              <e-draggable id="draggableC" tabindex="-1" type="df_column" ref="C">C<input name="text" value="C" hidden></input></e-draggable>
-              <e-draggable id="draggableD" tabindex="-1" type="df_column" ref="D">D<input name="text" value="D" hidden></input></e-draggable>
-              <e-dropzone id="dropzone1" tabindex="-1" allowedtypes="df_column" multiple></e-dropzone>
+              <!--<e-dragzone>
+                <e-draggable id="draggableA" tabindex="-1" ref="A">A</e-draggable>
+                <e-draggable id="draggableB" tabindex="-1" ref="B">B</e-draggable>
+                <e-draggable id="draggableC" tabindex="-1" ref="C">C</e-draggable>
+                <e-draggable id="draggableD" tabindex="-1" ref="D">D</e-draggable>
+              </e-dragzone>
+              <e-dropzone id="dropzone1" tabindex="-1" multiple></e-dropzone>-->
               <!--<details>
                 <summary>Summary..</summary>
                 <fieldset>
@@ -138,8 +138,7 @@ const simpleSceneDOM = /*template*/`
                 </fieldset>
               </details>-->
               <input type="number" name="temp-radio" value="1"></input>
-              <e-dropzone data-class="input-dropzone" data-name="test" allowedtypes="df_column" multiple></e-dropzone>
-            </e-tab-panel>
+            </e-tabpanel>
               
             <section>
               <form id="test-form" novalidate>
@@ -234,6 +233,24 @@ const simpleSceneDOM = /*template*/`
   </div>`;
 
 export async function start() {
+
+  document.addEventListener("contextmenu", (event: MouseEvent) => {
+    let menu = HTMLElementConstructor("e-menu", {children: [HTMLElementConstructor("e-menuitem", {attr: {label: "Say my name!"}})]});
+    menu.style.position = "absolute";
+    menu.style.top = `${event.clientY}px`;
+    menu.style.left = `${event.clientX}px`;
+    document.body.append(menu);
+    let listener = (event: FocusEvent) => {
+      let target = event.target as any;
+      if (!(menu == target || menu.contains(target))) {
+        menu.remove();
+        document.removeEventListener("focusin", listener);
+      }
+    };
+    menu.focus();
+    document.addEventListener("focusin", listener);
+    event.preventDefault();
+  });
 
   const template = document.createElement('template');
 

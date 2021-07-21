@@ -111,7 +111,7 @@ class BaseHTMLEMenuBarElement extends HTMLElement implements HTMLEMenuBarElement
                 }
             }
         });
-
+        
         this.addEventListener("keydown", (event: KeyboardEvent) => {
             switch (event.key) {
                 case "ArrowLeft":

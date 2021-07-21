@@ -88,23 +88,8 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                 }
 
                 :host(:focus-within) {
-                    color: white;
-                    background-color: dimgray;
-                }
-
-                :host(:focus-within) [part~="visual"] {
-                    color: white;
-                }
-                     
-                :host([type="menu"]:focus-within),
-                :host([type="submenu"]:focus-within) {
                     color: black;
                     background-color: lightgray;
-                }
-
-                :host([type="menu"]:focus-within) [part~="arrow"],
-                :host([type="submenu"]:focus-within) [part~="arrow"] {
-                    color: black;
                 }
 
                 :host([disabled]) {
@@ -196,6 +181,7 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                 [part~="arrow"] {
                     flex: none;
                     margin-left: 8px;
+                    color: inherit;
                 }
 
                 [part~="visual"] {
@@ -220,7 +206,7 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                 :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
                     display: none;
                 }
-
+                
                 :host(:not([type="submenu"])) [part~="arrow"] {
                     display: none !important;
                 }

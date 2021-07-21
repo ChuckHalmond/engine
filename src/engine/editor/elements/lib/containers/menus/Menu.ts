@@ -214,7 +214,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
                 case "ArrowLeft":
                     if (this.parentItem) {
                         let parentGroup = this.parentItem.group;
-                        let parentMenu = this.parentItem.parentMenu;
+                        let parentMenu = parentGroup ? parentGroup.parentMenu : this.parentItem.parentMenu;
                         if (isHTMLEMenuElement(parentMenu)) {
                             if (parentGroup) {
                                 parentGroup.focusItemAt(parentGroup.activeIndex);

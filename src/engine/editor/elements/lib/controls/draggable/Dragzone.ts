@@ -31,7 +31,12 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
         bindShadowRoot(this, /*template*/`
             <style>
                 :host {
-                    display: block;
+                    display: inline-flex;
+                    flex-direction: column;
+                }
+                
+                :host ::slotted(e-draggable) {
+                    margin-top: 6px;
                 }
             </style>
             <slot id="draggables">

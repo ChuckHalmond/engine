@@ -135,7 +135,6 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
                     .filter(isHTMLEMenuItemElement);
                 this.items = items;
                 items.forEach((item) => {
-                    item.parentMenu = this.parentMenu;
                     item.group = this;
                 });
             });

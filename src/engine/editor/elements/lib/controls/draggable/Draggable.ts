@@ -44,11 +44,10 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
             <style>
                 :host {
                     position: relative;
-                    display: block;
+                    display: inline-block;
                     padding: 2px 4px;
                     border-radius: 4px;
                     border: 1px solid black;
-                    margin-top: 6px;
                     cursor: pointer;
                 }
 
@@ -62,21 +61,6 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
                 :host([selected]) {
                     font-weight: bold;
                     outline: none;
-                }
-
-                :host([dragovered]) {
-                    margin-top: 20px;
-                }
-
-                :host([dragovered])::before {
-                    content: "";
-                    pointer-events: none;
-                    display: block;
-                    position: absolute;
-                    left: 0;
-                    top: -11px;
-                    width: 100%;
-                    border: 1px solid black;
                 }
 
                 slot {
