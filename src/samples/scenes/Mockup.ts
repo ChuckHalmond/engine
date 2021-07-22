@@ -95,16 +95,19 @@ const body = /*template*/`
                             </select>
                         </summary>
                         <fieldset id="netezza">
-                            
+                            <label for="userid">UserID</label><input type="text" name="userid"></input>
+                            <label for="password">Password</label><input type="text" name="password"></input>
+                            <label for="database">Database</label><input type="text" name="database"></input>
+                            <label for="database">Columns</label><e-dropzone></e-dropzone>
                         </fieldset>
                         <fieldset id="csv">
                             <label for="filepath">Filepath</label>
                             <input name="filepath" type="file"/>
                         </fieldset>
                     </details>
-                    <input type="radio"/>Constant <input type="text"/><br/>
+                    <!--<input type="radio"/>Constant <input type="text"/><br/>
                     <input type="radio"/>Reference <e-dropzone label="Columns" multiple></e-dropzone><br/>
-                    <button id="extract-button">Extract</button>
+                    <button id="extract-button">Extract</button>-->
                     <!--<label for="file">Choose a data file</label><br/>
                     <input name="file" type="file"/>-->
 

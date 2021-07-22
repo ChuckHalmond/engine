@@ -388,18 +388,19 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
                     vertical-align: top;
                 }
 
-                [part="label"] {
+                [part~="label"] {
+                    color: gray;
+                    font-size: 0.8em;
                     pointer-events: none;
-                    padding-bottom: 4px;
                 }
                 
-                ::slotted(e-draggable:not(:only-child):not(:first-child)) {
-                    margin-top: 6px;
+                ::slotted(e-draggable:not(:only-child)) {
+                    margin-top: 2px;
+                    margin-bottom: 2px;
                 }
             </style>
             <span part="label"/></span>
-            <slot id="draggables">
-            </slot>
+            <slot id="draggables"></slot>
         `);
                 this.draggables = [];
             }
@@ -506,25 +507,24 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 super();
                 (_a = this.shadowRoot.querySelector("style")) === null || _a === void 0 ? void 0 : _a.insertAdjacentHTML("beforeend", 
                 /*css*/ `
-                ::slotted([slot="input"]) {
-                    display: none;
-                }
-
                 :host {
                     min-width: 120px;
                     min-height: 1.5em;
-                    padding: 4px;
+                    padding: 2px;
                     border: 1px dashed gray;
                 }
 
-                [part~="label"] {
-                    color: gray;
-                    font-size: 0.8em;
+                :host([multiple]) {
+                    padding-bottom: 12px;
                 }
 
                 :host([dragovered]) {
                     border-color: transparent;
                     outline: 1px auto black;
+                }
+
+                ::slotted([slot="input"]) {
+                    display: none;
                 }
             `);
                 (_b = this.shadowRoot.querySelector("slot#draggables")) === null || _b === void 0 ? void 0 : _b.insertAdjacentHTML("afterend", 
@@ -532,7 +532,6 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 <slot name="input"></slot>
             `);
                 this.droptest = null;
-                this.dragoveredDraggables = null;
             }
             connectedCallback() {
                 super.connectedCallback();
@@ -583,7 +582,7 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                     if (Draggable_2.isHTMLEDraggableElement(target)) {
                         target.dragovered = false;
                     }
-                    if (!this.contains(relatedTarget)) {
+                    if (!(this.contains(relatedTarget) || this.shadowRoot.contains(relatedTarget))) {
                         this.dragovered = false;
                     }
                     event.preventDefault();
@@ -623,28 +622,32 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                     }
                     let insertionIndex = -1;
                     if (dataTransferSuccess) {
-                        let thisDraggables = Array.from(this.children).filter(Draggable_2.isHTMLEDraggableElement);
                         if (this.multiple) {
                             draggables.forEach((draggable) => {
-                                let draggableRef = (this.querySelector(`[ref="${draggable.ref}"]`) || draggable.cloneNode(true));
-                                if (position > -1 && position < thisDraggables.length) {
-                                    let pivotDraggable = thisDraggables[position];
-                                    pivotDraggable.insertAdjacentElement("beforebegin", draggableRef);
+                                let draggableRef = this.draggables.includes(draggable) ? draggable : draggable.cloneNode(true);
+                                if (position > -1 && position < this.draggables.length) {
+                                    let refIndex = this.draggables.indexOf(draggableRef);
+                                    if (refIndex > -1) {
+                                        this.draggables[position].insertAdjacentElement(refIndex > position ? "beforebegin" : "afterend", draggableRef);
+                                    }
+                                    else {
+                                        this.draggables[position].insertAdjacentElement("beforebegin", draggableRef);
+                                    }
                                     insertionIndex = (insertionIndex < 0) ? position : insertionIndex;
                                 }
                                 else {
                                     this.appendChild(draggableRef);
-                                    insertionIndex = (insertionIndex < 0) ? thisDraggables.length - 1 : insertionIndex;
+                                    insertionIndex = (insertionIndex < 0) ? this.draggables.length - 1 : insertionIndex;
                                 }
                             });
                         }
                         else {
-                            let ref = (this.querySelector(`[ref="${lastDraggable.ref}"]`) || lastDraggable.cloneNode(true));
-                            if (thisDraggables.length > 0) {
-                                this.replaceChild(ref, thisDraggables[thisDraggables.length - 1]);
+                            let draggableRef = this.draggables.includes(lastDraggable) ? lastDraggable : lastDraggable.cloneNode(true);
+                            if (this.draggables.length > 0) {
+                                this.replaceChild(draggableRef, this.draggables[this.draggables.length - 1]);
                             }
                             else {
-                                this.appendChild(ref);
+                                this.appendChild(draggableRef);
                             }
                             insertionIndex = 0;
                         }
@@ -3511,16 +3514,19 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                             </select>
                         </summary>
                         <fieldset id="netezza">
-                            
+                            <label for="userid">UserID</label><input type="text" name="userid"></input>
+                            <label for="password">Password</label><input type="text" name="password"></input>
+                            <label for="database">Database</label><input type="text" name="database"></input>
+                            <label for="database">Columns</label><e-dropzone></e-dropzone>
                         </fieldset>
                         <fieldset id="csv">
                             <label for="filepath">Filepath</label>
                             <input name="filepath" type="file"/>
                         </fieldset>
                     </details>
-                    <input type="radio"/>Constant <input type="text"/><br/>
+                    <!--<input type="radio"/>Constant <input type="text"/><br/>
                     <input type="radio"/>Reference <e-dropzone label="Columns" multiple></e-dropzone><br/>
-                    <button id="extract-button">Extract</button>
+                    <button id="extract-button">Extract</button>-->
                     <!--<label for="file">Choose a data file</label><br/>
                     <input name="file" type="file"/>-->
 

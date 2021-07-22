@@ -33,6 +33,10 @@ e-menuitem[type="radio"]::part(input) {
     font-size: 1em;
 }
 
+button {
+    cursor: pointer;
+}
+
 select {
     font: inherit;
 }
@@ -72,6 +76,8 @@ select {
     height: 100%;
 }
 
+[hidden] {display: none;}
+
 summary {
     position: relative;
     list-style: none;
@@ -106,4 +112,20 @@ fieldset {
     border: none;
     padding: 0;
     margin: 0;
+}
+
+fieldset {
+    display: grid;
+    grid-template-columns: 120px 120px;
+    grid-gap: 4px;
+}
+
+label {
+    grid-column: 1 / 2;
+}
+
+input,
+button,
+e-dropzone {
+    grid-column: 2 / 3;
 }

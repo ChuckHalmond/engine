@@ -38,18 +38,19 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
                     vertical-align: top;
                 }
 
-                [part="label"] {
+                [part~="label"] {
+                    color: gray;
+                    font-size: 0.8em;
                     pointer-events: none;
-                    padding-bottom: 4px;
                 }
                 
-                ::slotted(e-draggable:not(:only-child):not(:first-child)) {
-                    margin-top: 6px;
+                ::slotted(e-draggable:not(:only-child)) {
+                    margin-top: 2px;
+                    margin-bottom: 2px;
                 }
             </style>
             <span part="label"/></span>
-            <slot id="draggables">
-            </slot>
+            <slot id="draggables"></slot>
         `);
         this.draggables = [];
     }

@@ -40,32 +40,29 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
 
     public droptest!: ((draggable: HTMLEDraggableElement) => void) | null;
 
-    public dragoveredDraggables: HTMLEDraggableElement | null;
-
     constructor() {
         super();
         
         this.shadowRoot!.querySelector("style")?.insertAdjacentHTML("beforeend",
             /*css*/`
-                ::slotted([slot="input"]) {
-                    display: none;
-                }
-
                 :host {
                     min-width: 120px;
                     min-height: 1.5em;
-                    padding: 4px;
+                    padding: 2px;
                     border: 1px dashed gray;
                 }
 
-                [part~="label"] {
-                    color: gray;
-                    font-size: 0.8em;
+                :host([multiple]) {
+                    padding-bottom: 12px;
                 }
 
                 :host([dragovered]) {
                     border-color: transparent;
                     outline: 1px auto black;
+                }
+
+                ::slotted([slot="input"]) {
+                    display: none;
                 }
             `
         );
@@ -77,7 +74,6 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
         );
 
         this.droptest = null;
-        this.dragoveredDraggables = null;
     }
     
     public connectedCallback() {
@@ -136,7 +132,7 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
             if (isHTMLEDraggableElement(target)) {
                 target.dragovered = false;
             }
-            if (!this.contains(relatedTarget)) {
+            if (!(this.contains(relatedTarget) || this.shadowRoot!.contains(relatedTarget))) {
                 this.dragovered = false;
             }
             event.preventDefault();
@@ -186,28 +182,32 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
             
             let insertionIndex = -1;
             if (dataTransferSuccess) {
-                let thisDraggables = Array.from(this.children).filter(isHTMLEDraggableElement);
                 if (this.multiple) {
                     draggables.forEach((draggable) => {
-                        let draggableRef = (this.querySelector(`[ref="${draggable.ref}"]`) || draggable.cloneNode(true)) as HTMLElement;
-                        if (position > -1 && position < thisDraggables.length) {
-                            let pivotDraggable = thisDraggables[position];
-                            pivotDraggable.insertAdjacentElement("beforebegin", draggableRef);
+                        let draggableRef = this.draggables.includes(draggable) ? draggable : draggable.cloneNode(true) as HTMLEDraggableElement;
+                        if (position > -1 && position < this.draggables.length) {
+                            let refIndex = this.draggables.indexOf(draggableRef);
+                            if (refIndex > -1) {
+                                this.draggables[position].insertAdjacentElement(refIndex > position ? "beforebegin" : "afterend", draggableRef);
+                            }
+                            else {
+                                this.draggables[position].insertAdjacentElement("beforebegin", draggableRef);
+                            }
                             insertionIndex = (insertionIndex < 0) ? position : insertionIndex;
                         }
                         else {
                             this.appendChild(draggableRef);
-                            insertionIndex = (insertionIndex < 0) ? thisDraggables.length - 1 : insertionIndex;
+                            insertionIndex = (insertionIndex < 0) ? this.draggables.length - 1 : insertionIndex;
                         }
                     });
                 }
                 else {
-                    let ref = (this.querySelector(`[ref="${lastDraggable.ref}"]`) || lastDraggable.cloneNode(true)) as HTMLElement;
-                    if (thisDraggables.length > 0) {
-                        this.replaceChild(ref, thisDraggables[thisDraggables.length - 1]);
+                    let draggableRef = this.draggables.includes(lastDraggable) ? lastDraggable : lastDraggable.cloneNode(true) as HTMLEDraggableElement;
+                    if (this.draggables.length > 0) {
+                        this.replaceChild(draggableRef, this.draggables[this.draggables.length - 1]);
                     }
                     else {
-                        this.appendChild(ref);
+                        this.appendChild(draggableRef);
                     }
                     insertionIndex = 0;
                 }
