@@ -86,25 +86,32 @@ const body = /*template*/`
             </div>
             <div id ="panels-col" class="flex-auto padded">
                 <e-tabpanel id="extract-panel">
-                    <details class="indented" open>
-                        <summary>
-                            Extractor
-                            <select data-class="toggler-select">
-                                <option value="netezza" selected>Netezza</option>
-                                <option value="csv">CSV</option>
-                            </select>
-                        </summary>
-                        <fieldset id="netezza">
-                            <label for="userid">UserID</label><input type="text" name="userid"></input>
-                            <label for="password">Password</label><input type="text" name="password"></input>
-                            <label for="database">Database</label><input type="text" name="database"></input>
-                            <label for="database">Columns</label><e-dropzone></e-dropzone>
+                    <fieldset>
+                        <label>Extractors</label>
+                        <input data-class="duplicater" data-duplicater-template="extractor" type="number" value="1" min="0"></input>
+                        <fieldset name="extractor">
+                            <details class="indented" open>
+                                <summary>
+                                    Extractor <span data-duplicate-index></span>
+                                    <select data-class="toggler-select">
+                                        <option value="netezza" selected>Netezza</option>
+                                        <option value="csv">CSV</option>
+                                    </select>
+                                </summary>
+                                <fieldset name="netezza" class="indented">
+                                    <label for="user">User</label><input type="text" name="userid"></input>
+                                    <label for="password">Password</label><input type="text" name="password"></input>
+                                    <label for="database">Database</label><input type="text" name="database"></input>
+                                    <label for="database">Columns</label><e-dropzone multiple></e-dropzone>
+                                </fieldset>
+                                <fieldset name="csv">
+                                    <label for="filepath">Filepath</label>
+                                    <input name="filepath" type="file"/>
+                                </fieldset>
+                            </details>
                         </fieldset>
-                        <fieldset id="csv">
-                            <label for="filepath">Filepath</label>
-                            <input name="filepath" type="file"/>
-                        </fieldset>
-                    </details>
+                        <button id="extract-button">Extract</button>
+                    </fieldset>
                     <!--<input type="radio"/>Constant <input type="text"/><br/>
                     <input type="radio"/>Reference <e-dropzone label="Columns" multiple></e-dropzone><br/>
                     <button id="extract-button">Extract</button>-->
@@ -130,15 +137,16 @@ const body = /*template*/`
                                     <option value="median_imputer">Median imputer</option>
                                 </select>
                             </summary>
-                            <fieldset id="aggregate">
-                                <label>Columns</label><br/>
-                                <e-dropzone id="dropzone" multiple tabindex="0">
-                                    <input slot="input" type="text" name="columns"></input>
-                                </e-dropzone>
+                            <fieldset name="aggregate">
+                                <label>Opération</label>
+                                <select>
+                                    <option value="min">Min</option>
+                                    <option value="max">Max</option>
+                                </select>
+                                <label>Columns</label><e-dropzone id="dropzone" multiple tabindex="0"><input slot="input" name="columns"></input></e-dropzone>
                             </fieldset>
-                            <fieldset id="median_imputer">
-                                <label>Median</label>
-                                <input name="median" type="number" value="1" min="0" max="100"></input>
+                            <fieldset name="median_imputer">
+                                <label>Median</label><input name="median" type="number" value="1" min="0" max="100"></input>
                             </fieldset>
                         </details>
                     </form>

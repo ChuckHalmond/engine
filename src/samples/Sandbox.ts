@@ -96,20 +96,75 @@ class TogglerSelectDataClassMixin extends DataClassMixin {
   }
 
   public handlePostchangeToggle(select: HTMLSelectElement) {
-    let fieldsetElement = null;
-    Array.from(select.options).forEach((option, index) => {
-      fieldsetElement = document.getElementById(option.value);
-      if (fieldsetElement) {
-        fieldsetElement.hidden = (index !== select.selectedIndex);
+    const closestFieldset = select.closest("fieldset");
+    let toToggleElement = null;
+    if (closestFieldset) {
+      Array.from(select.options).forEach((option, index) => {
+          toToggleElement = closestFieldset.querySelector<HTMLElement>(`[name=${option.value}]`);
+          if (toToggleElement) {
+            toToggleElement.hidden = (index !== select.selectedIndex);
+          }
+      });
+    }
+  }
+}
+
+class DuplicaterInputDataClassMixin extends DataClassMixin {
+  public readonly changeEventListener: EventListener;
+
+  constructor() {
+    super("duplicater");
+    
+    this.changeEventListener = (event) => {
+      let target = event.target;
+      if (isTagElement("input", target)) {
+        this.handlePostchangeDuplicate(target);
       }
-    });
+    };
+  }
+
+  public attach(element: HTMLInputElement): void {
+    element.addEventListener("change", this.changeEventListener);
+    this.handlePostchangeDuplicate(element);
+  }
+
+  public detach(element: HTMLInputElement): void {
+    element.removeEventListener("change", this.changeEventListener);
+  }
+
+  public handlePostchangeDuplicate(input: HTMLInputElement) {
+    const closestFieldset = input.closest("fieldset");
+    const template = input.getAttribute("data-duplicater-template");
+    const inputValue = parseInt(input.value);
+    if (closestFieldset && template) {
+      const duplicateElements = Array.from(closestFieldset.querySelectorAll<HTMLElement>(`[name=${template}]`));
+      if (duplicateElements.length > 0) {
+        const lastDuplicateElement = duplicateElements[duplicateElements.length - 1];
+        const templateElement = duplicateElements.splice(0, 1)[0]!;
+        templateElement.hidden = true;
+        while (duplicateElements.length > Math.max(inputValue, 0)) {
+          duplicateElements.pop()!.remove();
+        }
+        while (duplicateElements.length < inputValue) {
+          let newDuplicateElement = templateElement.cloneNode(true) as HTMLElement;
+          newDuplicateElement.hidden = false;
+          let duplicateIndex = newDuplicateElement.querySelector("[data-duplicate-index]");
+          if (duplicateIndex) {
+            duplicateIndex.textContent = (duplicateElements.length + 1).toString();
+          }
+          lastDuplicateElement.insertAdjacentElement("afterend", newDuplicateElement);
+          duplicateElements.push(newDuplicateElement);
+        }
+      }
+    }
   }
 }
 
 const attributeMutationMixins: AttributeMutationMixin[] = [
   new TestDataClassMixin(),
   new InputDropzoneDataClassMixin(),
-  new TogglerSelectDataClassMixin()
+  new TogglerSelectDataClassMixin(),
+  new DuplicaterInputDataClassMixin()
 ];
 
 const mainObserver = new MutationObserver(

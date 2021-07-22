@@ -34,6 +34,7 @@ class HTMLEDuplicableElementBase extends HTMLElement implements HTMLEDuplicableE
                     display: none;
                 }
             </style>
+            <slot></slot>
             <slot name="input"></slot>
             <slot name="prototype"></slot>
             <slot name="items"></slot>

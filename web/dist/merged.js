@@ -514,10 +514,6 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                     border: 1px dashed gray;
                 }
 
-                :host([multiple]) {
-                    padding-bottom: 12px;
-                }
-
                 :host([dragovered]) {
                     border-color: transparent;
                     outline: 1px auto black;
@@ -709,6 +705,7 @@ define("engine/editor/elements/lib/containers/duplicable/Duplicable", ["require"
                     display: none;
                 }
             </style>
+            <slot></slot>
             <slot name="input"></slot>
             <slot name="prototype"></slot>
             <slot name="items"></slot>
@@ -3505,25 +3502,32 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
             </div>
             <div id ="panels-col" class="flex-auto padded">
                 <e-tabpanel id="extract-panel">
-                    <details class="indented" open>
-                        <summary>
-                            Extractor
-                            <select data-class="toggler-select">
-                                <option value="netezza" selected>Netezza</option>
-                                <option value="csv">CSV</option>
-                            </select>
-                        </summary>
-                        <fieldset id="netezza">
-                            <label for="userid">UserID</label><input type="text" name="userid"></input>
-                            <label for="password">Password</label><input type="text" name="password"></input>
-                            <label for="database">Database</label><input type="text" name="database"></input>
-                            <label for="database">Columns</label><e-dropzone></e-dropzone>
+                    <fieldset>
+                        <label>Extractors</label>
+                        <input data-class="duplicater" data-duplicater-template="extractor" type="number" value="1" min="0"></input>
+                        <fieldset name="extractor">
+                            <details class="indented" open>
+                                <summary>
+                                    Extractor <span data-duplicate-index></span>
+                                    <select data-class="toggler-select">
+                                        <option value="netezza" selected>Netezza</option>
+                                        <option value="csv">CSV</option>
+                                    </select>
+                                </summary>
+                                <fieldset name="netezza" class="indented">
+                                    <label for="user">User</label><input type="text" name="userid"></input>
+                                    <label for="password">Password</label><input type="text" name="password"></input>
+                                    <label for="database">Database</label><input type="text" name="database"></input>
+                                    <label for="database">Columns</label><e-dropzone multiple></e-dropzone>
+                                </fieldset>
+                                <fieldset name="csv">
+                                    <label for="filepath">Filepath</label>
+                                    <input name="filepath" type="file"/>
+                                </fieldset>
+                            </details>
                         </fieldset>
-                        <fieldset id="csv">
-                            <label for="filepath">Filepath</label>
-                            <input name="filepath" type="file"/>
-                        </fieldset>
-                    </details>
+                        <button id="extract-button">Extract</button>
+                    </fieldset>
                     <!--<input type="radio"/>Constant <input type="text"/><br/>
                     <input type="radio"/>Reference <e-dropzone label="Columns" multiple></e-dropzone><br/>
                     <button id="extract-button">Extract</button>-->
@@ -3549,15 +3553,16 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
                                     <option value="median_imputer">Median imputer</option>
                                 </select>
                             </summary>
-                            <fieldset id="aggregate">
-                                <label>Columns</label><br/>
-                                <e-dropzone id="dropzone" multiple tabindex="0">
-                                    <input slot="input" type="text" name="columns"></input>
-                                </e-dropzone>
+                            <fieldset name="aggregate">
+                                <label>Opération</label>
+                                <select>
+                                    <option value="min">Min</option>
+                                    <option value="max">Max</option>
+                                </select>
+                                <label>Columns</label><e-dropzone id="dropzone" multiple tabindex="0"><input slot="input" name="columns"></input></e-dropzone>
                             </fieldset>
-                            <fieldset id="median_imputer">
-                                <label>Median</label>
-                                <input name="median" type="number" value="1" min="0" max="100"></input>
+                            <fieldset name="median_imputer">
+                                <label>Median</label><input name="median" type="number" value="1" min="0" max="100"></input>
                             </fieldset>
                         </details>
                     </form>
@@ -12393,19 +12398,67 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             element.removeEventListener("change", this.changeEventListener);
         }
         handlePostchangeToggle(select) {
-            let fieldsetElement = null;
-            Array.from(select.options).forEach((option, index) => {
-                fieldsetElement = document.getElementById(option.value);
-                if (fieldsetElement) {
-                    fieldsetElement.hidden = (index !== select.selectedIndex);
+            const closestFieldset = select.closest("fieldset");
+            let toToggleElement = null;
+            if (closestFieldset) {
+                Array.from(select.options).forEach((option, index) => {
+                    toToggleElement = closestFieldset.querySelector(`[name=${option.value}]`);
+                    if (toToggleElement) {
+                        toToggleElement.hidden = (index !== select.selectedIndex);
+                    }
+                });
+            }
+        }
+    }
+    class DuplicaterInputDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("duplicater");
+            this.changeEventListener = (event) => {
+                let target = event.target;
+                if (HTMLElement_29.isTagElement("input", target)) {
+                    this.handlePostchangeDuplicate(target);
                 }
-            });
+            };
+        }
+        attach(element) {
+            element.addEventListener("change", this.changeEventListener);
+            this.handlePostchangeDuplicate(element);
+        }
+        detach(element) {
+            element.removeEventListener("change", this.changeEventListener);
+        }
+        handlePostchangeDuplicate(input) {
+            const closestFieldset = input.closest("fieldset");
+            const template = input.getAttribute("data-duplicater-template");
+            const inputValue = parseInt(input.value);
+            if (closestFieldset && template) {
+                const duplicateElements = Array.from(closestFieldset.querySelectorAll(`[name=${template}]`));
+                if (duplicateElements.length > 0) {
+                    const lastDuplicateElement = duplicateElements[duplicateElements.length - 1];
+                    const templateElement = duplicateElements.splice(0, 1)[0];
+                    templateElement.hidden = true;
+                    while (duplicateElements.length > Math.max(inputValue, 0)) {
+                        duplicateElements.pop().remove();
+                    }
+                    while (duplicateElements.length < inputValue) {
+                        let newDuplicateElement = templateElement.cloneNode(true);
+                        newDuplicateElement.hidden = false;
+                        let duplicateIndex = newDuplicateElement.querySelector("[data-duplicate-index]");
+                        if (duplicateIndex) {
+                            duplicateIndex.textContent = (duplicateElements.length + 1).toString();
+                        }
+                        lastDuplicateElement.insertAdjacentElement("afterend", newDuplicateElement);
+                        duplicateElements.push(newDuplicateElement);
+                    }
+                }
+            }
         }
     }
     const attributeMutationMixins = [
         new TestDataClassMixin(),
         new InputDropzoneDataClassMixin(),
-        new TogglerSelectDataClassMixin()
+        new TogglerSelectDataClassMixin(),
+        new DuplicaterInputDataClassMixin()
     ];
     const mainObserver = new MutationObserver(HTMLElement_29.createMutationObserverCallback(attributeMutationMixins));
     mainObserver.observe(document.body, {

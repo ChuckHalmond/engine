@@ -52,10 +52,6 @@ class BaseHTMLEDropzoneElement extends BaseHTMLEDragzoneElement implements HTMLE
                     border: 1px dashed gray;
                 }
 
-                :host([multiple]) {
-                    padding-bottom: 12px;
-                }
-
                 :host([dragovered]) {
                     border-color: transparent;
                     outline: 1px auto black;
