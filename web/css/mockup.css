@@ -114,18 +114,23 @@ fieldset {
     padding: 0;
     margin: 0;
 }
-/*
-fieldset {
+
+
+.float-right {
+    float: right;
+}
+
+.grid-fieldset {
     display: grid;
     width: 240px;
     grid-template-columns: 120px 120px;
     grid-gap: 4px;
 }
 
-fieldset > :nth-child(odd) {
+.grid-fieldset > :nth-child(odd) {
     grid-column: 1 / 2;
 }
 
-fieldset > :nth-child(even) {
+.grid-fieldset > :nth-child(even) {
     grid-column: 2 / 3;
-}*/
+}

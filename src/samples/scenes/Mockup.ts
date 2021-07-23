@@ -86,32 +86,34 @@ const body = /*template*/`
             </div>
             <div id ="panels-col" class="flex-auto padded">
                 <e-tabpanel id="extract-panel">
-                    <fieldset>
-                        <label>Extractors</label>
-                        <input data-class="duplicater" data-duplicater-template="extractor" type="number" value="1" min="0"></input>
-                        <fieldset name="extractor">
-                            <details class="indented" open>
-                                <summary>
-                                    Extractor <span data-duplicate-index></span>
-                                    <select data-class="toggler-select">
-                                        <option value="netezza" selected>Netezza</option>
-                                        <option value="csv">CSV</option>
-                                    </select>
-                                </summary>
-                                <fieldset name="netezza" class="indented">
-                                    <label for="user">User</label><input type="text" name="userid"></input>
-                                    <label for="password">Password</label><input type="text" name="password"></input>
-                                    <label for="database">Database</label><input type="text" name="database"></input>
-                                    <label for="database">Columns</label><e-dropzone multiple></e-dropzone>
-                                </fieldset>
-                                <fieldset name="csv">
-                                    <label for="filepath">Filepath</label>
-                                    <input name="filepath" type="file"/>
-                                </fieldset>
-                            </details>
+                    <form id="extract-form">
+                        <fieldset>
+                            <label>Extractors</label>
+                            <input data-class="duplicater-input" data-duplicater-template="extractor" type="number" value="1" min="0"></input>
+                            <fieldset name="extractor">
+                                <details class="indented" open>
+                                    <summary>
+                                        Extractor <span data-duplicater-index></span>
+                                        <select data-class="toggler-select">
+                                            <option value="netezza" selected>Netezza</option>
+                                            <option value="csv">CSV</option>
+                                        </select>
+                                    </summary>
+                                    <fieldset name="netezza" class="grid-fieldset indented" required>
+                                        <label for="user">User</label><input type="text" name="userid" required></input>
+                                        <label for="password">Password</label><input type="text" name="password" required></input>
+                                        <label for="database">Database</label><input type="text" name="database" required></input>
+                                        <label for="database">Columns</label><e-dropzone multiple></e-dropzone>
+                                    </fieldset>
+                                    <fieldset name="csv">
+                                        <label for="filepath">Filepath</label>
+                                        <input name="filepath" type="file"/>
+                                    </fieldset>
+                                </details>
+                            </fieldset>
+                            <div class="float-right"><button id="extract-button">Next</button></div>
                         </fieldset>
-                        <button id="extract-button">Extract</button>
-                    </fieldset>
+                    </form>
                     <!--<input type="radio"/>Constant <input type="text"/><br/>
                     <input type="radio"/>Reference <e-dropzone label="Columns" multiple></e-dropzone><br/>
                     <button id="extract-button">Extract</button>-->
@@ -168,12 +170,18 @@ export async function mockup() {
     document.body.insertBefore(bodyTemplate.content, document.body.firstChild);
     
     const transformTab = document.querySelector<HTMLETabElement>("e-tab[name='transform']");
-    const extractButton = document.getElementById("extract-button");
+    const extractButton = document.querySelector<HTMLButtonElement>("button#extract-button");
+    const extractForm = document.querySelector<HTMLFormElement>("form#extract-form");
     if (extractButton) {
         extractButton.addEventListener("click", () => {
-            if (transformTab) {
-                transformTab.disabled = false;
-                transformTab.active = true;
+            if (extractForm) {
+                let isFormValid = extractForm.checkValidity();
+                if (isFormValid) {
+                    if (transformTab) {
+                        transformTab.disabled = false;
+                        transformTab.active = true;
+                    }
+                }
             }
         });
     }

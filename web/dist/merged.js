@@ -90,7 +90,7 @@ define("engine/editor/elements/Snippets", ["require", "exports"], function (requ
 define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.createMutationObserverCallback = exports.BaseAttributeMutationMixin = exports.areAttributesMatching = exports.setElementProperties = exports.setElementAttributes = exports.HTMLElementConstructor = exports.bindShadowRoot = exports.createTemplate = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = exports.isTagElement = exports.isElement = void 0;
+    exports.HTMLEELement = exports.CustomHTMLElement = exports.Property = exports.createMutationObserverCallback = exports.BaseAttributeMutationMixin = exports.areAttributesMatching = exports.setElementProperties = exports.setElementAttributes = exports.HTMLElementConstructor = exports.bindShadowRoot = exports.createTemplate = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = exports.isTagElement = exports.isElement = void 0;
     function isElement(obj) {
         return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
     }
@@ -114,6 +114,97 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
         };
     };
     exports.RegisterCustomHTMLElement = RegisterCustomHTMLElement;
+    const CustomHTMLElement = function (args) {
+        return (elementCtor) => {
+            customElements.define(args.name, elementCtor, args.options);
+            return elementCtor;
+        };
+    };
+    exports.CustomHTMLElement = CustomHTMLElement;
+    class HTMLEELement extends HTMLElement {
+        constructor() {
+            super();
+            let prototype = Object.getPrototypeOf(this);
+            this.attachShadow({ mode: "open" });
+        }
+        connectedCallback() {
+            this.dispatchEvent(new CustomEvent("connected"));
+        }
+        disconnectedCallback() {
+            this.dispatchEvent(new CustomEvent("disconnected"));
+        }
+        update() {
+            this.shadowRoot.innerHTML = this.render();
+        }
+        render() {
+            return this.shadowRoot;
+        }
+    }
+    exports.HTMLEELement = HTMLEELement;
+    const Property = function (args) {
+        return (elementPrototype, propertyKey) => {
+            if (args) {
+                Object.defineProperty(elementPrototype, propertyKey, {
+                    set: function (value) {
+                        let propertyHasChanged = true;
+                        if (typeof args !== "undefined" && typeof args.hasChanged === "function") {
+                            propertyHasChanged = args.hasChanged(this[propertyKey], value);
+                        }
+                        else {
+                            propertyHasChanged = (this[propertyKey] !== value);
+                        }
+                        this[propertyKey] = value;
+                        if (args.reflect) {
+                            switch (args.type) {
+                                case "boolean":
+                                    if (value) {
+                                        this.setAttribute(propertyKey, "");
+                                    }
+                                    else {
+                                        this.removeAttribute(propertyKey);
+                                    }
+                                    break;
+                                case "number":
+                                case "string":
+                                    if (typeof value !== "undefined" && value !== null) {
+                                        this.setAttribute(propertyKey, value);
+                                    }
+                                    else {
+                                        this.removeAttribute(propertyKey);
+                                    }
+                                    break;
+                                case "object":
+                                case "array":
+                                    if (typeof value !== "undefined" && value !== null) {
+                                        this.setAttribute(propertyKey, JSON.stringify(value));
+                                    }
+                                    else {
+                                        this.removeAttribute(propertyKey);
+                                    }
+                                    break;
+                            }
+                        }
+                        if (propertyHasChanged) {
+                            this.update();
+                        }
+                    }
+                });
+            }
+        };
+    };
+    exports.Property = Property;
+    let temp = /** @class */ (() => {
+        class temp extends HTMLEELement {
+            constructor() {
+                super(...arguments);
+                this.myprop = "lol";
+            }
+        }
+        __decorate([
+            Property()
+        ], temp.prototype, "myprop", void 0);
+        return temp;
+    })();
     const GenerateAttributeAccessors = function (attributes) {
         return (elementCtor) => {
             attributes.forEach((attr) => {
@@ -3143,6 +3234,12 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
     })();
     exports.BaseHTMLEMenuElement = BaseHTMLEMenuElement;
 });
+/*
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-menu": HTMLEMenuElement,
+    }
+}*/ 
 define("engine/editor/elements/lib/containers/tabs/TabPanel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_15) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -3502,32 +3599,34 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
             </div>
             <div id ="panels-col" class="flex-auto padded">
                 <e-tabpanel id="extract-panel">
-                    <fieldset>
-                        <label>Extractors</label>
-                        <input data-class="duplicater" data-duplicater-template="extractor" type="number" value="1" min="0"></input>
-                        <fieldset name="extractor">
-                            <details class="indented" open>
-                                <summary>
-                                    Extractor <span data-duplicate-index></span>
-                                    <select data-class="toggler-select">
-                                        <option value="netezza" selected>Netezza</option>
-                                        <option value="csv">CSV</option>
-                                    </select>
-                                </summary>
-                                <fieldset name="netezza" class="indented">
-                                    <label for="user">User</label><input type="text" name="userid"></input>
-                                    <label for="password">Password</label><input type="text" name="password"></input>
-                                    <label for="database">Database</label><input type="text" name="database"></input>
-                                    <label for="database">Columns</label><e-dropzone multiple></e-dropzone>
-                                </fieldset>
-                                <fieldset name="csv">
-                                    <label for="filepath">Filepath</label>
-                                    <input name="filepath" type="file"/>
-                                </fieldset>
-                            </details>
+                    <form id="extract-form">
+                        <fieldset>
+                            <label>Extractors</label>
+                            <input data-class="duplicater-input" data-duplicater-template="extractor" type="number" value="1" min="0"></input>
+                            <fieldset name="extractor">
+                                <details class="indented" open>
+                                    <summary>
+                                        Extractor <span data-duplicater-index></span>
+                                        <select data-class="toggler-select">
+                                            <option value="netezza" selected>Netezza</option>
+                                            <option value="csv">CSV</option>
+                                        </select>
+                                    </summary>
+                                    <fieldset name="netezza" class="grid-fieldset indented" required>
+                                        <label for="user">User</label><input type="text" name="userid" required></input>
+                                        <label for="password">Password</label><input type="text" name="password" required></input>
+                                        <label for="database">Database</label><input type="text" name="database" required></input>
+                                        <label for="database">Columns</label><e-dropzone multiple></e-dropzone>
+                                    </fieldset>
+                                    <fieldset name="csv">
+                                        <label for="filepath">Filepath</label>
+                                        <input name="filepath" type="file"/>
+                                    </fieldset>
+                                </details>
+                            </fieldset>
+                            <div class="float-right"><button id="extract-button">Next</button></div>
                         </fieldset>
-                        <button id="extract-button">Extract</button>
-                    </fieldset>
+                    </form>
                     <!--<input type="radio"/>Constant <input type="text"/><br/>
                     <input type="radio"/>Reference <e-dropzone label="Columns" multiple></e-dropzone><br/>
                     <button id="extract-button">Extract</button>-->
@@ -3582,12 +3681,18 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/l
         bodyTemplate.innerHTML = body;
         document.body.insertBefore(bodyTemplate.content, document.body.firstChild);
         const transformTab = document.querySelector("e-tab[name='transform']");
-        const extractButton = document.getElementById("extract-button");
+        const extractButton = document.querySelector("button#extract-button");
+        const extractForm = document.querySelector("form#extract-form");
         if (extractButton) {
             extractButton.addEventListener("click", () => {
-                if (transformTab) {
-                    transformTab.disabled = false;
-                    transformTab.active = true;
+                if (extractForm) {
+                    let isFormValid = extractForm.checkValidity();
+                    if (isFormValid) {
+                        if (transformTab) {
+                            transformTab.disabled = false;
+                            transformTab.active = true;
+                        }
+                    }
                 }
             });
         }
@@ -12412,7 +12517,51 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
     }
     class DuplicaterInputDataClassMixin extends DataClassMixin {
         constructor() {
-            super("duplicater");
+            super("duplicater-input");
+            this.changeEventListener = (event) => {
+                let target = event.target;
+                if (HTMLElement_29.isTagElement("input", target)) {
+                    this.handlePostchangeDuplicate(target);
+                }
+            };
+        }
+        attach(element) {
+            element.addEventListener("change", this.changeEventListener);
+            this.handlePostchangeDuplicate(element);
+        }
+        detach(element) {
+            element.removeEventListener("change", this.changeEventListener);
+        }
+        handlePostchangeDuplicate(input) {
+            const closestFieldset = input.closest("fieldset");
+            const template = input.getAttribute("data-duplicater-template");
+            const inputValue = parseInt(input.value);
+            if (closestFieldset && template) {
+                const duplicateElements = Array.from(closestFieldset.querySelectorAll(`[name=${template}]`));
+                if (duplicateElements.length > 0) {
+                    const lastElement = duplicateElements[duplicateElements.length - 1];
+                    const templateElement = duplicateElements.splice(0, 1)[0];
+                    templateElement.hidden = true;
+                    while (duplicateElements.length > Math.max(inputValue, 0)) {
+                        duplicateElements.pop().remove();
+                    }
+                    while (duplicateElements.length < inputValue) {
+                        let newDuplicateElement = templateElement.cloneNode(true);
+                        newDuplicateElement.hidden = false;
+                        let duplicateIndex = newDuplicateElement.querySelector("[data-duplicater-index]");
+                        if (duplicateIndex) {
+                            duplicateIndex.textContent = (duplicateElements.length + 1).toString();
+                        }
+                        lastElement.insertAdjacentElement("afterend", newDuplicateElement);
+                        duplicateElements.push(newDuplicateElement);
+                    }
+                }
+            }
+        }
+    }
+    class EnablerInputDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("enabler-input");
             this.changeEventListener = (event) => {
                 let target = event.target;
                 if (HTMLElement_29.isTagElement("input", target)) {
@@ -12443,7 +12592,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
                     while (duplicateElements.length < inputValue) {
                         let newDuplicateElement = templateElement.cloneNode(true);
                         newDuplicateElement.hidden = false;
-                        let duplicateIndex = newDuplicateElement.querySelector("[data-duplicate-index]");
+                        let duplicateIndex = newDuplicateElement.querySelector("[data-duplicater-index]");
                         if (duplicateIndex) {
                             duplicateIndex.textContent = (duplicateElements.length + 1).toString();
                         }
@@ -12466,7 +12615,60 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
         subtree: true,
         attributeFilter: attributeMutationMixins.map((mixin => mixin.attributeName))
     });
+    let html = function (parts, ...expr) {
+        let events = [];
+        let parsedParts = [];
+        for (let i = 0; i < parts.length; i++) {
+            let part = parts[i];
+            let eventAttribute = /@(.*)=/.exec(part);
+            if (eventAttribute !== null) {
+                if (typeof expr[i] === "function") {
+                    events.push([eventAttribute[1], expr[i]]);
+                    parsedParts.push(part.substr(0, part.indexOf("@")).trimRight());
+                }
+            }
+            else {
+                parsedParts.push(part);
+            }
+        }
+        const parsedHTML = new DOMParser().parseFromString(parsedParts.join(), "text/html").body.firstChild;
+        if (!parsedHTML) {
+            throw new Error();
+        }
+        if (parsedHTML.nodeType === parsedHTML.ELEMENT_NODE) {
+            events.forEach((event) => {
+                parsedHTML.addEventListener(event[0], event[1]);
+            });
+        }
+        return parsedHTML;
+    };
+    HTMLElement_29.CustomHTMLElement({ name: "my-element" });
+    let MyElement = /** @class */ (() => {
+        class MyElement extends HTMLElement_29.HTMLEELement {
+            render() {
+                return html `
+      <div>${this.myAttr}</div>
+    `;
+            }
+        }
+        __decorate([
+            HTMLElement_29.Property()
+        ], MyElement.prototype, "myAttr", void 0);
+        return MyElement;
+    })();
     async function sandbox() {
+        function kek(arg) {
+            return arg;
+        }
+        const content = 1;
+        let onClick = () => {
+            alert();
+        };
+        let element = html `<p @click=${kek(onClick)}>${content}</p>`;
+        if (element) {
+            document.body.appendChild(element);
+        }
+        window['lol'] = new HTMLElement_29.temp();
         await Mockup_1.mockup();
         //await start();
         /*

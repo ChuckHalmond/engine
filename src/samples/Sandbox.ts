@@ -1,4 +1,4 @@
-import { AttributeMutationMixin, BaseAttributeMutationMixin, createMutationObserverCallback, isTagElement } from "engine/editor/elements/HTMLElement";
+import { AttributeMutationMixin, BaseAttributeMutationMixin, createMutationObserverCallback, CustomHTMLElement, HTMLEELement, isTagElement, Property, temp } from "engine/editor/elements/HTMLElement";
 import { HTMLEDropzoneElement, isHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { mockup } from "./scenes/Mockup";
 import { start } from "./scenes/SimpleScene";
@@ -113,7 +113,58 @@ class DuplicaterInputDataClassMixin extends DataClassMixin {
   public readonly changeEventListener: EventListener;
 
   constructor() {
-    super("duplicater");
+    super("duplicater-input");
+    
+    this.changeEventListener = (event) => {
+      let target = event.target;
+      if (isTagElement("input", target)) {
+        this.handlePostchangeDuplicate(target);
+      }
+    };
+  }
+
+  public attach(element: HTMLInputElement): void {
+    element.addEventListener("change", this.changeEventListener);
+    this.handlePostchangeDuplicate(element);
+  }
+
+  public detach(element: HTMLInputElement): void {
+    element.removeEventListener("change", this.changeEventListener);
+  }
+
+  public handlePostchangeDuplicate(input: HTMLInputElement) {
+    const closestFieldset = input.closest("fieldset");
+    const template = input.getAttribute("data-duplicater-template");
+    const inputValue = parseInt(input.value);
+    if (closestFieldset && template) {
+      const duplicateElements = Array.from(closestFieldset.querySelectorAll<HTMLElement>(`[name=${template}]`));
+      if (duplicateElements.length > 0) {
+        const lastElement = duplicateElements[duplicateElements.length - 1];
+        const templateElement = duplicateElements.splice(0, 1)[0]!;
+        templateElement.hidden = true;
+        while (duplicateElements.length > Math.max(inputValue, 0)) {
+          duplicateElements.pop()!.remove();
+        }
+        while (duplicateElements.length < inputValue) {
+          let newDuplicateElement = templateElement.cloneNode(true) as HTMLElement;
+          newDuplicateElement.hidden = false;
+          let duplicateIndex = newDuplicateElement.querySelector("[data-duplicater-index]");
+          if (duplicateIndex) {
+            duplicateIndex.textContent = (duplicateElements.length + 1).toString();
+          }
+          lastElement.insertAdjacentElement("afterend", newDuplicateElement);
+          duplicateElements.push(newDuplicateElement);
+        }
+      }
+    }
+  }
+}
+
+class EnablerInputDataClassMixin extends DataClassMixin {
+  public readonly changeEventListener: EventListener;
+
+  constructor() {
+    super("enabler-input");
     
     this.changeEventListener = (event) => {
       let target = event.target;
@@ -148,7 +199,7 @@ class DuplicaterInputDataClassMixin extends DataClassMixin {
         while (duplicateElements.length < inputValue) {
           let newDuplicateElement = templateElement.cloneNode(true) as HTMLElement;
           newDuplicateElement.hidden = false;
-          let duplicateIndex = newDuplicateElement.querySelector("[data-duplicate-index]");
+          let duplicateIndex = newDuplicateElement.querySelector("[data-duplicater-index]");
           if (duplicateIndex) {
             duplicateIndex.textContent = (duplicateElements.length + 1).toString();
           }
@@ -177,7 +228,63 @@ mainObserver.observe(document.body, {
   attributeFilter: attributeMutationMixins.map((mixin => mixin.attributeName))
 });
 
+let html = function(parts: TemplateStringsArray, ...expr: any[]) {
+  let events: [string, EventListener][] = [];
+  let parsedParts = [];
+  for (let i = 0; i < parts.length; i++) {
+    let part = parts[i];
+    let eventAttribute = /@(.*)=/.exec(part);
+    if (eventAttribute !== null) {
+      if (typeof expr[i] === "function") {
+        events.push([eventAttribute[1], expr[i]]);
+        parsedParts.push(part.substr(0, part.indexOf("@")).trimRight());
+      }
+    }
+    else {
+      parsedParts.push(part);
+    }
+  }
+  const parsedHTML = new DOMParser().parseFromString(parsedParts.join(), "text/html").body.firstChild;
+  if (!parsedHTML) {
+    throw new Error();
+  }
+  if (parsedHTML.nodeType === parsedHTML.ELEMENT_NODE) {
+    events.forEach((event) => {
+      parsedHTML.addEventListener(event[0], event[1]);
+    });
+  }
+  return parsedHTML;
+}
+
+CustomHTMLElement({name: "my-element"})
+class MyElement extends HTMLEELement {
+  @Property()
+  myAttr: string;
+
+  render() {
+    return html`
+      <div>${this.myAttr}</div>
+    `;
+  }
+}
+
 export async function sandbox(): Promise<void> {
+
+  function kek(arg: any) {
+    return arg;
+  }
+
+  const content = 1;
+
+  let onClick = () => {
+    alert();
+  }
+  let element = html`<p @click=${kek(onClick)}>${content}</p>`;
+  if (element) {
+    document.body.appendChild(element);
+  }
+
+  window['lol'] = new temp();
 
   await mockup();
   //await start();

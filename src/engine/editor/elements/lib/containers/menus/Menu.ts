@@ -314,3 +314,9 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
         return foundItem;
     }
 }
+/*
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-menu": HTMLEMenuElement,
+    }
+}*/

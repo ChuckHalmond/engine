@@ -15,6 +15,9 @@ export { AttributeType };
 export { areAttributesMatching };
 export { BaseAttributeMutationMixin };
 export { createMutationObserverCallback };
+export { Property };
+export { CustomHTMLElement };
+export { HTMLEELement };
 
 function isElement(obj: any): obj is Element {
     return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
@@ -60,6 +63,129 @@ const RegisterCustomHTMLElement: RegisterCustomHTMLElementDecorator = function(a
         return elementCtor;
     }
 }
+
+interface CustomHTMLElementDecorator {
+    (args: {
+        name: string;
+        options?: ElementDefinitionOptions
+    }): <C extends CustomElementConstructor>(elementCtor: C) => C;
+}
+
+const CustomHTMLElement: CustomHTMLElementDecorator = function(args: {
+    name: string;
+    options?: ElementDefinitionOptions
+}) {
+    return <C extends CustomElementConstructor>(
+        elementCtor: C
+    ) => {
+
+        customElements.define(
+            args.name,
+            elementCtor,
+            args.options
+        );
+
+        return elementCtor;
+    }
+}
+
+class HTMLEELement extends HTMLElement {
+
+    constructor() {
+        super();
+        let prototype = (Object.getPrototypeOf(this) as typeof HTMLEELement);
+        this.attachShadow({mode: "open"});
+    }
+
+    connectedCallback() {
+        this.dispatchEvent(new CustomEvent("connected"));
+    }
+
+    disconnectedCallback() {
+        this.dispatchEvent(new CustomEvent("disconnected"));
+    }
+
+    update() {
+        this.shadowRoot!.innerHTML = this.render();
+    }
+
+    render(): Node {
+        return this.shadowRoot!;
+    }
+}
+
+interface PropertyDecorator {
+    (args?: {
+        hasChanged?: (oldValue: any, newValue: any) => boolean;
+        type?: "string" | "number" | "boolean" | "array" | "object";
+        reflect?: boolean;
+    }): <E extends HTMLEELement>(elementPrototype: E, propertyKey: string) => void;
+}
+
+const Property: PropertyDecorator = function(args?: {
+    hasChanged?: (oldValue: any, newValue: any) => boolean;
+    type?: "string" | "number" | "boolean" | "array" | "object";
+    reflect?: boolean;
+}) {
+    return <E extends HTMLEELement>(
+        elementPrototype: E, propertyKey: string
+    ) => {
+        if (args) {
+            Object.defineProperty(elementPrototype, propertyKey, {
+                set: function(this: E, value) {
+                    let propertyHasChanged = true;
+                    if (typeof args !== "undefined" && typeof args.hasChanged === "function") {
+                        propertyHasChanged = args.hasChanged((this as {[k: string]: any})[propertyKey], value)
+                    }
+                    else {
+                        propertyHasChanged = ((this as {[k: string]: any})[propertyKey] !== value);
+                    }
+                    (this as {[k: string]: any})[propertyKey] = value;
+                    if (args.reflect) {
+                        switch (args.type) {
+                            case "boolean":
+                                if (value) {
+                                    this.setAttribute(propertyKey, "");
+                                }
+                                else {
+                                    this.removeAttribute(propertyKey);
+                                }
+                                break;
+                            case "number":
+                            case "string":
+                                if (typeof value !== "undefined" && value !== null) {
+                                    this.setAttribute(propertyKey, value);
+                                }
+                                else {
+                                    this.removeAttribute(propertyKey);
+                                }
+                                break;
+                            case "object":
+                            case "array":
+                                if (typeof value !== "undefined" && value !== null) {
+                                    this.setAttribute(propertyKey, JSON.stringify(value));
+                                }
+                                else {
+                                    this.removeAttribute(propertyKey);
+                                }
+                                break;
+                        }
+                    }
+                    if (propertyHasChanged) {
+                        this.update();
+                    }
+                }
+            });
+        }
+    }
+}
+
+class temp extends HTMLEELement {
+    @Property()
+    myprop: string = "lol";
+}
+
+
 
 interface GenerateAttributeAccessorsDecorator {
     (attributes: {
@@ -132,7 +258,6 @@ const GenerateAttributeAccessors: GenerateAttributeAccessorsDecorator = function
                     });
                     break;
             }
-
         });
 
         return elementCtor;
