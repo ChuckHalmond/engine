@@ -1,13 +1,8 @@
-import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors } from "engine/editor/elements/HTMLElement";
-import { HTMLEDraggableElement, isHTMLEDraggableElement } from "./Draggable";
+import { RegisterCustomHTMLElement, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEDraggableElement } from "./Draggable";
 
-export { isHTMLEDragzoneElement };
 export { HTMLEDragzoneElement };
 export { BaseHTMLEDragzoneElement };
-
-function isHTMLEDragzoneElement(obj: any): obj is HTMLEDragzoneElement {
-    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-dragzone";
-}
 
 interface HTMLEDragzoneElement extends HTMLElement {
     draggables: HTMLEDraggableElement[];
@@ -76,7 +71,7 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
         if (slot) {
             slot.addEventListener("slotchange", () => {
                 const draggables = slot.assignedElements().filter(
-                    elem => isHTMLEDraggableElement(elem)
+                    elem => isTagElement("e-draggable", elem)
                 ) as HTMLEDraggableElement[];
                 this.draggables = draggables;
                 this.draggables.forEach((draggable) => {
@@ -130,15 +125,13 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
             let target = event.target as any;
             if (event.button === 0) {
                 if (this.draggables.includes(target)) {
-                    if (!event.shiftKey) {
-                        if (!target.selected) {
-                            this.draggables.forEach((thisDraggable) => {
-                                thisDraggable.selected = (thisDraggable == target);
-                            });
-                        }
-                        if (event.ctrlKey) {
-                            target.selected = !target.selected;
-                        }
+                    if (!event.shiftKey && !event.ctrlKey) {
+                        this.draggables.forEach((thisDraggable) => {
+                            thisDraggable.selected = (thisDraggable == target);
+                        });
+                    }
+                    else if (event.ctrlKey) {
+                        target.selected = !target.selected;
                     }
                     else {
                         let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));

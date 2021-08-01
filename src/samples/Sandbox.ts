@@ -1,5 +1,5 @@
 import { AttributeMutationMixin, BaseAttributeMutationMixin, createMutationObserverCallback, isTagElement } from "engine/editor/elements/HTMLElement";
-import { HTMLEDropzoneElement, isHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
+import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { mockup } from "./scenes/Mockup";
 import { start } from "./scenes/SimpleScene";
 
@@ -34,23 +34,23 @@ class InputDropzoneDataClassMixin extends DataClassMixin {
   constructor() {
     super("input-dropzone");
 
-    this.datatransferEventListener = (event) => {
+    this.datatransferEventListener = ((event: DataChangeEvent) => {
       let target = event.target;
-        if (isHTMLEDropzoneElement(target)) {
+        if (isTagElement("e-dropzone", target)) {
           this.handlePostdatatransferInputNaming(target)
         }
-    };
+    }) as EventListener;
   }
 
   public attach(element: Element): void {
-    if (isHTMLEDropzoneElement(element)) {
+    if (isTagElement("e-dropzone", element)) {
       this.handlePostdatatransferInputNaming(element)
     }
-    element.addEventListener("datatransfer", this.datatransferEventListener);
+    element.addEventListener("datachange", this.datatransferEventListener);
   }
 
   public detach(element: Element): void {
-    element.removeEventListener("datatransfer", this.datatransferEventListener);
+    element.removeEventListener("datachange", this.datatransferEventListener);
   }
 
   public handlePostdatatransferInputNaming(dropzone: HTMLEDropzoneElement) {
@@ -231,17 +231,8 @@ mainObserver.observe(document.body, {
 
 export async function sandbox(): Promise<void> {
 
-  //await mockup();
+  await mockup();
   //await start();
-
-  let html = function(parts: TemplateStringsArray, ...expr: any[]) {
-    console.log(parts);
-    console.log(expr);
-  };
-
-  html`${1}Hey${2}`;
-
-
 
   /*editor.registerCommand("test", {
     exec: () => {

@@ -1,15 +1,10 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { HTMLEDraggableElement, isHTMLEDraggableElement } from "./Draggable";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEDraggableElement } from "./Draggable";
 import { HTMLEDragzoneElement } from "./Dragzone";
 
-export { DataTransferEvent };
-export { isHTMLEDropzoneElement };
+export { DataChangeEvent };
 export { HTMLEDropzoneElement };
 export { BaseHTMLEDropzoneElement };
-
-function isHTMLEDropzoneElement(obj: any): obj is HTMLEDropzoneElement {
-    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-dropzone";
-}
 
 interface HTMLEDropzoneElement extends HTMLElement {
     selectedDraggables: HTMLEDraggableElement[]
@@ -19,16 +14,15 @@ interface HTMLEDropzoneElement extends HTMLElement {
     disabled: boolean;
     droptest: ((draggables: HTMLEDraggableElement[]) => void) | null;
     addDraggables(draggables: HTMLEDraggableElement[], position: number): void;
-    removeDraggables(draggables: HTMLEDraggableElement[]): void;
+    removeDraggables(predicate: (draggable: HTMLEDraggableElement, index: number) => boolean): void;
 }
 
 type DropzoneDragoveredType = "self" | "draggable" | "appendarea";
 
-type DataTransferEvent = CustomEvent<{
+type DataChangeEvent = CustomEvent<{
+    action: "insert" | "remove";
     draggables: HTMLEDraggableElement[];
     position: number;
-    success: boolean;
-    statusText: string;
 }>;
 
 @RegisterCustomHTMLElement({
@@ -49,7 +43,7 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
     public multiple!: boolean;
     public disabled!: boolean;
 
-    public droptest!: ((draggables: HTMLEDraggableElement[]) => void) | null;
+    public droptest!: ((draggables: HTMLEDraggableElement[]) => boolean) | null;
     public value: any;
 
     public draggables: HTMLEDraggableElement[];
@@ -134,7 +128,7 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
         if (slot) {
             slot.addEventListener("slotchange", () => {
                 const draggables = slot.assignedElements().filter(
-                    elem => isHTMLEDraggableElement(elem)
+                    elem => isTagElement("e-draggable", elem)
                 ) as HTMLEDraggableElement[];
                 this.draggables = draggables;
                 this.draggables.forEach((draggable) => {
@@ -148,12 +142,11 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
         this.addEventListener("keydown", (event: KeyboardEvent) => {
             switch (event.key) {
                 case "Delete":
-                    let selectedDraggables = this.draggables.filter(draggable => draggable.selected);
-                    if (selectedDraggables.length > 0) {
-                        this.removeDraggables(selectedDraggables);
+                    if (this == event.target) {
+                        this.removeDraggables();
                     }
-                    else if (this == event.target) {
-                        this.removeDraggables(this.draggables);
+                    else {
+                        this.removeDraggables(draggable => draggable.selected);
                     }
                     event.stopPropagation();
                     break;
@@ -176,16 +169,15 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
         this.addEventListener("mousedown", (event: MouseEvent) => {
             let target = event.target as any;
             if (event.button === 0) {
+                console.log(target);
                 if (this.draggables.includes(target)) {
-                    if (!event.shiftKey) {
-                        if (!target.selected) {
-                            this.draggables.forEach((thisDraggable) => {
-                                thisDraggable.selected = (thisDraggable == target);
-                            });
-                        }
-                        if (event.ctrlKey) {
-                            target.selected = !target.selected;
-                        }
+                    if (!event.shiftKey && !event.ctrlKey) {
+                        this.draggables.forEach((thisDraggable) => {
+                            thisDraggable.selected = (thisDraggable == target);
+                        });
+                    }
+                    else if (event.ctrlKey) {
+                        target.selected = !target.selected;
                     }
                     else {
                         let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
@@ -325,30 +317,23 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
             let firstDraggable = draggables[0];
 
             let dataTransferSuccess = true;
-            let dataTransferStatusText = "";
-            try {
-                if (this.droptest) {
-                    this.droptest(draggables);
-                }
-            }
-            catch (error) {
-                dataTransferStatusText = error.message;
-                dataTransferSuccess = false;
+            if (this.droptest) {
+                dataTransferSuccess = this.droptest(draggables);
             }
             
-            let newDraggables = [];
-            let insertionIndex = -1;
+            let newDraggables: HTMLEDraggableElement[] = [];
+            let insertionPosition = -1;
             if (dataTransferSuccess) {
                 if (this.multiple) {
                     draggables.forEach((draggable) => {
                         let newDraggable = draggable.cloneNode(true) as HTMLEDraggableElement;
                         if (position > -1 && position < this.draggables.length) {
                             this.draggables[position].insertAdjacentElement("beforebegin", newDraggable);
-                            insertionIndex = (insertionIndex < 0) ? position : insertionIndex;
+                            insertionPosition = (insertionPosition < 0) ? position : insertionPosition;
                         }
                         else {
                             this.appendChild(newDraggable);
-                            insertionIndex = (insertionIndex < 0) ? this.draggables.length - 1 : insertionIndex;
+                            insertionPosition = (insertionPosition < 0) ? this.draggables.length - 1 : insertionPosition;
                         }
                         newDraggables.push(newDraggable);
                     });
@@ -362,32 +347,50 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
                         this.appendChild(newDraggable);
                     }
                     newDraggables.push(newDraggable);
-                    insertionIndex = 0;
+                    insertionPosition = 0;
                 }
             }
-            let dataTransferEvent: DataTransferEvent = new CustomEvent("datatransfer", {
-                bubbles: true,
-                detail: {
-                    draggables: newDraggables,
-                    position: insertionIndex,
-                    success: dataTransferSuccess,
-                    statusText: dataTransferStatusText,
-                }
-            });
-            this.dispatchEvent(dataTransferEvent);
+            const slot = this.shadowRoot?.querySelector("slot");
+            if (slot) {
+                slot.addEventListener("slotchange", () => {
+                    this.dispatchEvent(new CustomEvent("datachange", {
+                        bubbles: true,
+                        detail: {
+                            action: "insert",
+                            draggables: newDraggables,
+                            position: insertionPosition
+                        }
+                    }));
+                }, {once: true});
+            }
             return newDraggables;
         }
         return null;
     }
 
-    public removeDraggables(draggables: HTMLEDraggableElement[]) {
-        let thisDraggables = Array.from(this.children).filter(isHTMLEDraggableElement);
-        thisDraggables.forEach((draggable) => {
-            if (draggables.includes(draggable)) {
-                draggable.remove();
+    public removeDraggables(predicate: (draggable: HTMLEDraggableElement, index: number) => boolean = () => true) {
+        let toRemove = this.draggables.filter(
+            (value: HTMLEDraggableElement, index: number) => {
+                return predicate(value, index);
             }
+        );
+        let atPosition = this.draggables.indexOf(toRemove[0]);
+        toRemove.forEach((draggable) => {
+            draggable.remove(); 
         });
-        this.dispatchEvent(new CustomEvent("dataclear", {bubbles: true}));
+        const slot = this.shadowRoot?.querySelector("slot");
+        if (slot) {
+            slot.addEventListener("slotchange", () => {
+                this.dispatchEvent(new CustomEvent("datachange", {
+                    bubbles: true,
+                    detail: {
+                        action: "remove",
+                        draggables: toRemove,
+                        position: atPosition
+                    }
+                }));
+            }, {once: true});
+        }
     }
 }
 
@@ -399,7 +402,6 @@ declare global {
 
 declare global {
     interface HTMLElementEventMap {
-        "datatransfer": DataTransferEvent,
-        "dataclear": Event
+        "datachange": DataChangeEvent,
     }
 }

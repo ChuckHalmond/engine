@@ -1,14 +1,7 @@
 import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors } from "engine/editor/elements/HTMLElement";
-import { HTMLEDragzoneElement } from "./Dragzone";
-import { HTMLEDropzoneElement } from "./Dropzone";
 
-export { isHTMLEDraggableElement };
 export { HTMLEDraggableElement };
 export { BaseHTMLEDraggableElement };
-
-function isHTMLEDraggableElement(obj: any): obj is HTMLEDraggableElement {
-    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-draggable";
-}
 
 interface HTMLEDraggableElement extends HTMLElement {
     selected: boolean;

@@ -14,12 +14,8 @@ class FormDataObject {
         let fullname = element.name;
         let parent: Element | null = element.parentElement
         while (parent && parent !== this.form) {
-            if (isTagElement("fieldset", parent)) {
-                let localname = parent.name;
-                if (localname) {
-                    fullname = `${localname}.${fullname}`;
-                }
-            }
+            let scope = parent.getAttribute("data-scope");
+            fullname = `${scope}.${fullname}`;
             parent = parent?.parentElement;
         }
         return fullname;
@@ -28,7 +24,6 @@ class FormDataObject {
     public getData() {
         let elements = Array.from(this.form.elements);
         let data = {};
-        console.log(elements);
         elements.forEach((element) => {
             if (isTagElement("input", element) || isTagElement("select", element) || isTagElement("textarea", element)) {
                 if (element.name) {

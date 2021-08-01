@@ -20,7 +20,7 @@ import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 import { StructuredFormData } from "engine/editor/objects/StructuredFormData";
 import { HTMLDraggableInputTemplate } from "engine/editor/templates/other/DraggableInputTemplate";
 import { HTMLEDragzoneElement } from "engine/editor/elements/lib/controls/draggable/Dragzone";
-import { DataTransferEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
+import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { FormDataObject } from "engine/editor/elements/forms/FormDataObject";
 
 const body = /*template*/`
@@ -284,6 +284,14 @@ export async function mockup() {
             </div>
         </div>
     `;
+
+    const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#columns");
+    if (dropzone) {
+        dropzone.addEventListener("datachange", (event: DataChangeEvent) => {
+            const fieldsets = dropzone.querySelectorAll(":scope > e-draggable > fieldset");
+            console.log(fieldsets);
+        });
+    }
 
 
     function kebabize(str: string) {

@@ -306,19 +306,83 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
     }
     exports.createMutationObserverCallback = createMutationObserverCallback;
 });
-define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Draggable"], function (require, exports, HTMLElement_1, Draggable_1) {
+define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEDragzoneElement = exports.isHTMLEDragzoneElement = void 0;
-    function isHTMLEDragzoneElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-dragzone";
-    }
-    exports.isHTMLEDragzoneElement = isHTMLEDragzoneElement;
+    exports.BaseHTMLEDraggableElement = void 0;
+    let BaseHTMLEDraggableElement = /** @class */ (() => {
+        let BaseHTMLEDraggableElement = class BaseHTMLEDraggableElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_1.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: inline-block;
+                    padding: 3px 4px;
+                    cursor: grab;
+                    white-space: nowrap;
+                    border-radius: 4px;
+                    border: 1px solid black;
+                    user-select: none;
+                }
+
+                :host([disabled]) {
+                    pointer-events: none;
+                    color: gray;
+                    border-color: gray;
+                }
+                
+                :host([selected]) {
+                    font-weight: bold;
+                    outline: 1px auto black;
+                }
+
+                :host(:active) {
+                    cursor: grabbing;
+                }
+
+                :host([dragovered]) {
+                    border-style: dotted;
+                }
+                     
+                ::slotted(e-dropzone) {
+                    display: inline-block;
+                    border-radius: 4px;
+                }
+            </style>
+            <slot>&nbsp;</slot>
+        `);
+            }
+            connectedCallback() {
+                this.tabIndex = this.tabIndex;
+                this.draggable = true;
+            }
+        };
+        BaseHTMLEDraggableElement = __decorate([
+            HTMLElement_1.RegisterCustomHTMLElement({
+                name: "e-draggable"
+            }),
+            HTMLElement_1.GenerateAttributeAccessors([
+                { name: "selected", type: "boolean" },
+                { name: "dragged", type: "boolean" },
+                { name: "dragovered", type: "boolean" },
+                { name: "disabled", type: "boolean" },
+                { name: "type", type: "string" },
+            ])
+        ], BaseHTMLEDraggableElement);
+        return BaseHTMLEDraggableElement;
+    })();
+    exports.BaseHTMLEDraggableElement = BaseHTMLEDraggableElement;
+});
+define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEDragzoneElement = void 0;
     let BaseHTMLEDragzoneElement = /** @class */ (() => {
         let BaseHTMLEDragzoneElement = class BaseHTMLEDragzoneElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_1.bindShadowRoot(this, /*template*/ `
+                HTMLElement_2.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -364,7 +428,7 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
                 const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
                 if (slot) {
                     slot.addEventListener("slotchange", () => {
-                        const draggables = slot.assignedElements().filter(elem => Draggable_1.isHTMLEDraggableElement(elem));
+                        const draggables = slot.assignedElements().filter(elem => HTMLElement_2.isTagElement("e-draggable", elem));
                         this.draggables = draggables;
                         this.draggables.forEach((draggable) => {
                             draggable.draggable = true;
@@ -412,15 +476,13 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
                     let target = event.target;
                     if (event.button === 0) {
                         if (this.draggables.includes(target)) {
-                            if (!event.shiftKey) {
-                                if (!target.selected) {
-                                    this.draggables.forEach((thisDraggable) => {
-                                        thisDraggable.selected = (thisDraggable == target);
-                                    });
-                                }
-                                if (event.ctrlKey) {
-                                    target.selected = !target.selected;
-                                }
+                            if (!event.shiftKey && !event.ctrlKey) {
+                                this.draggables.forEach((thisDraggable) => {
+                                    thisDraggable.selected = (thisDraggable == target);
+                                });
+                            }
+                            else if (event.ctrlKey) {
+                                target.selected = !target.selected;
                             }
                             else {
                                 let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
@@ -453,7 +515,7 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
             }
         };
         BaseHTMLEDragzoneElement = __decorate([
-            HTMLElement_1.RegisterCustomHTMLElement({
+            HTMLElement_2.RegisterCustomHTMLElement({
                 name: "e-dragzone"
             })
         ], BaseHTMLEDragzoneElement);
@@ -461,86 +523,10 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
     })();
     exports.BaseHTMLEDragzoneElement = BaseHTMLEDragzoneElement;
 });
-define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_2) {
+define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEDraggableElement = exports.isHTMLEDraggableElement = void 0;
-    function isHTMLEDraggableElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-draggable";
-    }
-    exports.isHTMLEDraggableElement = isHTMLEDraggableElement;
-    let BaseHTMLEDraggableElement = /** @class */ (() => {
-        let BaseHTMLEDraggableElement = class BaseHTMLEDraggableElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_2.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: inline-block;
-                    padding: 3px 4px;
-                    cursor: grab;
-                    white-space: nowrap;
-                    border-radius: 4px;
-                    border: 1px solid black;
-                    user-select: none;
-                }
-
-                :host([disabled]) {
-                    pointer-events: none;
-                    color: gray;
-                    border-color: gray;
-                }
-                
-                :host([selected]) {
-                    font-weight: bold;
-                    outline: 1px auto black;
-                }
-
-                :host(:active) {
-                    cursor: grabbing;
-                }
-
-                :host([dragovered]) {
-                    border-style: dotted;
-                }
-                     
-                ::slotted(e-dropzone) {
-                    display: inline-block;
-                    border-radius: 4px;
-                }
-            </style>
-            <slot>&nbsp;</slot>
-        `);
-            }
-            connectedCallback() {
-                this.tabIndex = this.tabIndex;
-                this.draggable = true;
-            }
-        };
-        BaseHTMLEDraggableElement = __decorate([
-            HTMLElement_2.RegisterCustomHTMLElement({
-                name: "e-draggable"
-            }),
-            HTMLElement_2.GenerateAttributeAccessors([
-                { name: "selected", type: "boolean" },
-                { name: "dragged", type: "boolean" },
-                { name: "dragovered", type: "boolean" },
-                { name: "disabled", type: "boolean" },
-                { name: "type", type: "string" },
-            ])
-        ], BaseHTMLEDraggableElement);
-        return BaseHTMLEDraggableElement;
-    })();
-    exports.BaseHTMLEDraggableElement = BaseHTMLEDraggableElement;
-});
-define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Draggable"], function (require, exports, HTMLElement_3, Draggable_2) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEDropzoneElement = exports.isHTMLEDropzoneElement = void 0;
-    function isHTMLEDropzoneElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-dropzone";
-    }
-    exports.isHTMLEDropzoneElement = isHTMLEDropzoneElement;
+    exports.BaseHTMLEDropzoneElement = void 0;
     let BaseHTMLEDropzoneElement = /** @class */ (() => {
         let BaseHTMLEDropzoneElement = class BaseHTMLEDropzoneElement extends HTMLElement {
             constructor() {
@@ -618,7 +604,7 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
                 if (slot) {
                     slot.addEventListener("slotchange", () => {
-                        const draggables = slot.assignedElements().filter(elem => Draggable_2.isHTMLEDraggableElement(elem));
+                        const draggables = slot.assignedElements().filter(elem => HTMLElement_3.isTagElement("e-draggable", elem));
                         this.draggables = draggables;
                         this.draggables.forEach((draggable) => {
                             draggable.draggable = false;
@@ -629,12 +615,11 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 this.addEventListener("keydown", (event) => {
                     switch (event.key) {
                         case "Delete":
-                            let selectedDraggables = this.draggables.filter(draggable => draggable.selected);
-                            if (selectedDraggables.length > 0) {
-                                this.removeDraggables(selectedDraggables);
+                            if (this == event.target) {
+                                this.removeDraggables();
                             }
-                            else if (this == event.target) {
-                                this.removeDraggables(this.draggables);
+                            else {
+                                this.removeDraggables(draggable => draggable.selected);
                             }
                             event.stopPropagation();
                             break;
@@ -655,16 +640,15 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 this.addEventListener("mousedown", (event) => {
                     let target = event.target;
                     if (event.button === 0) {
+                        console.log(target);
                         if (this.draggables.includes(target)) {
-                            if (!event.shiftKey) {
-                                if (!target.selected) {
-                                    this.draggables.forEach((thisDraggable) => {
-                                        thisDraggable.selected = (thisDraggable == target);
-                                    });
-                                }
-                                if (event.ctrlKey) {
-                                    target.selected = !target.selected;
-                                }
+                            if (!event.shiftKey && !event.ctrlKey) {
+                                this.draggables.forEach((thisDraggable) => {
+                                    thisDraggable.selected = (thisDraggable == target);
+                                });
+                            }
+                            else if (event.ctrlKey) {
+                                target.selected = !target.selected;
                             }
                             else {
                                 let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
@@ -790,32 +774,26 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 }
             }
             addDraggables(draggables, position) {
+                var _a;
                 if (draggables.length > 0) {
                     let firstDraggable = draggables[0];
                     let dataTransferSuccess = true;
-                    let dataTransferStatusText = "";
-                    try {
-                        if (this.droptest) {
-                            this.droptest(draggables);
-                        }
-                    }
-                    catch (error) {
-                        dataTransferStatusText = error.message;
-                        dataTransferSuccess = false;
+                    if (this.droptest) {
+                        dataTransferSuccess = this.droptest(draggables);
                     }
                     let newDraggables = [];
-                    let insertionIndex = -1;
+                    let insertionPosition = -1;
                     if (dataTransferSuccess) {
                         if (this.multiple) {
                             draggables.forEach((draggable) => {
                                 let newDraggable = draggable.cloneNode(true);
                                 if (position > -1 && position < this.draggables.length) {
                                     this.draggables[position].insertAdjacentElement("beforebegin", newDraggable);
-                                    insertionIndex = (insertionIndex < 0) ? position : insertionIndex;
+                                    insertionPosition = (insertionPosition < 0) ? position : insertionPosition;
                                 }
                                 else {
                                     this.appendChild(newDraggable);
-                                    insertionIndex = (insertionIndex < 0) ? this.draggables.length - 1 : insertionIndex;
+                                    insertionPosition = (insertionPosition < 0) ? this.draggables.length - 1 : insertionPosition;
                                 }
                                 newDraggables.push(newDraggable);
                             });
@@ -829,31 +807,48 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                                 this.appendChild(newDraggable);
                             }
                             newDraggables.push(newDraggable);
-                            insertionIndex = 0;
+                            insertionPosition = 0;
                         }
                     }
-                    let dataTransferEvent = new CustomEvent("datatransfer", {
-                        bubbles: true,
-                        detail: {
-                            draggables: newDraggables,
-                            position: insertionIndex,
-                            success: dataTransferSuccess,
-                            statusText: dataTransferStatusText,
-                        }
-                    });
-                    this.dispatchEvent(dataTransferEvent);
+                    const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
+                    if (slot) {
+                        slot.addEventListener("slotchange", () => {
+                            this.dispatchEvent(new CustomEvent("datachange", {
+                                bubbles: true,
+                                detail: {
+                                    action: "insert",
+                                    draggables: newDraggables,
+                                    position: insertionPosition
+                                }
+                            }));
+                        }, { once: true });
+                    }
                     return newDraggables;
                 }
                 return null;
             }
-            removeDraggables(draggables) {
-                let thisDraggables = Array.from(this.children).filter(Draggable_2.isHTMLEDraggableElement);
-                thisDraggables.forEach((draggable) => {
-                    if (draggables.includes(draggable)) {
-                        draggable.remove();
-                    }
+            removeDraggables(predicate = () => true) {
+                var _a;
+                let toRemove = this.draggables.filter((value, index) => {
+                    return predicate(value, index);
                 });
-                this.dispatchEvent(new CustomEvent("dataclear", { bubbles: true }));
+                let atPosition = this.draggables.indexOf(toRemove[0]);
+                toRemove.forEach((draggable) => {
+                    draggable.remove();
+                });
+                const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
+                if (slot) {
+                    slot.addEventListener("slotchange", () => {
+                        this.dispatchEvent(new CustomEvent("datachange", {
+                            bubbles: true,
+                            detail: {
+                                action: "remove",
+                                draggables: toRemove,
+                                position: atPosition
+                            }
+                        }));
+                    }, { once: true });
+                }
             }
         };
         BaseHTMLEDropzoneElement = __decorate([
@@ -3568,12 +3563,8 @@ define("engine/editor/elements/forms/FormDataObject", ["require", "exports", "en
             let fullname = element.name;
             let parent = element.parentElement;
             while (parent && parent !== this.form) {
-                if (HTMLElement_22.isTagElement("fieldset", parent)) {
-                    let localname = parent.name;
-                    if (localname) {
-                        fullname = `${localname}.${fullname}`;
-                    }
-                }
+                let scope = parent.getAttribute("data-scope");
+                fullname = `${scope}.${fullname}`;
                 parent = parent === null || parent === void 0 ? void 0 : parent.parentElement;
             }
             return fullname;
@@ -3581,7 +3572,6 @@ define("engine/editor/elements/forms/FormDataObject", ["require", "exports", "en
         getData() {
             let elements = Array.from(this.form.elements);
             let data = {};
-            console.log(elements);
             elements.forEach((element) => {
                 if (HTMLElement_22.isTagElement("input", element) || HTMLElement_22.isTagElement("select", element) || HTMLElement_22.isTagElement("textarea", element)) {
                     if (element.name) {
@@ -3868,6 +3858,13 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
             </div>
         </div>
     `;
+        const dropzone = document.querySelector("e-dropzone#columns");
+        if (dropzone) {
+            dropzone.addEventListener("datachange", (event) => {
+                const fieldsets = dropzone.querySelectorAll(":scope > e-draggable > fieldset");
+                console.log(fieldsets);
+            });
+        }
         function kebabize(str) {
             var _a;
             return str && ((_a = str.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)) === null || _a === void 0 ? void 0 : _a.map(x => x.toLowerCase()).join('-')) || "";
@@ -12015,7 +12012,7 @@ define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine
     })();
     exports.BaseHTMLELoaderElement = BaseHTMLELoaderElement;
 });
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_15, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_2, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_3, Dropzone_1, HTMLElement_29, Loader_1) {
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_15, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_2, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_29, Loader_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.launchScene = exports.start = void 0;
@@ -12031,7 +12028,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     BreadcrumbTrail_1.HTMLEBreadcrumbTrailElement;
     BreadcrumbItem_2.HTMLEBreadcrumbItemElement;
     Palette_1.PaletteElement;
-    Draggable_3.BaseHTMLEDraggableElement;
+    Draggable_1.BaseHTMLEDraggableElement;
     MenuBar_1.BaseHTMLEMenuBarElement;
     MenuButton_1.BaseHTMLEMenuButtonElement;
     Menu_1.BaseHTMLEMenuElement;
@@ -12700,7 +12697,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     }
     exports.launchScene = launchScene;
 });
-define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Dropzone"], function (require, exports, HTMLElement_30, Dropzone_2) {
+define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "samples/scenes/Mockup"], function (require, exports, HTMLElement_30, Mockup_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.sandbox = void 0;
@@ -12729,21 +12726,21 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
     class InputDropzoneDataClassMixin extends DataClassMixin {
         constructor() {
             super("input-dropzone");
-            this.datatransferEventListener = (event) => {
+            this.datatransferEventListener = ((event) => {
                 let target = event.target;
-                if (Dropzone_2.isHTMLEDropzoneElement(target)) {
+                if (HTMLElement_30.isTagElement("e-dropzone", target)) {
                     this.handlePostdatatransferInputNaming(target);
                 }
-            };
+            });
         }
         attach(element) {
-            if (Dropzone_2.isHTMLEDropzoneElement(element)) {
+            if (HTMLElement_30.isTagElement("e-dropzone", element)) {
                 this.handlePostdatatransferInputNaming(element);
             }
-            element.addEventListener("datatransfer", this.datatransferEventListener);
+            element.addEventListener("datachange", this.datatransferEventListener);
         }
         detach(element) {
-            element.removeEventListener("datatransfer", this.datatransferEventListener);
+            element.removeEventListener("datachange", this.datatransferEventListener);
         }
         handlePostdatatransferInputNaming(dropzone) {
             let name = dropzone.getAttribute("data-input-dropzone-name");
@@ -12894,13 +12891,8 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
         attributeFilter: attributeMutationMixins.map((mixin => mixin.attributeName))
     });
     async function sandbox() {
-        //await mockup();
+        await Mockup_1.mockup();
         //await start();
-        let html = function (parts, ...expr) {
-            console.log(parts);
-            console.log(expr);
-        };
-        html `${1}Hey${2}`;
         /*editor.registerCommand("test", {
           exec: () => {
             alert("test");
