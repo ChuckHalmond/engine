@@ -1,13 +1,8 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { HTMLEMenuElement, isHTMLEMenuElement } from "./Menu";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEMenuElement } from "./Menu";
 
 export { HTMLEMenuButtonElement };
-export { isHTMLEMenuButtonElement };
 export { BaseHTMLEMenuButtonElement };
-
-function isHTMLEMenuButtonElement(elem: Element): elem is HTMLEMenuButtonElement {
-    return elem.tagName.toLowerCase() === "e-menubutton";
-}
 
 interface HTMLEMenuButtonElement extends HTMLElement {
     name: string;
@@ -234,7 +229,7 @@ class BaseHTMLEMenuButtonElement extends HTMLElement implements HTMLEMenuButtonE
         if (menuSlot) {
             menuSlot.addEventListener("slotchange", () => {
                 const menuElem = menuSlot.assignedElements()[0];
-                if (isHTMLEMenuElement(menuElem)) {
+                if (isTagElement("e-menu", menuElem)) {
                     this.childMenu = menuElem;
                 }
             });

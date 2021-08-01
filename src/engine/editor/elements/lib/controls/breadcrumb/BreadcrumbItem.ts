@@ -21,8 +21,6 @@ class HTMLEBreadcrumbItemElement extends HTMLElement {
     public label!: string;
     public active!: boolean;
 
-    public trail: HTMLEBreadcrumbTrailElement | null;
-
     constructor() {
         super();
 
@@ -52,11 +50,9 @@ class HTMLEBreadcrumbItemElement extends HTMLElement {
                 }
             </style>
             <li part="li">
-                <span part="label"></span>
+                <slot></slot>
             </li>
         `);
-
-        this.trail = null;
     }
     
     public connectedCallback() {

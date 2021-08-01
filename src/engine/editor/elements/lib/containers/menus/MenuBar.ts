@@ -1,13 +1,8 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { isHTMLEMenuItemElement, HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 
-export { isHTMLEMenuBarElement };
 export { HTMLEMenuBarElement };
 export { BaseHTMLEMenuBarElement };
-
-function isHTMLEMenuBarElement(elem: any): elem is HTMLEMenuBarElement {
-    return  elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-menubar";
-}
 
 interface HTMLEMenuBarElement extends HTMLElement {
     name: string;
@@ -46,8 +41,6 @@ class BaseHTMLEMenuBarElement extends HTMLElement implements HTMLEMenuBarElement
                     display: flex;
                     position: relative; 
                     user-select: none;
-
-                    background-color: white;
                 }
 
                 :host(:focus) {
@@ -90,7 +83,7 @@ class BaseHTMLEMenuBarElement extends HTMLElement implements HTMLEMenuBarElement
         if (slot) {
             slot.addEventListener("slotchange", () => {
                 const items = slot.assignedElements()
-                    .filter(isHTMLEMenuItemElement);
+                    .filter(item => isTagElement("e-menuitem", item)) as HTMLEMenuItemElement[];
                 this.items = items;
                 items.forEach((item) => {
                     item.parentMenu = this;
@@ -206,5 +199,11 @@ class BaseHTMLEMenuBarElement extends HTMLElement implements HTMLEMenuBarElement
             }
         }
         return foundItem;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-menubar": HTMLEMenuBarElement,
     }
 }

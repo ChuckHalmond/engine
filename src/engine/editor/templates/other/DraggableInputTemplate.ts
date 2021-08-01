@@ -5,8 +5,7 @@ export { HTMLDraggableInputTemplateDescription };
 export { HTMLDraggableInputTemplate };
 
 type HTMLDraggableInputTemplateDescription =
-    Pick<HTMLEDraggableElement, 'ref'>
-    & Partial<Pick<HTMLEDraggableElement, 'id' | 'className' | 'ref'>>
+    & Partial<Pick<HTMLEDraggableElement, 'id' | 'className'>>
     & Partial<Pick<HTMLInputElement, 'value' | 'name'>>;
 
 interface HTMLDraggableInputTemplate {
@@ -18,8 +17,7 @@ const HTMLDraggableInputTemplate: HTMLDraggableInputTemplate = (desc: HTMLDragga
         "e-draggable", {
             props: {
                 id: desc.id,
-                className: desc.className,
-                ref: desc.ref
+                className: desc.className
             },
             children: [
                 HTMLElementConstructor("input", {

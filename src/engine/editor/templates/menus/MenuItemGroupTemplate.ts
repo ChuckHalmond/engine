@@ -18,7 +18,7 @@ const HTMLEMenuItemGroupTemplate: HTMLEMenuItemGroupTemplate = (desc: HTMLEMenuI
     
     const items = desc.items.map((descArgs) => HTMLEMenuItemTemplate(descArgs));
 
-    return HTMLElementConstructor<HTMLEMenuItemGroupElement>(
+    return HTMLElementConstructor(
         "e-menuitemgroup", {
             props: {
                 id: desc.id,

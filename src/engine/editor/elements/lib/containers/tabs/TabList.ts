@@ -1,5 +1,5 @@
-import { bindShadowRoot, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
-import { isHTMLETabElement, HTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
+import { bindShadowRoot, isTagElement, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
+import { HTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
 
 export { TabChangeEvent };
 export { HTMLETabListElement };
@@ -48,7 +48,9 @@ class BaseHTMLETabListElement extends HTMLElement implements HTMLETabListElement
         const slot = this.shadowRoot!.querySelector("slot");
         if (slot) {
             slot.addEventListener("slotchange", (event: Event) => {
-                const tabs = (event.target as HTMLSlotElement).assignedElements().filter(isHTMLETabElement);
+                const tabs = (event.target as HTMLSlotElement)
+                    .assignedElements()
+                    .filter(tab => isTagElement("e-tab", tab)) as HTMLETabElement[];
                 this.tabs = tabs;
                 this._activeIndex = this.tabs.findIndex(tab => tab.active);
             });
@@ -56,12 +58,12 @@ class BaseHTMLETabListElement extends HTMLElement implements HTMLETabListElement
         
         this.addEventListener("click", (event) => {
             let target = event.target as any;
-            if (isHTMLETabElement(target)) {
+            if (isTagElement("e-tab", target)) {
                 target.active = true;
             }
         });
 
-        this.addEventListener("tabchange", ((event: TabChangeEvent) => {
+        this.addEventListener("tabchange", (event: TabChangeEvent) => {
             let targetIndex = this.tabs.indexOf(event.detail.tab);
             this._activeIndex = targetIndex;
             this.tabs.forEach((thisTab, thisTabIndex) => {
@@ -69,7 +71,7 @@ class BaseHTMLETabListElement extends HTMLElement implements HTMLETabListElement
                     thisTab.active = false;
                 }
             });
-        }) as EventListener);
+        });
     }
 
     public findTab(predicate: (tab: HTMLETabElement) => boolean): HTMLETabElement | null {
@@ -81,5 +83,17 @@ class BaseHTMLETabListElement extends HTMLElement implements HTMLETabListElement
         if (tab) {
             tab.active = true;
         }
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-tablist": HTMLETabListElement,
+    }
+}
+
+declare global {
+    interface HTMLElementEventMap {
+        "tabchange": TabChangeEvent
     }
 }

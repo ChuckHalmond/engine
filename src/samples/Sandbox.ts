@@ -1,4 +1,4 @@
-import { AttributeMutationMixin, BaseAttributeMutationMixin, createMutationObserverCallback, CustomHTMLElement, HTMLEELement, isTagElement, Property, temp } from "engine/editor/elements/HTMLElement";
+import { AttributeMutationMixin, BaseAttributeMutationMixin, createMutationObserverCallback, isTagElement } from "engine/editor/elements/HTMLElement";
 import { HTMLEDropzoneElement, isHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { mockup } from "./scenes/Mockup";
 import { start } from "./scenes/SimpleScene";
@@ -228,69 +228,22 @@ mainObserver.observe(document.body, {
   attributeFilter: attributeMutationMixins.map((mixin => mixin.attributeName))
 });
 
-let html = function(parts: TemplateStringsArray, ...expr: any[]) {
-  let events: [string, EventListener][] = [];
-  let parsedParts = [];
-  for (let i = 0; i < parts.length; i++) {
-    let part = parts[i];
-    let eventAttribute = /@(.*)=/.exec(part);
-    if (eventAttribute !== null) {
-      if (typeof expr[i] === "function") {
-        events.push([eventAttribute[1], expr[i]]);
-        parsedParts.push(part.substr(0, part.indexOf("@")).trimRight());
-      }
-    }
-    else {
-      parsedParts.push(part);
-    }
-  }
-  const parsedHTML = new DOMParser().parseFromString(parsedParts.join(), "text/html").body.firstChild;
-  if (!parsedHTML) {
-    throw new Error();
-  }
-  if (parsedHTML.nodeType === parsedHTML.ELEMENT_NODE) {
-    events.forEach((event) => {
-      parsedHTML.addEventListener(event[0], event[1]);
-    });
-  }
-  return parsedHTML;
-}
-
-CustomHTMLElement({name: "my-element"})
-class MyElement extends HTMLEELement {
-  @Property()
-  myAttr: string;
-
-  render() {
-    return html`
-      <div>${this.myAttr}</div>
-    `;
-  }
-}
 
 export async function sandbox(): Promise<void> {
 
-  function kek(arg: any) {
-    return arg;
-  }
-
-  const content = 1;
-
-  let onClick = () => {
-    alert();
-  }
-  let element = html`<p @click=${kek(onClick)}>${content}</p>`;
-  if (element) {
-    document.body.appendChild(element);
-  }
-
-  window['lol'] = new temp();
-
-  await mockup();
+  //await mockup();
   //await start();
-  
-  /*
-  editor.registerCommand("test", {
+
+  let html = function(parts: TemplateStringsArray, ...expr: any[]) {
+    console.log(parts);
+    console.log(expr);
+  };
+
+  html`${1}Hey${2}`;
+
+
+
+  /*editor.registerCommand("test", {
     exec: () => {
       alert("test");
     },

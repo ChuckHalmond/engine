@@ -25,7 +25,7 @@ const HTMLEMenuTemplate: HTMLEMenuTemplate = (desc: HTMLEMenuTemplateDescription
         }
     });
 
-    return HTMLElementConstructor<HTMLEMenuElement>(
+    return HTMLElementConstructor(
         "e-menu", {
             props: {
                 id: desc.id,

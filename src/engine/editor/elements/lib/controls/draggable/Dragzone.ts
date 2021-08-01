@@ -1,4 +1,4 @@
-import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors, isTagElement } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors } from "engine/editor/elements/HTMLElement";
 import { HTMLEDraggableElement, isHTMLEDraggableElement } from "./Draggable";
 
 export { isHTMLEDragzoneElement };
@@ -11,19 +11,16 @@ function isHTMLEDragzoneElement(obj: any): obj is HTMLEDragzoneElement {
 
 interface HTMLEDragzoneElement extends HTMLElement {
     draggables: HTMLEDraggableElement[];
+    selectedDraggables: HTMLEDraggableElement[];
+    label: string;
 }
 
 @RegisterCustomHTMLElement({
-    name: "e-dragzone",
-    observedAttributes: ["label"]
+    name: "e-dragzone"
 })
-@GenerateAttributeAccessors([
-    {name: "dragovered", type: "boolean"},
-    {name: "label", type: "string"},
-    {name: "allowedtypes", type: "string"},
-    {name: "multiple", type: "boolean"},
-])
 class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneElement {
+
+    public label!: string;
 
     public draggables: HTMLEDraggableElement[];
 
@@ -33,26 +30,43 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
         bindShadowRoot(this, /*template*/`
             <style>
                 :host {
-                    display: inline-flex;
-                    flex-direction: column;
-                    vertical-align: top;
+                    display: block;
                 }
 
-                [part~="label"] {
-                    color: gray;
-                    font-size: 0.8em;
+                :host(:focus) {
+                    outline: 1px auto black;
+                }
+
+                :host([disabled]) {
                     pointer-events: none;
                 }
-                
+
+                [part~="container"]:empty {
+                    display: none !important;
+                }
+
+                [part~="container"] {
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    padding: 2px;
+                }
+
                 ::slotted(e-draggable:not(:only-child)) {
                     margin-top: 2px;
                     margin-bottom: 2px;
                 }
             </style>
-            <span part="label"/></span>
-            <slot id="draggables"></slot>
+            <div part="container">
+                <span part="label"/></span>
+                <slot></slot>
+            </div>
         `);
         this.draggables = [];
+    }
+
+    public get selectedDraggables(): HTMLEDraggableElement[] {
+        return this.draggables.filter(draggable => draggable.selected);
     }
     
     public connectedCallback() {
@@ -65,72 +79,101 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
                     elem => isHTMLEDraggableElement(elem)
                 ) as HTMLEDraggableElement[];
                 this.draggables = draggables;
+                this.draggables.forEach((draggable) => {
+                    draggable.draggable = true;
+                });
             });
         }
 
-        this.addEventListener("dragstart", () => {
-            let thisSelectedDraggables = this.draggables.filter(draggable => draggable.selected);
-            thisSelectedDraggables.forEach((thisSelectedDraggable) => {
-                thisSelectedDraggable.dragged = true;
-            });
+        this.addEventListener("keydown", (event: KeyboardEvent) => {
+            switch (event.key) {
+                case "Escape":
+                    this.selectedDraggables.forEach(draggable => draggable.selected = false);
+                    this.focus();
+                    break;
+            }
+        });
+
+        this.addEventListener("dragstart", (event: DragEvent) => {
+            let target = event.target as any;
+            if (this.draggables.includes(target)) {
+                this.selectedDraggables.forEach((thisSelectedDraggable) => {
+                    thisSelectedDraggable.dragged = true;
+                });
+                let dataTransfer = event.dataTransfer;
+                if (dataTransfer) {
+                    dataTransfer.setData("text/plain", this.id);
+                }
+            }
         });
         
-        this.addEventListener("dragend", () => {
-            let thisDraggedDraggables = this.draggables.filter(draggable => draggable.dragged);
-            thisDraggedDraggables.forEach((thisDraggedDraggable) => {
-                thisDraggedDraggable.dragged = false;
-            });
+        this.addEventListener("dragend", (event: DragEvent) => {
+            let target = event.target as any;
+            if (this.draggables.includes(target)) {
+                let thisDraggedDraggables = this.draggables.filter(draggable => draggable.dragged);
+                thisDraggedDraggables.forEach((thisDraggedDraggable) => {
+                    thisDraggedDraggable.dragged = false;
+                });
+            }
         });
-        
+
         this.addEventListener("focusout", (event: FocusEvent) => {
             let relatedTarget = event.relatedTarget as any;
-            if (this == relatedTarget || !this.contains(relatedTarget)) {
-                this.draggables.forEach((thisSelectedDraggable) => {
-                    thisSelectedDraggable.selected = false;
+            if (!this.contains(relatedTarget)) {
+                this.draggables.forEach((thisDraggable) => {
+                    thisDraggable.selected = false;
                 });
             }
         });
         
         this.addEventListener("mousedown", (event: MouseEvent) => {
             let target = event.target as any;
-            if (this.draggables.includes(target)) {
-                if (!event.shiftKey) {
-                    if (!target.selected) {
-                        this.draggables.forEach((thisDraggable) => {
-                            thisDraggable.selected = (thisDraggable == target);
+            if (event.button === 0) {
+                if (this.draggables.includes(target)) {
+                    if (!event.shiftKey) {
+                        if (!target.selected) {
+                            this.draggables.forEach((thisDraggable) => {
+                                thisDraggable.selected = (thisDraggable == target);
+                            });
+                        }
+                        if (event.ctrlKey) {
+                            target.selected = !target.selected;
+                        }
+                    }
+                    else {
+                        let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
+                        let endRangeIndex = Math.max(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
+                        this.draggables.forEach((thisDraggable, thisDraggableIndex) => {
+                            thisDraggable.selected = (thisDraggableIndex >= startRangeIndex && thisDraggableIndex <= endRangeIndex);
                         });
+                        target.selected = true;
                     }
                 }
                 else {
-                    target.selected = true;
+                    this.draggables.forEach((thisDraggable) => {
+                        thisDraggable.selected = false;
+                    });
                 }
             }
         });
         
         this.addEventListener("mouseup", (event: MouseEvent) => {
             let target = event.target as any;
-            if (this.draggables.includes(target)) {
-                if (!event.shiftKey) {
-                    this.draggables.forEach((thisDraggable) => {
-                        thisDraggable.selected = (thisDraggable == target);
-                    });
+            if (event.button === 0) {
+                if (this.draggables.includes(target)) {
+                    if (!event.shiftKey && !event.ctrlKey) {
+                        this.draggables.forEach((thisDraggable) => {
+                            thisDraggable.selected = (thisDraggable == target);
+                        });
+                    }
                 }
             }
         });
     }
+}
 
-    public attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
-        if (newValue !== oldValue) {
-            switch (name) {
-                case "label":
-                    if (oldValue !== newValue) {
-                        const labelPart = this.shadowRoot?.querySelector("[part~=label]");
-                        if (labelPart) {
-                            labelPart.textContent = newValue;
-                        }
-                    }
-                    break;
-            }
-        }
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-dragzone": HTMLEDragzoneElement,
     }
 }

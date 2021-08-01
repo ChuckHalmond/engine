@@ -2,12 +2,10 @@ import { HotKey } from "engine/core/input/Input";
 import { Command, isUndoCommand } from "engine/libs/patterns/commands/Command";
 import { EventDispatcher } from "engine/libs/patterns/messaging/events/EventDispatcher";
 import { ResourceFetcher } from "engine/resources/ResourceFetcher";
-import { Resources } from "engine/resources/Resources";
 import { HTMLEMenuBarElement } from "./elements/lib/containers/menus/MenuBar";
 import { HTMLEStatusBarElement } from "./elements/lib/containers/status/StatusBar";
 import { getPropertyFromPath, setPropertyFromPath } from "./elements/Snippets";
 import { HTMLEMenubarTemplate, HTMLEMenubarTemplateDescription } from "./templates/menus/MenubarTemplate";
-import { HTMLEMenuItemTemplate } from "./templates/menus/MenuItemTemplate";
 
 export { editor };
 export { Editor };
@@ -45,8 +43,8 @@ interface Editor extends EventDispatcher<EditorEventsMap> {
     addHotkeyExec(hotkey: EditorHotKey, exec: () => void): void;
     removeHotkeyExec(hotkey: EditorHotKey, exec: () => void): void;
 
-    statusbar: HTMLEStatusBarElement | null;
-    menubar: HTMLEMenuBarElement | null;
+    readonly statusbar: HTMLEStatusBarElement | null;
+    readonly menubar: HTMLEMenuBarElement | null;
 
     registerCommand(name: string, command: EditorCommand): void;
     executeCommand(name: string, args?: any, opts?: {undo?: boolean}): void;
@@ -64,24 +62,16 @@ interface EditorCommand extends Command {
     context: string;
 }
 
-interface EditorSelection extends Object {}
-
-interface EditorHotkey extends HotKey {}
-
 interface EditorCommandCall extends EditorCommand {
     args: any;
 }
-
-// "my.object.property"  <=> my { object { property: val }}
-// change events
 
 interface EditorHotKey extends HotKey {}
 
 class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
 
     private _commands: Map<string, EditorCommand>;
-    //TODO: Modifiers-optimized retrieving ?
-    private _hotkeys: Map<EditorHotkey, (() => void)[]>;
+    private _hotkeys: Map<EditorHotKey, (() => void)[]>;
 
     private _undoCommandsCallStack: Array<EditorCommandCall>;
     private _redoCommandsCallStack: Array<EditorCommandCall>;
@@ -95,10 +85,6 @@ class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
 
     public menubar: HTMLEMenuBarElement | null;
     public statusbar: HTMLEStatusBarElement | null;
-
-    public _selection: EditorSelection | null;
-
-    private _focusListeners: Array<() => void>;
 
 
     /*readonly toolbar: HTMLElement;
@@ -120,13 +106,10 @@ class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
         this.menubar = null;
         this.statusbar = null;
 
-        this._selection = null;
-
         this._state = {};
         this._stateListeners = new Map();
-        this._focusListeners = [];
     }
-
+    
     public get context(): string {
         return this._context;
     }

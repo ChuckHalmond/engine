@@ -42,7 +42,7 @@ const HTMLEMenuItemTemplate: HTMLEMenuItemTemplate = (desc: HTMLEMenuItemTemplat
         );
     }
 
-    const menuItem = HTMLElementConstructor<HTMLEMenuItemElement>(
+    const menuItem = HTMLElementConstructor(
         "e-menuitem", {
             props: {
                 id: desc.id,

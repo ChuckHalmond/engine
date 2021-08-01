@@ -1,4 +1,6 @@
 import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors } from "engine/editor/elements/HTMLElement";
+import { HTMLEDragzoneElement } from "./Dragzone";
+import { HTMLEDropzoneElement } from "./Dropzone";
 
 export { isHTMLEDraggableElement };
 export { HTMLEDraggableElement };
@@ -11,8 +13,7 @@ function isHTMLEDraggableElement(obj: any): obj is HTMLEDraggableElement {
 interface HTMLEDraggableElement extends HTMLElement {
     selected: boolean;
     dragged: boolean;
-    ref: string;
-    value: string;
+    type: string;
     dragovered: boolean;
 }
 
@@ -24,8 +25,7 @@ interface HTMLEDraggableElement extends HTMLElement {
     {name: "dragged", type: "boolean"},
     {name: "dragovered", type: "boolean"},
     {name: "disabled", type: "boolean"},
-    {name: "ref", type: "string"},
-    {name: "value", type: "string"},
+    {name: "type", type: "string"},
 ])
 class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableElement {
     
@@ -34,8 +34,7 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
     public dragged!: boolean;
     public disabled!: boolean;
 
-    public ref!: string;
-    public value!: string;
+    public type!: string;
 
     constructor() {
         super();
@@ -43,12 +42,13 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
         bindShadowRoot(this, /*template*/`
             <style>
                 :host {
-                    position: relative;
                     display: inline-block;
-                    padding: 2px 4px;
+                    padding: 3px 4px;
+                    cursor: grab;
+                    white-space: nowrap;
                     border-radius: 4px;
                     border: 1px solid black;
-                    cursor: pointer;
+                    user-select: none;
                 }
 
                 :host([disabled]) {
@@ -56,25 +56,37 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
                     color: gray;
                     border-color: gray;
                 }
-
-                :host(:focus),
-                :host([selected]),
-                :host([dragovered]) {
+                
+                :host([selected]) {
                     font-weight: bold;
-                    outline: none;
+                    outline: 1px auto black;
                 }
 
-                slot {
-                    pointer-events: none;
-                    user-select: none;
+                :host(:active) {
+                    cursor: grabbing;
+                }
+
+                :host([dragovered]) {
+                    border-style: dotted;
+                }
+                     
+                ::slotted(e-dropzone) {
+                    display: inline-block;
+                    border-radius: 4px;
                 }
             </style>
-            <slot></slot>
+            <slot>&nbsp;</slot>
         `);
     }
     
     public connectedCallback() {
         this.tabIndex = this.tabIndex;
         this.draggable = true;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-draggable": HTMLEDraggableElement,
     }
 }

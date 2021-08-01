@@ -1,12 +1,7 @@
 import { bindShadowRoot, GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
 
-export { isHTMLELoaderElement };
 export { HTMLELoaderElement };
 export { BaseHTMLELoaderElement };
-
-function isHTMLELoaderElement(obj: any): obj is HTMLELoaderElement {
-    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-loader";
-}
 
 type LoaderType = "bar" | "circle";
 
@@ -127,7 +122,10 @@ class BaseHTMLELoaderElement extends HTMLElement {
             <div part="circle"></div>
         `);
     }
-    
-    public connectedCallback(): void {
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-loader": HTMLELoaderElement,
     }
 }

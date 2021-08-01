@@ -15,10 +15,10 @@ export { AttributeType };
 export { areAttributesMatching };
 export { BaseAttributeMutationMixin };
 export { createMutationObserverCallback };
-export { Property };
+/*export { Property };
 export { CustomHTMLElement };
 export { HTMLEELement };
-
+*/
 function isElement(obj: any): obj is Element {
     return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
 }
@@ -63,7 +63,7 @@ const RegisterCustomHTMLElement: RegisterCustomHTMLElementDecorator = function(a
         return elementCtor;
     }
 }
-
+/*
 interface CustomHTMLElementDecorator {
     (args: {
         name: string;
@@ -186,7 +186,7 @@ class temp extends HTMLEELement {
 }
 
 
-
+*/
 interface GenerateAttributeAccessorsDecorator {
     (attributes: {
         name: string,

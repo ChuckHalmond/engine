@@ -1,5 +1,5 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { isHTMLEMenuItemElement, HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { pointIntersectsWithDOMRect } from "engine/editor/elements/Snippets";
 import { HTMLEMenuElement } from "./Menu";
 
@@ -132,7 +132,7 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
         if (slot) {
             slot.addEventListener("slotchange", () => {
                 const items = slot.assignedElements()
-                    .filter(isHTMLEMenuItemElement);
+                    .filter(item => isTagElement("e-menuitem", item)) as HTMLEMenuItemElement[];
                 this.items = items;
                 items.forEach((item) => {
                     item.group = this;
@@ -187,7 +187,7 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
         
         this.addEventListener("change", (event: Event) => {
             let target = event.target as any;
-            if (isHTMLEMenuItemElement(target)) {
+            if (isTagElement("e-menuitem", target)) {
                 let item = target;
                 if (item.type === "radio" && item.checked) {
                     let newCheckedRadio = item;
@@ -299,5 +299,11 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
             }
         }
         return foundItem;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-menuitemgroup": HTMLEMenuItemGroupElement,
     }
 }

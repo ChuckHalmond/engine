@@ -1,12 +1,7 @@
 import { GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
 
-export { isHTMLEImportElement };
 export { HTMLEImportElement };
 export { BaseHTMLEImportElement };
-
-function isHTMLEImportElement(obj: any): obj is HTMLEImportElement {
-    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-import";
-}
 
 interface HTMLEImportElement extends HTMLElement {
     src: string;
@@ -36,10 +31,22 @@ class BaseHTMLEImportElement extends HTMLElement {
                     throw new Error(response.statusText);
                 }
             });
-            this.dispatchEvent(new Event("loaded"));
+            this.dispatchEvent(new CustomEvent("load"));
         }
         if (this.src) {
             importRequest(this.src);
         }
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-import": HTMLEImportElement,
+    }
+}
+
+declare global {
+    interface HTMLElementEventMap {
+        "load": CustomEvent
     }
 }

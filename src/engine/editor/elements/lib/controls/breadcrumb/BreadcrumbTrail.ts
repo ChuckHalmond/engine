@@ -15,28 +15,27 @@ class HTMLEBreadcrumbTrailElement extends HTMLElement {
 
     public items: HTMLEBreadcrumbItemElement[];
 
-    private activeIndex: number;
-
     constructor() {
         super();
 
         bindShadowRoot(this, /*template*/`
             <style>
+                :host {
+                    display: block;
+                }
+                
                 [part~="ul"] {
                     display: block;
                     list-style-type: none;
                     padding: 0; margin: 0;
                 }
             </style>
-            <button id="backward">backward</button>
-            <button id="forward">forward</button>
             <ul part="ul">
                 <slot></slot>
             </ul>
         `);
 
         this.items = [];
-        this.activeIndex = 0;
     }
 
     public activateItem(item: HTMLEBreadcrumbItemElement) {
@@ -46,7 +45,6 @@ class HTMLEBreadcrumbTrailElement extends HTMLElement {
                 item.active = (index == itemIndex);
                 item.hidden = (index > itemIndex);
             });
-            this.activeIndex = itemIndex;
             let activeItem = this.items[itemIndex];
             activeItem.dispatchEvent(new CustomEvent("activate"));
         }
@@ -61,7 +59,6 @@ class HTMLEBreadcrumbTrailElement extends HTMLElement {
                 const items = slot.assignedElements().filter(isHTMLEBreadcrumbItemElement) as HTMLEBreadcrumbItemElement[];
                 this.items = items;
                 items.forEach((item, index) => {
-                    item.trail = this;
                     item.active = (index === items.length - 1);
                 });
             });

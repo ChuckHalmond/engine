@@ -1,15 +1,10 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { isHTMLEMenuItemElement, HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { pointIntersectsWithDOMRect } from "engine/editor/elements/Snippets";
 import { HTMLEMenuItemGroupElement, isHTMLEMenuItemGroupElement } from "./MenuItemGroup";
 
-export { isHTMLEMenuElement };
 export { HTMLEMenuElement };
 export { BaseHTMLEMenuElement };
-
-function isHTMLEMenuElement(elem: any): elem is HTMLEMenuElement {
-    return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-menu";
-}
 
 interface HTMLEMenuElement extends HTMLElement {
     name: string;
@@ -108,7 +103,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
         if (slot) {
             slot.addEventListener("slotchange", () => {
                 const items = slot.assignedElements().filter(
-                    elem => isHTMLEMenuItemElement(elem) || isHTMLEMenuItemGroupElement(elem)
+                    elem => isTagElement("e-menuitem", elem) || isTagElement("e-menuitemgroup", elem)
                 ) as (HTMLEMenuItemElement | HTMLEMenuItemGroupElement)[];
                 this.items = items;
                 items.forEach((item) => {
@@ -119,7 +114,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
 
         this.addEventListener("mousedown", (event: MouseEvent) => {
             let target = event.target as any;
-            if (isHTMLEMenuItemElement(target)) {
+            if (isTagElement("e-menuitem", target)) {
                 let thisIncludesTarget = this.items.includes(target);
                 if (thisIncludesTarget) {
                     target.trigger();
@@ -135,7 +130,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
                 this.focus();
             } 
             else if (targetIndex >= 0) {
-                if (isHTMLEMenuItemElement(target)) {
+                if (isTagElement("e-menuitem", target)) {
                     this.focusItemAt(targetIndex, true);
                 }
                 else {
@@ -203,7 +198,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
                     event.stopPropagation();
                     break;
                 case "Enter":
-                    if (isHTMLEMenuItemElement(this.activeItem)) {
+                    if (isTagElement("e-menuitem", this.activeItem)) {
                         this.activeItem.trigger();
                         event.stopPropagation();
                     }
@@ -215,7 +210,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
                     if (this.parentItem) {
                         let parentGroup = this.parentItem.group;
                         let parentMenu = parentGroup ? parentGroup.parentMenu : this.parentItem.parentMenu;
-                        if (isHTMLEMenuElement(parentMenu)) {
+                        if (isTagElement("e-menu", parentMenu)) {
                             if (parentGroup) {
                                 parentGroup.focusItemAt(parentGroup.activeIndex);
                             }
@@ -229,7 +224,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
                     break;
                 case "ArrowRight":
                     if (this.items.includes(event.target as any)) {
-                        if (isHTMLEMenuItemElement(this.activeItem) && this.activeItem.childMenu) {
+                        if (isTagElement("e-menuitem", this.activeItem) && this.activeItem.childMenu) {
                             this.activeItem.childMenu.focusItemAt(0);
                             event.stopPropagation();
                         }
@@ -263,7 +258,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
         if (item) {
             this._activeIndex = index;
             item.focus();
-            if (isHTMLEMenuItemElement(item)) {
+            if (isTagElement("e-menuitem", item)) {
                 if (childMenu && item.childMenu) {
                     item.childMenu.focus();
                 }
@@ -284,7 +279,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
     public reset(): void {
         let item = this.activeItem;
         this._activeIndex = -1;
-        if (isHTMLEMenuItemElement(item) && item.childMenu) {
+        if (isTagElement("e-menuitem", item) && item.childMenu) {
             item.childMenu.reset();
         }
     }
@@ -293,7 +288,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
         let foundItem: HTMLEMenuItemElement | HTMLEMenuItemGroupElement | null = null;
         for (let idx = 0; idx < this.items.length; idx++) {
             let item = this.items[idx];
-            if (isHTMLEMenuItemElement(item)) {
+            if (isTagElement("e-menuitem", item)) {
                 if (predicate(item)) {
                     return item;
                 }
@@ -314,9 +309,9 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
         return foundItem;
     }
 }
-/*
+
 declare global {
     interface HTMLElementTagNameMap {
         "e-menu": HTMLEMenuElement,
     }
-}*/
+}

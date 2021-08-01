@@ -90,7 +90,11 @@ define("engine/editor/elements/Snippets", ["require", "exports"], function (requ
 define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLEELement = exports.CustomHTMLElement = exports.Property = exports.createMutationObserverCallback = exports.BaseAttributeMutationMixin = exports.areAttributesMatching = exports.setElementProperties = exports.setElementAttributes = exports.HTMLElementConstructor = exports.bindShadowRoot = exports.createTemplate = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = exports.isTagElement = exports.isElement = void 0;
+    exports.createMutationObserverCallback = exports.BaseAttributeMutationMixin = exports.areAttributesMatching = exports.setElementProperties = exports.setElementAttributes = exports.HTMLElementConstructor = exports.bindShadowRoot = exports.createTemplate = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = exports.isTagElement = exports.isElement = void 0;
+    /*export { Property };
+    export { CustomHTMLElement };
+    export { HTMLEELement };
+    */
     function isElement(obj) {
         return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
     }
@@ -114,97 +118,6 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
         };
     };
     exports.RegisterCustomHTMLElement = RegisterCustomHTMLElement;
-    const CustomHTMLElement = function (args) {
-        return (elementCtor) => {
-            customElements.define(args.name, elementCtor, args.options);
-            return elementCtor;
-        };
-    };
-    exports.CustomHTMLElement = CustomHTMLElement;
-    class HTMLEELement extends HTMLElement {
-        constructor() {
-            super();
-            let prototype = Object.getPrototypeOf(this);
-            this.attachShadow({ mode: "open" });
-        }
-        connectedCallback() {
-            this.dispatchEvent(new CustomEvent("connected"));
-        }
-        disconnectedCallback() {
-            this.dispatchEvent(new CustomEvent("disconnected"));
-        }
-        update() {
-            this.shadowRoot.innerHTML = this.render();
-        }
-        render() {
-            return this.shadowRoot;
-        }
-    }
-    exports.HTMLEELement = HTMLEELement;
-    const Property = function (args) {
-        return (elementPrototype, propertyKey) => {
-            if (args) {
-                Object.defineProperty(elementPrototype, propertyKey, {
-                    set: function (value) {
-                        let propertyHasChanged = true;
-                        if (typeof args !== "undefined" && typeof args.hasChanged === "function") {
-                            propertyHasChanged = args.hasChanged(this[propertyKey], value);
-                        }
-                        else {
-                            propertyHasChanged = (this[propertyKey] !== value);
-                        }
-                        this[propertyKey] = value;
-                        if (args.reflect) {
-                            switch (args.type) {
-                                case "boolean":
-                                    if (value) {
-                                        this.setAttribute(propertyKey, "");
-                                    }
-                                    else {
-                                        this.removeAttribute(propertyKey);
-                                    }
-                                    break;
-                                case "number":
-                                case "string":
-                                    if (typeof value !== "undefined" && value !== null) {
-                                        this.setAttribute(propertyKey, value);
-                                    }
-                                    else {
-                                        this.removeAttribute(propertyKey);
-                                    }
-                                    break;
-                                case "object":
-                                case "array":
-                                    if (typeof value !== "undefined" && value !== null) {
-                                        this.setAttribute(propertyKey, JSON.stringify(value));
-                                    }
-                                    else {
-                                        this.removeAttribute(propertyKey);
-                                    }
-                                    break;
-                            }
-                        }
-                        if (propertyHasChanged) {
-                            this.update();
-                        }
-                    }
-                });
-            }
-        };
-    };
-    exports.Property = Property;
-    let temp = /** @class */ (() => {
-        class temp extends HTMLEELement {
-            constructor() {
-                super(...arguments);
-                this.myprop = "lol";
-            }
-        }
-        __decorate([
-            Property()
-        ], temp.prototype, "myprop", void 0);
-        return temp;
-    })();
     const GenerateAttributeAccessors = function (attributes) {
         return (elementCtor) => {
             attributes.forEach((attr) => {
@@ -393,73 +306,7 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
     }
     exports.createMutationObserverCallback = createMutationObserverCallback;
 });
-define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEDraggableElement = exports.isHTMLEDraggableElement = void 0;
-    function isHTMLEDraggableElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-draggable";
-    }
-    exports.isHTMLEDraggableElement = isHTMLEDraggableElement;
-    let BaseHTMLEDraggableElement = /** @class */ (() => {
-        let BaseHTMLEDraggableElement = class BaseHTMLEDraggableElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_1.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    position: relative;
-                    display: inline-block;
-                    padding: 2px 4px;
-                    border-radius: 4px;
-                    border: 1px solid black;
-                    cursor: pointer;
-                }
-
-                :host([disabled]) {
-                    pointer-events: none;
-                    color: gray;
-                    border-color: gray;
-                }
-
-                :host(:focus),
-                :host([selected]),
-                :host([dragovered]) {
-                    font-weight: bold;
-                    outline: none;
-                }
-
-                slot {
-                    pointer-events: none;
-                    user-select: none;
-                }
-            </style>
-            <slot></slot>
-        `);
-            }
-            connectedCallback() {
-                this.tabIndex = this.tabIndex;
-                this.draggable = true;
-            }
-        };
-        BaseHTMLEDraggableElement = __decorate([
-            HTMLElement_1.RegisterCustomHTMLElement({
-                name: "e-draggable"
-            }),
-            HTMLElement_1.GenerateAttributeAccessors([
-                { name: "selected", type: "boolean" },
-                { name: "dragged", type: "boolean" },
-                { name: "dragovered", type: "boolean" },
-                { name: "disabled", type: "boolean" },
-                { name: "ref", type: "string" },
-                { name: "value", type: "string" },
-            ])
-        ], BaseHTMLEDraggableElement);
-        return BaseHTMLEDraggableElement;
-    })();
-    exports.BaseHTMLEDraggableElement = BaseHTMLEDraggableElement;
-});
-define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Draggable"], function (require, exports, HTMLElement_2, Draggable_1) {
+define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Draggable"], function (require, exports, HTMLElement_1, Draggable_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEDragzoneElement = exports.isHTMLEDragzoneElement = void 0;
@@ -471,29 +318,45 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
         let BaseHTMLEDragzoneElement = class BaseHTMLEDragzoneElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_2.bindShadowRoot(this, /*template*/ `
+                HTMLElement_1.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
-                    display: inline-flex;
-                    flex-direction: column;
-                    vertical-align: top;
+                    display: block;
                 }
 
-                [part~="label"] {
-                    color: gray;
-                    font-size: 0.8em;
+                :host(:focus) {
+                    outline: 1px auto black;
+                }
+
+                :host([disabled]) {
                     pointer-events: none;
                 }
-                
+
+                [part~="container"]:empty {
+                    display: none !important;
+                }
+
+                [part~="container"] {
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    padding: 2px;
+                }
+
                 ::slotted(e-draggable:not(:only-child)) {
                     margin-top: 2px;
                     margin-bottom: 2px;
                 }
             </style>
-            <span part="label"/></span>
-            <slot id="draggables"></slot>
+            <div part="container">
+                <span part="label"/></span>
+                <slot></slot>
+            </div>
         `);
                 this.draggables = [];
+            }
+            get selectedDraggables() {
+                return this.draggables.filter(draggable => draggable.selected);
             }
             connectedCallback() {
                 var _a;
@@ -503,87 +366,174 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
                     slot.addEventListener("slotchange", () => {
                         const draggables = slot.assignedElements().filter(elem => Draggable_1.isHTMLEDraggableElement(elem));
                         this.draggables = draggables;
+                        this.draggables.forEach((draggable) => {
+                            draggable.draggable = true;
+                        });
                     });
                 }
-                this.addEventListener("dragstart", () => {
-                    let thisSelectedDraggables = this.draggables.filter(draggable => draggable.selected);
-                    thisSelectedDraggables.forEach((thisSelectedDraggable) => {
-                        thisSelectedDraggable.dragged = true;
-                    });
+                this.addEventListener("keydown", (event) => {
+                    switch (event.key) {
+                        case "Escape":
+                            this.selectedDraggables.forEach(draggable => draggable.selected = false);
+                            this.focus();
+                            break;
+                    }
                 });
-                this.addEventListener("dragend", () => {
-                    let thisDraggedDraggables = this.draggables.filter(draggable => draggable.dragged);
-                    thisDraggedDraggables.forEach((thisDraggedDraggable) => {
-                        thisDraggedDraggable.dragged = false;
-                    });
+                this.addEventListener("dragstart", (event) => {
+                    let target = event.target;
+                    if (this.draggables.includes(target)) {
+                        this.selectedDraggables.forEach((thisSelectedDraggable) => {
+                            thisSelectedDraggable.dragged = true;
+                        });
+                        let dataTransfer = event.dataTransfer;
+                        if (dataTransfer) {
+                            dataTransfer.setData("text/plain", this.id);
+                        }
+                    }
+                });
+                this.addEventListener("dragend", (event) => {
+                    let target = event.target;
+                    if (this.draggables.includes(target)) {
+                        let thisDraggedDraggables = this.draggables.filter(draggable => draggable.dragged);
+                        thisDraggedDraggables.forEach((thisDraggedDraggable) => {
+                            thisDraggedDraggable.dragged = false;
+                        });
+                    }
                 });
                 this.addEventListener("focusout", (event) => {
                     let relatedTarget = event.relatedTarget;
-                    if (this == relatedTarget || !this.contains(relatedTarget)) {
-                        this.draggables.forEach((thisSelectedDraggable) => {
-                            thisSelectedDraggable.selected = false;
+                    if (!this.contains(relatedTarget)) {
+                        this.draggables.forEach((thisDraggable) => {
+                            thisDraggable.selected = false;
                         });
                     }
                 });
                 this.addEventListener("mousedown", (event) => {
                     let target = event.target;
-                    if (this.draggables.includes(target)) {
-                        if (!event.shiftKey) {
-                            if (!target.selected) {
-                                this.draggables.forEach((thisDraggable) => {
-                                    thisDraggable.selected = (thisDraggable == target);
+                    if (event.button === 0) {
+                        if (this.draggables.includes(target)) {
+                            if (!event.shiftKey) {
+                                if (!target.selected) {
+                                    this.draggables.forEach((thisDraggable) => {
+                                        thisDraggable.selected = (thisDraggable == target);
+                                    });
+                                }
+                                if (event.ctrlKey) {
+                                    target.selected = !target.selected;
+                                }
+                            }
+                            else {
+                                let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
+                                let endRangeIndex = Math.max(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
+                                this.draggables.forEach((thisDraggable, thisDraggableIndex) => {
+                                    thisDraggable.selected = (thisDraggableIndex >= startRangeIndex && thisDraggableIndex <= endRangeIndex);
                                 });
+                                target.selected = true;
                             }
                         }
                         else {
-                            target.selected = true;
+                            this.draggables.forEach((thisDraggable) => {
+                                thisDraggable.selected = false;
+                            });
                         }
                     }
                 });
                 this.addEventListener("mouseup", (event) => {
                     let target = event.target;
-                    if (this.draggables.includes(target)) {
-                        if (!event.shiftKey) {
-                            this.draggables.forEach((thisDraggable) => {
-                                thisDraggable.selected = (thisDraggable == target);
-                            });
+                    if (event.button === 0) {
+                        if (this.draggables.includes(target)) {
+                            if (!event.shiftKey && !event.ctrlKey) {
+                                this.draggables.forEach((thisDraggable) => {
+                                    thisDraggable.selected = (thisDraggable == target);
+                                });
+                            }
                         }
                     }
                 });
             }
-            attributeChangedCallback(name, oldValue, newValue) {
-                var _a;
-                if (newValue !== oldValue) {
-                    switch (name) {
-                        case "label":
-                            if (oldValue !== newValue) {
-                                const labelPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
-                                if (labelPart) {
-                                    labelPart.textContent = newValue;
-                                }
-                            }
-                            break;
-                    }
-                }
-            }
         };
         BaseHTMLEDragzoneElement = __decorate([
-            HTMLElement_2.RegisterCustomHTMLElement({
-                name: "e-dragzone",
-                observedAttributes: ["label"]
-            }),
-            HTMLElement_2.GenerateAttributeAccessors([
-                { name: "dragovered", type: "boolean" },
-                { name: "label", type: "string" },
-                { name: "allowedtypes", type: "string" },
-                { name: "multiple", type: "boolean" },
-            ])
+            HTMLElement_1.RegisterCustomHTMLElement({
+                name: "e-dragzone"
+            })
         ], BaseHTMLEDragzoneElement);
         return BaseHTMLEDragzoneElement;
     })();
     exports.BaseHTMLEDragzoneElement = BaseHTMLEDragzoneElement;
 });
-define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone"], function (require, exports, HTMLElement_3, Draggable_2, Dragzone_1) {
+define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEDraggableElement = exports.isHTMLEDraggableElement = void 0;
+    function isHTMLEDraggableElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-draggable";
+    }
+    exports.isHTMLEDraggableElement = isHTMLEDraggableElement;
+    let BaseHTMLEDraggableElement = /** @class */ (() => {
+        let BaseHTMLEDraggableElement = class BaseHTMLEDraggableElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_2.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: inline-block;
+                    padding: 3px 4px;
+                    cursor: grab;
+                    white-space: nowrap;
+                    border-radius: 4px;
+                    border: 1px solid black;
+                    user-select: none;
+                }
+
+                :host([disabled]) {
+                    pointer-events: none;
+                    color: gray;
+                    border-color: gray;
+                }
+                
+                :host([selected]) {
+                    font-weight: bold;
+                    outline: 1px auto black;
+                }
+
+                :host(:active) {
+                    cursor: grabbing;
+                }
+
+                :host([dragovered]) {
+                    border-style: dotted;
+                }
+                     
+                ::slotted(e-dropzone) {
+                    display: inline-block;
+                    border-radius: 4px;
+                }
+            </style>
+            <slot>&nbsp;</slot>
+        `);
+            }
+            connectedCallback() {
+                this.tabIndex = this.tabIndex;
+                this.draggable = true;
+            }
+        };
+        BaseHTMLEDraggableElement = __decorate([
+            HTMLElement_2.RegisterCustomHTMLElement({
+                name: "e-draggable"
+            }),
+            HTMLElement_2.GenerateAttributeAccessors([
+                { name: "selected", type: "boolean" },
+                { name: "dragged", type: "boolean" },
+                { name: "dragovered", type: "boolean" },
+                { name: "disabled", type: "boolean" },
+                { name: "type", type: "string" },
+            ])
+        ], BaseHTMLEDraggableElement);
+        return BaseHTMLEDraggableElement;
+    })();
+    exports.BaseHTMLEDraggableElement = BaseHTMLEDraggableElement;
+});
+define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Draggable"], function (require, exports, HTMLElement_3, Draggable_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEDropzoneElement = exports.isHTMLEDropzoneElement = void 0;
@@ -592,164 +542,309 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
     }
     exports.isHTMLEDropzoneElement = isHTMLEDropzoneElement;
     let BaseHTMLEDropzoneElement = /** @class */ (() => {
-        let BaseHTMLEDropzoneElement = class BaseHTMLEDropzoneElement extends Dragzone_1.BaseHTMLEDragzoneElement {
+        let BaseHTMLEDropzoneElement = class BaseHTMLEDropzoneElement extends HTMLElement {
             constructor() {
-                var _a, _b;
                 super();
-                (_a = this.shadowRoot.querySelector("style")) === null || _a === void 0 ? void 0 : _a.insertAdjacentHTML("beforeend", 
-                /*css*/ `
+                HTMLElement_3.bindShadowRoot(this, /*html*/ `
+            <style>
                 :host {
-                    min-width: 120px;
-                    min-height: 1.5em;
-                    padding: 2px;
+                    display: block;
                     border: 1px dashed gray;
+                    cursor: pointer;
                 }
 
-                :host([dragovered]) {
-                    border-color: transparent;
+                :host(:focus) {
                     outline: 1px auto black;
                 }
 
-                ::slotted([slot="input"]) {
-                    display: none;
+                :host([disabled]) {
+                    pointer-events: none;
                 }
+
+                :host(:empty) [part~="container"] {
+                    display: none !important;
+                }
+
+                [part~="container"] {
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    padding: 2px;
+                }
+
+                ::slotted(e-draggable:not(:only-child)) {
+                    margin-top: 2px;
+                    margin-bottom: 2px;
+                }
+
+                :host(:not([multiple]):not(:empty)) [part="appendarea"],
+                :host(:not(:empty):not([dragovered])) [part="appendarea"] {
+                    display: none !important;
+                }
+
+                [part="appendarea"] {
+                    display: block;
+                    margin: 2px;
+                    border-radius: 4px;
+                    border: 1px dotted black;
+                }
+
+                :host(:not([dragovered="appendarea"])) [part="appendarea"] {
+                    border-color: transparent;
+                }
+                
+                [part="placeholder"] {
+                    display: inline-block;
+                    color: grey;
+                    pointer-events: none;
+                }
+            </style>
+            <div part="container">
+                <slot></slot>
+            </div>
+            <div part="appendarea">
+                <span part="placeholder">&nbsp;</span>
+            </div>
             `);
-                (_b = this.shadowRoot.querySelector("slot#draggables")) === null || _b === void 0 ? void 0 : _b.insertAdjacentHTML("afterend", 
-                /*template*/ `
-                <slot name="input"></slot>
-            `);
+                this.draggables = [];
                 this.droptest = null;
             }
+            get selectedDraggables() {
+                return this.draggables.filter(draggable => draggable.selected);
+            }
             connectedCallback() {
-                super.connectedCallback();
-                const inputSlot = this.shadowRoot.querySelector("slot[name='input']");
-                if (inputSlot) {
-                    inputSlot.addEventListener("slotchange", () => {
-                        const input = inputSlot.assignedElements()[0];
-                        if (HTMLElement_3.isTagElement("input", input)) {
-                            this.addEventListener("datatransfer", (() => {
-                                let thisDraggables = Array.from(this.querySelectorAll("e-draggable"));
-                                input.value = `[${thisDraggables.map(draggable => (draggable.value)).filter(draggable => draggable !== null).join(", ")}]`;
-                            }));
-                            this.addEventListener("dataclear", (() => {
-                                let thisDraggables = Array.from(this.querySelectorAll("e-draggable"));
-                                input.value = `[${thisDraggables.map(draggable => draggable.value).filter(draggable => draggable !== null).join(", ")}]`;
-                            }));
-                        }
+                var _a;
+                this.tabIndex = this.tabIndex;
+                const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
+                if (slot) {
+                    slot.addEventListener("slotchange", () => {
+                        const draggables = slot.assignedElements().filter(elem => Draggable_2.isHTMLEDraggableElement(elem));
+                        this.draggables = draggables;
+                        this.draggables.forEach((draggable) => {
+                            draggable.draggable = false;
+                        });
                     });
                 }
+                const appendAreaPart = this.shadowRoot.querySelector("[part='appendarea']");
                 this.addEventListener("keydown", (event) => {
                     switch (event.key) {
                         case "Delete":
-                            let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                            if (selectedDraggables.length == 0) {
-                                this.removeDraggables(this.draggables);
-                            }
-                            else {
+                            let selectedDraggables = this.draggables.filter(draggable => draggable.selected);
+                            if (selectedDraggables.length > 0) {
                                 this.removeDraggables(selectedDraggables);
+                            }
+                            else if (this == event.target) {
+                                this.removeDraggables(this.draggables);
                             }
                             event.stopPropagation();
                             break;
+                        case "Escape":
+                            this.selectedDraggables.forEach(draggable => draggable.selected = false);
+                            this.focus();
+                            break;
+                    }
+                });
+                this.addEventListener("focusout", (event) => {
+                    let relatedTarget = event.relatedTarget;
+                    if (!this.contains(relatedTarget)) {
+                        this.draggables.forEach((thisDraggable) => {
+                            thisDraggable.selected = false;
+                        });
+                    }
+                });
+                this.addEventListener("mousedown", (event) => {
+                    let target = event.target;
+                    if (event.button === 0) {
+                        if (this.draggables.includes(target)) {
+                            if (!event.shiftKey) {
+                                if (!target.selected) {
+                                    this.draggables.forEach((thisDraggable) => {
+                                        thisDraggable.selected = (thisDraggable == target);
+                                    });
+                                }
+                                if (event.ctrlKey) {
+                                    target.selected = !target.selected;
+                                }
+                            }
+                            else {
+                                let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
+                                let endRangeIndex = Math.max(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
+                                this.draggables.forEach((thisDraggable, thisDraggableIndex) => {
+                                    thisDraggable.selected = (thisDraggableIndex >= startRangeIndex && thisDraggableIndex <= endRangeIndex);
+                                });
+                                target.selected = true;
+                            }
+                        }
+                        else {
+                            this.draggables.forEach((thisDraggable) => {
+                                thisDraggable.selected = false;
+                            });
+                        }
+                    }
+                });
+                this.addEventListener("mouseup", (event) => {
+                    let target = event.target;
+                    if (event.button === 0) {
+                        if (this.draggables.includes(target)) {
+                            if (!event.shiftKey && !event.ctrlKey) {
+                                this.draggables.forEach((thisDraggable) => {
+                                    thisDraggable.selected = (thisDraggable == target);
+                                });
+                            }
+                        }
                     }
                 });
                 this.addEventListener("dragover", (event) => {
                     event.preventDefault();
                 });
+                this.shadowRoot.addEventListener("dragover", (event) => {
+                    event.preventDefault();
+                });
                 this.addEventListener("dragenter", (event) => {
                     let target = event.target;
-                    if (Draggable_2.isHTMLEDraggableElement(target)) {
+                    if (this.draggables.includes(target)) {
                         target.dragovered = true;
+                        this.dragovered = "draggable";
                     }
-                    this.dragovered = true;
+                    else {
+                        this.dragovered = "self";
+                    }
+                    event.preventDefault();
+                });
+                this.shadowRoot.addEventListener("dragenter", (event) => {
+                    let target = event.target;
+                    if (target == appendAreaPart) {
+                        this.dragovered = "appendarea";
+                    }
                     event.preventDefault();
                 });
                 this.addEventListener("dragleave", (event) => {
                     let relatedTarget = event.relatedTarget;
                     let target = event.target;
-                    if (Draggable_2.isHTMLEDraggableElement(target)) {
-                        target.dragovered = false;
+                    if (target == this || this.draggables.includes(target)) {
+                        if (target == this) {
+                            if (appendAreaPart) {
+                                this.dragovered = "self";
+                            }
+                            if (!this.draggables.includes(relatedTarget)) {
+                                this.dragovered = null;
+                            }
+                        }
+                        else {
+                            target.dragovered = false;
+                        }
                     }
-                    if (!(this.contains(relatedTarget) || this.shadowRoot.contains(relatedTarget))) {
-                        this.dragovered = false;
+                    event.preventDefault();
+                });
+                this.shadowRoot.addEventListener("dragleave", (event) => {
+                    let target = event.target;
+                    if (target == appendAreaPart) {
+                        this.dragovered = "self";
                     }
                     event.preventDefault();
                 });
                 this.addEventListener("drop", (event) => {
-                    let selectedDraggables = Array.from(document.querySelectorAll("e-draggable[selected]"));
-                    let dropIndex = this.draggables.length;
                     let target = event.target;
-                    if (Draggable_2.isHTMLEDraggableElement(target)) {
-                        target.dragovered = false;
-                        dropIndex = this.draggables.indexOf(target);
+                    if (target == this || this.draggables.includes(target)) {
+                        let dropIndex = this.draggables.length;
+                        if (target == this) {
+                            this.dragovered = null;
+                        }
+                        else {
+                            target.dragovered = false;
+                            dropIndex = this.draggables.indexOf(target);
+                        }
+                        let dataTransfer = event.dataTransfer;
+                        if (dataTransfer) {
+                            let dragzoneId = dataTransfer.getData("text/plain");
+                            let dragzone = document.getElementById(dragzoneId);
+                            if (dragzone) {
+                                let selectedDraggables = dragzone.selectedDraggables;
+                                if (selectedDraggables) {
+                                    selectedDraggables.forEach((selectedDraggable) => {
+                                        selectedDraggable.dragged = false;
+                                        selectedDraggable.selected = false;
+                                    });
+                                    this.addDraggables(selectedDraggables, dropIndex);
+                                }
+                            }
+                        }
                     }
-                    selectedDraggables.forEach((selectedDraggable) => {
-                        selectedDraggable.dragged = false;
-                        selectedDraggable.selected = false;
-                    });
-                    this.addDraggables(selectedDraggables, dropIndex);
-                    this.dragovered = false;
+                    this.dragovered = null;
                     event.preventDefault();
                 });
             }
+            attributeChangedCallback(name, oldValue, newValue) {
+                var _a;
+                if (newValue !== oldValue) {
+                    switch (name) {
+                        case "placeholder":
+                            if (oldValue !== newValue) {
+                                const placeholderPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=placeholder]");
+                                if (placeholderPart) {
+                                    placeholderPart.textContent = newValue;
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
             addDraggables(draggables, position) {
                 if (draggables.length > 0) {
-                    let lastDraggable = draggables[draggables.length - 1];
+                    let firstDraggable = draggables[0];
                     let dataTransferSuccess = true;
                     let dataTransferStatusText = "";
                     try {
-                        draggables.forEach((draggable) => {
-                            if (this.droptest) {
-                                this.droptest(draggable);
-                            }
-                        });
+                        if (this.droptest) {
+                            this.droptest(draggables);
+                        }
                     }
                     catch (error) {
                         dataTransferStatusText = error.message;
                         dataTransferSuccess = false;
                     }
+                    let newDraggables = [];
                     let insertionIndex = -1;
                     if (dataTransferSuccess) {
                         if (this.multiple) {
                             draggables.forEach((draggable) => {
-                                let draggableRef = this.draggables.includes(draggable) ? draggable : draggable.cloneNode(true);
+                                let newDraggable = draggable.cloneNode(true);
                                 if (position > -1 && position < this.draggables.length) {
-                                    let refIndex = this.draggables.indexOf(draggableRef);
-                                    if (refIndex > -1) {
-                                        this.draggables[position].insertAdjacentElement(refIndex > position ? "beforebegin" : "afterend", draggableRef);
-                                    }
-                                    else {
-                                        this.draggables[position].insertAdjacentElement("beforebegin", draggableRef);
-                                    }
+                                    this.draggables[position].insertAdjacentElement("beforebegin", newDraggable);
                                     insertionIndex = (insertionIndex < 0) ? position : insertionIndex;
                                 }
                                 else {
-                                    this.appendChild(draggableRef);
+                                    this.appendChild(newDraggable);
                                     insertionIndex = (insertionIndex < 0) ? this.draggables.length - 1 : insertionIndex;
                                 }
+                                newDraggables.push(newDraggable);
                             });
                         }
                         else {
-                            let draggableRef = this.draggables.includes(lastDraggable) ? lastDraggable : lastDraggable.cloneNode(true);
+                            let newDraggable = firstDraggable.cloneNode(true);
                             if (this.draggables.length > 0) {
-                                this.replaceChild(draggableRef, this.draggables[this.draggables.length - 1]);
+                                this.replaceChild(newDraggable, this.draggables[0]);
                             }
                             else {
-                                this.appendChild(draggableRef);
+                                this.appendChild(newDraggable);
                             }
+                            newDraggables.push(newDraggable);
                             insertionIndex = 0;
                         }
                     }
                     let dataTransferEvent = new CustomEvent("datatransfer", {
                         bubbles: true,
                         detail: {
-                            draggables: draggables,
+                            draggables: newDraggables,
                             position: insertionIndex,
                             success: dataTransferSuccess,
                             statusText: dataTransferStatusText,
                         }
                     });
                     this.dispatchEvent(dataTransferEvent);
+                    return newDraggables;
                 }
+                return null;
             }
             removeDraggables(draggables) {
                 let thisDraggables = Array.from(this.children).filter(Draggable_2.isHTMLEDraggableElement);
@@ -763,11 +858,15 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
         };
         BaseHTMLEDropzoneElement = __decorate([
             HTMLElement_3.RegisterCustomHTMLElement({
-                name: "e-dropzone"
+                name: "e-dropzone",
+                observedAttributes: ["placeholder", "label"]
             }),
             HTMLElement_3.GenerateAttributeAccessors([
-                { name: "dragovered", type: "boolean" },
+                { name: "dragovered", type: "string" },
+                { name: "placeholder", type: "string" },
+                { name: "disabled", type: "boolean" },
                 { name: "multiple", type: "boolean" },
+                { name: "label", type: "string" },
             ])
         ], BaseHTMLEDropzoneElement);
         return BaseHTMLEDropzoneElement;
@@ -1496,199 +1595,10 @@ define("engine/resources/ResourceFetcher", ["require", "exports", "engine/resour
     });
     exports.ResourceFetcher = ResourceFetcher;
 });
-define("engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker", ["require", "exports"], function (require, exports) {
+define("engine/editor/elements/lib/containers/menus/MenuBar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SingleTopicMessageBrokerBase = exports.SingleTopicMessageBroker = void 0;
-    ;
-    class SingleTopicMessageBrokerBase {
-        constructor() {
-            this._subscriptions = [];
-        }
-        hasSubscriptions() {
-            return this._subscriptions.length > 0;
-        }
-        subscribe(subscription) {
-            const index = this._subscriptions.indexOf(subscription);
-            if (index < 0) {
-                this._subscriptions.push(subscription);
-            }
-            return subscription;
-        }
-        unsubscribe(subscription) {
-            const index = this._subscriptions.indexOf(subscription);
-            if (index > -1) {
-                this._subscriptions.splice(index, 1);
-            }
-            return this._subscriptions.length;
-        }
-        publish(message) {
-            for (const subscription of this._subscriptions) {
-                subscription(message);
-            }
-        }
-    }
-    exports.SingleTopicMessageBrokerBase = SingleTopicMessageBrokerBase;
-    const SingleTopicMessageBroker = SingleTopicMessageBrokerBase;
-    exports.SingleTopicMessageBroker = SingleTopicMessageBroker;
-});
-define("engine/core/logger/Logger", ["require", "exports", "engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker"], function (require, exports, SingleTopicMessageBroker_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.LoggerBase = exports.Logger = exports.LogLevel = void 0;
-    var LogLevel;
-    (function (LogLevel) {
-        LogLevel[LogLevel["DEBUG"] = 0] = "DEBUG";
-        LogLevel[LogLevel["ERROR"] = 1] = "ERROR";
-        LogLevel[LogLevel["INFO"] = 2] = "INFO";
-        LogLevel[LogLevel["LOG"] = 3] = "LOG";
-        LogLevel[LogLevel["WARN"] = 4] = "WARN";
-    })(LogLevel || (LogLevel = {}));
-    exports.LogLevel = LogLevel;
-    class LoggerBase {
-        constructor() {
-            this._broker = new SingleTopicMessageBroker_1.SingleTopicMessageBroker();
-        }
-        log(message) {
-            const level = LogLevel.LOG;
-            message = this.formatMessage(level, message);
-            console.log(message);
-            this._onLog(level, message);
-        }
-        info(message) {
-            const level = LogLevel.INFO;
-            message = this.formatMessage(level, message);
-            console.info(message);
-            this._onLog(level, message);
-        }
-        warn(message) {
-            const level = LogLevel.WARN;
-            message = this.formatMessage(level, message);
-            console.warn(message);
-            this._onLog(level, message);
-        }
-        debug(message) {
-            const level = LogLevel.DEBUG;
-            message = this.formatMessage(level, message);
-            console.debug(message);
-            this._onLog(level, message);
-        }
-        error(message) {
-            const level = LogLevel.ERROR;
-            message = this.formatMessage(level, message);
-            console.error(message);
-            this._onLog(level, message);
-        }
-        _onLog(level, message) {
-            this._broker.publish({ level: level, message: message });
-        }
-        subscribe(subscription) {
-            return this._broker.subscribe(subscription);
-        }
-        unsubscribe(subscription) {
-            return this._broker.unsubscribe(subscription);
-        }
-        formatMessage(level, message) {
-            const time = this.getTimestamp();
-            return `[${time}] ${message}`;
-        }
-        getTimestamp() {
-            return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "numeric", second: "numeric", hour12: false });
-        }
-    }
-    exports.LoggerBase = LoggerBase;
-    const Logger = new LoggerBase();
-    exports.Logger = Logger;
-});
-define("engine/resources/Resources", ["require", "exports", "engine/resources/ResourceFetcher", "engine/core/logger/Logger"], function (require, exports, ResourceFetcher_1, Logger_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Resources = void 0;
-    function extractExtension(filename) {
-        return filename.substring(filename.lastIndexOf('.') + 1);
-    }
-    const imageExtensions = ['png', 'jpg'];
-    const textExtensions = ['txt', 'md', 'vert', 'frag', 'glsl', 'json', 'html', 'css'];
-    class ResourcesBase {
-        constructor(folder) {
-            this.folder = folder || '';
-            this.resources = new Map();
-        }
-        get(file) {
-            const resource = this.resources.get(file);
-            if (typeof resource === 'undefined') {
-                Logger_1.Logger.error(`Unknown resource '${file}'.`);
-                return null;
-            }
-            return resource;
-        }
-        toString() {
-            return `[\n\t\'${Array.from(this.resources.keys()).join("\',\n\t\'")}\'\n]`;
-        }
-        async load(path) {
-            let url = this.folder.concat(path);
-            const fetchResource = async function (path, url, map) {
-                const fileExt = extractExtension(path);
-                let file;
-                try {
-                    if (imageExtensions.includes(fileExt)) {
-                        file = await ResourceFetcher_1.ResourceFetcher.fetchImage(url);
-                    }
-                    else if (textExtensions.includes(fileExt)) {
-                        file = await ResourceFetcher_1.ResourceFetcher.fetchTextFile(url);
-                    }
-                }
-                catch (e) {
-                    Logger_1.Logger.error(`Resource item '${url}' not found.`);
-                    return;
-                }
-                map.set(path, file);
-            };
-            await fetchResource(path, url, this.resources);
-        }
-        async loadList(path) {
-            let url = this.folder.concat(path);
-            let resources;
-            try {
-                resources = await ResourceFetcher_1.ResourceFetcher.fetchJSON(url);
-            }
-            catch (e) {
-                Logger_1.Logger.error(`Resources list '${url}' not found.`);
-                return;
-            }
-            const fetchResource = async function (resource, folder, map) {
-                const fileExt = extractExtension(resource);
-                let file;
-                try {
-                    if (imageExtensions.includes(fileExt)) {
-                        file = await ResourceFetcher_1.ResourceFetcher.fetchImage(folder.concat(resource));
-                    }
-                    else if (textExtensions.includes(fileExt)) {
-                        file = await ResourceFetcher_1.ResourceFetcher.fetchTextFile(folder.concat(resource));
-                    }
-                }
-                catch (e) {
-                    Logger_1.Logger.error(`Resource item '${url}' not found.`);
-                    return;
-                }
-                map.set(resource, file);
-            };
-            for (const resource of resources.list) {
-                await fetchResource(resource, this.folder, this.resources);
-            }
-        }
-    }
-    const Resources = ResourcesBase;
-    exports.Resources = Resources;
-});
-define("engine/editor/elements/lib/containers/menus/MenuBar", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem"], function (require, exports, HTMLElement_5, MenuItem_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEMenuBarElement = exports.isHTMLEMenuBarElement = void 0;
-    function isHTMLEMenuBarElement(elem) {
-        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menubar";
-    }
-    exports.isHTMLEMenuBarElement = isHTMLEMenuBarElement;
+    exports.BaseHTMLEMenuBarElement = void 0;
     let BaseHTMLEMenuBarElement = /** @class */ (() => {
         let BaseHTMLEMenuBarElement = class BaseHTMLEMenuBarElement extends HTMLElement {
             constructor() {
@@ -1699,8 +1609,6 @@ define("engine/editor/elements/lib/containers/menus/MenuBar", ["require", "expor
                     display: flex;
                     position: relative; 
                     user-select: none;
-
-                    background-color: white;
                 }
 
                 :host(:focus) {
@@ -1739,7 +1647,7 @@ define("engine/editor/elements/lib/containers/menus/MenuBar", ["require", "expor
                 if (slot) {
                     slot.addEventListener("slotchange", () => {
                         const items = slot.assignedElements()
-                            .filter(MenuItem_1.isHTMLEMenuItemElement);
+                            .filter(item => HTMLElement_5.isTagElement("e-menuitem", item));
                         this.items = items;
                         items.forEach((item) => {
                             item.parentMenu = this;
@@ -2071,7 +1979,7 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
     })();
     exports.HTMLEStatusBarElement = HTMLEStatusBarElement;
 });
-define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_8, MenuItem_2, Snippets_2) {
+define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_8, Snippets_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
@@ -2155,7 +2063,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", 
                 if (slot) {
                     slot.addEventListener("slotchange", () => {
                         const items = slot.assignedElements()
-                            .filter(MenuItem_2.isHTMLEMenuItemElement);
+                            .filter(item => HTMLElement_8.isTagElement("e-menuitem", item));
                         this.items = items;
                         items.forEach((item) => {
                             item.group = this;
@@ -2199,7 +2107,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", 
                 });
                 this.addEventListener("change", (event) => {
                     let target = event.target;
-                    if (MenuItem_2.isHTMLEMenuItemElement(target)) {
+                    if (HTMLElement_8.isTagElement("e-menuitem", target)) {
                         let item = target;
                         if (item.type === "radio" && item.checked) {
                             let newCheckedRadio = item;
@@ -2419,7 +2327,7 @@ define("engine/editor/templates/menus/MenubarTemplate", ["require", "exports", "
     };
     exports.HTMLEMenubarTemplate = HTMLEMenubarTemplate;
 });
-define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/commands/Command", "engine/libs/patterns/messaging/events/EventDispatcher", "engine/resources/ResourceFetcher", "engine/editor/elements/Snippets", "engine/editor/templates/menus/MenubarTemplate"], function (require, exports, Command_1, EventDispatcher_1, ResourceFetcher_2, Snippets_3, MenubarTemplate_1) {
+define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/commands/Command", "engine/libs/patterns/messaging/events/EventDispatcher", "engine/resources/ResourceFetcher", "engine/editor/elements/Snippets", "engine/editor/templates/menus/MenubarTemplate"], function (require, exports, Command_1, EventDispatcher_1, ResourceFetcher_1, Snippets_3, MenubarTemplate_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EditorBase = exports.editor = void 0;
@@ -2438,10 +2346,8 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
             this._redoCommandsCallStack = [];
             this.menubar = null;
             this.statusbar = null;
-            this._selection = null;
             this._state = {};
             this._stateListeners = new Map();
-            this._focusListeners = [];
         }
         get context() {
             return this._context;
@@ -2462,7 +2368,7 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
             return Promise.all([
                 new Promise((resolve, reject) => {
                     if (menubarContainer) {
-                        ResourceFetcher_2.ResourceFetcher.fetchJSON("assets/editor/editor.json").then((menubarTemplate) => {
+                        ResourceFetcher_1.ResourceFetcher.fetchJSON("assets/editor/editor.json").then((menubarTemplate) => {
                             const menubar = MenubarTemplate_1.HTMLEMenubarTemplate(menubarTemplate);
                             this.menubar = menubar;
                             menubarContainer.append(menubar);
@@ -2474,7 +2380,7 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
                     }
                 }),
                 new Promise((resolve) => {
-                    ResourceFetcher_2.ResourceFetcher.fetchJSON("assets/editor/state.json").then((state) => {
+                    ResourceFetcher_1.ResourceFetcher.fetchJSON("assets/editor/state.json").then((state) => {
                         const keys = Object.keys(state);
                         keys.forEach((key) => {
                             this.setState(key, state[key]);
@@ -2486,7 +2392,7 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
         }
         reloadState() {
             return new Promise((resolve) => {
-                ResourceFetcher_2.ResourceFetcher.fetchJSON("assets/editor/state.json").then((state) => {
+                ResourceFetcher_1.ResourceFetcher.fetchJSON("assets/editor/state.json").then((state) => {
                     const keys = Object.keys(state);
                     keys.forEach((key) => {
                         this.setState(key, state[key]);
@@ -2618,14 +2524,10 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
     var editor = new EditorBase();
     exports.editor = editor;
 });
-define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "exports", "engine/core/input/Input", "engine/editor/Editor", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/Menu"], function (require, exports, Input_2, Editor_2, HTMLElement_13, Menu_1) {
+define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "exports", "engine/core/input/Input", "engine/editor/Editor", "engine/editor/elements/HTMLElement"], function (require, exports, Input_2, Editor_2, HTMLElement_13) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEMenuItemElement = exports.isHTMLEMenuItemElement = void 0;
-    function isHTMLEMenuItemElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-menuitem";
-    }
-    exports.isHTMLEMenuItemElement = isHTMLEMenuItemElement;
+    exports.BaseHTMLEMenuItemElement = void 0;
     let BaseHTMLEMenuItemElement = /** @class */ (() => {
         let BaseHTMLEMenuItemElement = class BaseHTMLEMenuItemElement extends HTMLElement {
             constructor() {
@@ -2843,7 +2745,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                 if (menuSlot) {
                     menuSlot.addEventListener("slotchange", () => {
                         const menuElem = menuSlot.assignedElements()[0];
-                        if (Menu_1.isHTMLEMenuElement(menuElem)) {
+                        if (HTMLElement_13.isTagElement("e-menu", menuElem)) {
                             this.childMenu = menuElem;
                             menuElem.parentItem = this;
                         }
@@ -2963,14 +2865,10 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
     })();
     exports.BaseHTMLEMenuItemElement = BaseHTMLEMenuItemElement;
 });
-define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/menus/MenuItemGroup"], function (require, exports, HTMLElement_14, MenuItem_3, Snippets_4, MenuItemGroup_1) {
+define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/menus/MenuItemGroup"], function (require, exports, HTMLElement_14, Snippets_4, MenuItemGroup_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEMenuElement = exports.isHTMLEMenuElement = void 0;
-    function isHTMLEMenuElement(elem) {
-        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menu";
-    }
-    exports.isHTMLEMenuElement = isHTMLEMenuElement;
+    exports.BaseHTMLEMenuElement = void 0;
     let BaseHTMLEMenuElement = /** @class */ (() => {
         let BaseHTMLEMenuElement = class BaseHTMLEMenuElement extends HTMLElement {
             constructor() {
@@ -3030,7 +2928,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                 const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
                 if (slot) {
                     slot.addEventListener("slotchange", () => {
-                        const items = slot.assignedElements().filter(elem => MenuItem_3.isHTMLEMenuItemElement(elem) || MenuItemGroup_1.isHTMLEMenuItemGroupElement(elem));
+                        const items = slot.assignedElements().filter(elem => HTMLElement_14.isTagElement("e-menuitem", elem) || HTMLElement_14.isTagElement("e-menuitemgroup", elem));
                         this.items = items;
                         items.forEach((item) => {
                             item.parentMenu = this;
@@ -3039,7 +2937,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                 }
                 this.addEventListener("mousedown", (event) => {
                     let target = event.target;
-                    if (MenuItem_3.isHTMLEMenuItemElement(target)) {
+                    if (HTMLElement_14.isTagElement("e-menuitem", target)) {
                         let thisIncludesTarget = this.items.includes(target);
                         if (thisIncludesTarget) {
                             target.trigger();
@@ -3054,7 +2952,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                         this.focus();
                     }
                     else if (targetIndex >= 0) {
-                        if (MenuItem_3.isHTMLEMenuItemElement(target)) {
+                        if (HTMLElement_14.isTagElement("e-menuitem", target)) {
                             this.focusItemAt(targetIndex, true);
                         }
                         else {
@@ -3113,7 +3011,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                             event.stopPropagation();
                             break;
                         case "Enter":
-                            if (MenuItem_3.isHTMLEMenuItemElement(this.activeItem)) {
+                            if (HTMLElement_14.isTagElement("e-menuitem", this.activeItem)) {
                                 this.activeItem.trigger();
                                 event.stopPropagation();
                             }
@@ -3125,7 +3023,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                             if (this.parentItem) {
                                 let parentGroup = this.parentItem.group;
                                 let parentMenu = parentGroup ? parentGroup.parentMenu : this.parentItem.parentMenu;
-                                if (isHTMLEMenuElement(parentMenu)) {
+                                if (HTMLElement_14.isTagElement("e-menu", parentMenu)) {
                                     if (parentGroup) {
                                         parentGroup.focusItemAt(parentGroup.activeIndex);
                                     }
@@ -3139,7 +3037,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                             break;
                         case "ArrowRight":
                             if (this.items.includes(event.target)) {
-                                if (MenuItem_3.isHTMLEMenuItemElement(this.activeItem) && this.activeItem.childMenu) {
+                                if (HTMLElement_14.isTagElement("e-menuitem", this.activeItem) && this.activeItem.childMenu) {
                                     this.activeItem.childMenu.focusItemAt(0);
                                     event.stopPropagation();
                                 }
@@ -3171,7 +3069,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                 if (item) {
                     this._activeIndex = index;
                     item.focus();
-                    if (MenuItem_3.isHTMLEMenuItemElement(item)) {
+                    if (HTMLElement_14.isTagElement("e-menuitem", item)) {
                         if (childMenu && item.childMenu) {
                             item.childMenu.focus();
                         }
@@ -3190,7 +3088,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
             reset() {
                 let item = this.activeItem;
                 this._activeIndex = -1;
-                if (MenuItem_3.isHTMLEMenuItemElement(item) && item.childMenu) {
+                if (HTMLElement_14.isTagElement("e-menuitem", item) && item.childMenu) {
                     item.childMenu.reset();
                 }
             }
@@ -3198,7 +3096,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                 let foundItem = null;
                 for (let idx = 0; idx < this.items.length; idx++) {
                     let item = this.items[idx];
-                    if (MenuItem_3.isHTMLEMenuItemElement(item)) {
+                    if (HTMLElement_14.isTagElement("e-menuitem", item)) {
                         if (predicate(item)) {
                             return item;
                         }
@@ -3234,16 +3132,14 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
     })();
     exports.BaseHTMLEMenuElement = BaseHTMLEMenuElement;
 });
-/*
-declare global {
-    interface HTMLElementTagNameMap {
-        "e-menu": HTMLEMenuElement,
-    }
-}*/ 
 define("engine/editor/elements/lib/containers/tabs/TabPanel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_15) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLETabPanelElement = void 0;
+    exports.BaseHTMLETabPanelElement = exports.isHTMLETabPanelElement = void 0;
+    function isHTMLETabPanelElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-tabpanel";
+    }
+    exports.isHTMLETabPanelElement = isHTMLETabPanelElement;
     let BaseHTMLETabPanelElement = /** @class */ (() => {
         let BaseHTMLETabPanelElement = class BaseHTMLETabPanelElement extends HTMLElement {
             constructor() {
@@ -3263,7 +3159,6 @@ define("engine/editor/elements/lib/containers/tabs/TabPanel", ["require", "expor
             }
             connectedCallback() {
                 this.tabIndex = this.tabIndex;
-                this.dispatchEvent(new CustomEvent("connected"));
             }
         };
         BaseHTMLETabPanelElement = __decorate([
@@ -3278,7 +3173,89 @@ define("engine/editor/elements/lib/containers/tabs/TabPanel", ["require", "expor
     })();
     exports.BaseHTMLETabPanelElement = BaseHTMLETabPanelElement;
 });
-define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/tabs/Tab"], function (require, exports, HTMLElement_16, Tab_1) {
+define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/tabs/TabPanel"], function (require, exports, HTMLElement_16, TabPanel_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLETabElement = void 0;
+    let BaseHTMLETabElement = /** @class */ (() => {
+        let BaseHTMLETabElement = class BaseHTMLETabElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_16.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                    user-select: none;
+                    white-space: nowrap;
+                    padding: 2px 6px;
+                    border-left: 4px solid transparent;
+                    cursor: pointer;
+                }
+                
+                :host([disabled]) {
+                    color: grey;
+                    pointer-events: none;
+                }
+
+                :host(:hover:not([active])) {
+                    font-weight: bold;
+                }
+
+                :host([active]) {
+                    font-weight: bold;
+                    border-left: 4px solid black;
+                }
+            </style>
+            <slot></slot>
+        `);
+                this.panel = null;
+            }
+            connectedCallback() {
+                this.tabIndex = this.tabIndex;
+                let panel = document.getElementById(this.controls);
+                if (HTMLElement_16.isTagElement("e-tabpanel", panel)) {
+                    this.panel = panel;
+                    this.panel.hidden = !this.active;
+                }
+            }
+            attributeChangedCallback(name, oldValue, newValue) {
+                switch (name) {
+                    case "controls":
+                        if (oldValue !== newValue) {
+                            let panel = document.getElementById(this.controls);
+                            if (TabPanel_1.isHTMLETabPanelElement(panel)) {
+                                this.panel = panel;
+                            }
+                        }
+                        break;
+                    case "active":
+                        if (this.active) {
+                            this.dispatchEvent(new CustomEvent("tabchange", { detail: { tab: this }, bubbles: true }));
+                        }
+                        if (this.panel) {
+                            this.panel.hidden = !this.active;
+                        }
+                        break;
+                }
+            }
+        };
+        BaseHTMLETabElement = __decorate([
+            HTMLElement_16.RegisterCustomHTMLElement({
+                name: "e-tab",
+                observedAttributes: ["active", "controls"]
+            }),
+            HTMLElement_16.GenerateAttributeAccessors([
+                { name: "name", type: "string" },
+                { name: "active", type: "boolean" },
+                { name: "disabled", type: "boolean" },
+                { name: "controls", type: "string" },
+            ])
+        ], BaseHTMLETabElement);
+        return BaseHTMLETabElement;
+    })();
+    exports.BaseHTMLETabElement = BaseHTMLETabElement;
+});
+define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_17) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLETabListElement = void 0;
@@ -3286,7 +3263,7 @@ define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "export
         let BaseHTMLETabListElement = class BaseHTMLETabListElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_16.bindShadowRoot(this, /*template*/ `
+                HTMLElement_17.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -3305,18 +3282,20 @@ define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "export
                 const slot = this.shadowRoot.querySelector("slot");
                 if (slot) {
                     slot.addEventListener("slotchange", (event) => {
-                        const tabs = event.target.assignedElements().filter(Tab_1.isHTMLETabElement);
+                        const tabs = event.target
+                            .assignedElements()
+                            .filter(tab => HTMLElement_17.isTagElement("e-tab", tab));
                         this.tabs = tabs;
                         this._activeIndex = this.tabs.findIndex(tab => tab.active);
                     });
                 }
                 this.addEventListener("click", (event) => {
                     let target = event.target;
-                    if (Tab_1.isHTMLETabElement(target)) {
+                    if (HTMLElement_17.isTagElement("e-tab", target)) {
                         target.active = true;
                     }
                 });
-                this.addEventListener("tabchange", ((event) => {
+                this.addEventListener("tabchange", (event) => {
                     let targetIndex = this.tabs.indexOf(event.detail.tab);
                     this._activeIndex = targetIndex;
                     this.tabs.forEach((thisTab, thisTabIndex) => {
@@ -3324,7 +3303,7 @@ define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "export
                             thisTab.active = false;
                         }
                     });
-                }));
+                });
             }
             findTab(predicate) {
                 return this.tabs.find(predicate) || null;
@@ -3337,7 +3316,7 @@ define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "export
             }
         };
         BaseHTMLETabListElement = __decorate([
-            HTMLElement_16.RegisterCustomHTMLElement({
+            HTMLElement_17.RegisterCustomHTMLElement({
                 name: "e-tablist"
             })
         ], BaseHTMLETabListElement);
@@ -3345,105 +3324,10 @@ define("engine/editor/elements/lib/containers/tabs/TabList", ["require", "export
     })();
     exports.BaseHTMLETabListElement = BaseHTMLETabListElement;
 });
-define("engine/editor/elements/lib/containers/tabs/Tab", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_17) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLETabElement = exports.isHTMLETabElement = void 0;
-    function isHTMLETabElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-tab";
-    }
-    exports.isHTMLETabElement = isHTMLETabElement;
-    let BaseHTMLETabElement = /** @class */ (() => {
-        let BaseHTMLETabElement = class BaseHTMLETabElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_17.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: block;
-                    user-select: none;
-                    white-space: nowrap;
-                    padding: 2px 6px;
-                    border-left: 4px solid transparent;
-                    cursor: pointer;
-                }
-                
-                :host([disabled]) {
-                    color: grey;
-                    pointer-events: none;
-                }
-
-                :host(:hover:not([active])) {
-                    font-weight: bold;
-                    border-left: 4px solid lightgrey;
-                }
-
-                :host([active]) {
-                    font-weight: bold;
-                    border-left: 4px solid dimgray;
-                }
-            </style>
-            <slot></slot>
-        `);
-                this.panel = null;
-            }
-            connectedCallback() {
-                this.tabIndex = this.tabIndex;
-                this.panel = document.querySelector(`#${this.controls}`);
-                if (this.panel !== null) {
-                    if (this.panel.isConnected) {
-                        this.panel.hidden = !this.active;
-                    }
-                    else {
-                        this.panel.addEventListener("connected", (event) => {
-                            let panel = event.target;
-                            panel.hidden = !this.active;
-                        }, { once: true });
-                    }
-                }
-            }
-            attributeChangedCallback(name, oldValue, newValue) {
-                switch (name) {
-                    case "controls":
-                        if (oldValue !== newValue) {
-                            this.panel = document.querySelector(`#${newValue}`);
-                        }
-                        break;
-                    case "active":
-                        if (this.active) {
-                            this.dispatchEvent(new CustomEvent("tabchange", { detail: { tab: this }, bubbles: true }));
-                        }
-                        if (this.panel) {
-                            this.panel.hidden = !this.active;
-                        }
-                        break;
-                }
-            }
-        };
-        BaseHTMLETabElement = __decorate([
-            HTMLElement_17.RegisterCustomHTMLElement({
-                name: "e-tab",
-                observedAttributes: ["active", "controls"]
-            }),
-            HTMLElement_17.GenerateAttributeAccessors([
-                { name: "name", type: "string" },
-                { name: "active", type: "boolean" },
-                { name: "disabled", type: "boolean" },
-                { name: "controls", type: "string" },
-            ])
-        ], BaseHTMLETabElement);
-        return BaseHTMLETabElement;
-    })();
-    exports.BaseHTMLETabElement = BaseHTMLETabElement;
-});
 define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_18) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEImportElement = exports.isHTMLEImportElement = void 0;
-    function isHTMLEImportElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-import";
-    }
-    exports.isHTMLEImportElement = isHTMLEImportElement;
+    exports.BaseHTMLEImportElement = void 0;
     let BaseHTMLEImportElement = /** @class */ (() => {
         let BaseHTMLEImportElement = class BaseHTMLEImportElement extends HTMLElement {
             constructor() {
@@ -3459,7 +3343,7 @@ define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine
                             throw new Error(response.statusText);
                         }
                     });
-                    this.dispatchEvent(new Event("loaded"));
+                    this.dispatchEvent(new CustomEvent("load"));
                 };
                 if (this.src) {
                     importRequest(this.src);
@@ -3477,6 +3361,152 @@ define("engine/editor/elements/lib/utils/Import", ["require", "exports", "engine
         return BaseHTMLEImportElement;
     })();
     exports.BaseHTMLEImportElement = BaseHTMLEImportElement;
+});
+define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem"], function (require, exports, HTMLElement_19, BreadcrumbItem_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.HTMLEBreadcrumbTrailElement = exports.isHTMLEBreadcrumbTrailElement = void 0;
+    function isHTMLEBreadcrumbTrailElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-breadcrumbtrail";
+    }
+    exports.isHTMLEBreadcrumbTrailElement = isHTMLEBreadcrumbTrailElement;
+    let HTMLEBreadcrumbTrailElement = /** @class */ (() => {
+        let HTMLEBreadcrumbTrailElement = class HTMLEBreadcrumbTrailElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_19.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                }
+                
+                [part~="ul"] {
+                    display: block;
+                    list-style-type: none;
+                    padding: 0; margin: 0;
+                }
+            </style>
+            <ul part="ul">
+                <slot></slot>
+            </ul>
+        `);
+                this.items = [];
+            }
+            activateItem(item) {
+                let itemIndex = this.items.indexOf(item);
+                if (itemIndex > -1) {
+                    this.items.forEach((item, index) => {
+                        item.active = (index == itemIndex);
+                        item.hidden = (index > itemIndex);
+                    });
+                    let activeItem = this.items[itemIndex];
+                    activeItem.dispatchEvent(new CustomEvent("activate"));
+                }
+            }
+            connectedCallback() {
+                var _a;
+                this.tabIndex = this.tabIndex;
+                const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
+                if (slot) {
+                    slot.addEventListener("slotchange", () => {
+                        const items = slot.assignedElements().filter(BreadcrumbItem_1.isHTMLEBreadcrumbItemElement);
+                        this.items = items;
+                        items.forEach((item, index) => {
+                            item.active = (index === items.length - 1);
+                        });
+                    });
+                }
+                this.addEventListener("mousedown", (event) => {
+                    let target = event.target;
+                    if (BreadcrumbItem_1.isHTMLEBreadcrumbItemElement(target)) {
+                        this.activateItem(target);
+                    }
+                });
+            }
+        };
+        HTMLEBreadcrumbTrailElement = __decorate([
+            HTMLElement_19.RegisterCustomHTMLElement({
+                name: "e-breadcrumbtrail"
+            })
+        ], HTMLEBreadcrumbTrailElement);
+        return HTMLEBreadcrumbTrailElement;
+    })();
+    exports.HTMLEBreadcrumbTrailElement = HTMLEBreadcrumbTrailElement;
+});
+define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_20) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.HTMLEBreadcrumbItemElement = exports.isHTMLEBreadcrumbItemElement = void 0;
+    function isHTMLEBreadcrumbItemElement(obj) {
+        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-breadcrumbitem";
+    }
+    exports.isHTMLEBreadcrumbItemElement = isHTMLEBreadcrumbItemElement;
+    let HTMLEBreadcrumbItemElement = /** @class */ (() => {
+        let HTMLEBreadcrumbItemElement = class HTMLEBreadcrumbItemElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_20.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: inline-block;
+                    cursor: pointer;
+                }
+
+                :host([active]) {
+                    font-weight: bold;
+                }
+
+                :host(:not([active]))::after {
+                    content: ">";
+                    display: inline-block;
+                }
+
+                :host([hidden]) {
+                    display: none;
+                }
+
+                [part~="li"] {
+                    display: inline-block;
+                    list-style-type: none;
+                }
+            </style>
+            <li part="li">
+                <slot></slot>
+            </li>
+        `);
+            }
+            connectedCallback() {
+                this.tabIndex = this.tabIndex;
+            }
+            attributeChangedCallback(name, oldValue, newValue) {
+                var _a;
+                if (newValue !== oldValue) {
+                    switch (name) {
+                        case "label":
+                            if (oldValue !== newValue) {
+                                const labelPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
+                                if (labelPart) {
+                                    labelPart.textContent = newValue;
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
+        };
+        HTMLEBreadcrumbItemElement = __decorate([
+            HTMLElement_20.RegisterCustomHTMLElement({
+                name: "e-breadcrumbitem",
+                observedAttributes: ["label"]
+            }),
+            HTMLElement_20.GenerateAttributeAccessors([
+                { name: "label", type: "string" },
+                { name: "active", type: "boolean" }
+            ])
+        ], HTMLEBreadcrumbItemElement);
+        return HTMLEBreadcrumbItemElement;
+    })();
+    exports.HTMLEBreadcrumbItemElement = HTMLEBreadcrumbItemElement;
 });
 define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_5) {
     "use strict";
@@ -3501,19 +3531,18 @@ define("engine/editor/objects/StructuredFormData", ["require", "exports", "engin
     }
     exports.StructuredFormData = StructuredFormData;
 });
-define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_19) {
+define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_21) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLDraggableInputTemplate = void 0;
     const HTMLDraggableInputTemplate = (desc) => {
-        return HTMLElement_19.HTMLElementConstructor("e-draggable", {
+        return HTMLElement_21.HTMLElementConstructor("e-draggable", {
             props: {
                 id: desc.id,
-                className: desc.className,
-                ref: desc.ref
+                className: desc.className
             },
             children: [
-                HTMLElement_19.HTMLElementConstructor("input", {
+                HTMLElement_21.HTMLElementConstructor("input", {
                     props: {
                         name: desc.name,
                         hidden: true
@@ -3527,231 +3556,453 @@ define("engine/editor/templates/other/DraggableInputTemplate", ["require", "expo
     };
     exports.HTMLDraggableInputTemplate = HTMLDraggableInputTemplate;
 });
-define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/objects/StructuredFormData", "engine/editor/templates/other/DraggableInputTemplate"], function (require, exports, Duplicable_1, Menu_2, MenuBar_1, MenuItem_4, MenuItemGroup_2, Tab_2, TabList_1, TabPanel_1, Draggable_3, Dragzone_2, Dropzone_1, Import_1, StructuredFormData_1, DraggableInputTemplate_1) {
+define("engine/editor/elements/forms/FormDataObject", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_22, Snippets_6) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.FormDataObject = void 0;
+    class FormDataObject {
+        constructor(form) {
+            this.form = form;
+        }
+        _resolveElementFullname(element) {
+            let fullname = element.name;
+            let parent = element.parentElement;
+            while (parent && parent !== this.form) {
+                if (HTMLElement_22.isTagElement("fieldset", parent)) {
+                    let localname = parent.name;
+                    if (localname) {
+                        fullname = `${localname}.${fullname}`;
+                    }
+                }
+                parent = parent === null || parent === void 0 ? void 0 : parent.parentElement;
+            }
+            return fullname;
+        }
+        getData() {
+            let elements = Array.from(this.form.elements);
+            let data = {};
+            console.log(elements);
+            elements.forEach((element) => {
+                if (HTMLElement_22.isTagElement("input", element) || HTMLElement_22.isTagElement("select", element) || HTMLElement_22.isTagElement("textarea", element)) {
+                    if (element.name) {
+                        let value = null;
+                        if (HTMLElement_22.isTagElement("input", element)) {
+                            if (element.value) {
+                                switch (element.type) {
+                                    case "text":
+                                        value = element.value;
+                                        break;
+                                    case "date":
+                                    case "datetime-local":
+                                        value = element.value;
+                                        break;
+                                    case "checkbox":
+                                    case "radio":
+                                        value = (element.value == "on");
+                                        break;
+                                    default:
+                                        value = element.value;
+                                }
+                            }
+                        }
+                        if (value !== null) {
+                            let fullname = this._resolveElementFullname(element);
+                            Snippets_6.setPropertyFromPath(data, fullname, value);
+                        }
+                    }
+                }
+            });
+            return data;
+        }
+    }
+    exports.FormDataObject = FormDataObject;
+});
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/forms/FormDataObject", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, FormDataObject_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.mockup = void 0;
-    Tab_2.BaseHTMLETabElement;
-    TabList_1.BaseHTMLETabListElement;
-    TabPanel_1.BaseHTMLETabPanelElement;
-    Draggable_3.BaseHTMLEDraggableElement;
-    Dropzone_1.BaseHTMLEDropzoneElement;
-    Dragzone_2.BaseHTMLEDragzoneElement;
-    MenuBar_1.BaseHTMLEMenuBarElement;
-    Menu_2.BaseHTMLEMenuElement;
-    MenuItemGroup_2.BaseHTMLEMenuItemGroupElement;
-    MenuItem_4.BaseHTMLEMenuItemElement;
-    Duplicable_1.HTMLEDuplicableElementBase;
-    Import_1.BaseHTMLEImportElement;
     const body = /*template*/ `
     <link rel="stylesheet" href="../css/mockup.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <div id="root" class="flex-rows">
         <header class="flex-cols flex-none padded">
-            <!--<e-import src="../html/samples/menus.html"></e-import>-->
             <!--<e-menubar tabindex="0">
-                <e-menuitem name="canvas-menu-item" type="menu" label="Canvas" tabindex="-1" aria-label="Canvas">
+                <e-menuitem name="file-menu-item" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
-                        <e-menuitemgroup tabindex="-1">
-                            <e-menuitem name="canvas-play-item" type="button" label="Play" icon="play_arrow" value="play"
-                                tabindex="-1" aria-label="Play"></e-menuitem>
-                            <e-menuitem name="canvas-pause-item" type="button" label="Pause" icon="pause" value="pause"
-                                tabindex="-1" aria-label="Pause"></e-menuitem>
-                        </e-menuitemgroup>
-                        <e-menuitemgroup tabindex="-1">
-                            <e-menuitem name="show-fps-item" type="checkbox" label="Show FPS" icon="60fps" tabindex="-1"
-                                aria-label="Show FPS"></e-menuitem>
-                        </e-menuitemgroup>
-                        <e-menuitemgroup name="submenus" tabindex="-1">
-                            <e-menuitem name="letters-menu" type="submenu" label="Letters" tabindex="-1" aria-label="Letters">
-                                <e-menu slot="menu" tabindex="-1">
-                                    <e-menuitemgroup name="favorite-letter" label="Favorite letter" tabindex="-1">
-                                        <e-menuitem name="a-item" type="radio" label="Letter A" value="a" tabindex="-1"
-                                            aria-label="Letter A" checked=""></e-menuitem>
-                                        <e-menuitem name="b-item" type="radio" label="Letter B" value="b" tabindex="-1"
-                                            aria-label="Letter B"></e-menuitem>
-                                    </e-menuitemgroup>
-                                </e-menu>
-                            </e-menuitem>
-                        </e-menuitemgroup>
+                            <e-menuitem name="canvas-play-item" type="button" label="Import a config..."
+                                tabindex="-1" aria-label="Import a config..."></e-menuitem>
                     </e-menu>
                 </e-menuitem>
             </e-menubar>-->
         </header>
         <main class="flex-cols flex-auto padded">
-            <div id="tabs-col" class="flex-none">
+            <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">
-                    <e-tab name="extract" controls="extract-panel" active>Extract</e-tab>
-                    <e-tab name="transform" controls="transform-panel" disabled>Transform</e-tab>
-                    <e-tab name="export" controls="export-panel" disabled>Export</e-tab>
+                    <e-tab name="extract" controls="extract-panel" title="Extract" active></e-tab>
+                    <e-tab name="transform" controls="transform-panel" title="Transform"></e-tab>
+                    <e-tab name="export" controls="export-panel" title="Export"></e-tab>
                 </e-tablist>
             </div>
-            <div id="data-col" class="flex-none padded">
-                <details class="indented" open>
-                    <summary>Dataset 1</summary>
-                    <e-dragzone>
-                        <e-draggable id="draggableA" tabindex="-1" ref="D1A">Column A</e-draggable>
-                        <e-draggable id="draggableB" tabindex="-1" ref="D1B">Column B</e-draggable>
-                        <e-draggable id="draggableC" tabindex="-1" ref="D1C">Column C</e-draggable>
-                        <e-draggable id="draggableD" tabindex="-1" ref="D1D">Column D</e-draggable>
+            <div id="data-col" class="col flex-none padded borded">
+                <details id="datasets-details" open>
+                    <summary>Datasets</summary>
+                </details>
+                <details open>
+                    <summary>Constants</summary>
+                    <div class="details-content">
+                        <e-dragzone id="constants-dragzone">
+                            <e-draggable data-node-signature="const" type="date"><input type="date" name="const"/></e-draggable>
+                            <e-draggable data-node-signature="const" type="datetime"><input type="datetime-local" name="const"/></e-draggable>
+                            <e-draggable data-node-signature="const" type="string"><input type="text" name="const" placeholder="string"/></e-draggable>
+                            <e-draggable data-node-signature="const" type="number"><input type="number" name="const" placeholder="number"/></e-draggable>
+                            <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="True" readonly/></e-draggable>
+                            <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="False" readonly/></e-draggable>
+                        </e-dragzone>
+                    </div>
+                </details>
+                <details open>
+                    <summary>Metrics</summary>
+                    <e-dragzone id="metrics-dragzone">
+                        <e-draggable class="draggable-dropzone" tabindex="-1">max(<e-dropzone placeholder="col"></e-dropzone>)</e-draggable>
+                        <e-draggable class="draggable-dropzone" tabindex="-1">notna(<e-dropzone placeholder="col"></e-dropzone>)</e-draggable>
                     </e-dragzone>
                 </details>
+                <details open>
+                    <summary>Functions</summary>
+                    <details class="indented" open>
+                        <summary>string</summary>
+                        <e-dragzone id="string-functions-dragzone">
+                            <e-draggable class="draggable-dropzone" tabindex="-1">concat(<e-dropzone placeholder="str0"></e-dropzone>,<button type="button">+</button>)</e-draggable>
+                        </e-dragzone>
+                    </details>
+                    <details class="indented" open>
+                        <summary>generator</summary>
+                        <e-dragzone id="generator-functions-dragzone">
+                            <e-draggable class="draggable-dropzone" tabindex="-1">range(<e-dropzone placeholder="number"></e-dropzone>)</e-draggable>
+                        </e-dragzone>
+                    </details>
+                </details>
             </div>
-            <div id ="panels-col" class="flex-auto padded">
+            <div id="panels-col" class="col flex-auto padded-horizontal">
                 <e-tabpanel id="extract-panel">
+                    <!--<e-breadcrumbtrail class="padded borded margin-bottom">
+                        <e-breadcrumbitem>Item 0</e-breadcrumbitem>
+                        <e-breadcrumbitem>Item 1</e-breadcrumbitem>
+                    </e-breadcrumbtrail>-->
                     <form id="extract-form">
                         <fieldset>
-                            <label>Extractors</label>
-                            <input data-class="duplicater-input" data-duplicater-template="extractor" type="number" value="1" min="0"></input>
-                            <fieldset name="extractor">
-                                <details class="indented" open>
-                                    <summary>
-                                        Extractor <span data-duplicater-index></span>
-                                        <select data-class="toggler-select">
-                                            <option value="netezza" selected>Netezza</option>
-                                            <option value="csv">CSV</option>
-                                        </select>
-                                    </summary>
-                                    <fieldset name="netezza" class="grid-fieldset indented" required>
-                                        <label for="user">User</label><input type="text" name="userid" required></input>
-                                        <label for="password">Password</label><input type="text" name="password" required></input>
-                                        <label for="database">Database</label><input type="text" name="database" required></input>
-                                        <label for="database">Columns</label><e-dropzone multiple></e-dropzone>
-                                    </fieldset>
-                                    <fieldset name="csv">
-                                        <label for="filepath">Filepath</label>
-                                        <input name="filepath" type="file"/>
-                                    </fieldset>
-                                </details>
-                            </fieldset>
-                            <div class="float-right"><button id="extract-button">Next</button></div>
+                            <details open>
+                                <summary>Extractor 
+                                    <select class="doc-select" name="signature" data-class="toggler-select">
+                                        <option value="netezza" selected>Netezza</option>
+                                        <option value="csv">CSV</option>
+                                    </select>
+                                </summary>
+                                <div id="extractors-fieldsets">
+
+                                </div>
+                                <!--<fieldset name="netezza" class="grid-fieldset margin-top" hidden>
+                                    <label for="user">User</label>
+                                    <input type="text" name="userid" required value="Net" ondrop="event.preventDefault()/">
+                                    <label for="password">Password</label>
+                                    <input type="password" name="password" required ondrop="event.preventDefault()"/>
+                                    <label for="database">Database</label>
+                                    <input type="text" name="database" required ondrop="event.preventDefault()"/>
+                                    <label for="query">Query</label>
+                                    <textarea name="query"></textarea>
+                                </fieldset>-->
+                                <!--<fieldset name="csv" class="grid-fieldset margin-top" hidden>
+                                    <label for="filepath">Filepath</label>
+                                    <input name="filepath" type="file"/>
+                                </fieldset>-->
+                            </details>
+                            <div class="indented"><button id="extract-button" type="button">Extract</button></div>
                         </fieldset>
                     </form>
-                    <!--<input type="radio"/>Constant <input type="text"/><br/>
-                    <input type="radio"/>Reference <e-dropzone label="Columns" multiple></e-dropzone><br/>
-                    <button id="extract-button">Extract</button>-->
-                    <!--<label for="file">Choose a data file</label><br/>
-                    <input name="file" type="file"/>-->
-
-                    <!--<e-duplicable>
-                        <input slot="input" type="number" value="1" min="0"></input>
-                        <div slot="prototype">
-                            <label>Item <span data-duplicate-index></span></label>
-                            <input type="number"/>
-                        </div>
-                    </e-duplicable>-->
-
                 </e-tabpanel>
                 <e-tabpanel id="transform-panel">
-                    <form>
-                        <details class="indented" open>
-                            <summary>
-                                Transformer
-                                <select data-class="toggler-select">
-                                    <option value="aggregate" selected>Aggregate</option>
-                                    <option value="median_imputer">Median imputer</option>
-                                </select>
-                            </summary>
-                            <fieldset name="aggregate">
-                                <label>Opération</label>
-                                <select>
-                                    <option value="min">Min</option>
-                                    <option value="max">Max</option>
-                                </select>
-                                <label>Columns</label><e-dropzone id="dropzone" multiple tabindex="0"><input slot="input" name="columns"></input></e-dropzone>
-                            </fieldset>
-                            <fieldset name="median_imputer">
-                                <label>Median</label><input name="median" type="number" value="1" min="0" max="100"></input>
-                            </fieldset>
-                        </details>
+                    <form id="transform-form">
+                        <fieldset>
+                            <details open>
+                                <summary>Transformer
+                                    <select class="doc-select" data-class="toggler-select">
+                                        <option value="replace" selected>Replace</option>
+                                        <option value="merge">Merge</option>
+                                        <option value="median_imputer">Median imputer</option>
+                                    </select>
+                                </summary>
+                                <fieldset name="merge" class="grid-fieldset indented margin-top">
+                                    <label for="left">Left</label>
+                                    <e-dropzone></e-dropzone>
+                                    <label for="right">Right</label>
+                                    <e-dropzone></e-dropzone>
+                                    <label for="on">On</label>
+                                    <e-dropzone></e-dropzone>
+                                    <label for="how">How</label>
+                                    <select>
+                                        <option value="left" selected>left</option>
+                                        <option value="right">right</option>
+                                    </select>
+                                    <label for="outputDataframe">Output dataframe</label>
+                                    <input type="text" name="outputdataframe" required ondrop="event.preventDefault()"></input>
+                                </fieldset>
+                                <fieldset name="replace" class="grid-fieldset indented margin-top">
+                                    <label for="column">Column</label>
+                                    <e-dropzone></e-dropzone>
+                                    <label for="value">Value</label>
+                                    <e-dropzone></e-dropzone>
+                                    <label for="expression">Where</label>
+                                    <div>
+                                        <div class="flex-field">
+                                            <fieldset name="left">
+                                                <e-dropzone></e-dropzone>
+                                            </fieldset>
+                                            <select>
+                                                <option selected>==</option>
+                                                <option>!=</option>
+                                                <option>></option>
+                                                <option><</option>
+                                                <option>>=</option>
+                                                <option><=</option>
+                                            </select>
+                                            <fieldset name="right">
+                                                <e-dropzone></e-dropzone>
+                                            </fieldset>
+                                            <!--<button class="flex-none" type="button">X</button>-->
+                                        </div>
+                                        <!--<button type="button">AND</button><button type="button">OR</button>-->
+                                    </div>
+                                </fieldset>
+                                <fieldset name="median_imputer" class="grid-fieldset indented margin-top">
+                                    <label for="column">Column(s)</label>
+                                    <e-dropzone multiple></e-dropzone>
+                                </fieldset>
+                            </details>
+                            <div class="indented"><button id="transform-button" type="button">Transform</button></div>
+                        </fieldset>
                     </form>
                 </e-tabpanel>
                 <e-tabpanel id="export-panel">
-                    <button id="download-btn">Download</button>
+                    <form id="export-form">
+                    <fieldset>
+                        <details open>
+                            <summary>Exporter 
+                                <select class="doc-select" data-class="toggler-select">
+                                    <option value="csv">CSV</option>
+                                </select>
+                            </summary>
+                            <fieldset name="csv" class="grid-fieldset indented margin-top" hidden>
+                                <label for="filename">Filename</label>
+                                <input type="text" name="filename" ondrop="event.preventDefault()" required></input>
+                                <label for="columns">Columns</label>
+                                <e-dropzone multiple id="columns"></e-dropzone>
+                            </fieldset>
+                        </details>
+                        <div class="indented"><button id="export-button" type="button">Export</button></div>
+                    </fieldset>
+                </form>
                 </e-tab-panel>
             </div>
-            <div id="doc-col" class="flex-none padded"></div>
+            <div id="doc-col" class="col flex-none padded borded"></div>
         </main>
-        <footer class="flex-cols flex-none padded">
-        </footer>
+        <footer class="flex-cols flex-none padded"></footer>
     </div>
 `;
     async function mockup() {
         const bodyTemplate = document.createElement("template");
         bodyTemplate.innerHTML = body;
         document.body.insertBefore(bodyTemplate.content, document.body.firstChild);
-        const transformTab = document.querySelector("e-tab[name='transform']");
-        const extractButton = document.querySelector("button#extract-button");
         const extractForm = document.querySelector("form#extract-form");
+        const extractTab = document.querySelector("e-tab[name='extract']");
+        const transformTab = document.querySelector("e-tab[name='transform']");
+        const exportTab = document.querySelector("e-tab[name='export']");
+        const extractButton = document.querySelector("button#extract-button");
+        const transformButton = document.querySelector("button#transform-button");
+        const exportButton = document.querySelector("button#export-button");
+        /*if (extractForm) {
+            const jsonData = new JSONFormData(extractForm);
+            console.log(jsonData.getData());
+        }*/
+        window["FormDataObject"] = FormDataObject_1.FormDataObject;
+        let extractorsFieldsets = document.getElementById("extractors-fieldsets");
+        let netezzaExtractorTemplate = document.createElement("template");
+        netezzaExtractorTemplate.innerHTML = /*template*/ `
+        <fieldset>
+            <fieldset name="left">
+                <input type="datetime-local" name="date" required ondrop="event.preventDefault()"/>
+                <label for="user">my radio 1</label>
+                <input type="radio" required ondrop="event.preventDefault()"/>
+                <label for="user">my radio 2</label>
+                <input type="radio" name="radio-2" required ondrop="event.preventDefault()"/>
+            <fieldset>
+            <label for="user">User</label>
+            <input type="text" name="userid" required value="Net" ondrop="event.preventDefault()"/>
+            <label for="password">Password</label>
+            <input type="password" name="password" required ondrop="event.preventDefault()"/>
+            <label for="database">Database</label>
+            <input type="text" name="database" required ondrop="event.preventDefault()"/>
+            <label for="query">Query</label>
+            <textarea name="query"></textarea>
+        </fieldset>
+    `;
+        if (extractorsFieldsets) {
+            extractorsFieldsets.appendChild(netezzaExtractorTemplate.content);
+        }
+        let booleanExpressionTemplate = document.createElement("template");
+        booleanExpressionTemplate.innerHTML = /*template*/ `
+        <label for="expression">Where</label>
+        <div>
+            <div class="flex-field">
+                <fieldset name="left">
+                    <e-dropzone></e-dropzone>
+                </fieldset>
+                <select name="signature">
+                    <option selected value="equals_operator">==</option>
+                    <option value="not_equals_operator">!=</option>
+                    <option value="greater_than_operator">></option>
+                    <option value="lower_to_operator"><</option>
+                </select>
+                <fieldset name="right">
+                    <e-dropzone></e-dropzone>
+                </fieldset>
+                <!--<button class="flex-none" type="button">X</button>-->
+            </div>
+        </div>
+    `;
+        function kebabize(str) {
+            var _a;
+            return str && ((_a = str.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)) === null || _a === void 0 ? void 0 : _a.map(x => x.toLowerCase()).join('-')) || "";
+        }
+        function camelize(str) {
+            return str.toLowerCase()
+                .replace(/[^a-zA-Z0-9]+(.)/g, (m, chr) => chr.toUpperCase());
+        }
+        function generateDataset(name, columns) {
+            const datasetsDetails = document.querySelector("#datasets-details");
+            if (datasetsDetails) {
+                const dataset1Summary = document.createElement("summary");
+                dataset1Summary.textContent = `${name}`;
+                const dataset1Details = document.createElement("details");
+                dataset1Details.classList.add("indented");
+                dataset1Details.open = true;
+                const dataset1Dragzone = document.createElement("e-dragzone");
+                dataset1Dragzone.id = `dataset-${kebabize(name)}-dragzone`;
+                const dataset1Draggable = document.createElement("e-draggable");
+                dataset1Draggable.textContent = `${name}`;
+                dataset1Dragzone.append(dataset1Draggable, ...columns.map((col) => {
+                    let draggable = document.createElement("e-draggable");
+                    draggable.textContent = `Col ${name}${col}`;
+                    return draggable;
+                }));
+                dataset1Details.append(dataset1Summary, dataset1Dragzone);
+                datasetsDetails.append(dataset1Details);
+            }
+        }
+        const docs = new Map();
+        docs.set("netezza", "<b>Netezza</b> Extractor<br/>\
+        <p>Extract data from a Netezza database.</p>\
+        <p class='params'><span class='param-name'>User:</span><span>database user</span>\
+        <span class='param-name'>Password:</span><span>user password</span>\
+        <span class='param-name'>Database:</span><span>database name</span></p>");
+        docs.set("csv", "<b>CSV</b> Extractor<br/>\
+        <p>Extract data from a .csv file.</p>\
+        <p class='params'><span class='param-name'>Filepath:</span><span>filepath to the .csv file</span>");
+        docs.set("replace", "<b>Replace</b> Transformer<br/>\
+        <p>Replace by a given value where a condition is met.</p>\
+        <p class='params'><span class='param-name'>Columns:</span><span>the columns where the transformer will be applied</span>\
+        <p class='params'><span class='param-name'>Value:</span><span>the value to use as a replacement</span>\
+        <p class='params'><span class='param-name'>Where:</span><span>the condition to meet</span>");
+        function setDocstringText(name) {
+            if (docCol) {
+                let docstring = docs.get(name);
+                docCol.innerHTML = docstring || "";
+            }
+        }
+        const docCol = document.getElementById("doc-col");
+        const docsSelects = Array.from(document.querySelectorAll("select.doc-select"));
+        if (docsSelects.length > 0) {
+            setDocstringText(docsSelects[0].value);
+            docsSelects.forEach((select) => {
+                select.addEventListener("change", () => {
+                    setDocstringText(select.value);
+                });
+            });
+        }
         if (extractButton) {
             extractButton.addEventListener("click", () => {
-                if (extractForm) {
-                    let isFormValid = extractForm.checkValidity();
-                    if (isFormValid) {
-                        if (transformTab) {
-                            transformTab.disabled = false;
-                            transformTab.active = true;
+                if (transformTab) {
+                    transformTab.active = true;
+                    generateDataset("D1", [
+                        "A", "B", "C", "D", "E", "F"
+                    ]);
+                    generateDataset("D2", [
+                        "A", "G", "H", "I", "J"
+                    ]);
+                }
+            });
+        }
+        if (transformButton) {
+            transformButton.addEventListener("click", () => {
+                if (exportTab) {
+                    exportTab.active = true;
+                    generateDataset("Merged", [
+                        "M1", "M2"
+                    ]);
+                }
+            });
+        }
+        const info = {
+            type: "df",
+            name: "df"
+        };
+        /*const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#columns");
+        if (dropzone) {
+            dropzone.droptest = (draggables: HTMLEDraggableElement[]) => {
+                let success = false;
+                try {
+                    if (draggables.length > 0) {
+                        success = (draggables[0].type == "df");
+                    }
+                }
+                finally {
+                    if (!success) {
+                        throw new Error("Please insert a dataframe node.");
+                    }
+                }
+            };
+            dropzone.addEventListener("datatransfer", (event: DataTransferEvent) => {
+                let target = event.target as HTMLEDropzoneElement;
+                if (event.detail.success) {
+                    if (event.detail.draggables.length > 0) {
+                        let draggable = event.detail.draggables[0];
+                        let input = draggable.querySelector("input");
+                        if (input) {
+                            input.name = info.name;
                         }
                     }
                 }
-            });
-        }
-        /*const docCol = document.getElementById("doc-col");
-        if (docCol) {
-            docCol.innerText = marked('# Marked in the browser\n\nRendered by **marked**.');
-        }*/
-        /*const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone");
-        if (dropzone) {
-            dropzone.droptest = (draggable) => {
-                if (draggable.ref !== "D1A")
-                    throw new Error("Only D1A draggable is allowed here");
-            };
-            dropzone.addEventListener("datatransfer", ((event: EDataTransferEvent) => {
-                console.log(event.detail);
-                if (!event.detail.success) {
+                else {
                     alert(event.detail.statusText);
                 }
-            }) as EventListener)
+            });
+    
+    
+            dropzone?.addEventListener("change", () => {
+                alert();
+            });
         }*/
-        const dragA = document.querySelector("e-draggable#draggableA");
-        if (dragA) {
-            dragA.value = JSON.stringify({
-                value: "dragA"
-            });
-        }
-        const dragB = document.querySelector("e-draggable#draggableB");
-        if (dragB) {
-            dragB.value = JSON.stringify({
-                lol: "lol"
-            });
-        }
-        // let columns = await fetch("json/columns.json").then((resp) => {
-        //     if (resp.ok) {
-        //         return resp.json();
-        //     }
-        // });
-        // columns.forEach((col) => {
-        // });
-        console.log(DraggableInputTemplate_1.HTMLDraggableInputTemplate({
-            id: "draggableD",
-            ref: "D2D",
-            name: "D2D",
-            value: "Column_D2D"
-        }));
-        let downloadBtn = document.getElementById("download-btn");
-        if (downloadBtn) {
-            downloadBtn.addEventListener("click", () => {
-                let form = document.querySelector("form");
+        if (exportButton) {
+            exportButton.addEventListener("click", () => {
+                alert("Tadam!");
+                /*let form = document.querySelector("form");
                 if (form) {
-                    let structuredFormData = new StructuredFormData_1.StructuredFormData(form).getStructuredFormData();
-                    console.log(structuredFormData);
-                    return;
-                    let dataBlob = new Blob([JSON.stringify(structuredFormData, null, 4)], { type: "application/json" });
+                    let structuredFormData = new StructuredFormData(form).getStructuredFormData();
+                    let dataBlob = new Blob([JSON.stringify(structuredFormData, null, 4)], {type: "application/json"});
+    
                     let donwloadAnchor = document.createElement("a");
                     donwloadAnchor.href = URL.createObjectURL(dataBlob);
                     donwloadAnchor.download = "config.json";
                     donwloadAnchor.click();
-                }
+                }*/
             });
         }
     }
@@ -6422,7 +6673,7 @@ define("engine/libs/patterns/pools/StackPool", ["require", "exports", "engine/li
     const StackPool = StackPoolBase;
     exports.StackPool = StackPool;
 });
-define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_6, StackPool_1, MathError_6) {
+define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_7, StackPool_1, MathError_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuaternionPool = exports.QuaternionBase = exports.QuaternionInjector = exports.Quaternion = void 0;
@@ -6537,7 +6788,7 @@ define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports"
             if (den < Number.EPSILON) {
                 return out.setZeros();
             }
-            const scale = Snippets_6.qSqrt(den);
+            const scale = Snippets_7.qSqrt(den);
             out.setValues([this._x * scale, this._y * scale, this._z * scale]);
             return out;
         }
@@ -7376,7 +7627,7 @@ define("engine/libs/maths/geometry/primitives/Triangle", ["require", "exports", 
     const TrianglePool = new StackPool_3.StackPool(TriangleBase);
     exports.TrianglePool = TrianglePool;
 });
-define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_7) {
+define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TriangleListBase = exports.TriangleList = void 0;
@@ -7426,8 +7677,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             return indexOf;
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
-            const idxTo = Snippets_7.clamp(options.idxTo, 0, this.count);
-            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, this.count);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -7445,8 +7696,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             tri.point3.readFromArray(this._array, indices[2]);
         }
         forIndexedPoints(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_7.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -7469,7 +7720,7 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
     const TriangleList = TriangleListBase;
     exports.TriangleList = TriangleList;
 });
-define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_8) {
+define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3ListBase = exports.Vector3List = void 0;
@@ -7489,8 +7740,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_8.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -7503,8 +7754,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
             Vector3Pools_3.Vector3Pool.release(1);
         }
         forEachFromIndices(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_8.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -7666,7 +7917,7 @@ define("engine/libs/maths/extensions/pools/Vector2Pools", ["require", "exports",
     const Vector2Pool = new StackPool_6.StackPool(Vector2_2.Vector2Base);
     exports.Vector2Pool = Vector2Pool;
 });
-define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_9) {
+define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_10) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector2ListBase = exports.Vector2List = void 0;
@@ -7686,8 +7937,8 @@ define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_9.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_10.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_10.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             Vector2Pools_1.Vector2Pool.acquireTemp(1, (vector) => {
                 while (idxObj < count) {
@@ -8517,7 +8768,7 @@ define("engine/utils/Snippets", ["require", "exports"], function (require, expor
     }
     exports.safeQuerySelector = safeQuerySelector;
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_10) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_11) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CubeGeometry = void 0;
@@ -8614,7 +8865,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [+1, -1, +1],
         [+1, -1, -1],
     ];
-    const cubeVertices = Snippets_10.buildArrayFromIndexedArrays(cubeVerticesSet, [
+    const cubeVertices = Snippets_11.buildArrayFromIndexedArrays(cubeVerticesSet, [
         0, 2, 3, 1,
         0, 4, 5, 2,
         2, 5, 6, 3,
@@ -8628,7 +8879,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [0, 1],
         [1, 1],
     ];
-    const cubeUVS = Snippets_10.buildArrayFromIndexedArrays(cubeUVsSet, [
+    const cubeUVS = Snippets_11.buildArrayFromIndexedArrays(cubeUVsSet, [
         0, 1, 3, 2,
         0, 1, 3, 2,
         0, 1, 3, 2,
@@ -8658,7 +8909,7 @@ define("engine/libs/maths/geometry/GeometryConstants", ["require", "exports"], f
     const GOLDEN_RATIO = 1.6180;
     exports.GOLDEN_RATIO = GOLDEN_RATIO;
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_2, GeometryConstants_1, Snippets_11) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_2, GeometryConstants_1, Snippets_12) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IcosahedronGeometry = void 0;
@@ -8725,7 +8976,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const icosahedronVertices = Snippets_11.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
+    const icosahedronVertices = Snippets_12.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
         0, 1, 2,
         0, 2, 3,
         0, 3, 4,
@@ -8747,7 +8998,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         9, 11, 10,
         10, 11, 6,
     ]);
-    const icosahedronUVS = Snippets_11.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
+    const icosahedronUVS = Snippets_12.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
         1, 2, 0,
         1, 2, 0,
         1, 2, 0,
@@ -8792,7 +9043,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         57, 58, 59,
     ];
 });
-define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_12) {
+define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_13) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuadGeometry = void 0;
@@ -8872,10 +9123,10 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         [0, 1],
         [1, 1]
     ];
-    const quadVertices = Snippets_12.buildArrayFromIndexedArrays(quadVerticesSet, [
+    const quadVertices = Snippets_13.buildArrayFromIndexedArrays(quadVerticesSet, [
         0, 2, 3, 1,
     ]);
-    const quadUVS = Snippets_12.buildArrayFromIndexedArrays(quadUVsSet, [
+    const quadUVS = Snippets_13.buildArrayFromIndexedArrays(quadUVsSet, [
         0, 2, 3, 1,
     ]);
     const quadIndices = [
@@ -8883,11 +9134,11 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         0, 2, 3,
     ];
 });
-define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_13) {
+define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_14) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.VertexAttribute = exports.UniformType = exports.UniformQuery = exports.TextureWrapMode = exports.TextureMinFilter = exports.TextureMagFilter = exports.TextureTarget = exports.TextureParameter = exports.TextureUnits = exports.TestFunction = exports.StencilAction = exports.ShaderPrecision = exports.ShaderType = exports.Shader = exports.RenderbufferTarget = exports.PixelType = exports.PixelStorageMode = exports.PixelFormat = exports.Parameter = exports.HintMode = exports.HintTarget = exports.FrontFace = exports.FramebufferTextureTarget = exports.FramebufferTarget = exports.FramebufferAttachmentParameter = exports.FramebufferAttachment = exports.Error = exports.DataType = exports.DrawMode = exports.CullFaceMode = exports.Capabilities = exports.BufferTarget = exports.BufferInterpolation = exports.BufferIndexType = exports.BufferBindingPoint = exports.BufferMaskBit = exports.BufferMask = exports.BufferDataUsage = exports.BlendingEquation = exports.BlendingMode = void 0;
-    const gl = Snippets_13.crashIfNull(document.createElement('canvas').getContext('webgl2'));
+    const gl = Snippets_14.crashIfNull(document.createElement('canvas').getContext('webgl2'));
     var BlendingMode;
     (function (BlendingMode) {
         BlendingMode[BlendingMode["ZERO"] = gl.ZERO] = "ZERO";
@@ -10812,7 +11063,7 @@ define("engine/core/rendering/webgl/WebGLRendererUtilities", ["require", "export
     }
     exports.WebGLRendererUtilities = WebGLRendererUtilities;
 });
-define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_20) {
+define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_23) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelElement = void 0;
@@ -10820,7 +11071,7 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
         let PanelElement = class PanelElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_20.bindShadowRoot(this, /*template*/ `
+                HTMLElement_23.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -10896,11 +11147,11 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
             }
         };
         PanelElement = __decorate([
-            HTMLElement_20.RegisterCustomHTMLElement({
+            HTMLElement_23.RegisterCustomHTMLElement({
                 name: 'e-panel',
                 observedAttributes: ['state']
             }),
-            HTMLElement_20.GenerateAttributeAccessors([
+            HTMLElement_23.GenerateAttributeAccessors([
                 { name: 'label', type: 'string' },
                 { name: 'state', type: 'string' },
             ])
@@ -10909,7 +11160,7 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
     })();
     exports.PanelElement = PanelElement;
 });
-define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_21) {
+define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelGroupElement = void 0;
@@ -10917,7 +11168,7 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
         let PanelGroupElement = class PanelGroupElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_21.bindShadowRoot(this, /*template*/ `
+                HTMLElement_24.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -10978,10 +11229,10 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
         };
         PanelGroupElement.observedAttributes = ['state'];
         PanelGroupElement = __decorate([
-            HTMLElement_21.RegisterCustomHTMLElement({
+            HTMLElement_24.RegisterCustomHTMLElement({
                 name: 'e-panel-group'
             }),
-            HTMLElement_21.GenerateAttributeAccessors([
+            HTMLElement_24.GenerateAttributeAccessors([
                 { name: 'label', type: 'string' },
                 { name: 'state', type: 'string' },
             ])
@@ -11099,7 +11350,192 @@ define("engine/libs/graphics/colors/Color", ["require", "exports"], function (re
     const Color = ColorBase;
     exports.Color = Color;
 });
-define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_22) {
+define("engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.SingleTopicMessageBrokerBase = exports.SingleTopicMessageBroker = void 0;
+    ;
+    class SingleTopicMessageBrokerBase {
+        constructor() {
+            this._subscriptions = [];
+        }
+        hasSubscriptions() {
+            return this._subscriptions.length > 0;
+        }
+        subscribe(subscription) {
+            const index = this._subscriptions.indexOf(subscription);
+            if (index < 0) {
+                this._subscriptions.push(subscription);
+            }
+            return subscription;
+        }
+        unsubscribe(subscription) {
+            const index = this._subscriptions.indexOf(subscription);
+            if (index > -1) {
+                this._subscriptions.splice(index, 1);
+            }
+            return this._subscriptions.length;
+        }
+        publish(message) {
+            for (const subscription of this._subscriptions) {
+                subscription(message);
+            }
+        }
+    }
+    exports.SingleTopicMessageBrokerBase = SingleTopicMessageBrokerBase;
+    const SingleTopicMessageBroker = SingleTopicMessageBrokerBase;
+    exports.SingleTopicMessageBroker = SingleTopicMessageBroker;
+});
+define("engine/core/logger/Logger", ["require", "exports", "engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker"], function (require, exports, SingleTopicMessageBroker_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.LoggerBase = exports.Logger = exports.LogLevel = void 0;
+    var LogLevel;
+    (function (LogLevel) {
+        LogLevel[LogLevel["DEBUG"] = 0] = "DEBUG";
+        LogLevel[LogLevel["ERROR"] = 1] = "ERROR";
+        LogLevel[LogLevel["INFO"] = 2] = "INFO";
+        LogLevel[LogLevel["LOG"] = 3] = "LOG";
+        LogLevel[LogLevel["WARN"] = 4] = "WARN";
+    })(LogLevel || (LogLevel = {}));
+    exports.LogLevel = LogLevel;
+    class LoggerBase {
+        constructor() {
+            this._broker = new SingleTopicMessageBroker_1.SingleTopicMessageBroker();
+        }
+        log(message) {
+            const level = LogLevel.LOG;
+            message = this.formatMessage(level, message);
+            console.log(message);
+            this._onLog(level, message);
+        }
+        info(message) {
+            const level = LogLevel.INFO;
+            message = this.formatMessage(level, message);
+            console.info(message);
+            this._onLog(level, message);
+        }
+        warn(message) {
+            const level = LogLevel.WARN;
+            message = this.formatMessage(level, message);
+            console.warn(message);
+            this._onLog(level, message);
+        }
+        debug(message) {
+            const level = LogLevel.DEBUG;
+            message = this.formatMessage(level, message);
+            console.debug(message);
+            this._onLog(level, message);
+        }
+        error(message) {
+            const level = LogLevel.ERROR;
+            message = this.formatMessage(level, message);
+            console.error(message);
+            this._onLog(level, message);
+        }
+        _onLog(level, message) {
+            this._broker.publish({ level: level, message: message });
+        }
+        subscribe(subscription) {
+            return this._broker.subscribe(subscription);
+        }
+        unsubscribe(subscription) {
+            return this._broker.unsubscribe(subscription);
+        }
+        formatMessage(level, message) {
+            const time = this.getTimestamp();
+            return `[${time}] ${message}`;
+        }
+        getTimestamp() {
+            return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "numeric", second: "numeric", hour12: false });
+        }
+    }
+    exports.LoggerBase = LoggerBase;
+    const Logger = new LoggerBase();
+    exports.Logger = Logger;
+});
+define("engine/resources/Resources", ["require", "exports", "engine/resources/ResourceFetcher", "engine/core/logger/Logger"], function (require, exports, ResourceFetcher_2, Logger_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Resources = void 0;
+    function extractExtension(filename) {
+        return filename.substring(filename.lastIndexOf('.') + 1);
+    }
+    const imageExtensions = ['png', 'jpg'];
+    const textExtensions = ['txt', 'md', 'vert', 'frag', 'glsl', 'json', 'html', 'css'];
+    class ResourcesBase {
+        constructor(folder) {
+            this.folder = folder || '';
+            this.resources = new Map();
+        }
+        get(file) {
+            const resource = this.resources.get(file);
+            if (typeof resource === 'undefined') {
+                Logger_1.Logger.error(`Unknown resource '${file}'.`);
+                return null;
+            }
+            return resource;
+        }
+        toString() {
+            return `[\n\t\'${Array.from(this.resources.keys()).join("\',\n\t\'")}\'\n]`;
+        }
+        async load(path) {
+            let url = this.folder.concat(path);
+            const fetchResource = async function (path, url, map) {
+                const fileExt = extractExtension(path);
+                let file;
+                try {
+                    if (imageExtensions.includes(fileExt)) {
+                        file = await ResourceFetcher_2.ResourceFetcher.fetchImage(url);
+                    }
+                    else if (textExtensions.includes(fileExt)) {
+                        file = await ResourceFetcher_2.ResourceFetcher.fetchTextFile(url);
+                    }
+                }
+                catch (e) {
+                    Logger_1.Logger.error(`Resource item '${url}' not found.`);
+                    return;
+                }
+                map.set(path, file);
+            };
+            await fetchResource(path, url, this.resources);
+        }
+        async loadList(path) {
+            let url = this.folder.concat(path);
+            let resources;
+            try {
+                resources = await ResourceFetcher_2.ResourceFetcher.fetchJSON(url);
+            }
+            catch (e) {
+                Logger_1.Logger.error(`Resources list '${url}' not found.`);
+                return;
+            }
+            const fetchResource = async function (resource, folder, map) {
+                const fileExt = extractExtension(resource);
+                let file;
+                try {
+                    if (imageExtensions.includes(fileExt)) {
+                        file = await ResourceFetcher_2.ResourceFetcher.fetchImage(folder.concat(resource));
+                    }
+                    else if (textExtensions.includes(fileExt)) {
+                        file = await ResourceFetcher_2.ResourceFetcher.fetchTextFile(folder.concat(resource));
+                    }
+                }
+                catch (e) {
+                    Logger_1.Logger.error(`Resource item '${url}' not found.`);
+                    return;
+                }
+                map.set(resource, file);
+            };
+            for (const resource of resources.list) {
+                await fetchResource(resource, this.folder, this.resources);
+            }
+        }
+    }
+    const Resources = ResourcesBase;
+    exports.Resources = Resources;
+});
+define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_25) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isDropdownElement = exports.HTMLEDropdownElement = void 0;
@@ -11111,7 +11547,7 @@ define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "e
         let HTMLEDropdownElement = class HTMLEDropdownElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_22.bindShadowRoot(this, /*template*/ `
+                HTMLElement_25.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -11183,10 +11619,10 @@ define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "e
             }
         };
         HTMLEDropdownElement = __decorate([
-            HTMLElement_22.RegisterCustomHTMLElement({
+            HTMLElement_25.RegisterCustomHTMLElement({
                 name: 'e-dropdown'
             }),
-            HTMLElement_22.GenerateAttributeAccessors([
+            HTMLElement_25.GenerateAttributeAccessors([
                 { name: 'expanded', type: 'boolean' },
             ])
         ], HTMLEDropdownElement);
@@ -11194,19 +11630,15 @@ define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "e
     })();
     exports.HTMLEDropdownElement = HTMLEDropdownElement;
 });
-define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/menus/Menu"], function (require, exports, HTMLElement_23, Menu_3) {
+define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_26) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEMenuButtonElement = exports.isHTMLEMenuButtonElement = void 0;
-    function isHTMLEMenuButtonElement(elem) {
-        return elem.tagName.toLowerCase() === "e-menubutton";
-    }
-    exports.isHTMLEMenuButtonElement = isHTMLEMenuButtonElement;
+    exports.BaseHTMLEMenuButtonElement = void 0;
     let BaseHTMLEMenuButtonElement = /** @class */ (() => {
         let BaseHTMLEMenuButtonElement = class BaseHTMLEMenuButtonElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_23.bindShadowRoot(this, /*template*/ `
+                HTMLElement_26.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     position: relative;
@@ -11391,7 +11823,7 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
                 if (menuSlot) {
                     menuSlot.addEventListener("slotchange", () => {
                         const menuElem = menuSlot.assignedElements()[0];
-                        if (Menu_3.isHTMLEMenuElement(menuElem)) {
+                        if (HTMLElement_26.isTagElement("e-menu", menuElem)) {
                             this.childMenu = menuElem;
                         }
                     });
@@ -11399,11 +11831,11 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
             }
         };
         BaseHTMLEMenuButtonElement = __decorate([
-            HTMLElement_23.RegisterCustomHTMLElement({
+            HTMLElement_26.RegisterCustomHTMLElement({
                 name: "e-menubutton",
                 observedAttributes: ["icon", "label", "checked"]
             }),
-            HTMLElement_23.GenerateAttributeAccessors([
+            HTMLElement_26.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
                 { name: "active", type: "boolean" },
                 { name: "label", type: "string" },
@@ -11416,7 +11848,7 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
     })();
     exports.BaseHTMLEMenuButtonElement = BaseHTMLEMenuButtonElement;
 });
-define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
+define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_27) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PaletteElement = void 0;
@@ -11424,7 +11856,7 @@ define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine
         let PaletteElement = class PaletteElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_24.bindShadowRoot(this, /*template*/ `
+                HTMLElement_27.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -11453,176 +11885,24 @@ define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine
             }
         };
         PaletteElement = __decorate([
-            HTMLElement_24.RegisterCustomHTMLElement({
+            HTMLElement_27.RegisterCustomHTMLElement({
                 name: 'e-palette'
             }),
-            HTMLElement_24.GenerateAttributeAccessors([{ name: 'colors', type: 'json' }])
+            HTMLElement_27.GenerateAttributeAccessors([{ name: 'colors', type: 'json' }])
         ], PaletteElement);
         return PaletteElement;
     })();
     exports.PaletteElement = PaletteElement;
 });
-define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_25) {
+define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_28) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLEBreadcrumbItemElement = exports.isHTMLEBreadcrumbItemElement = void 0;
-    function isHTMLEBreadcrumbItemElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-breadcrumbitem";
-    }
-    exports.isHTMLEBreadcrumbItemElement = isHTMLEBreadcrumbItemElement;
-    let HTMLEBreadcrumbItemElement = /** @class */ (() => {
-        let HTMLEBreadcrumbItemElement = class HTMLEBreadcrumbItemElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_25.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: inline-block;
-                    cursor: pointer;
-                }
-
-                :host([active]) {
-                    font-weight: bold;
-                }
-
-                :host(:not([active]))::after {
-                    content: ">";
-                    display: inline-block;
-                }
-
-                :host([hidden]) {
-                    display: none;
-                }
-
-                [part~="li"] {
-                    display: inline-block;
-                    list-style-type: none;
-                }
-            </style>
-            <li part="li">
-                <span part="label"></span>
-            </li>
-        `);
-                this.trail = null;
-            }
-            connectedCallback() {
-                this.tabIndex = this.tabIndex;
-            }
-            attributeChangedCallback(name, oldValue, newValue) {
-                var _a;
-                if (newValue !== oldValue) {
-                    switch (name) {
-                        case "label":
-                            if (oldValue !== newValue) {
-                                const labelPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
-                                if (labelPart) {
-                                    labelPart.textContent = newValue;
-                                }
-                            }
-                            break;
-                    }
-                }
-            }
-        };
-        HTMLEBreadcrumbItemElement = __decorate([
-            HTMLElement_25.RegisterCustomHTMLElement({
-                name: "e-breadcrumbitem",
-                observedAttributes: ["label"]
-            }),
-            HTMLElement_25.GenerateAttributeAccessors([
-                { name: "label", type: "string" },
-                { name: "active", type: "boolean" }
-            ])
-        ], HTMLEBreadcrumbItemElement);
-        return HTMLEBreadcrumbItemElement;
-    })();
-    exports.HTMLEBreadcrumbItemElement = HTMLEBreadcrumbItemElement;
-});
-define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem"], function (require, exports, HTMLElement_26, BreadcrumbItem_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLEBreadcrumbTrailElement = exports.isHTMLEBreadcrumbTrailElement = void 0;
-    function isHTMLEBreadcrumbTrailElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-breadcrumbtrail";
-    }
-    exports.isHTMLEBreadcrumbTrailElement = isHTMLEBreadcrumbTrailElement;
-    let HTMLEBreadcrumbTrailElement = /** @class */ (() => {
-        let HTMLEBreadcrumbTrailElement = class HTMLEBreadcrumbTrailElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_26.bindShadowRoot(this, /*template*/ `
-            <style>
-                [part~="ul"] {
-                    display: block;
-                    list-style-type: none;
-                    padding: 0; margin: 0;
-                }
-            </style>
-            <button id="backward">backward</button>
-            <button id="forward">forward</button>
-            <ul part="ul">
-                <slot></slot>
-            </ul>
-        `);
-                this.items = [];
-                this.activeIndex = 0;
-            }
-            activateItem(item) {
-                let itemIndex = this.items.indexOf(item);
-                if (itemIndex > -1) {
-                    this.items.forEach((item, index) => {
-                        item.active = (index == itemIndex);
-                        item.hidden = (index > itemIndex);
-                    });
-                    this.activeIndex = itemIndex;
-                    let activeItem = this.items[itemIndex];
-                    activeItem.dispatchEvent(new CustomEvent("activate"));
-                }
-            }
-            connectedCallback() {
-                var _a;
-                this.tabIndex = this.tabIndex;
-                const slot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot");
-                if (slot) {
-                    slot.addEventListener("slotchange", () => {
-                        const items = slot.assignedElements().filter(BreadcrumbItem_1.isHTMLEBreadcrumbItemElement);
-                        this.items = items;
-                        items.forEach((item, index) => {
-                            item.trail = this;
-                            item.active = (index === items.length - 1);
-                        });
-                    });
-                }
-                this.addEventListener("mousedown", (event) => {
-                    let target = event.target;
-                    if (BreadcrumbItem_1.isHTMLEBreadcrumbItemElement(target)) {
-                        this.activateItem(target);
-                    }
-                });
-            }
-        };
-        HTMLEBreadcrumbTrailElement = __decorate([
-            HTMLElement_26.RegisterCustomHTMLElement({
-                name: "e-breadcrumbtrail"
-            })
-        ], HTMLEBreadcrumbTrailElement);
-        return HTMLEBreadcrumbTrailElement;
-    })();
-    exports.HTMLEBreadcrumbTrailElement = HTMLEBreadcrumbTrailElement;
-});
-define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_27) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLELoaderElement = exports.isHTMLELoaderElement = void 0;
-    function isHTMLELoaderElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() === "e-loader";
-    }
-    exports.isHTMLELoaderElement = isHTMLELoaderElement;
+    exports.BaseHTMLELoaderElement = void 0;
     let BaseHTMLELoaderElement = /** @class */ (() => {
         let BaseHTMLELoaderElement = class BaseHTMLELoaderElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_27.bindShadowRoot(this, /*template*/ `
+                HTMLElement_28.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: inline-block;
@@ -11722,14 +12002,12 @@ define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine
             <div part="circle"></div>
         `);
             }
-            connectedCallback() {
-            }
         };
         BaseHTMLELoaderElement = __decorate([
-            HTMLElement_27.RegisterCustomHTMLElement({
+            HTMLElement_28.RegisterCustomHTMLElement({
                 name: "e-loader"
             }),
-            HTMLElement_27.GenerateAttributeAccessors([
+            HTMLElement_28.GenerateAttributeAccessors([
                 { name: "type", type: "string" }
             ])
         ], BaseHTMLELoaderElement);
@@ -11737,30 +12015,30 @@ define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine
     })();
     exports.BaseHTMLELoaderElement = BaseHTMLELoaderElement;
 });
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_4, MenuBar_2, MenuItem_5, Panel_1, PanelGroup_1, Tab_3, TabList_2, TabPanel_2, Import_2, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_14, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_3, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_4, Dropzone_2, HTMLElement_28, Loader_1) {
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_15, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_2, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_3, Dropzone_1, HTMLElement_29, Loader_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.launchScene = exports.start = void 0;
     StatusBar_1.HTMLEStatusBarElement;
     StatusItem_2.HTMLEStatusItemElement;
-    Import_2.BaseHTMLEImportElement;
+    Import_1.BaseHTMLEImportElement;
     Panel_1.PanelElement;
     PanelGroup_1.PanelGroupElement;
-    Tab_3.BaseHTMLETabElement;
-    TabList_2.BaseHTMLETabListElement;
+    Tab_1.BaseHTMLETabElement;
+    TabList_1.BaseHTMLETabListElement;
     TabPanel_2.BaseHTMLETabPanelElement;
     Dropdown_1.HTMLEDropdownElement;
     BreadcrumbTrail_1.HTMLEBreadcrumbTrailElement;
     BreadcrumbItem_2.HTMLEBreadcrumbItemElement;
     Palette_1.PaletteElement;
-    Draggable_4.BaseHTMLEDraggableElement;
-    MenuBar_2.BaseHTMLEMenuBarElement;
+    Draggable_3.BaseHTMLEDraggableElement;
+    MenuBar_1.BaseHTMLEMenuBarElement;
     MenuButton_1.BaseHTMLEMenuButtonElement;
-    Menu_4.BaseHTMLEMenuElement;
-    MenuItem_5.BaseHTMLEMenuItemElement;
-    Dropzone_2.BaseHTMLEDropzoneElement;
-    MenuItemGroup_3.BaseHTMLEMenuItemGroupElement;
-    MenuItem_5.BaseHTMLEMenuItemElement;
+    Menu_1.BaseHTMLEMenuElement;
+    MenuItem_1.BaseHTMLEMenuItemElement;
+    Dropzone_1.BaseHTMLEDropzoneElement;
+    MenuItemGroup_2.BaseHTMLEMenuItemGroupElement;
+    MenuItem_1.BaseHTMLEMenuItemElement;
     Loader_1.BaseHTMLELoaderElement;
     const simpleSceneDOM = /*template*/ `
 <link rel="stylesheet" href="../css/main.css"/>
@@ -11927,7 +12205,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
   </div>`;
     async function start() {
         document.addEventListener("contextmenu", (event) => {
-            let menu = HTMLElement_28.HTMLElementConstructor("e-menu", { children: [HTMLElement_28.HTMLElementConstructor("e-menuitem", { attr: { label: "Say my name!" } })] });
+            let menu = HTMLElement_29.HTMLElementConstructor("e-menu", { children: [HTMLElement_29.HTMLElementConstructor("e-menuitem", { attr: { label: "Say my name!" } })] });
             menu.style.position = "absolute";
             menu.style.top = `${event.clientY}px`;
             menu.style.left = `${event.clientX}px`;
@@ -12351,7 +12629,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                     //console.log(`cameraToTarget ${cameraToTarget.x.toFixed(4)} ${cameraToTarget.y.toFixed(4)} ${cameraToTarget.z.toFixed(4)}`);
                     let theta = Math.acos(cameraToTarget.z / radius);
                     let phi = Math.atan2(cameraToTarget.y, cameraToTarget.x);
-                    theta = Snippets_14.clamp(theta - deltaTheta, 0, Math.PI);
+                    theta = Snippets_15.clamp(theta - deltaTheta, 0, Math.PI);
                     phi -= deltaPhi;
                     //console.log(`theta ${theta.toFixed(4)} phi ${phi.toFixed(4)}`);
                     // Turn back into Cartesian coordinates
@@ -12422,11 +12700,11 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     }
     exports.launchScene = launchScene;
 });
-define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Dropzone", "samples/scenes/Mockup"], function (require, exports, HTMLElement_29, Dropzone_3, Mockup_1) {
+define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/controls/draggable/Dropzone"], function (require, exports, HTMLElement_30, Dropzone_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.sandbox = void 0;
-    class DataClassMixin extends HTMLElement_29.BaseAttributeMutationMixin {
+    class DataClassMixin extends HTMLElement_30.BaseAttributeMutationMixin {
         constructor(attributeValue) {
             super("data-class", "listitem", attributeValue);
         }
@@ -12453,13 +12731,13 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             super("input-dropzone");
             this.datatransferEventListener = (event) => {
                 let target = event.target;
-                if (Dropzone_3.isHTMLEDropzoneElement(target)) {
+                if (Dropzone_2.isHTMLEDropzoneElement(target)) {
                     this.handlePostdatatransferInputNaming(target);
                 }
             };
         }
         attach(element) {
-            if (Dropzone_3.isHTMLEDropzoneElement(element)) {
+            if (Dropzone_2.isHTMLEDropzoneElement(element)) {
                 this.handlePostdatatransferInputNaming(element);
             }
             element.addEventListener("datatransfer", this.datatransferEventListener);
@@ -12490,7 +12768,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             super("toggler-select");
             this.changeEventListener = (event) => {
                 let target = event.target;
-                if (HTMLElement_29.isTagElement("select", target)) {
+                if (HTMLElement_30.isTagElement("select", target)) {
                     this.handlePostchangeToggle(target);
                 }
             };
@@ -12520,7 +12798,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             super("duplicater-input");
             this.changeEventListener = (event) => {
                 let target = event.target;
-                if (HTMLElement_29.isTagElement("input", target)) {
+                if (HTMLElement_30.isTagElement("input", target)) {
                     this.handlePostchangeDuplicate(target);
                 }
             };
@@ -12564,7 +12842,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             super("enabler-input");
             this.changeEventListener = (event) => {
                 let target = event.target;
-                if (HTMLElement_29.isTagElement("input", target)) {
+                if (HTMLElement_30.isTagElement("input", target)) {
                     this.handlePostchangeDuplicate(target);
                 }
             };
@@ -12609,70 +12887,21 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
         new TogglerSelectDataClassMixin(),
         new DuplicaterInputDataClassMixin()
     ];
-    const mainObserver = new MutationObserver(HTMLElement_29.createMutationObserverCallback(attributeMutationMixins));
+    const mainObserver = new MutationObserver(HTMLElement_30.createMutationObserverCallback(attributeMutationMixins));
     mainObserver.observe(document.body, {
         childList: true,
         subtree: true,
         attributeFilter: attributeMutationMixins.map((mixin => mixin.attributeName))
     });
-    let html = function (parts, ...expr) {
-        let events = [];
-        let parsedParts = [];
-        for (let i = 0; i < parts.length; i++) {
-            let part = parts[i];
-            let eventAttribute = /@(.*)=/.exec(part);
-            if (eventAttribute !== null) {
-                if (typeof expr[i] === "function") {
-                    events.push([eventAttribute[1], expr[i]]);
-                    parsedParts.push(part.substr(0, part.indexOf("@")).trimRight());
-                }
-            }
-            else {
-                parsedParts.push(part);
-            }
-        }
-        const parsedHTML = new DOMParser().parseFromString(parsedParts.join(), "text/html").body.firstChild;
-        if (!parsedHTML) {
-            throw new Error();
-        }
-        if (parsedHTML.nodeType === parsedHTML.ELEMENT_NODE) {
-            events.forEach((event) => {
-                parsedHTML.addEventListener(event[0], event[1]);
-            });
-        }
-        return parsedHTML;
-    };
-    HTMLElement_29.CustomHTMLElement({ name: "my-element" });
-    let MyElement = /** @class */ (() => {
-        class MyElement extends HTMLElement_29.HTMLEELement {
-            render() {
-                return html `
-      <div>${this.myAttr}</div>
-    `;
-            }
-        }
-        __decorate([
-            HTMLElement_29.Property()
-        ], MyElement.prototype, "myAttr", void 0);
-        return MyElement;
-    })();
     async function sandbox() {
-        function kek(arg) {
-            return arg;
-        }
-        const content = 1;
-        let onClick = () => {
-            alert();
-        };
-        let element = html `<p @click=${kek(onClick)}>${content}</p>`;
-        if (element) {
-            document.body.appendChild(element);
-        }
-        window['lol'] = new HTMLElement_29.temp();
-        await Mockup_1.mockup();
+        //await mockup();
         //await start();
-        /*
-        editor.registerCommand("test", {
+        let html = function (parts, ...expr) {
+            console.log(parts);
+            console.log(expr);
+        };
+        html `${1}Hey${2}`;
+        /*editor.registerCommand("test", {
           exec: () => {
             alert("test");
           },
@@ -13438,7 +13667,7 @@ define("engine/core/rendering/scenes/geometries/PhongGeometry", ["require", "exp
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });
-define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_4, Snippets_15) {
+define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_4, Snippets_16) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SphereGeometry = void 0;
@@ -13518,10 +13747,10 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
         [0, 1],
         [1, 1]
     ];
-    const sphereVertices = Snippets_15.buildArrayFromIndexedArrays(sphereVerticesSet, [
+    const sphereVertices = Snippets_16.buildArrayFromIndexedArrays(sphereVerticesSet, [
         0, 2, 3, 1,
     ]);
-    const sphereUVS = Snippets_15.buildArrayFromIndexedArrays(sphereUVsSet, [
+    const sphereUVS = Snippets_16.buildArrayFromIndexedArrays(sphereUVsSet, [
         0, 2, 3, 1,
     ]);
     const sphereIndices = [
@@ -13549,7 +13778,7 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
  *                     v14
  *
  */ 
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_16) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_17) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TetrahedronGeometry = void 0;
@@ -13594,13 +13823,13 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const tetrahedronVertices = Snippets_16.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
+    const tetrahedronVertices = Snippets_17.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
         0, 1, 2,
         1, 0, 3,
         1, 3, 2,
         2, 3, 0,
     ]);
-    const tetrahedronUVS = Snippets_16.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
+    const tetrahedronUVS = Snippets_17.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
         1, 2, 0,
         1, 3, 0,
         2, 3, 0,
@@ -14709,7 +14938,189 @@ define("engine/core/systems/RenderingSystem", ["require", "exports", "engine/cor
     }
     exports.RenderingSystem = RenderingSystem;
 });
-define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_30) {
+/*
+class WebComponent extends HTMLElement {
+    
+    constructor() {
+        super();
+    }
+
+    public connectedCallback(): void {
+
+    }
+
+    public disconnectedCallback(): void {
+
+    }
+
+    public attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
+
+    }
+
+    public beforeUpdate() {
+        
+    }
+
+    public update(): void  {
+
+    }
+
+    public afterUpdate() {
+
+    }
+
+    public requestUpdate(): void  {
+
+    }
+
+    public render(): void  {
+
+    }
+}
+
+interface CustomHTMLElementDecorator {
+    (args: {
+        name: string;
+        options?: ElementDefinitionOptions
+    }): <C extends CustomElementConstructor>(elementCtor: C) => C;
+}
+
+const CustomHTMLElement: CustomHTMLElementDecorator = function(args: {
+    name: string;
+    options?: ElementDefinitionOptions
+}) {
+    return <C extends CustomElementConstructor>(
+        elementCtor: C
+    ) => {
+
+        customElements.define(
+            args.name,
+            elementCtor,
+            args.options
+        );
+
+        return elementCtor;
+    }
+}
+
+class HTMLEELement extends HTMLElement {
+
+    constructor() {
+        super();
+        let prototype = (Object.getPrototypeOf(this) as typeof HTMLEELement);
+        this.attachShadow({mode: "open"});
+    }
+
+    connectedCallback() {
+        this.dispatchEvent(new CustomEvent("connected"));
+    }
+
+    disconnectedCallback() {
+        this.dispatchEvent(new CustomEvent("disconnected"));
+    }
+
+    render(): Node {
+        return this.shadowRoot!;
+    }
+}
+
+interface ReactiveDecorator {
+    (args?: {
+        hasChanged?: (oldValue: any, newValue: any) => boolean;
+        type?: "string" | "number" | "boolean" | "array" | "object";
+        reflect?: boolean;
+    }): <E extends HTMLEELement>(elementPrototype: E, propertyKey: string) => void;
+}
+
+const Reactive: ReactiveDecorator = function(args?: {
+    hasChanged?: (oldValue: any, newValue: any) => boolean;
+    type?: "string" | "number" | "boolean" | "array" | "object";
+    reflect?: boolean;
+}) {
+    return <E extends HTMLEELement>(
+        elementPrototype: E, propertyKey: string
+    ) => {
+        if (args) {
+            Object.defineProperty(elementPrototype, propertyKey, {
+                set: function(this: E, value) {
+                    let propertyHasChanged = true;
+                    if (typeof args !== "undefined" && typeof args.hasChanged === "function") {
+                        propertyHasChanged = args.hasChanged((this as {[k: string]: any})[propertyKey], value)
+                    }
+                    else {
+                        propertyHasChanged = ((this as {[k: string]: any})[propertyKey] !== value);
+                    }
+                    (this as {[k: string]: any})[propertyKey] = value;
+                    if (args.reflect) {
+                        switch (args.type) {
+                            case "boolean":
+                                if (value) {
+                                    this.setAttribute(propertyKey, "");
+                                }
+                                else {
+                                    this.removeAttribute(propertyKey);
+                                }
+                                break;
+                            case "number":
+                            case "string":
+                                if (typeof value !== "undefined" && value !== null) {
+                                    this.setAttribute(propertyKey, value);
+                                }
+                                else {
+                                    this.removeAttribute(propertyKey);
+                                }
+                                break;
+                            case "object":
+                            case "array":
+                                if (typeof value !== "undefined" && value !== null) {
+                                    this.setAttribute(propertyKey, JSON.stringify(value));
+                                }
+                                else {
+                                    this.removeAttribute(propertyKey);
+                                }
+                                break;
+                        }
+                    }
+                    if (propertyHasChanged) {
+                        this.update();
+                    }
+                }
+            });
+        }
+    }
+}
+
+let html = function(parts: TemplateStringsArray, ...expr: any[]) {
+    let events: [string, EventListener][] = [];
+    let parsedParts = [];
+    for (let i = 0; i < parts.length; i++) {
+      let part = parts[i];
+      let eventAttribute = /@(.*)=/.exec(part);
+      if (eventAttribute !== null) {
+        if (typeof expr[i] === "function") {
+          events.push([eventAttribute[1], expr[i]]);
+          parsedParts.push(part.substr(0, part.indexOf("@")).trimRight());
+        }
+      }
+      else {
+        parsedParts.push(part);
+      }
+    }
+    const template = document.createElement("template");
+    template.innerHTML = parsedParts.join();
+    const parsedHTML = new DOMParser().parseFromString(parsedParts.join(), "text/html").body.firstChild;
+    if (!parsedHTML) {
+      throw new Error();
+    }
+    if (parsedHTML.nodeType === parsedHTML.ELEMENT_NODE) {
+      events.forEach((event) => {
+        parsedHTML.addEventListener(event[0], event[1]);
+      });
+    }
+    return parsedHTML;
+  }
+*/ 
+define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_31) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.setFormState = exports.getFormState = void 0;
@@ -14718,7 +15129,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
         const elements = Array.from(form.elements);
         let state = {};
         elements.forEach((element) => {
-            if (HTMLElement_30.isTagElement("input", element)) {
+            if (HTMLElement_31.isTagElement("input", element)) {
                 if (element.type === "radio") {
                     if (!(element.name in state)) {
                         state[element.name] = {
@@ -14751,12 +15162,12 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
                     };
                 }
             }
-            else if (HTMLElement_30.isTagElement("select", element)) {
+            else if (HTMLElement_31.isTagElement("select", element)) {
                 state[element.name] = {
                     value: element.value,
                 };
             }
-            else if (HTMLElement_30.isTagElement("textarea", element)) {
+            else if (HTMLElement_31.isTagElement("textarea", element)) {
                 state[element.name] = {
                     value: element.value,
                 };
@@ -14773,14 +15184,14 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
             if ("type" in elemState) {
                 if (elemState.type === "checkbox") {
                     let element = elements.find((elem) => elem.name === name);
-                    if (element && HTMLElement_30.isTagElement("input", element)) {
+                    if (element && HTMLElement_31.isTagElement("input", element)) {
                         element.checked = elemState.checked;
                     }
                 }
                 else if (elemState.type === "radio") {
                     elemState.nodes.forEach((radioNode) => {
                         let element = elements.find((elem) => elem.name === name && elem.value === radioNode.value);
-                        if (element && HTMLElement_30.isTagElement("input", element)) {
+                        if (element && HTMLElement_31.isTagElement("input", element)) {
                             element.checked = radioNode.checked;
                         }
                     });
@@ -14788,7 +15199,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
             }
             else {
                 let element = elements.find((elem) => elem.name === name);
-                if (element && (HTMLElement_30.isTagElement("input", element) || HTMLElement_30.isTagElement("select", element) || HTMLElement_30.isTagElement("textarea", element))) {
+                if (element && (HTMLElement_31.isTagElement("input", element) || HTMLElement_31.isTagElement("select", element) || HTMLElement_31.isTagElement("textarea", element))) {
                     element.value = elemState.value;
                 }
             }
@@ -14796,7 +15207,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
     };
     exports.setFormState = setFormState;
 });
-define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_31) {
+define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.NumberInputElement = void 0;
@@ -14834,13 +15245,13 @@ define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "ex
             }
         };
         NumberInputElement = __decorate([
-            HTMLElement_31.RegisterCustomHTMLElement({
+            HTMLElement_32.RegisterCustomHTMLElement({
                 name: 'number-input',
                 options: {
                     extends: 'input'
                 }
             }),
-            HTMLElement_31.GenerateAttributeAccessors([
+            HTMLElement_32.GenerateAttributeAccessors([
                 { name: 'cache' }
             ])
         ], NumberInputElement);
@@ -14848,7 +15259,7 @@ define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "ex
     })();
     exports.NumberInputElement = NumberInputElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
+define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_33) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuBarElement = exports.HTMLEMenuBarElement = void 0;
@@ -14860,11 +15271,11 @@ define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exp
         let HTMLEMenuBarElement = class HTMLEMenuBarElement extends HTMLElement {
         };
         HTMLEMenuBarElement = __decorate([
-            HTMLElement_32.RegisterCustomHTMLElement({
+            HTMLElement_33.RegisterCustomHTMLElement({
                 name: "e-menubar",
                 observedAttributes: ["active"]
             }),
-            HTMLElement_32.GenerateAttributeAccessors([
+            HTMLElement_33.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
                 { name: "active", type: "boolean" },
             ])
@@ -14873,7 +15284,7 @@ define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exp
     })();
     exports.HTMLEMenuBarElement = HTMLEMenuBarElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_33) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_34) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuItemElement = exports.HTMLEMenuItemElement = void 0;
@@ -14885,11 +15296,11 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
         let HTMLEMenuItemElement = class HTMLEMenuItemElement extends HTMLElement {
         };
         HTMLEMenuItemElement = __decorate([
-            HTMLElement_33.RegisterCustomHTMLElement({
+            HTMLElement_34.RegisterCustomHTMLElement({
                 name: "e-menuitem",
                 observedAttributes: ["icon", "label", "checked"]
             }),
-            HTMLElement_33.GenerateAttributeAccessors([
+            HTMLElement_34.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
                 { name: "label", type: "string" },
                 { name: "icon", type: "string" },
@@ -14903,7 +15314,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
     })();
     exports.HTMLEMenuItemElement = HTMLEMenuItemElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_34) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_35) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
@@ -14915,11 +15326,11 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
         let HTMLEMenuItemGroupElement = class HTMLEMenuItemGroupElement extends HTMLElement {
         };
         HTMLEMenuItemGroupElement = __decorate([
-            HTMLElement_34.RegisterCustomHTMLElement({
+            HTMLElement_35.RegisterCustomHTMLElement({
                 name: "e-menuitemgroup",
                 observedAttributes: ["label", "active"]
             }),
-            HTMLElement_34.GenerateAttributeAccessors([
+            HTMLElement_35.GenerateAttributeAccessors([
                 { name: "active", type: "boolean" },
                 { name: "label", type: "string" },
                 { name: "type", type: "string" },
@@ -14932,7 +15343,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
     })();
     exports.HTMLEMenuItemGroupElement = HTMLEMenuItemGroupElement;
 });
-define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_35) {
+define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_36) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.WindowElement = void 0;
@@ -14940,7 +15351,7 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
         let WindowElement = class WindowElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_35.bindShadowRoot(this, /*template*/ `
+                HTMLElement_36.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -15017,10 +15428,10 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
             }
         };
         WindowElement = __decorate([
-            HTMLElement_35.RegisterCustomHTMLElement({
+            HTMLElement_36.RegisterCustomHTMLElement({
                 name: 'e-window'
             }),
-            HTMLElement_35.GenerateAttributeAccessors([
+            HTMLElement_36.GenerateAttributeAccessors([
                 { name: 'title', type: 'string' },
                 { name: 'tooltip', type: 'string' },
                 { name: 'toggled', type: 'boolean' }
@@ -15030,7 +15441,7 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
     })();
     exports.WindowElement = WindowElement;
 });
-define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3"], function (require, exports, HTMLElement_36, Vector3_8) {
+define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3"], function (require, exports, HTMLElement_37, Vector3_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3InputElement = void 0;
@@ -15038,7 +15449,7 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
         let Vector3InputElement = class Vector3InputElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_36.bindShadowRoot(this, /*template*/ `
+                HTMLElement_37.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -15095,10 +15506,10 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
             }
         };
         Vector3InputElement = __decorate([
-            HTMLElement_36.RegisterCustomHTMLElement({
+            HTMLElement_37.RegisterCustomHTMLElement({
                 name: 'e-vector3-input'
             }),
-            HTMLElement_36.GenerateAttributeAccessors([
+            HTMLElement_37.GenerateAttributeAccessors([
                 { name: 'label' },
                 { name: 'tooltip' }
             ])
@@ -15107,20 +15518,20 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
     })();
     exports.Vector3InputElement = Vector3InputElement;
 });
-define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_37) {
+define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_38) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLTableTemplate = void 0;
     const HTMLTableTemplate = (desc) => {
-        const thead = HTMLElement_37.HTMLElementConstructor("thead", {
+        const thead = HTMLElement_38.HTMLElementConstructor("thead", {
             children: [
-                HTMLElement_37.HTMLElementConstructor("tr", {
+                HTMLElement_38.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
                     },
                     children: desc.headerCells.map((cell) => {
-                        return HTMLElement_37.HTMLElementConstructor("th", {
+                        return HTMLElement_38.HTMLElementConstructor("th", {
                             props: {
                                 scope: "col"
                             },
@@ -15132,9 +15543,9 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 })
             ]
         });
-        const tbody = HTMLElement_37.HTMLElementConstructor("tbody", {
+        const tbody = HTMLElement_38.HTMLElementConstructor("tbody", {
             children: desc.bodyCells.map((row) => {
-                return HTMLElement_37.HTMLElementConstructor("tr", {
+                return HTMLElement_38.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
@@ -15144,13 +15555,13 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             switch (cell.type) {
                                 case "data":
                                 default:
-                                    return HTMLElement_37.HTMLElementConstructor("td", {
+                                    return HTMLElement_38.HTMLElementConstructor("td", {
                                         children: [
                                             cell.content
                                         ]
                                     });
                                 case "header":
-                                    return HTMLElement_37.HTMLElementConstructor("th", {
+                                    return HTMLElement_38.HTMLElementConstructor("th", {
                                         props: {
                                             scope: "row"
                                         },
@@ -15161,7 +15572,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             }
                         }
                         else {
-                            return HTMLElement_37.HTMLElementConstructor("td", {
+                            return HTMLElement_38.HTMLElementConstructor("td", {
                                 children: [
                                     cell
                                 ]
@@ -15171,9 +15582,9 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 });
             })
         });
-        const tfoot = HTMLElement_37.HTMLElementConstructor("tfoot", {
+        const tfoot = HTMLElement_38.HTMLElementConstructor("tfoot", {
             children: [
-                HTMLElement_37.HTMLElementConstructor("tr", {
+                HTMLElement_38.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
@@ -15183,13 +15594,13 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             switch (cell.type) {
                                 case "data":
                                 default:
-                                    return HTMLElement_37.HTMLElementConstructor("td", {
+                                    return HTMLElement_38.HTMLElementConstructor("td", {
                                         children: [
                                             cell.content
                                         ]
                                     });
                                 case "header":
-                                    return HTMLElement_37.HTMLElementConstructor("th", {
+                                    return HTMLElement_38.HTMLElementConstructor("th", {
                                         props: {
                                             scope: "row"
                                         },
@@ -15200,7 +15611,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             }
                         }
                         else {
-                            return HTMLElement_37.HTMLElementConstructor("td", {
+                            return HTMLElement_38.HTMLElementConstructor("td", {
                                 children: [
                                     cell
                                 ]
@@ -15210,7 +15621,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 })
             ]
         });
-        const table = HTMLElement_37.HTMLElementConstructor("table", {
+        const table = HTMLElement_38.HTMLElementConstructor("table", {
             props: {
                 id: desc.id,
                 className: desc.className,

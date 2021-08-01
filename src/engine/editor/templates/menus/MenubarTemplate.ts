@@ -19,7 +19,7 @@ const HTMLEMenubarTemplate: HTMLEMenubarTemplate = (desc: HTMLEMenubarTemplateDe
         return HTMLEMenuItemTemplate(itemDesc);
     });
 
-    return HTMLElementConstructor<HTMLEMenuBarElement>(
+    return HTMLElementConstructor(
         "e-menubar", {
             props: {
                 id: desc.id,

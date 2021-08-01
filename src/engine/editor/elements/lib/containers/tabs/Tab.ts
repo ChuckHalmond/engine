@@ -1,14 +1,8 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { HTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
-import { HTMLETabListElement, TabChangeEvent } from "./TabList";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLETabPanelElement, isHTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
 
-export { isHTMLETabElement };
 export { HTMLETabElement };
 export { BaseHTMLETabElement };
-
-function isHTMLETabElement(obj: any): obj is HTMLETabElement {
-    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-tab";
-}
 
 interface HTMLETabElement extends HTMLElement {
     name: string;
@@ -58,12 +52,11 @@ class BaseHTMLETabElement extends HTMLElement implements HTMLETabElement {
 
                 :host(:hover:not([active])) {
                     font-weight: bold;
-                    border-left: 4px solid lightgrey;
                 }
 
                 :host([active]) {
                     font-weight: bold;
-                    border-left: 4px solid dimgray;
+                    border-left: 4px solid black;
                 }
             </style>
             <slot></slot>
@@ -73,18 +66,11 @@ class BaseHTMLETabElement extends HTMLElement implements HTMLETabElement {
 
     public connectedCallback(): void {
         this.tabIndex = this.tabIndex;
-        this.panel = document.querySelector<HTMLETabPanelElement>(`#${this.controls}`);
 
-        if (this.panel !== null) {
-            if (this.panel.isConnected) {
-                this.panel.hidden = !this.active;
-            }
-            else {
-                this.panel.addEventListener("connected", (event) => {
-                    let panel = event.target as HTMLETabPanelElement;
-                    panel.hidden = !this.active;
-                }, {once: true});
-            }
+        let panel = document.getElementById(this.controls);
+        if (isTagElement("e-tabpanel", panel)) {
+            this.panel = panel;
+            this.panel.hidden = !this.active;
         }
     }
     
@@ -92,17 +78,26 @@ class BaseHTMLETabElement extends HTMLElement implements HTMLETabElement {
         switch (name) {
             case "controls":
                 if (oldValue !== newValue) {
-                    this.panel = document.querySelector<HTMLETabPanelElement>(`#${newValue}`);
+                    let panel = document.getElementById(this.controls);
+                    if (isHTMLETabPanelElement(panel)) {
+                        this.panel = panel;
+                    }
                 }
                 break;
             case "active":
                 if (this.active) {
-                    this.dispatchEvent(new CustomEvent("tabchange", {detail: {tab: this}, bubbles: true}) as TabChangeEvent);
+                    this.dispatchEvent(new CustomEvent("tabchange", {detail: {tab: this}, bubbles: true}));
                 }
                 if (this.panel) {
                     this.panel.hidden = !this.active;
                 }
                 break;
         }
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-tab": HTMLETabElement,
     }
 }

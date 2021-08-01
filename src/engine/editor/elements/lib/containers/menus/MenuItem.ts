@@ -1,19 +1,14 @@
 import { HotKey } from "engine/core/input/Input";
 import { editor } from "engine/editor/Editor";
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { isHTMLEMenuElement, HTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Menu";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Menu";
 import { HTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
 import { HTMLEMenuItemGroupElement } from "./MenuItemGroup";
 
-export { isHTMLEMenuItemElement };
 export { HTMLEMenuItemElement };
 export { BaseHTMLEMenuItemElement };
 
 type EMenuItemElementType = "button" | "radio" | "checkbox" | "menu" | "submenu";
-
-function isHTMLEMenuItemElement(obj: any): obj is HTMLEMenuItemElement {
-    return  obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-menuitem";
-}
 
 interface HTMLEMenuItemElement extends HTMLElement {
     name: string;
@@ -289,7 +284,7 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
         if (menuSlot) {
             menuSlot.addEventListener("slotchange", () => {
                 const menuElem = menuSlot.assignedElements()[0];
-                if (isHTMLEMenuElement(menuElem)) {
+                if (isTagElement("e-menu", menuElem)) {
                     this.childMenu = menuElem;
                     menuElem.parentItem = this;
                 }
@@ -391,5 +386,11 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
             }
             this.dispatchEvent(new CustomEvent("trigger", {bubbles: true}));
         }
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-menuitem": HTMLEMenuItemElement,
     }
 }

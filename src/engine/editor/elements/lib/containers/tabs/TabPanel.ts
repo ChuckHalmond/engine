@@ -1,10 +1,15 @@
 import { bindShadowRoot, GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
 
+export { isHTMLETabPanelElement };
 export { HTMLETabPanelElement };
 export { BaseHTMLETabPanelElement };
 
 interface HTMLETabPanelElement extends HTMLElement {
     name: string;
+}
+
+function isHTMLETabPanelElement(obj: any): obj is BaseHTMLETabPanelElement {
+    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-tabpanel";
 }
 
 @RegisterCustomHTMLElement({
@@ -36,7 +41,11 @@ class BaseHTMLETabPanelElement extends HTMLElement implements HTMLETabPanelEleme
 
     public connectedCallback(): void {
         this.tabIndex = this.tabIndex;
-        
-        this.dispatchEvent(new CustomEvent("connected"));
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-tabpanel": HTMLETabPanelElement,
     }
 }
