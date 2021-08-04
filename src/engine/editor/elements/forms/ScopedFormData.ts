@@ -1,27 +1,29 @@
 import { isTagElement } from "../HTMLElement";
 import { setPropertyFromPath } from "../Snippets";
 
-export { FormDataObject };
+export { StructuredFormData };
 
-class FormDataObject {
+class StructuredFormData {
     form: HTMLFormElement;
 
     constructor (form: HTMLFormElement) {
         this.form = form;
     }
 
-    private _resolveElementFullname(element: Element & {name: string}): string {
+    private resolveElementScope(element: HTMLElement & {name: string}): string {
         let fullname = element.name;
-        let parent: Element | null = element.parentElement
+        let parent: HTMLElement | null = element.parentElement
         while (parent && parent !== this.form) {
-            let scope = parent.getAttribute("data-scope");
-            fullname = `${scope}.${fullname}`;
+            let scope = parent.dataset.scope;
+            if (typeof scope !== "undefined") {
+                fullname = `${scope}.${fullname}`;
+            }
             parent = parent?.parentElement;
         }
         return fullname;
     }
 
-    public getData() {
+    public getScopedData(): object {
         let elements = Array.from(this.form.elements);
         let data = {};
         elements.forEach((element) => {
@@ -48,7 +50,7 @@ class FormDataObject {
                         }
                     }
                     if (value !== null) {
-                        let fullname = this._resolveElementFullname(element);
+                        let fullname = this.resolveElementScope(element);
                         setPropertyFromPath(data, fullname, value);
                     }
                 }

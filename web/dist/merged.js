@@ -344,13 +344,15 @@ define("engine/editor/elements/lib/controls/draggable/Draggable", ["require", "e
                 :host([dragovered]) {
                     border-style: dotted;
                 }
-                     
-                ::slotted(e-dropzone) {
-                    display: inline-block;
-                    border-radius: 4px;
+                
+                [part="container"] {
+                    display: flex;
+                    align-items: center;
                 }
             </style>
-            <slot>&nbsp;</slot>
+            <div part="container">
+                <slot>&nbsp;</slot>
+            </div>
         `);
             }
             connectedCallback() {
@@ -477,14 +479,14 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
                     if (event.button === 0) {
                         if (this.draggables.includes(target)) {
                             if (!event.shiftKey && !event.ctrlKey) {
-                                this.draggables.forEach((thisDraggable) => {
-                                    thisDraggable.selected = (thisDraggable == target);
-                                });
+                                if (this.selectedDraggables.length == 0) {
+                                    target.selected = true;
+                                }
                             }
                             else if (event.ctrlKey) {
                                 target.selected = !target.selected;
                             }
-                            else {
+                            else if (event.shiftKey) {
                                 let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
                                 let endRangeIndex = Math.max(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
                                 this.draggables.forEach((thisDraggable, thisDraggableIndex) => {
@@ -640,17 +642,16 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 this.addEventListener("mousedown", (event) => {
                     let target = event.target;
                     if (event.button === 0) {
-                        console.log(target);
                         if (this.draggables.includes(target)) {
                             if (!event.shiftKey && !event.ctrlKey) {
-                                this.draggables.forEach((thisDraggable) => {
-                                    thisDraggable.selected = (thisDraggable == target);
-                                });
+                                if (this.selectedDraggables.length == 0) {
+                                    target.selected = true;
+                                }
                             }
                             else if (event.ctrlKey) {
                                 target.selected = !target.selected;
                             }
-                            else {
+                            else if (event.shiftKey) {
                                 let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
                                 let endRangeIndex = Math.max(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
                                 this.draggables.forEach((thisDraggable, thisDraggableIndex) => {
@@ -862,6 +863,7 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 { name: "disabled", type: "boolean" },
                 { name: "multiple", type: "boolean" },
                 { name: "label", type: "string" },
+                { name: "name", type: "string" },
             ])
         ], BaseHTMLEDropzoneElement);
         return BaseHTMLEDropzoneElement;
@@ -3503,29 +3505,6 @@ define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", ["requir
     })();
     exports.HTMLEBreadcrumbItemElement = HTMLEBreadcrumbItemElement;
 });
-define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_5) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.StructuredFormData = void 0;
-    class StructuredFormData {
-        constructor(form) {
-            this.form = form;
-        }
-        getStructuredFormData() {
-            let structuredData = {};
-            let formData = new FormData(this.form);
-            let keys = Array.from(formData.keys());
-            keys.forEach((key) => {
-                let value = formData.get(key);
-                if (value) {
-                    Snippets_5.setPropertyFromPath(structuredData, key, JSON.parse(value.toString()));
-                }
-            });
-            return structuredData;
-        }
-    }
-    exports.StructuredFormData = StructuredFormData;
-});
 define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_21) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -3551,25 +3530,27 @@ define("engine/editor/templates/other/DraggableInputTemplate", ["require", "expo
     };
     exports.HTMLDraggableInputTemplate = HTMLDraggableInputTemplate;
 });
-define("engine/editor/elements/forms/FormDataObject", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_22, Snippets_6) {
+define("engine/editor/elements/forms/ScopedFormData", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_22, Snippets_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.FormDataObject = void 0;
-    class FormDataObject {
+    exports.StructuredFormData = void 0;
+    class StructuredFormData {
         constructor(form) {
             this.form = form;
         }
-        _resolveElementFullname(element) {
+        resolveElementScope(element) {
             let fullname = element.name;
             let parent = element.parentElement;
             while (parent && parent !== this.form) {
-                let scope = parent.getAttribute("data-scope");
-                fullname = `${scope}.${fullname}`;
+                let scope = parent.dataset.scope;
+                if (typeof scope !== "undefined") {
+                    fullname = `${scope}.${fullname}`;
+                }
                 parent = parent === null || parent === void 0 ? void 0 : parent.parentElement;
             }
             return fullname;
         }
-        getData() {
+        getScopedData() {
             let elements = Array.from(this.form.elements);
             let data = {};
             elements.forEach((element) => {
@@ -3596,8 +3577,8 @@ define("engine/editor/elements/forms/FormDataObject", ["require", "exports", "en
                             }
                         }
                         if (value !== null) {
-                            let fullname = this._resolveElementFullname(element);
-                            Snippets_6.setPropertyFromPath(data, fullname, value);
+                            let fullname = this.resolveElementScope(element);
+                            Snippets_5.setPropertyFromPath(data, fullname, value);
                         }
                     }
                 }
@@ -3605,16 +3586,16 @@ define("engine/editor/elements/forms/FormDataObject", ["require", "exports", "en
             return data;
         }
     }
-    exports.FormDataObject = FormDataObject;
+    exports.StructuredFormData = StructuredFormData;
 });
-define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/forms/FormDataObject", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, FormDataObject_1) {
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/forms/ScopedFormData", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, ScopedFormData_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.mockup = void 0;
     const body = /*template*/ `
     <link rel="stylesheet" href="../css/mockup.css"/>
     <div id="root" class="flex-rows">
-        <header class="flex-cols flex-none padded">
+        <!--<header class="flex-cols flex-none padded">-->
             <!--<e-menubar tabindex="0">
                 <e-menuitem name="file-menu-item" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
@@ -3623,7 +3604,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
                     </e-menu>
                 </e-menuitem>
             </e-menubar>-->
-        </header>
+        <!--</header>-->
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">
@@ -3633,6 +3614,13 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
                 </e-tablist>
             </div>
             <div id="data-col" class="col flex-none padded borded">
+                <details id="flow-details" open>
+                    <summary>Flow</summary>
+                    <details id="flow-details" class="indented" open>
+                        <summary>Extraction</summary>
+                        <a href="#">Extractor[0]</a>[X]
+                    </details>
+                </details>
                 <details id="datasets-details" open>
                     <summary>Datasets</summary>
                 </details>
@@ -3652,16 +3640,42 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
                 <details open>
                     <summary>Metrics</summary>
                     <e-dragzone id="metrics-dragzone">
-                        <e-draggable class="draggable-dropzone" tabindex="-1">max(<e-dropzone placeholder="col"></e-dropzone>)</e-draggable>
-                        <e-draggable class="draggable-dropzone" tabindex="-1">notna(<e-dropzone placeholder="col"></e-dropzone>)</e-draggable>
+                        <e-draggable tabindex="-1"><fieldset data-signature="max_function">max(<e-dropzone placeholder="col"></e-dropzone>)</fieldset></e-draggable>
+                        <e-draggable tabindex="-1">notna(<e-dropzone placeholder="col"></e-dropzone>)</e-draggable>
                     </e-dragzone>
+                </details>
+                <details open>
+                    <summary>Operators</summary>
+                    <e-dragzone id="operators-dragzone">
+                        <e-draggable tabindex="-1">(<e-dropzone placeholder="expr"></e-dropzone>)</e-draggable>
+                    </e-dragzone>
+                    <details class="indented" open>
+                        <summary>boolean</summary>
+                        <e-dragzone id="boolean-operators-dragzone">
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;and&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;or&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;<&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;>&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;==&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;!==&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                        </e-dragzone>
+                    </details>
+                    <details class="indented" open>
+                    <summary>numeric</summary>
+                        <e-dragzone id="numeric-operators-dragzone">
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;+&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;-&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;/&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;*&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                        </e-dragzone>
+                    </details>
                 </details>
                 <details open>
                     <summary>Functions</summary>
                     <details class="indented" open>
                         <summary>string</summary>
                         <e-dragzone id="string-functions-dragzone">
-                            <e-draggable class="draggable-dropzone" tabindex="-1">concat(<e-dropzone placeholder="str0"></e-dropzone>,<button type="button">+</button>)</e-draggable>
+                            <e-draggable class="draggable-dropzone" tabindex="-1">concat(<e-dropzone placeholder="left"></e-dropzone>, <e-dropzone placeholder="right"></e-dropzone>)</e-draggable>
                         </e-dragzone>
                     </details>
                     <details class="indented" open>
@@ -3679,35 +3693,65 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
                         <e-breadcrumbitem>Item 1</e-breadcrumbitem>
                     </e-breadcrumbtrail>-->
                     <form id="extract-form">
-                        <fieldset>
-                            <details open>
-                                <summary>Extractor 
-                                    <select class="doc-select" name="signature" data-class="toggler-select">
-                                        <option value="netezza" selected>Netezza</option>
-                                        <option value="csv">CSV</option>
-                                    </select>
-                                </summary>
-                                <div id="extractors-fieldsets">
-
-                                </div>
-                                <!--<fieldset name="netezza" class="grid-fieldset margin-top" hidden>
-                                    <label for="user">User</label>
-                                    <input type="text" name="userid" required value="Net" ondrop="event.preventDefault()/">
-                                    <label for="password">Password</label>
-                                    <input type="password" name="password" required ondrop="event.preventDefault()"/>
-                                    <label for="database">Database</label>
-                                    <input type="text" name="database" required ondrop="event.preventDefault()"/>
-                                    <label for="query">Query</label>
-                                    <textarea name="query"></textarea>
-                                </fieldset>-->
-                                <!--<fieldset name="csv" class="grid-fieldset margin-top" hidden>
-                                    <label for="filepath">Filepath</label>
-                                    <input name="filepath" type="file"/>
-                                </fieldset>-->
-                            </details>
-                            <div class="indented"><button id="extract-button" type="button">Extract</button></div>
-                        </fieldset>
-                    </form>
+                    <fieldset>
+                        <details open>
+                            <summary>Statement
+                                <select class="doc-select" name="signature" data-class="toggler-select">
+                                    <option value="sequence" selected>Sequence</option>
+                                    <option value="loop">Loop</option>
+                                    <option value="condition">Condition</option>
+                                </select>
+                            </summary>
+                            <fieldset name="sequence" class="grid-fieldset margin-top" hidden>
+                                <label for="user">Sequence size</label>
+                                <input type="number" name="userid" required ondrop="event.preventDefault()/">
+                                <label for="user">Statement [0]</label>
+                                <input type="number" name="userid" required ondrop="event.preventDefault()/">
+                            </fieldset>
+                            <fieldset name="loop" class="grid-fieldset margin-top" hidden>
+                                <label for="filepath">Filepath</label>
+                                <input name="filepath" type="file"/>
+                                <label for="as">As</label>
+                                <input type="text" name="as" required ondrop="event.preventDefault()"/>
+                            </fieldset>
+                            <fieldset>
+                                <details open>
+                                    <summary>
+                                        <select class="doc-select" name="signature" data-class="toggler-select">
+                                            <option value="extractor" selected>Extractor</option>
+                                            <option value="statement">Statement</option>
+                                        </select>
+                                        <select class="doc-select" name="signature" data-class="toggler-select">
+                                            <option value="netezza" selected>Netezza</option>
+                                            <option value="csv">CSV</option>
+                                        </select>
+                                    </summary>
+                                    <fieldset name="netezza" class="grid-fieldset margin-top" hidden>
+                                        <label for="user">User</label>
+                                        <input type="text" name="userid" required ondrop="event.preventDefault()/">
+                                        <label for="password">Password</label>
+                                        <input type="password" name="password" required ondrop="event.preventDefault()"/>
+                                        <label for="database">Database</label>
+                                        <input type="text" name="database" required ondrop="event.preventDefault()"/>
+                                        <label for="query">Query</label>
+                                        <textarea name="query"></textarea>
+                                        <label for="as">As</label>
+                                        <input type="text" name="as" required ondrop="event.preventDefault()"/>
+                                    </fieldset>
+                                    <fieldset name="csv" class="grid-fieldset margin-top" hidden>
+                                        <label for="filepath">Filepath</label>
+                                        <input name="filepath" type="file"/>
+                                        <label for="as">As</label>
+                                        <input type="text" name="as" required ondrop="event.preventDefault()"/>
+                                    </fieldset>
+                                </details>
+                                last execution: never<br/>
+                                last execution status: none<br/>
+                                <button id="extract-button" type="button">Extract</button>
+                            </fieldset>
+                        </details>
+                    </fieldset>
+                </form>
                 </e-tabpanel>
                 <e-tabpanel id="transform-panel">
                     <form id="transform-form">
@@ -3741,26 +3785,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
                                     <label for="value">Value</label>
                                     <e-dropzone></e-dropzone>
                                     <label for="expression">Where</label>
-                                    <div>
-                                        <div class="flex-field">
-                                            <fieldset name="left">
-                                                <e-dropzone></e-dropzone>
-                                            </fieldset>
-                                            <select>
-                                                <option selected>==</option>
-                                                <option>!=</option>
-                                                <option>></option>
-                                                <option><</option>
-                                                <option>>=</option>
-                                                <option><=</option>
-                                            </select>
-                                            <fieldset name="right">
-                                                <e-dropzone></e-dropzone>
-                                            </fieldset>
-                                            <!--<button class="flex-none" type="button">X</button>-->
-                                        </div>
-                                        <!--<button type="button">AND</button><button type="button">OR</button>-->
-                                    </div>
+                                    <e-dropzone placeholder="boolean"></e-dropzone>
                                 </fieldset>
                                 <fieldset name="median_imputer" class="grid-fieldset indented margin-top">
                                     <label for="column">Column(s)</label>
@@ -3784,7 +3809,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
                                 <label for="filename">Filename</label>
                                 <input type="text" name="filename" ondrop="event.preventDefault()" required></input>
                                 <label for="columns">Columns</label>
-                                <e-dropzone multiple id="columns"></e-dropzone>
+                                <e-dropzone multiple id="columns" name="columns"></e-dropzone>
                             </fieldset>
                         </details>
                         <div class="indented"><button id="export-button" type="button">Export</button></div>
@@ -3794,7 +3819,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
             </div>
             <div id="doc-col" class="col flex-none padded borded"></div>
         </main>
-        <footer class="flex-cols flex-none padded"></footer>
+        <!--<footer class="flex-cols flex-none padded"></footer>-->
     </div>
 `;
     async function mockup() {
@@ -3812,59 +3837,34 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
             const jsonData = new JSONFormData(extractForm);
             console.log(jsonData.getData());
         }*/
-        window["FormDataObject"] = FormDataObject_1.FormDataObject;
+        /*(window as any)["FormDataObject"] = FormDataObject;
+    
         let extractorsFieldsets = document.getElementById("extractors-fieldsets");
         let netezzaExtractorTemplate = document.createElement("template");
-        netezzaExtractorTemplate.innerHTML = /*template*/ `
-        <fieldset>
-            <fieldset name="left">
-                <input type="datetime-local" name="date" required ondrop="event.preventDefault()"/>
-                <label for="user">my radio 1</label>
-                <input type="radio" required ondrop="event.preventDefault()"/>
-                <label for="user">my radio 2</label>
-                <input type="radio" name="radio-2" required ondrop="event.preventDefault()"/>
-            <fieldset>
-            <label for="user">User</label>
-            <input type="text" name="userid" required value="Net" ondrop="event.preventDefault()"/>
-            <label for="password">Password</label>
-            <input type="password" name="password" required ondrop="event.preventDefault()"/>
-            <label for="database">Database</label>
-            <input type="text" name="database" required ondrop="event.preventDefault()"/>
-            <label for="query">Query</label>
-            <textarea name="query"></textarea>
-        </fieldset>
-    `;
+        netezzaExtractorTemplate.innerHTML = `
+            <fieldset data-signature="sql-extractor">
+                <fieldset name="left">
+                    <input type="datetime-local" name="date" required ondrop="event.preventDefault()"/>
+                    <label for="user">my radio 1</label>
+                    <input type="radio" required ondrop="event.preventDefault()"/>
+                    <label for="user">my radio 2</label>
+                    <input type="radio" name="radio-2" required ondrop="event.preventDefault()"/>
+                <fieldset>
+                <label for="user">User</label>
+                <input type="text" name="userid" required value="Net" ondrop="event.preventDefault()"/>
+                <label for="password">Password</label>
+                <input type="password" name="password" required ondrop="event.preventDefault()"/>
+                <label for="database">Database</label>
+                <input type="text" name="database" required ondrop="event.preventDefault()"/>
+                <label for="query">Query</label>
+                <textarea name="query"></textarea>
+            </fieldset>
+        `;
+        
         if (extractorsFieldsets) {
             extractorsFieldsets.appendChild(netezzaExtractorTemplate.content);
-        }
-        let booleanExpressionTemplate = document.createElement("template");
-        booleanExpressionTemplate.innerHTML = /*template*/ `
-        <label for="expression">Where</label>
-        <div>
-            <div class="flex-field">
-                <fieldset name="left">
-                    <e-dropzone></e-dropzone>
-                </fieldset>
-                <select name="signature">
-                    <option selected value="equals_operator">==</option>
-                    <option value="not_equals_operator">!=</option>
-                    <option value="greater_than_operator">></option>
-                    <option value="lower_to_operator"><</option>
-                </select>
-                <fieldset name="right">
-                    <e-dropzone></e-dropzone>
-                </fieldset>
-                <!--<button class="flex-none" type="button">X</button>-->
-            </div>
-        </div>
-    `;
-        const dropzone = document.querySelector("e-dropzone#columns");
-        if (dropzone) {
-            dropzone.addEventListener("datachange", (event) => {
-                const fieldsets = dropzone.querySelectorAll(":scope > e-draggable > fieldset");
-                console.log(fieldsets);
-            });
-        }
+        }*/
+        window["StructuredFormData"] = ScopedFormData_1.StructuredFormData;
         function kebabize(str) {
             var _a;
             return str && ((_a = str.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)) === null || _a === void 0 ? void 0 : _a.map(x => x.toLowerCase()).join('-')) || "";
@@ -3929,7 +3929,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
                 if (transformTab) {
                     transformTab.active = true;
                     generateDataset("D1", [
-                        "A", "B", "C", "D", "E", "F"
+                        "A", "B", "C", "D", "E", "F",
                     ]);
                     generateDataset("D2", [
                         "A", "G", "H", "I", "J"
@@ -3942,7 +3942,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
                 if (exportTab) {
                     exportTab.active = true;
                     generateDataset("Merged", [
-                        "M1", "M2"
+                        "M1 (M)", "M2 (M)"
                     ]);
                 }
             });
@@ -3951,42 +3951,16 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
             type: "df",
             name: "df"
         };
-        /*const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#columns");
+        const dropzone = document.querySelector("e-dropzone#columns");
         if (dropzone) {
-            dropzone.droptest = (draggables: HTMLEDraggableElement[]) => {
-                let success = false;
-                try {
-                    if (draggables.length > 0) {
-                        success = (draggables[0].type == "df");
-                    }
-                }
-                finally {
-                    if (!success) {
-                        throw new Error("Please insert a dataframe node.");
-                    }
-                }
-            };
-            dropzone.addEventListener("datatransfer", (event: DataTransferEvent) => {
-                let target = event.target as HTMLEDropzoneElement;
-                if (event.detail.success) {
-                    if (event.detail.draggables.length > 0) {
-                        let draggable = event.detail.draggables[0];
-                        let input = draggable.querySelector("input");
-                        if (input) {
-                            input.name = info.name;
-                        }
-                    }
-                }
-                else {
-                    alert(event.detail.statusText);
+            dropzone.addEventListener("datachange", () => {
+                if (dropzone.multiple) {
+                    dropzone.draggables.forEach((draggable, index) => {
+                        draggable.dataset.scope = `${dropzone.name}[${index}]`;
+                    });
                 }
             });
-    
-    
-            dropzone?.addEventListener("change", () => {
-                alert();
-            });
-        }*/
+        }
         if (exportButton) {
             exportButton.addEventListener("click", () => {
                 alert("Tadam!");
@@ -6670,7 +6644,7 @@ define("engine/libs/patterns/pools/StackPool", ["require", "exports", "engine/li
     const StackPool = StackPoolBase;
     exports.StackPool = StackPool;
 });
-define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_7, StackPool_1, MathError_6) {
+define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_6, StackPool_1, MathError_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuaternionPool = exports.QuaternionBase = exports.QuaternionInjector = exports.Quaternion = void 0;
@@ -6785,7 +6759,7 @@ define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports"
             if (den < Number.EPSILON) {
                 return out.setZeros();
             }
-            const scale = Snippets_7.qSqrt(den);
+            const scale = Snippets_6.qSqrt(den);
             out.setValues([this._x * scale, this._y * scale, this._z * scale]);
             return out;
         }
@@ -7624,7 +7598,7 @@ define("engine/libs/maths/geometry/primitives/Triangle", ["require", "exports", 
     const TrianglePool = new StackPool_3.StackPool(TriangleBase);
     exports.TrianglePool = TrianglePool;
 });
-define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_8) {
+define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TriangleListBase = exports.TriangleList = void 0;
@@ -7674,8 +7648,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             return indexOf;
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
-            const idxTo = Snippets_8.clamp(options.idxTo, 0, this.count);
-            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_7.clamp(options.idxTo, 0, this.count);
+            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -7693,8 +7667,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             tri.point3.readFromArray(this._array, indices[2]);
         }
         forIndexedPoints(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_8.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_7.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -7717,7 +7691,7 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
     const TriangleList = TriangleListBase;
     exports.TriangleList = TriangleList;
 });
-define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_9) {
+define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3ListBase = exports.Vector3List = void 0;
@@ -7737,8 +7711,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_9.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -7751,8 +7725,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
             Vector3Pools_3.Vector3Pool.release(1);
         }
         forEachFromIndices(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_9.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -7914,7 +7888,7 @@ define("engine/libs/maths/extensions/pools/Vector2Pools", ["require", "exports",
     const Vector2Pool = new StackPool_6.StackPool(Vector2_2.Vector2Base);
     exports.Vector2Pool = Vector2Pool;
 });
-define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_10) {
+define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector2ListBase = exports.Vector2List = void 0;
@@ -7934,8 +7908,8 @@ define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_10.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_10.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             Vector2Pools_1.Vector2Pool.acquireTemp(1, (vector) => {
                 while (idxObj < count) {
@@ -8765,7 +8739,7 @@ define("engine/utils/Snippets", ["require", "exports"], function (require, expor
     }
     exports.safeQuerySelector = safeQuerySelector;
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_11) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_10) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CubeGeometry = void 0;
@@ -8862,7 +8836,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [+1, -1, +1],
         [+1, -1, -1],
     ];
-    const cubeVertices = Snippets_11.buildArrayFromIndexedArrays(cubeVerticesSet, [
+    const cubeVertices = Snippets_10.buildArrayFromIndexedArrays(cubeVerticesSet, [
         0, 2, 3, 1,
         0, 4, 5, 2,
         2, 5, 6, 3,
@@ -8876,7 +8850,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [0, 1],
         [1, 1],
     ];
-    const cubeUVS = Snippets_11.buildArrayFromIndexedArrays(cubeUVsSet, [
+    const cubeUVS = Snippets_10.buildArrayFromIndexedArrays(cubeUVsSet, [
         0, 1, 3, 2,
         0, 1, 3, 2,
         0, 1, 3, 2,
@@ -8906,7 +8880,7 @@ define("engine/libs/maths/geometry/GeometryConstants", ["require", "exports"], f
     const GOLDEN_RATIO = 1.6180;
     exports.GOLDEN_RATIO = GOLDEN_RATIO;
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_2, GeometryConstants_1, Snippets_12) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_2, GeometryConstants_1, Snippets_11) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IcosahedronGeometry = void 0;
@@ -8973,7 +8947,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const icosahedronVertices = Snippets_12.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
+    const icosahedronVertices = Snippets_11.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
         0, 1, 2,
         0, 2, 3,
         0, 3, 4,
@@ -8995,7 +8969,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         9, 11, 10,
         10, 11, 6,
     ]);
-    const icosahedronUVS = Snippets_12.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
+    const icosahedronUVS = Snippets_11.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
         1, 2, 0,
         1, 2, 0,
         1, 2, 0,
@@ -9040,7 +9014,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         57, 58, 59,
     ];
 });
-define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_13) {
+define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_12) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuadGeometry = void 0;
@@ -9120,10 +9094,10 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         [0, 1],
         [1, 1]
     ];
-    const quadVertices = Snippets_13.buildArrayFromIndexedArrays(quadVerticesSet, [
+    const quadVertices = Snippets_12.buildArrayFromIndexedArrays(quadVerticesSet, [
         0, 2, 3, 1,
     ]);
-    const quadUVS = Snippets_13.buildArrayFromIndexedArrays(quadUVsSet, [
+    const quadUVS = Snippets_12.buildArrayFromIndexedArrays(quadUVsSet, [
         0, 2, 3, 1,
     ]);
     const quadIndices = [
@@ -9131,11 +9105,11 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         0, 2, 3,
     ];
 });
-define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_14) {
+define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_13) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.VertexAttribute = exports.UniformType = exports.UniformQuery = exports.TextureWrapMode = exports.TextureMinFilter = exports.TextureMagFilter = exports.TextureTarget = exports.TextureParameter = exports.TextureUnits = exports.TestFunction = exports.StencilAction = exports.ShaderPrecision = exports.ShaderType = exports.Shader = exports.RenderbufferTarget = exports.PixelType = exports.PixelStorageMode = exports.PixelFormat = exports.Parameter = exports.HintMode = exports.HintTarget = exports.FrontFace = exports.FramebufferTextureTarget = exports.FramebufferTarget = exports.FramebufferAttachmentParameter = exports.FramebufferAttachment = exports.Error = exports.DataType = exports.DrawMode = exports.CullFaceMode = exports.Capabilities = exports.BufferTarget = exports.BufferInterpolation = exports.BufferIndexType = exports.BufferBindingPoint = exports.BufferMaskBit = exports.BufferMask = exports.BufferDataUsage = exports.BlendingEquation = exports.BlendingMode = void 0;
-    const gl = Snippets_14.crashIfNull(document.createElement('canvas').getContext('webgl2'));
+    const gl = Snippets_13.crashIfNull(document.createElement('canvas').getContext('webgl2'));
     var BlendingMode;
     (function (BlendingMode) {
         BlendingMode[BlendingMode["ZERO"] = gl.ZERO] = "ZERO";
@@ -12012,7 +11986,7 @@ define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine
     })();
     exports.BaseHTMLELoaderElement = BaseHTMLELoaderElement;
 });
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_15, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_2, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_29, Loader_1) {
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_14, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_2, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_29, Loader_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.launchScene = exports.start = void 0;
@@ -12626,7 +12600,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                     //console.log(`cameraToTarget ${cameraToTarget.x.toFixed(4)} ${cameraToTarget.y.toFixed(4)} ${cameraToTarget.z.toFixed(4)}`);
                     let theta = Math.acos(cameraToTarget.z / radius);
                     let phi = Math.atan2(cameraToTarget.y, cameraToTarget.x);
-                    theta = Snippets_15.clamp(theta - deltaTheta, 0, Math.PI);
+                    theta = Snippets_14.clamp(theta - deltaTheta, 0, Math.PI);
                     phi -= deltaPhi;
                     //console.log(`theta ${theta.toFixed(4)} phi ${phi.toFixed(4)}`);
                     // Turn back into Cartesian coordinates
@@ -12878,11 +12852,33 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             }
         }
     }
+    class AutosizedDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("autosized-input");
+            this.changeEventListener = (event) => {
+                let target = event.target;
+                if (HTMLElement_30.isTagElement("input", target)) {
+                    this.handlePostchangeDuplicate(target);
+                }
+            };
+        }
+        attach(element) {
+            element.addEventListener("change", this.changeEventListener);
+            this.handlePostchangeDuplicate(element);
+        }
+        detach(element) {
+            element.removeEventListener("change", this.changeEventListener);
+        }
+        handlePostchangeDuplicate(input) {
+            input.style.setProperty("width", parseInt(window.getComputedStyle(input).getPropertyValue("font-size")) * Math.max(input.value.length, input.placeholder.length) + "px");
+        }
+    }
     const attributeMutationMixins = [
         new TestDataClassMixin(),
         new InputDropzoneDataClassMixin(),
         new TogglerSelectDataClassMixin(),
-        new DuplicaterInputDataClassMixin()
+        new DuplicaterInputDataClassMixin(),
+        new AutosizedDataClassMixin()
     ];
     const mainObserver = new MutationObserver(HTMLElement_30.createMutationObserverCallback(attributeMutationMixins));
     mainObserver.observe(document.body, {
@@ -13659,7 +13655,7 @@ define("engine/core/rendering/scenes/geometries/PhongGeometry", ["require", "exp
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });
-define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_4, Snippets_16) {
+define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_4, Snippets_15) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SphereGeometry = void 0;
@@ -13739,10 +13735,10 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
         [0, 1],
         [1, 1]
     ];
-    const sphereVertices = Snippets_16.buildArrayFromIndexedArrays(sphereVerticesSet, [
+    const sphereVertices = Snippets_15.buildArrayFromIndexedArrays(sphereVerticesSet, [
         0, 2, 3, 1,
     ]);
-    const sphereUVS = Snippets_16.buildArrayFromIndexedArrays(sphereUVsSet, [
+    const sphereUVS = Snippets_15.buildArrayFromIndexedArrays(sphereUVsSet, [
         0, 2, 3, 1,
     ]);
     const sphereIndices = [
@@ -13770,7 +13766,7 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
  *                     v14
  *
  */ 
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_17) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_16) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TetrahedronGeometry = void 0;
@@ -13815,13 +13811,13 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const tetrahedronVertices = Snippets_17.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
+    const tetrahedronVertices = Snippets_16.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
         0, 1, 2,
         1, 0, 3,
         1, 3, 2,
         2, 3, 0,
     ]);
-    const tetrahedronUVS = Snippets_17.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
+    const tetrahedronUVS = Snippets_16.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
         1, 2, 0,
         1, 3, 0,
         2, 3, 0,
@@ -15509,6 +15505,29 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
         return Vector3InputElement;
     })();
     exports.Vector3InputElement = Vector3InputElement;
+});
+define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_17) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.StructuredFormData = void 0;
+    class StructuredFormData {
+        constructor(form) {
+            this.form = form;
+        }
+        getStructuredFormData() {
+            let structuredData = {};
+            let formData = new FormData(this.form);
+            let keys = Array.from(formData.keys());
+            keys.forEach((key) => {
+                let value = formData.get(key);
+                if (value) {
+                    Snippets_17.setPropertyFromPath(structuredData, key, JSON.parse(value.toString()));
+                }
+            });
+            return structuredData;
+        }
+    }
+    exports.StructuredFormData = StructuredFormData;
 });
 define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_38) {
     "use strict";

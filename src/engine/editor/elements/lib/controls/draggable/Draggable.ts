@@ -62,13 +62,15 @@ class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableEle
                 :host([dragovered]) {
                     border-style: dotted;
                 }
-                     
-                ::slotted(e-dropzone) {
-                    display: inline-block;
-                    border-radius: 4px;
+                
+                [part="container"] {
+                    display: flex;
+                    align-items: center;
                 }
             </style>
-            <slot>&nbsp;</slot>
+            <div part="container">
+                <slot>&nbsp;</slot>
+            </div>
         `);
     }
     

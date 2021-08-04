@@ -126,14 +126,14 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
             if (event.button === 0) {
                 if (this.draggables.includes(target)) {
                     if (!event.shiftKey && !event.ctrlKey) {
-                        this.draggables.forEach((thisDraggable) => {
-                            thisDraggable.selected = (thisDraggable == target);
-                        });
+                        if (this.selectedDraggables.length == 0) {
+                            target.selected = true;
+                        }
                     }
                     else if (event.ctrlKey) {
                         target.selected = !target.selected;
                     }
-                    else {
+                    else if (event.shiftKey) {
                         let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
                         let endRangeIndex = Math.max(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
                         this.draggables.forEach((thisDraggable, thisDraggableIndex) => {

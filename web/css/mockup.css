@@ -22,17 +22,19 @@ html, body {
 
 body {
     font-family: "Roboto";
-    font-size: 16px;
+    font-size: 15px;
 }
 
 input,
-select {
+select,
+textarea {
     font: unset;
 }
 
 #root,
 main {
     height: 100%;
+    overflow: hidden;
 }
 
 header:empty,
@@ -85,6 +87,7 @@ summary {
     list-style: none;
     user-select: none;
     background-color: gainsboro;
+    /*font-weight: bold;*/
     cursor: pointer;
 }
 
@@ -111,10 +114,10 @@ fieldset {
     padding: 0;
     margin: 0;
 }
-
+/*
 fieldset *:not(e-draggable) > e-dropzone:empty {
     min-width: 120px;
-}
+}*/
 
 input[type="radio"]:not(:checked) + * {
     opacity: 0.25;
@@ -123,7 +126,21 @@ input[type="radio"]:not(:checked) + * {
 input::placeholder {
     color: inherit;
 }
-  
+
+e-draggable > fieldset {
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+e-draggable > fieldset > * {
+    pointer-events: auto;
+}
+
+e-draggable e-dropzone {
+    display: inline-block;
+    border-radius: 4px;
+}
 
 #data-col {
     display: flex;

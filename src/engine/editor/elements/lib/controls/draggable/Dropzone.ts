@@ -10,6 +10,7 @@ interface HTMLEDropzoneElement extends HTMLElement {
     selectedDraggables: HTMLEDraggableElement[]
     draggables: HTMLEDraggableElement[];
     dragovered: DropzoneDragoveredType | null;
+    name: string;
     multiple: boolean;
     disabled: boolean;
     droptest: ((draggables: HTMLEDraggableElement[]) => void) | null;
@@ -35,6 +36,7 @@ type DataChangeEvent = CustomEvent<{
     {name: "disabled", type: "boolean"},
     {name: "multiple", type: "boolean"},
     {name: "label", type: "string"},
+    {name: "name", type: "string"},
 ])
 class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneElement {
     
@@ -42,6 +44,7 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
     public placeholder!: string;
     public multiple!: boolean;
     public disabled!: boolean;
+    public name!: string;
 
     public droptest!: ((draggables: HTMLEDraggableElement[]) => boolean) | null;
     public value: any;
@@ -169,17 +172,16 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
         this.addEventListener("mousedown", (event: MouseEvent) => {
             let target = event.target as any;
             if (event.button === 0) {
-                console.log(target);
                 if (this.draggables.includes(target)) {
                     if (!event.shiftKey && !event.ctrlKey) {
-                        this.draggables.forEach((thisDraggable) => {
-                            thisDraggable.selected = (thisDraggable == target);
-                        });
+                        if (this.selectedDraggables.length == 0) {
+                            target.selected = true;
+                        }
                     }
                     else if (event.ctrlKey) {
                         target.selected = !target.selected;
                     }
-                    else {
+                    else if (event.shiftKey) {
                         let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
                         let endRangeIndex = Math.max(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
                         this.draggables.forEach((thisDraggable, thisDraggableIndex) => {
@@ -281,7 +283,7 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
                     let dragzoneId = dataTransfer.getData("text/plain");
                     let dragzone = document.getElementById(dragzoneId) as HTMLEDragzoneElement;
                     if (dragzone) {
-                        let selectedDraggables = dragzone.selectedDraggables;
+                        let selectedDraggables = dragzone.selectedDraggables; 
                         if (selectedDraggables) {
                             selectedDraggables.forEach((selectedDraggable) => {
                                 selectedDraggable.dragged = false;
@@ -350,6 +352,7 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
                     insertionPosition = 0;
                 }
             }
+            
             const slot = this.shadowRoot?.querySelector("slot");
             if (slot) {
                 slot.addEventListener("slotchange", () => {
