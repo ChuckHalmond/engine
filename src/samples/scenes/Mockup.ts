@@ -20,21 +20,21 @@ import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 import { HTMLDraggableInputTemplate } from "engine/editor/templates/other/DraggableInputTemplate";
 import { HTMLEDragzoneElement } from "engine/editor/elements/lib/controls/draggable/Dragzone";
 import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
-import { StructuredFormData } from "engine/editor/elements/forms/ScopedFormData";
+import { StructuredFormData } from "engine/editor/elements/forms/StructuredFormData";
 
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
     <div id="root" class="flex-rows">
-        <!--<header class="flex-cols flex-none padded">-->
-            <!--<e-menubar tabindex="0">
+        <!--<header class="flex-cols flex-none padded">
+            <e-menubar tabindex="0">
                 <e-menuitem name="file-menu-item" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
                             <e-menuitem name="canvas-play-item" type="button" label="Import a config..."
                                 tabindex="-1" aria-label="Import a config..."></e-menuitem>
                     </e-menu>
                 </e-menuitem>
-            </e-menubar>-->
-        <!--</header>-->
+            </e-menubar>
+        </header>-->
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">

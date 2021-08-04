@@ -3530,7 +3530,7 @@ define("engine/editor/templates/other/DraggableInputTemplate", ["require", "expo
     };
     exports.HTMLDraggableInputTemplate = HTMLDraggableInputTemplate;
 });
-define("engine/editor/elements/forms/ScopedFormData", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_22, Snippets_5) {
+define("engine/editor/elements/forms/StructuredFormData", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_22, Snippets_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StructuredFormData = void 0;
@@ -3588,23 +3588,23 @@ define("engine/editor/elements/forms/ScopedFormData", ["require", "exports", "en
     }
     exports.StructuredFormData = StructuredFormData;
 });
-define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/forms/ScopedFormData", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, ScopedFormData_1) {
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/forms/StructuredFormData", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, StructuredFormData_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.mockup = void 0;
     const body = /*template*/ `
     <link rel="stylesheet" href="../css/mockup.css"/>
     <div id="root" class="flex-rows">
-        <!--<header class="flex-cols flex-none padded">-->
-            <!--<e-menubar tabindex="0">
+        <!--<header class="flex-cols flex-none padded">
+            <e-menubar tabindex="0">
                 <e-menuitem name="file-menu-item" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
                             <e-menuitem name="canvas-play-item" type="button" label="Import a config..."
                                 tabindex="-1" aria-label="Import a config..."></e-menuitem>
                     </e-menu>
                 </e-menuitem>
-            </e-menubar>-->
-        <!--</header>-->
+            </e-menubar>
+        </header>-->
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">
@@ -3864,7 +3864,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
         if (extractorsFieldsets) {
             extractorsFieldsets.appendChild(netezzaExtractorTemplate.content);
         }*/
-        window["StructuredFormData"] = ScopedFormData_1.StructuredFormData;
+        window["StructuredFormData"] = StructuredFormData_1.StructuredFormData;
         function kebabize(str) {
             var _a;
             return str && ((_a = str.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)) === null || _a === void 0 ? void 0 : _a.map(x => x.toLowerCase()).join('-')) || "";
@@ -15506,6 +15506,34 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
     })();
     exports.Vector3InputElement = Vector3InputElement;
 });
+class AbstractItemModel {
+    data() {
+    }
+}
+define("engine/editor/models/Model", ["require", "exports", "engine/libs/patterns/messaging/events/EventDispatcher"], function (require, exports, EventDispatcher_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    // set event
+    class AbstractModel extends EventDispatcher_2.EventDispatcher {
+    }
+    // set event
+    class ItemModel extends AbstractModel {
+    }
+    // insert event
+    // remove event
+    class ListModel extends AbstractModel {
+    }
+    // insert event
+    // remove event
+    class TreeModel extends AbstractModel {
+    }
+});
+// model() => item
+// Non-persistent i.e indexOf(this.element())
+// row / column / parent  (tree)
+// can be retrieved by row and column
+class MenuItemModel {
+}
 define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_17) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
