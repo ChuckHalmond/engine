@@ -8,7 +8,6 @@ import { HTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab"
 import "engine/editor/elements/lib/containers/tabs/TabList";
 import "engine/editor/elements/lib/containers/tabs/TabPanel";
 import "engine/editor/elements/lib/controls/draggable/Draggable";
-import { BaseHTMLEDraggableElement, HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
 import "engine/editor/elements/lib/controls/draggable/Dragzone";
 import "engine/editor/elements/lib/controls/draggable/Dropzone";
 import "engine/editor/elements/lib/utils/Import";
@@ -17,9 +16,7 @@ import "engine/editor/elements/lib/utils/Import";
 import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem"
 import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 
-import { HTMLDraggableInputTemplate } from "engine/editor/templates/other/DraggableInputTemplate";
-import { HTMLEDragzoneElement } from "engine/editor/elements/lib/controls/draggable/Dragzone";
-import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
+import { HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { StructuredFormData } from "engine/editor/elements/forms/StructuredFormData";
 
 const body = /*template*/`
@@ -260,7 +257,7 @@ declare global {
 export async function mockup() {
     const bodyTemplate = document.createElement("template");
     bodyTemplate.innerHTML = body;
-    document.body.insertBefore(bodyTemplate.content, document.body.firstChild);
+    document.body.appendChild(bodyTemplate.content);
 
     const extractForm = document.querySelector<HTMLFormElement>("form#extract-form")
     
@@ -275,9 +272,9 @@ export async function mockup() {
     /*if (extractForm) {
         const jsonData = new JSONFormData(extractForm);
         console.log(jsonData.getData());
-    }*/
+    }
 
-    /*(window as any)["FormDataObject"] = FormDataObject;
+    (window as any)["FormDataObject"] = FormDataObject;*/
 
     let extractorsFieldsets = document.getElementById("extractors-fieldsets");
     let netezzaExtractorTemplate = document.createElement("template");
@@ -303,9 +300,10 @@ export async function mockup() {
     
     if (extractorsFieldsets) {
         extractorsFieldsets.appendChild(netezzaExtractorTemplate.content);
-    }*/
+    }
 
-    (window as any)["StructuredFormData"] = StructuredFormData;
+    //(window as any)["StructuredFormData"] = StructuredFormData;
+
     function kebabize(str: string) {
         return str &&
             str.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
@@ -392,7 +390,7 @@ export async function mockup() {
             if (transformTab) {
                 transformTab.active = true;
                 generateDataset("D1", [
-                    "A", "B", "C", "D", "E", "F",/* "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"*/
+                    "A", "B", "C", "D", "E", "F",
                 ]);
                 generateDataset("D2", [
                     "A", "G", "H", "I", "J"

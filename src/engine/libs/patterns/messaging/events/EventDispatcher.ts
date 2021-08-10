@@ -1,71 +1,87 @@
+export { BaseEvent };
 export { Event };
 export { EventDispatcher };
 export { EventDispatcherBase };
-export { EventsMap };
 
-type Event = {
-    data: any
+interface EventConstructor {
+    readonly prototype: Event;
+    new<T extends string, D extends any>(type: T, data: D): Event<T, D>;
 }
 
-type EventsMap = {
-    [key: string]: Event;
+interface Event<T extends string = string, D extends any = any> {
+    readonly type: T;
+    readonly data: D;
 }
 
-interface EventDispatcher<M> {
-    addEventListener<K extends keyof M & string>(event: K, callback: (event: M[K]) => void, once?: boolean): (event: M[K]) => void;
-    addEventListener(event: string, callback: (event: Event) => void, once?: boolean): (event: Event) => void;
-    removeEventListener<K extends keyof M & string>(event: K, callback: (event: M[K]) => void): number;
-    removeEventListener(event: string, callback: (event: Event) => void): number;
-    dispatchEvent<K extends keyof M & string>(name: K, event: M[K]): void;
-    dispatchEvent(name: string, event: Event): void;
+class BaseEvent<T extends string, D extends any> implements Event<T, D> {
+    readonly type: T;
+    readonly data: D;
+
+    constructor(type: T, data: D) {
+        this.type = type;
+        this.data = data;
+    }
 }
 
-interface EventListener<E extends Event> {
-    callback: (event: E) => void;
+var Event: EventConstructor = BaseEvent;
+
+type EventHandler<E extends Event> = (event: E) => void;
+
+interface EventListener<E extends Event = Event> {
+    handler: EventHandler<E>;
     once?: boolean;
 }
 
-interface EventDispatcherConstructor {
-    readonly prototype: EventDispatcher<EventsMap>;
-    new<M = EventsMap>(): EventDispatcher<M>;
+interface EventDispatcher<Events extends {[K in Extract<keyof Events, string>]: Event<K>} = {}> {
+    addEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): (event: Events[K]) => void;
+    addEventListener<K extends string>(event: K, handler: (event: Event<K>) => void, once?: boolean): (event: Event<K>) => void;
+    removeEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): number;
+    removeEventListener<K extends string>(event: K, handler: (event: Event<K>) => void, once?: boolean): number;
+    dispatchEvent<K extends Extract<keyof Events, string>>(event: Events[K]): void;
+    dispatchEvent<K extends string>(event: Event<K>): void;
 }
 
-class EventDispatcherBase<M> implements EventDispatcher<M> {
-    private _listeners: Map<string, EventListener<Event>[]>;
+interface EventDispatcherConstructor {
+    readonly prototype: EventDispatcher<{}>;
+    new<Events extends {[K in Extract<keyof Events, string>]: Event<K>} = {}>(): EventDispatcher<Events>;
+}
+
+class EventDispatcherBase<Events extends {[K in Extract<keyof Events, string>]: Event<K>} = {}> implements EventDispatcher<Events> {
+    private _listeners: Map<string, EventListener<any>[]>;
 
     constructor() {
         this._listeners = new Map();
     }
 
-    public addEventListener(event: string, callback: (event: any) => void, once?: boolean): (event: Event) => void;
-    public addEventListener<K extends keyof M>(event: K, callback: (event: M[K]) => void, once?: boolean): (event: M[K]) => void;
-    public addEventListener(event: string, callback: (event: any) => void, once?: boolean): (event: any) => void {
-        let listeners = this._listeners.get(event);
-        let listener = {
-            callback: callback,
+    public addEventListener<K extends string>(event: K, handler: (event: Event<K>) => void, once?: boolean): (event: Event<K>) => void;
+    public addEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): (event: Events[K]) => void;
+    public addEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): (event: Events[K]) => void {
+        let listeners = this._listeners.get(event.toString());
+        let listener: EventListener<any> = {
+            handler: handler,
             once: once
         };
         
-        if (typeof listeners === 'undefined') {
-            this._listeners.set(event, [listener]);
+        if (typeof listeners === "undefined") {
+            this._listeners.set(event.toString(), [listener]);
         }
         else {
             listeners.push(listener);
         }
 
-        return callback;
+        return handler;
     }
 
-    public removeEventListener(event: string, callback: (event: any) => void, once?: boolean): number;
-    public removeEventListener<K extends keyof M>(event: K, callback: (event: M[K]) => void, once?: boolean): number;
-    public removeEventListener(event: string, callback: (event: any) => void, once?: boolean): number {
-        let listeners = this._listeners.get(event as string);
-        let listener = {
-            callback: callback,
+    public removeEventListener<K extends string>(event: string, handler: (event: Event<K>) => void, once?: boolean): number;
+    public removeEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): number;
+    public removeEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): number {
+        let listeners = this._listeners.get(event);
+        let listener: EventListener<Events[K]> = {
+            handler: handler,
             once: once
-        } as EventListener<Event>;
+        };
 
-        if (typeof listeners === 'undefined') {
+        if (typeof listeners === "undefined") {
             return -1;
         }
         const count = listeners.length;
@@ -76,24 +92,24 @@ class EventDispatcherBase<M> implements EventDispatcher<M> {
                 return count - 1;
             }
             else {
-                this._listeners.delete(event);
+                this._listeners.delete(event.toString());
                 return 0;
             }
         }
         return count;
     }
 
-    public dispatchEvent(name: string, event: any): void;
-    public dispatchEvent<K extends keyof M>(name: K, event: M[K]): void;
-    public dispatchEvent(name: string, event: any): void {
-        let listeners = this._listeners.get(name);
+    public dispatchEvent<K extends string>(event: Event<K>): void;
+    public dispatchEvent<K extends Extract<keyof Events, string>>(event: Events[K]): void;
+    public dispatchEvent<K extends Extract<keyof Events, string>>(event: Events[K]): void {
+        let listeners = this._listeners.get(event.type);
         if (typeof listeners !== 'undefined') {
             listeners = listeners.filter((listener) => {
-                listener.callback(event);
+                listener.handler(event);
                 return !listener.once
             });
             if (listeners.length === 0) {
-                this._listeners.delete(name);
+                this._listeners.delete(event.type);
             }
         }
     }

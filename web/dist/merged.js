@@ -11,9 +11,11 @@ define("engine/editor/elements/Snippets", ["require", "exports"], function (requ
     exports.pointIntersectsWithDOMRect = exports.setPropertyFromPath = exports.getPropertyFromPath = exports.forAllHierarchyElements = void 0;
     function forAllHierarchyElements(element, func) {
         func(element);
-        Array.from(element.children).forEach((child) => {
-            forAllHierarchyElements(child, func);
-        });
+        let index = element.children.length - 1;
+        while (index >= 0) {
+            forAllHierarchyElements(element.children.item(index), func);
+            index++;
+        }
     }
     exports.forAllHierarchyElements = forAllHierarchyElements;
     function getPropertyFromPath(src, path) {
@@ -90,15 +92,7 @@ define("engine/editor/elements/Snippets", ["require", "exports"], function (requ
 define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.createMutationObserverCallback = exports.BaseAttributeMutationMixin = exports.areAttributesMatching = exports.setElementProperties = exports.setElementAttributes = exports.HTMLElementConstructor = exports.bindShadowRoot = exports.createTemplate = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = exports.isTagElement = exports.isElement = void 0;
-    /*export { Property };
-    export { CustomHTMLElement };
-    export { HTMLEELement };
-    */
-    function isElement(obj) {
-        return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
-    }
-    exports.isElement = isElement;
+    exports.createMutationObserverCallback = exports.BaseAttributeMutationMixin = exports.areAttributesMatching = exports.setElementProperties = exports.setElementAttributes = exports.HTMLElementConstructor = exports.bindShadowRoot = exports.createTemplate = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = exports.isTagElement = void 0;
     function isTagElement(tagName, obj) {
         return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() == tagName;
     }
@@ -274,7 +268,7 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
         return (mutationsList) => {
             mutationsList.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
-                    if (isElement(node)) {
+                    if (node.nodeType === node.ELEMENT_NODE) {
                         let element = node;
                         Snippets_1.forAllHierarchyElements(element, (childElement) => {
                             [...childElement.attributes].forEach((attr) => {
@@ -286,17 +280,17 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
                         });
                     }
                 });
-                const target = mutation.target;
-                if (isElement(target)) {
+                if (mutation.target.nodeType === Node.ELEMENT_NODE) {
+                    let targetElement = mutation.target;
                     let attrName = mutation.attributeName;
                     if (attrName) {
                         let relatedMixins = mixins.filter(mixin => mixin.attributeName === attrName);
                         relatedMixins.forEach((mixin) => {
-                            if (areAttributesMatching(mixin.attributeType, mixin.attributeName, mixin.attributeValue, attrName, target.getAttribute(attrName))) {
-                                mixin.attach(target);
+                            if (areAttributesMatching(mixin.attributeType, mixin.attributeName, mixin.attributeValue, attrName, targetElement.getAttribute(attrName))) {
+                                mixin.attach(targetElement);
                             }
                             else {
-                                mixin.detach(target);
+                                mixin.detach(targetElement);
                             }
                         });
                     }
@@ -1467,32 +1461,41 @@ define("engine/libs/patterns/commands/Command", ["require", "exports"], function
 define("engine/libs/patterns/messaging/events/EventDispatcher", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.EventDispatcherBase = exports.EventDispatcher = void 0;
+    exports.EventDispatcherBase = exports.EventDispatcher = exports.Event = exports.BaseEvent = void 0;
+    class BaseEvent {
+        constructor(type, data) {
+            this.type = type;
+            this.data = data;
+        }
+    }
+    exports.BaseEvent = BaseEvent;
+    var Event = BaseEvent;
+    exports.Event = Event;
     class EventDispatcherBase {
         constructor() {
             this._listeners = new Map();
         }
-        addEventListener(event, callback, once) {
-            let listeners = this._listeners.get(event);
+        addEventListener(event, handler, once) {
+            let listeners = this._listeners.get(event.toString());
             let listener = {
-                callback: callback,
+                handler: handler,
                 once: once
             };
-            if (typeof listeners === 'undefined') {
-                this._listeners.set(event, [listener]);
+            if (typeof listeners === "undefined") {
+                this._listeners.set(event.toString(), [listener]);
             }
             else {
                 listeners.push(listener);
             }
-            return callback;
+            return handler;
         }
-        removeEventListener(event, callback, once) {
+        removeEventListener(event, handler, once) {
             let listeners = this._listeners.get(event);
             let listener = {
-                callback: callback,
+                handler: handler,
                 once: once
             };
-            if (typeof listeners === 'undefined') {
+            if (typeof listeners === "undefined") {
                 return -1;
             }
             const count = listeners.length;
@@ -1503,21 +1506,21 @@ define("engine/libs/patterns/messaging/events/EventDispatcher", ["require", "exp
                     return count - 1;
                 }
                 else {
-                    this._listeners.delete(event);
+                    this._listeners.delete(event.toString());
                     return 0;
                 }
             }
             return count;
         }
-        dispatchEvent(name, event) {
-            let listeners = this._listeners.get(name);
+        dispatchEvent(event) {
+            let listeners = this._listeners.get(event.type);
             if (typeof listeners !== 'undefined') {
                 listeners = listeners.filter((listener) => {
-                    listener.callback(event);
+                    listener.handler(event);
                     return !listener.once;
                 });
                 if (listeners.length === 0) {
-                    this._listeners.delete(name);
+                    this._listeners.delete(event.type);
                 }
             }
         }
@@ -1979,11 +1982,7 @@ define("engine/editor/elements/lib/containers/status/StatusBar", ["require", "ex
 define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_8, Snippets_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
-    function isHTMLEMenuItemGroupElement(elem) {
-        return elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && elem.tagName.toLowerCase() === "e-menuitemgroup";
-    }
-    exports.isHTMLEMenuItemGroupElement = isHTMLEMenuItemGroupElement;
+    exports.BaseHTMLEMenuItemGroupElement = void 0;
     let BaseHTMLEMenuItemGroupElement = /** @class */ (() => {
         let BaseHTMLEMenuItemGroupElement = class BaseHTMLEMenuItemGroupElement extends HTMLElement {
             constructor() {
@@ -2157,6 +2156,16 @@ define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", 
                             break;
                     }
                 });
+            }
+            setData(data) {
+                this.name = data.name;
+                this.label = data.label;
+            }
+            getData() {
+                return {
+                    name: this.name,
+                    label: this.label
+                };
             }
             attributeChangedCallback(name, oldValue, newValue) {
                 var _a;
@@ -2862,7 +2871,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
     })();
     exports.BaseHTMLEMenuItemElement = BaseHTMLEMenuItemElement;
 });
-define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/menus/MenuItemGroup"], function (require, exports, HTMLElement_14, Snippets_4, MenuItemGroup_1) {
+define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_14, Snippets_4) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEMenuElement = void 0;
@@ -2981,28 +2990,28 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                     switch (event.key) {
                         case "ArrowUp":
                             this.focusItemAt((this.activeIndex <= 0) ? this.items.length - 1 : this.activeIndex - 1);
-                            if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
+                            if (HTMLElement_14.isTagElement("e-menuitemgroup", this.activeItem)) {
                                 this.activeItem.focusItemAt(this.activeItem.items.length - 1);
                             }
                             event.stopPropagation();
                             break;
                         case "ArrowDown":
                             this.focusItemAt((this.activeIndex >= this.items.length - 1) ? 0 : this.activeIndex + 1);
-                            if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
+                            if (HTMLElement_14.isTagElement("e-menuitemgroup", this.activeItem)) {
                                 this.activeItem.focusItemAt(0);
                             }
                             event.stopPropagation();
                             break;
                         case "Home":
                             this.focusItemAt(0);
-                            if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
+                            if (HTMLElement_14.isTagElement("e-menuitemgroup", this.activeItem)) {
                                 this.activeItem.focusItemAt(0);
                             }
                             event.stopPropagation();
                             break;
                         case "End":
                             this.focusItemAt(this.items.length - 1);
-                            if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(this.activeItem)) {
+                            if (HTMLElement_14.isTagElement("e-menuitemgroup", this.activeItem)) {
                                 this.activeItem.focusItemAt(this.activeItem.items.length - 1);
                             }
                             event.stopPropagation();
@@ -3104,7 +3113,7 @@ define("engine/editor/elements/lib/containers/menus/Menu", ["require", "exports"
                             }
                         }
                     }
-                    else if (MenuItemGroup_1.isHTMLEMenuItemGroupElement(item)) {
+                    else if (HTMLElement_14.isTagElement("e-menuitemgroup", item)) {
                         foundItem = item.findItem(predicate, subitems);
                         if (foundItem) {
                             return foundItem;
@@ -3505,32 +3514,7 @@ define("engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", ["requir
     })();
     exports.HTMLEBreadcrumbItemElement = HTMLEBreadcrumbItemElement;
 });
-define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_21) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.HTMLDraggableInputTemplate = void 0;
-    const HTMLDraggableInputTemplate = (desc) => {
-        return HTMLElement_21.HTMLElementConstructor("e-draggable", {
-            props: {
-                id: desc.id,
-                className: desc.className
-            },
-            children: [
-                HTMLElement_21.HTMLElementConstructor("input", {
-                    props: {
-                        name: desc.name,
-                        hidden: true
-                    },
-                    attr: {
-                        value: desc.value
-                    }
-                })
-            ]
-        });
-    };
-    exports.HTMLDraggableInputTemplate = HTMLDraggableInputTemplate;
-});
-define("engine/editor/elements/forms/StructuredFormData", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_22, Snippets_5) {
+define("engine/editor/elements/forms/StructuredFormData", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/Snippets"], function (require, exports, HTMLElement_21, Snippets_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StructuredFormData = void 0;
@@ -3554,10 +3538,10 @@ define("engine/editor/elements/forms/StructuredFormData", ["require", "exports",
             let elements = Array.from(this.form.elements);
             let data = {};
             elements.forEach((element) => {
-                if (HTMLElement_22.isTagElement("input", element) || HTMLElement_22.isTagElement("select", element) || HTMLElement_22.isTagElement("textarea", element)) {
+                if (HTMLElement_21.isTagElement("input", element) || HTMLElement_21.isTagElement("select", element) || HTMLElement_21.isTagElement("textarea", element)) {
                     if (element.name) {
                         let value = null;
-                        if (HTMLElement_22.isTagElement("input", element)) {
+                        if (HTMLElement_21.isTagElement("input", element)) {
                             if (element.value) {
                                 switch (element.type) {
                                     case "text":
@@ -3588,7 +3572,7 @@ define("engine/editor/elements/forms/StructuredFormData", ["require", "exports",
     }
     exports.StructuredFormData = StructuredFormData;
 });
-define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/forms/StructuredFormData", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, StructuredFormData_1) {
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.mockup = void 0;
@@ -3825,7 +3809,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
     async function mockup() {
         const bodyTemplate = document.createElement("template");
         bodyTemplate.innerHTML = body;
-        document.body.insertBefore(bodyTemplate.content, document.body.firstChild);
+        document.body.appendChild(bodyTemplate.content);
         const extractForm = document.querySelector("form#extract-form");
         const extractTab = document.querySelector("e-tab[name='extract']");
         const transformTab = document.querySelector("e-tab[name='transform']");
@@ -3836,35 +3820,34 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
         /*if (extractForm) {
             const jsonData = new JSONFormData(extractForm);
             console.log(jsonData.getData());
-        }*/
-        /*(window as any)["FormDataObject"] = FormDataObject;
+        }
     
+        (window as any)["FormDataObject"] = FormDataObject;*/
         let extractorsFieldsets = document.getElementById("extractors-fieldsets");
         let netezzaExtractorTemplate = document.createElement("template");
         netezzaExtractorTemplate.innerHTML = `
-            <fieldset data-signature="sql-extractor">
-                <fieldset name="left">
-                    <input type="datetime-local" name="date" required ondrop="event.preventDefault()"/>
-                    <label for="user">my radio 1</label>
-                    <input type="radio" required ondrop="event.preventDefault()"/>
-                    <label for="user">my radio 2</label>
-                    <input type="radio" name="radio-2" required ondrop="event.preventDefault()"/>
-                <fieldset>
-                <label for="user">User</label>
-                <input type="text" name="userid" required value="Net" ondrop="event.preventDefault()"/>
-                <label for="password">Password</label>
-                <input type="password" name="password" required ondrop="event.preventDefault()"/>
-                <label for="database">Database</label>
-                <input type="text" name="database" required ondrop="event.preventDefault()"/>
-                <label for="query">Query</label>
-                <textarea name="query"></textarea>
-            </fieldset>
-        `;
-        
+        <fieldset data-signature="sql-extractor">
+            <fieldset name="left">
+                <input type="datetime-local" name="date" required ondrop="event.preventDefault()"/>
+                <label for="user">my radio 1</label>
+                <input type="radio" required ondrop="event.preventDefault()"/>
+                <label for="user">my radio 2</label>
+                <input type="radio" name="radio-2" required ondrop="event.preventDefault()"/>
+            <fieldset>
+            <label for="user">User</label>
+            <input type="text" name="userid" required value="Net" ondrop="event.preventDefault()"/>
+            <label for="password">Password</label>
+            <input type="password" name="password" required ondrop="event.preventDefault()"/>
+            <label for="database">Database</label>
+            <input type="text" name="database" required ondrop="event.preventDefault()"/>
+            <label for="query">Query</label>
+            <textarea name="query"></textarea>
+        </fieldset>
+    `;
         if (extractorsFieldsets) {
             extractorsFieldsets.appendChild(netezzaExtractorTemplate.content);
-        }*/
-        window["StructuredFormData"] = StructuredFormData_1.StructuredFormData;
+        }
+        //(window as any)["StructuredFormData"] = StructuredFormData;
         function kebabize(str) {
             var _a;
             return str && ((_a = str.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)) === null || _a === void 0 ? void 0 : _a.map(x => x.toLowerCase()).join('-')) || "";
@@ -3978,6 +3961,340 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/f
         }
     }
     exports.mockup = mockup;
+});
+define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "samples/scenes/Mockup"], function (require, exports, HTMLElement_22, Mockup_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.sandbox = void 0;
+    class DataClassMixin extends HTMLElement_22.BaseAttributeMutationMixin {
+        constructor(attributeValue) {
+            super("data-class", "listitem", attributeValue);
+        }
+    }
+    let TestDataClassMixin = /** @class */ (() => {
+        class TestDataClassMixin extends DataClassMixin {
+            constructor() {
+                super("test");
+            }
+            attach(element) {
+                element.addEventListener("click", TestDataClassMixin._clickEventListener);
+            }
+            detach(element) {
+                element.removeEventListener("click", TestDataClassMixin._clickEventListener);
+            }
+        }
+        TestDataClassMixin._clickEventListener = () => {
+            alert("data-class test");
+        };
+        return TestDataClassMixin;
+    })();
+    class InputDropzoneDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("input-dropzone");
+            this.datatransferEventListener = ((event) => {
+                let target = event.target;
+                if (HTMLElement_22.isTagElement("e-dropzone", target)) {
+                    this.handlePostdatatransferInputNaming(target);
+                }
+            });
+        }
+        attach(element) {
+            if (HTMLElement_22.isTagElement("e-dropzone", element)) {
+                this.handlePostdatatransferInputNaming(element);
+            }
+            element.addEventListener("datachange", this.datatransferEventListener);
+        }
+        detach(element) {
+            element.removeEventListener("datachange", this.datatransferEventListener);
+        }
+        handlePostdatatransferInputNaming(dropzone) {
+            let name = dropzone.getAttribute("data-input-dropzone-name");
+            if (name) {
+                if (dropzone.multiple) {
+                    let inputs = Array.from(dropzone.querySelectorAll("input"));
+                    inputs.forEach((input, index) => {
+                        input.name = `${name}[${index}]`;
+                    });
+                }
+                else {
+                    let input = dropzone.querySelector("input");
+                    if (input) {
+                        input.name = name;
+                    }
+                }
+            }
+        }
+    }
+    class TogglerSelectDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("toggler-select");
+            this.changeEventListener = (event) => {
+                let target = event.target;
+                if (HTMLElement_22.isTagElement("select", target)) {
+                    this.handlePostchangeToggle(target);
+                }
+            };
+        }
+        attach(element) {
+            element.addEventListener("change", this.changeEventListener);
+            this.handlePostchangeToggle(element);
+        }
+        detach(element) {
+            element.removeEventListener("change", this.changeEventListener);
+        }
+        handlePostchangeToggle(select) {
+            const closestFieldset = select.closest("fieldset");
+            let toToggleElement = null;
+            if (closestFieldset) {
+                Array.from(select.options).forEach((option, index) => {
+                    toToggleElement = closestFieldset.querySelector(`[name=${option.value}]`);
+                    if (toToggleElement) {
+                        toToggleElement.hidden = (index !== select.selectedIndex);
+                    }
+                });
+            }
+        }
+    }
+    class DuplicaterInputDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("duplicater-input");
+            this.changeEventListener = (event) => {
+                let target = event.target;
+                if (HTMLElement_22.isTagElement("input", target)) {
+                    this.handlePostchangeDuplicate(target);
+                }
+            };
+        }
+        attach(element) {
+            element.addEventListener("change", this.changeEventListener);
+            this.handlePostchangeDuplicate(element);
+        }
+        detach(element) {
+            element.removeEventListener("change", this.changeEventListener);
+        }
+        handlePostchangeDuplicate(input) {
+            const closestFieldset = input.closest("fieldset");
+            const template = input.getAttribute("data-duplicater-template");
+            const inputValue = parseInt(input.value);
+            if (closestFieldset && template) {
+                const duplicateElements = Array.from(closestFieldset.querySelectorAll(`[name=${template}]`));
+                if (duplicateElements.length > 0) {
+                    const lastElement = duplicateElements[duplicateElements.length - 1];
+                    const templateElement = duplicateElements.splice(0, 1)[0];
+                    templateElement.hidden = true;
+                    while (duplicateElements.length > Math.max(inputValue, 0)) {
+                        duplicateElements.pop().remove();
+                    }
+                    while (duplicateElements.length < inputValue) {
+                        let newDuplicateElement = templateElement.cloneNode(true);
+                        newDuplicateElement.hidden = false;
+                        let duplicateIndex = newDuplicateElement.querySelector("[data-duplicater-index]");
+                        if (duplicateIndex) {
+                            duplicateIndex.textContent = (duplicateElements.length + 1).toString();
+                        }
+                        lastElement.insertAdjacentElement("afterend", newDuplicateElement);
+                        duplicateElements.push(newDuplicateElement);
+                    }
+                }
+            }
+        }
+    }
+    class EnablerInputDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("enabler-input");
+            this.changeEventListener = (event) => {
+                let target = event.target;
+                if (HTMLElement_22.isTagElement("input", target)) {
+                    this.handlePostchangeDuplicate(target);
+                }
+            };
+        }
+        attach(element) {
+            element.addEventListener("change", this.changeEventListener);
+            this.handlePostchangeDuplicate(element);
+        }
+        detach(element) {
+            element.removeEventListener("change", this.changeEventListener);
+        }
+        handlePostchangeDuplicate(input) {
+            const closestFieldset = input.closest("fieldset");
+            const template = input.getAttribute("data-duplicater-template");
+            const inputValue = parseInt(input.value);
+            if (closestFieldset && template) {
+                const duplicateElements = Array.from(closestFieldset.querySelectorAll(`[name=${template}]`));
+                if (duplicateElements.length > 0) {
+                    const lastDuplicateElement = duplicateElements[duplicateElements.length - 1];
+                    const templateElement = duplicateElements.splice(0, 1)[0];
+                    templateElement.hidden = true;
+                    while (duplicateElements.length > Math.max(inputValue, 0)) {
+                        duplicateElements.pop().remove();
+                    }
+                    while (duplicateElements.length < inputValue) {
+                        let newDuplicateElement = templateElement.cloneNode(true);
+                        newDuplicateElement.hidden = false;
+                        let duplicateIndex = newDuplicateElement.querySelector("[data-duplicater-index]");
+                        if (duplicateIndex) {
+                            duplicateIndex.textContent = (duplicateElements.length + 1).toString();
+                        }
+                        lastDuplicateElement.insertAdjacentElement("afterend", newDuplicateElement);
+                        duplicateElements.push(newDuplicateElement);
+                    }
+                }
+            }
+        }
+    }
+    class AutosizedDataClassMixin extends DataClassMixin {
+        constructor() {
+            super("autosized-input");
+            this.changeEventListener = (event) => {
+                let target = event.target;
+                if (HTMLElement_22.isTagElement("input", target)) {
+                    this.handlePostchangeDuplicate(target);
+                }
+            };
+        }
+        attach(element) {
+            element.addEventListener("change", this.changeEventListener);
+            this.handlePostchangeDuplicate(element);
+        }
+        detach(element) {
+            element.removeEventListener("change", this.changeEventListener);
+        }
+        handlePostchangeDuplicate(input) {
+            input.style.setProperty("width", parseInt(window.getComputedStyle(input).getPropertyValue("font-size")) * Math.max(input.value.length, input.placeholder.length) + "px");
+        }
+    }
+    const attributeMutationMixins = [
+        new TestDataClassMixin(),
+        new InputDropzoneDataClassMixin(),
+        new TogglerSelectDataClassMixin(),
+        new DuplicaterInputDataClassMixin(),
+        new AutosizedDataClassMixin()
+    ];
+    const mainObserver = new MutationObserver(HTMLElement_22.createMutationObserverCallback(attributeMutationMixins));
+    mainObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributeFilter: attributeMutationMixins.map((mixin => mixin.attributeName))
+    });
+    async function sandbox() {
+        // let tree = new TreeModel<MyNodeModel>({label: "lol", items: [{label: "hey"}]});
+        // tree.addEventListener("modified", (event: ModelModifiedEvent) => {
+        //   console.log(event);
+        // });
+        // console.log(tree);
+        // tree.setItemProperty({row: 0}, "label", "lol");
+        // console.log(tree.getItemProperty({row: 0}, "label"));
+        await Mockup_1.mockup();
+        //await start();
+        /*editor.registerCommand("test", {
+          exec: () => {
+            alert("test");
+          },
+          context: "default"
+        });*/
+        /*window.addEventListener("blur", () => {
+          document.body.focus();
+        });*/
+        /*const myWindow = window.open("http://localhost:8080/", "MsgWindow", "width=200,height=100");
+        if (myWindow) {
+        myWindow.document.write("<p>This is 'MsgWindow'. I am 200px wide and 100px tall!</p>");
+        myWindow.addEventListener("message", (event) => {
+            myWindow.document.body.innerHTML = event.data;
+        }, false);
+      
+        setTimeout(() => {
+            myWindow.postMessage("The user is 'bob' and the password is 'secret'", "http://localhost:8080/");
+        }, 100);
+      }*/
+    }
+    exports.sandbox = sandbox;
+});
+define("boot", ["require", "exports", "samples/Sandbox"], function (require, exports, Sandbox_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.boot = void 0;
+    async function boot() {
+        await Sandbox_1.sandbox();
+    }
+    exports.boot = boot;
+});
+define("engine/Engine", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Engine = void 0;
+    class Engine {
+        async boot() {
+            this.run();
+        }
+        run() {
+        }
+    }
+    exports.Engine = Engine;
+});
+define("engine/config/Configuration", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.SConfiguration = void 0;
+    class SConfiguration {
+        constructor() {
+            this.options = {
+                renderingCanvasId: 'canvas'
+            };
+        }
+        static get instance() {
+            if (this._instance === undefined) {
+                this._instance = new SConfiguration();
+            }
+            return this._instance;
+        }
+    }
+    exports.SConfiguration = SConfiguration;
+});
+define("engine/libs/maths/statistics/random/UUIDGenerator", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.UUIDGenerator = exports.UUIDGeneratorBase = void 0;
+    class UUIDGeneratorBase {
+        constructor() {
+            this._count = 0;
+        }
+        newUUID() {
+            return (++this._count).toString(16);
+        }
+    }
+    exports.UUIDGeneratorBase = UUIDGeneratorBase;
+    const UUIDGenerator = new UUIDGeneratorBase();
+    exports.UUIDGenerator = UUIDGenerator;
+});
+define("engine/core/general/ComponentsRegistry", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.ComponentsRegistry = void 0;
+    class ComponentsRegistry {
+        constructor() {
+            this._dictionary = new Map();
+        }
+        static get instance() {
+            if (this._instance === undefined) {
+                this._instance = new ComponentsRegistry();
+            }
+            return this._instance;
+        }
+        register(name, type) {
+            if (!this._dictionary.has(name)) {
+                this._dictionary.set(name, type);
+            }
+        }
+        create(name, owner, desc) {
+            const ctor = this._dictionary.get(name);
+            if (ctor !== undefined) {
+                return new ctor(owner, desc);
+            }
+            return undefined;
+        }
+    }
+    exports.ComponentsRegistry = ComponentsRegistry;
 });
 define("engine/libs/maths/Snippets", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -7059,22 +7376,6 @@ define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports"
     });
     exports.QuaternionInjector = QuaternionInjector;
 });
-define("engine/libs/maths/statistics/random/UUIDGenerator", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.UUIDGenerator = exports.UUIDGeneratorBase = void 0;
-    class UUIDGeneratorBase {
-        constructor() {
-            this._count = 0;
-        }
-        newUUID() {
-            return (++this._count).toString(16);
-        }
-    }
-    exports.UUIDGeneratorBase = UUIDGeneratorBase;
-    const UUIDGenerator = new UUIDGeneratorBase();
-    exports.UUIDGenerator = UUIDGenerator;
-});
 define("engine/core/rendering/scenes/objects/Object3D", ["require", "exports", "engine/core/general/Transform"], function (require, exports, Transform_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -7281,1417 +7582,568 @@ define("engine/core/general/Transform", ["require", "exports", "engine/libs/math
     const Transform = TransformBase;
     exports.Transform = Transform;
 });
-define("engine/libs/maths/extensions/pools/Vector3Pools", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/pools/StackPool"], function (require, exports, Vector3_2, StackPool_2) {
+define("engine/core/general/Entity", ["require", "exports", "engine/libs/maths/statistics/random/UUIDGenerator", "engine/core/general/ComponentsRegistry", "engine/core/general/Transform"], function (require, exports, UUIDGenerator_2, ComponentsRegistry_1, Transform_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Vector3Pool = void 0;
-    const Vector3Pool = new StackPool_2.StackPool(Vector3_2.Vector3Base);
-    exports.Vector3Pool = Vector3Pool;
-});
-define("engine/libs/maths/geometry/primitives/Plane", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/patterns/injectors/Injector"], function (require, exports, Vector3_3, Vector3Pools_1, Injector_7) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.PlaneBase = exports.PlaneInjector = exports.Plane = void 0;
-    class PlaneBase {
-        constructor(normal, constant) {
-            this._normal = normal || new Vector3_3.Vector3([0, 0, 0]);
-            this._constant = constant || 0;
+    exports.EntityBase = exports.Entity = void 0;
+    class EntityBase {
+        constructor(name, parent) {
+            this.uuid = UUIDGenerator_2.UUIDGenerator.newUUID();
+            this.desc = {};
+            this.name = name;
+            this.active = false;
+            this.parent = parent;
+            this.children = [];
+            this.components = new Map();
+            this.transform = new Transform_2.Transform();
         }
-        static fromNormalAndConstant(normal, constant) {
-            return new PlaneBase().setFromNormalAndConstant(normal, constant);
+        setup(desc) {
+            this.desc = desc;
         }
-        static fromNormalAndCoplanarPoint(normal, point) {
-            return new PlaneBase().setFromNormalAndCoplanarPoint(normal, point);
+        getComponent(name) {
+            return this.components.get(name);
         }
-        static fromCoplanarPoints(a, b, c) {
-            return new PlaneBase().setFromCoplanarPoints(a, b, c);
-        }
-        get normal() {
-            return this._normal;
-        }
-        set normal(normal) {
-            this._normal = normal;
-        }
-        get constant() {
-            return this._constant;
-        }
-        set constant(constant) {
-            this._constant = constant;
-        }
-        copy(plane) {
-            this._normal = plane._normal.clone();
-            this._constant = plane._constant;
-            return this;
-        }
-        set(x, y, z, constant) {
-            this._normal.setValues([x, y, z]);
-            this._constant = constant;
-            return this;
-        }
-        setFromNormalAndConstant(normal, constant) {
-            this._normal.copy(normal);
-            this._constant = constant;
-            return this;
-        }
-        setFromNormalAndCoplanarPoint(normal, point) {
-            this._normal.copy(normal);
-            this._constant = -point.dot(this._normal);
-            return this;
-        }
-        setFromCoplanarPoints(point1, point2, point3) {
-            const normal = point3.clone();
-            Vector3Pools_1.Vector3Pool.acquireTemp(1, (temp) => {
-                temp.copy(point1);
-                normal.sub(point2).cross(temp.sub(point2)).normalize();
-                this.setFromNormalAndCoplanarPoint(normal, point1);
-            });
-            return this;
-        }
-        distanceToPoint(point) {
-            return this._normal.dot(point) + this._constant;
-        }
-        normalized() {
-            const inverseNormalLength = 1.0 / this._normal.len();
-            this._normal.multScalar(inverseNormalLength);
-            this._constant *= inverseNormalLength;
-            return this;
+        addComponent(name, desc) {
+            const component = ComponentsRegistry_1.ComponentsRegistry.instance.create(name, this, desc);
+            this.components.set(name, component);
+            return component;
         }
     }
-    exports.PlaneBase = PlaneBase;
-    var Plane = PlaneBase;
-    exports.Plane = Plane;
-    const PlaneInjector = new Injector_7.Injector({
-        defaultCtor: PlaneBase,
-        onDefaultOverride: (ctor) => {
-            exports.Plane = Plane = ctor;
-        }
-    });
-    exports.PlaneInjector = PlaneInjector;
+    exports.EntityBase = EntityBase;
+    const Entity = EntityBase;
+    exports.Entity = Entity;
 });
-define("engine/libs/maths/geometry/primitives/Triangle", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/pools/StackPool", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/extensions/pools/Vector3Pools"], function (require, exports, Vector3_4, StackPool_3, Injector_8, Vector3Pools_2) {
+define("engine/core/general/Component", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.TrianglePool = exports.TriangleBase = exports.TriangleInjector = exports.Triangle = void 0;
-    class TriangleBase {
-        constructor(point1, point2, point3) {
-            this._point1 = point1 || new Vector3_4.Vector3();
-            this._point2 = point2 || new Vector3_4.Vector3();
-            this._point3 = point3 || new Vector3_4.Vector3();
+    exports.AbstractComponent = void 0;
+    class AbstractComponent {
+        constructor(owner, desc) {
+            this.type = this.constructor.name;
+            this.owner = owner;
+            this.desc = desc;
+            this.enabled = false;
         }
-        get point1() {
-            return this._point1;
+    }
+    exports.AbstractComponent = AbstractComponent;
+});
+define("engine/core/general/System", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.System = void 0;
+    class System {
+    }
+    exports.System = System;
+});
+define("engine/core/audio/AudioSystem", ["require", "exports", "engine/core/general/System"], function (require, exports, System_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.AudioSystem = exports.GAudioContext = void 0;
+    exports.GAudioContext = new AudioContext();
+    class AudioSystem extends System_1.System {
+    }
+    exports.AudioSystem = AudioSystem;
+});
+define("engine/core/components/rendering/MeshComponent", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.MeshComponent = void 0;
+    class MeshComponent {
+        setup() {
         }
-        set point1(point1) {
-            this._point1 = point1;
+        cleanup() {
         }
-        get point2() {
-            return this._point2;
+        render() { }
+    }
+    exports.MeshComponent = MeshComponent;
+});
+define("engine/core/general/Clock", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Clock = void 0;
+    class Clock {
+        constructor() {
+            this.deltaTime = 0;
         }
-        set point2(point2) {
-            this._point2 = point2;
+    }
+    exports.Clock = Clock;
+});
+define("engine/core/general/Scene", ["require", "exports", "engine/core/general/Entity", "engine/libs/maths/statistics/random/UUIDGenerator"], function (require, exports, Entity_1, UUIDGenerator_3) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.SceneBase = exports.Scene = void 0;
+    class SceneBase {
+        constructor() {
+            this.uuid = UUIDGenerator_3.UUIDGenerator.newUUID();
+            this.root = new Entity_1.EntityBase('root', undefined);
         }
-        get point3() {
-            return this._point3;
+        parseEntityRecursive(name, desc, parent) {
+            const entity = new Entity_1.EntityBase(name, parent);
+            // Parsing children
+            if (desc.children !== undefined) {
+                for (const childName in desc.children) {
+                    const childDesc = desc.children[childName];
+                    const childEntity = this.parseEntityRecursive(childName, childDesc, entity);
+                    childEntity.parent = entity;
+                    entity.children.push(childEntity);
+                }
+            }
+            // Parsing components
+            if (desc.components !== undefined) {
+                for (const componentName in desc.components) {
+                    const component = entity.addComponent(componentName, desc.components[componentName]);
+                }
+            }
+            return entity;
         }
-        set point3(point3) {
-            this._point3 = point3;
+        build(desc, root) {
+            if (root === undefined) {
+                root = this.root;
+            }
+            for (const key in desc) {
+                const entity = this.parseEntityRecursive(key, desc[key], this.root);
+                root.children.push(entity);
+            }
         }
-        getValues() {
-            const point1 = this._point1, point2 = this._point2, point3 = this._point3;
-            return [
-                point1.x, point1.y, point1.z,
-                point2.x, point2.y, point2.z,
-                point3.x, point3.y, point3.z
-            ];
+    }
+    exports.SceneBase = SceneBase;
+    const Scene = SceneBase;
+    exports.Scene = Scene;
+});
+define("engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.SingleTopicMessageBrokerBase = exports.SingleTopicMessageBroker = void 0;
+    ;
+    class SingleTopicMessageBrokerBase {
+        constructor() {
+            this._subscriptions = [];
         }
-        set(point1, point2, point3) {
-            this._point1.copy(point1);
-            this._point2.copy(point2);
-            this._point3.copy(point3);
-            return this;
+        hasSubscriptions() {
+            return this._subscriptions.length > 0;
         }
-        setValues(values) {
-            this._point1.setValues([values[0], values[1], values[2]]);
-            this._point2.setValues([values[3], values[4], values[5]]);
-            this._point3.setValues([values[6], values[7], values[8]]);
-            return this;
+        subscribe(subscription) {
+            const index = this._subscriptions.indexOf(subscription);
+            if (index < 0) {
+                this._subscriptions.push(subscription);
+            }
+            return subscription;
         }
-        clone() {
-            return new TriangleBase().copy(this);
+        unsubscribe(subscription) {
+            const index = this._subscriptions.indexOf(subscription);
+            if (index > -1) {
+                this._subscriptions.splice(index, 1);
+            }
+            return this._subscriptions.length;
         }
-        copy(triangle) {
-            this._point1 = triangle._point1;
-            this._point2 = triangle._point2;
-            this._point3 = triangle._point3;
-            return this;
+        publish(message) {
+            for (const subscription of this._subscriptions) {
+                subscription(message);
+            }
         }
-        getNormal(out) {
-            Vector3Pools_2.Vector3Pool.acquireTemp(1, (temp) => {
-                out.copyAndSub(this._point2, this.point1);
-                temp.copyAndSub(this._point3, this.point1);
-                out.cross(temp).normalize();
-            });
-            return out;
+    }
+    exports.SingleTopicMessageBrokerBase = SingleTopicMessageBrokerBase;
+    const SingleTopicMessageBroker = SingleTopicMessageBrokerBase;
+    exports.SingleTopicMessageBroker = SingleTopicMessageBroker;
+});
+define("engine/core/logger/Logger", ["require", "exports", "engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker"], function (require, exports, SingleTopicMessageBroker_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.LoggerBase = exports.Logger = exports.LogLevel = void 0;
+    var LogLevel;
+    (function (LogLevel) {
+        LogLevel[LogLevel["DEBUG"] = 0] = "DEBUG";
+        LogLevel[LogLevel["ERROR"] = 1] = "ERROR";
+        LogLevel[LogLevel["INFO"] = 2] = "INFO";
+        LogLevel[LogLevel["LOG"] = 3] = "LOG";
+        LogLevel[LogLevel["WARN"] = 4] = "WARN";
+    })(LogLevel || (LogLevel = {}));
+    exports.LogLevel = LogLevel;
+    class LoggerBase {
+        constructor() {
+            this._broker = new SingleTopicMessageBroker_1.SingleTopicMessageBroker();
         }
-        getBarycentricCoordinates(point, out) {
-            Vector3Pools_2.Vector3Pool.acquireTemp(3, (v1, v2, vp) => {
-                v1.copyAndSub(this._point2, this._point1),
-                    v2.copyAndSub(this._point3, this._point1),
-                    vp.copyAndSub(point, this._point1);
-                const dotxx = v1.dot(v1);
-                const dotxy = v1.dot(v2);
-                const dotxz = v1.dot(vp);
-                const dotyy = v2.dot(v2);
-                const dotyz = v2.dot(vp);
-                const denom = (dotxx * dotyy - dotxy * dotxy);
-                if (denom === 0) {
-                    // TODO: Handle ?
-                    out.setValues([-2, -1, -1]);
+        log(message) {
+            const level = LogLevel.LOG;
+            message = this.formatMessage(level, message);
+            console.log(message);
+            this._onLog(level, message);
+        }
+        info(message) {
+            const level = LogLevel.INFO;
+            message = this.formatMessage(level, message);
+            console.info(message);
+            this._onLog(level, message);
+        }
+        warn(message) {
+            const level = LogLevel.WARN;
+            message = this.formatMessage(level, message);
+            console.warn(message);
+            this._onLog(level, message);
+        }
+        debug(message) {
+            const level = LogLevel.DEBUG;
+            message = this.formatMessage(level, message);
+            console.debug(message);
+            this._onLog(level, message);
+        }
+        error(message) {
+            const level = LogLevel.ERROR;
+            message = this.formatMessage(level, message);
+            console.error(message);
+            this._onLog(level, message);
+        }
+        _onLog(level, message) {
+            this._broker.publish({ level: level, message: message });
+        }
+        subscribe(subscription) {
+            return this._broker.subscribe(subscription);
+        }
+        unsubscribe(subscription) {
+            return this._broker.unsubscribe(subscription);
+        }
+        formatMessage(level, message) {
+            const time = this.getTimestamp();
+            return `[${time}] ${message}`;
+        }
+        getTimestamp() {
+            return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "numeric", second: "numeric", hour12: false });
+        }
+    }
+    exports.LoggerBase = LoggerBase;
+    const Logger = new LoggerBase();
+    exports.Logger = Logger;
+});
+define("engine/core/rendering/pipelines/RenderingPipeline", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.RenderingPipeline = void 0;
+    class RenderingPipeline {
+        addPass() {
+        }
+    }
+    exports.RenderingPipeline = RenderingPipeline;
+});
+define("engine/core/rendering/renderers/MeshRenderer", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.MeshRenderer = void 0;
+    class MeshRenderer {
+    }
+    exports.MeshRenderer = MeshRenderer;
+});
+define("engine/resources/Resources", ["require", "exports", "engine/resources/ResourceFetcher", "engine/core/logger/Logger"], function (require, exports, ResourceFetcher_2, Logger_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Resources = void 0;
+    function extractExtension(filename) {
+        return filename.substring(filename.lastIndexOf('.') + 1);
+    }
+    const imageExtensions = ['png', 'jpg'];
+    const textExtensions = ['txt', 'md', 'vert', 'frag', 'glsl', 'json', 'html', 'css'];
+    class ResourcesBase {
+        constructor(folder) {
+            this.folder = folder || '';
+            this.resources = new Map();
+        }
+        get(file) {
+            const resource = this.resources.get(file);
+            if (typeof resource === 'undefined') {
+                Logger_1.Logger.error(`Unknown resource '${file}'.`);
+                return null;
+            }
+            return resource;
+        }
+        toString() {
+            return `[\n\t\'${Array.from(this.resources.keys()).join("\',\n\t\'")}\'\n]`;
+        }
+        async load(path) {
+            let url = this.folder.concat(path);
+            const fetchResource = async function (path, url, map) {
+                const fileExt = extractExtension(path);
+                let file;
+                try {
+                    if (imageExtensions.includes(fileExt)) {
+                        file = await ResourceFetcher_2.ResourceFetcher.fetchImage(url);
+                    }
+                    else if (textExtensions.includes(fileExt)) {
+                        file = await ResourceFetcher_2.ResourceFetcher.fetchTextFile(url);
+                    }
+                }
+                catch (e) {
+                    Logger_1.Logger.error(`Resource item '${url}' not found.`);
                     return;
                 }
-                const invDenom = 1 / denom;
-                const u = (dotyy * dotxz - dotxy * dotyz) * invDenom;
-                const v = (dotxx * dotyz - dotxy * dotxz) * invDenom;
-                out.setValues([1 - u - v, v, u]);
-            });
-            return out;
-        }
-        *sharedPointsWith(triangle) {
-            if (this._point1.equals(triangle._point1) || this._point1.equals(triangle._point2) || this._point1.equals(triangle._point3))
-                yield this._point1;
-            if (this._point2.equals(triangle._point1) || this._point2.equals(triangle._point2) || this._point2.equals(triangle._point3))
-                yield this._point2;
-            if (this._point3.equals(triangle._point1) || this._point3.equals(triangle._point2) || this._point3.equals(triangle._point3))
-                yield this._point3;
-        }
-        indexOfPoint(point) {
-            return (point.equals(this._point1)) ? 0 :
-                (point.equals(this._point2)) ? 1 :
-                    (point.equals(this._point3)) ? 2 : -1;
-        }
-        containsPoint(point) {
-            let contains = false;
-            Vector3Pools_2.Vector3Pool.acquireTemp(1, (pointCoords) => {
-                this.getBarycentricCoordinates(point, pointCoords);
-                contains = (pointCoords.x >= 0) && (pointCoords.y >= 0) && ((pointCoords.x + pointCoords.y) <= 1);
-            });
-            return contains;
-        }
-        getUV(point, uv1, uv2, uv3, out) {
-            Vector3Pools_2.Vector3Pool.acquireTemp(1, (pointCoords) => {
-                this.getBarycentricCoordinates(point, pointCoords);
-                out.setZeros();
-                out.addScaled(uv1, pointCoords.x);
-                out.addScaled(uv2, pointCoords.y);
-                out.addScaled(uv3, pointCoords.z);
-            });
-            return out;
-        }
-        isFrontFacing(direction) {
-            let result = false;
-            Vector3Pools_2.Vector3Pool.acquireTemp(2, (v1, v2) => {
-                v1.copyAndSub(this._point2, this._point1),
-                    v2.copyAndSub(this._point3, this._point1);
-                result = (v1.cross(v2).dot(direction) < 0);
-            });
-            return result;
-        }
-        getArea() {
-            let area = 0;
-            Vector3Pools_2.Vector3Pool.acquireTemp(2, (v1, v2) => {
-                v1.copyAndSub(this._point2, this._point1),
-                    v2.copyAndSub(this._point3, this._point1);
-                area = v1.cross(v2).len() * 0.5;
-            });
-            return area;
-        }
-        getMidpoint(out) {
-            return out.copy(this._point1).add(this._point2).add(this._point3).multScalar(1 / 3);
-        }
-        getPlane(out) {
-            throw Error('Not implemented yet.');
-        }
-        closestPointToPoint(point, out) {
-            const point1 = this._point1, point2 = this._point2, point3 = this._point3;
-            let v, w;
-            Vector3Pools_2.Vector3Pool.acquireTemp(4, (vb, vc, vp, vbp) => {
-                vb.copyAndSub(point2, point1),
-                    vc.copyAndSub(point3, point1),
-                    vp.copyAndSub(point, point1);
-                const d1 = vb.dot(vp);
-                const d2 = vc.dot(vp);
-                if (d1 <= 0 && d2 <= 0) {
-                    return out.copy(point1);
-                }
-                vbp.copyAndSub(point, point2);
-                const d3 = point1.dot(vbp);
-                const d4 = vc.dot(vbp);
-                if (d3 >= 0 && d4 <= d3) {
-                    return out.copy(point2);
-                }
-                const dc = d1 * d4 - d3 * d2;
-                if (dc <= 0 && d1 >= 0 && d3 <= 0) {
-                    v = d1 / (d1 - d3);
-                    return out.copy(point1).addScaled(vb, v);
-                }
-                vp.copyAndSub(point, point3);
-                const d5 = vb.dot(vp);
-                const d6 = vc.dot(vp);
-                if (d6 >= 0 && d5 <= d6) {
-                    return out.copy(point3);
-                }
-                const db = d5 * d2 - d1 * d6;
-                if (db <= 0 && d2 >= 0 && d6 <= 0) {
-                    w = d2 / (d2 - d6);
-                    return out.copy(point1).addScaled(vc, w);
-                }
-                const da = d3 * d6 - d5 * d4;
-                if (da <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0) {
-                    vc.copyAndSub(point3, point2);
-                    w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-                    return out.copy(point2).addScaled(vc, w);
-                }
-                const denom = 1 / (da + db + dc);
-                v = db * denom;
-                w = dc * denom;
-                out.copy(point1).addScaled(vb, v).addScaled(vc, w);
-            });
-            return out;
-        }
-        equals(triangle) {
-            return triangle._point1.equals(this._point1)
-                && triangle._point2.equals(this._point2)
-                && triangle._point3.equals(this._point3);
-        }
-        translate(vec) {
-            this._point1.add(vec);
-            this._point2.add(vec);
-            this._point3.add(vec);
-        }
-        transform(mat) {
-            this._point1.setValues(mat.transformDirection(this._point1));
-            this._point2.setValues(mat.transformDirection(this._point2));
-            this._point3.setValues(mat.transformDirection(this._point3));
-        }
-        readFromArray(arr, offset) {
-            this.point1.readFromArray(arr, offset);
-            this.point2.readFromArray(arr, offset + 3);
-            this.point3.readFromArray(arr, offset + 6);
-            return this;
-        }
-        writeIntoArray(arr, offset) {
-            this.point1.writeIntoArray(arr, offset);
-            this.point2.writeIntoArray(arr, offset + 3);
-            this.point3.writeIntoArray(arr, offset + 6);
-        }
-    }
-    exports.TriangleBase = TriangleBase;
-    var Triangle = TriangleBase;
-    exports.Triangle = Triangle;
-    const TriangleInjector = new Injector_8.Injector({
-        defaultCtor: TriangleBase,
-        onDefaultOverride: (ctor) => {
-            exports.Triangle = Triangle = ctor;
-        }
-    });
-    exports.TriangleInjector = TriangleInjector;
-    const TrianglePool = new StackPool_3.StackPool(TriangleBase);
-    exports.TrianglePool = TrianglePool;
-});
-define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_7) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.TriangleListBase = exports.TriangleList = void 0;
-    class TriangleListBase {
-        constructor(array) {
-            this._array = array || [];
-        }
-        get array() {
-            return this._array;
-        }
-        get count() {
-            return Math.floor(this._array.length / 9);
-        }
-        setArray(array) {
-            this._array = array;
-            return this;
-        }
-        get(idx, tri) {
-            if (idx >= this.count) {
-                throw new Error(`Index ${idx} out of bounds.`);
-            }
-            return tri.readFromArray(this._array, idx * 9);
-        }
-        set(idx, tri) {
-            if (idx >= this.count) {
-                throw new Error(`Index ${idx} out of bounds.`);
-            }
-            tri.writeIntoArray(this._array, idx * 9);
-        }
-        indexOf(tri) {
-            const count = this.count;
-            let idxBuf = 0, idxObj = 0, indexOf = -1;
-            const tempTri = Triangle_1.TrianglePool.acquire();
-            {
-                while (idxBuf < count) {
-                    tempTri.readFromArray(this._array, idxBuf);
-                    if (tri.equals(tempTri)) {
-                        indexOf = idxObj;
-                        idxObj += 1;
-                        break;
-                    }
-                    idxObj += 1;
-                    idxBuf += 9;
-                }
-            }
-            Triangle_1.TrianglePool.release(1);
-            return indexOf;
-        }
-        forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
-            const idxTo = Snippets_7.clamp(options.idxTo, 0, this.count);
-            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
-            let idxObj = idxFrom;
-            const tempTri = Triangle_1.TrianglePool.acquire();
-            {
-                while (idxObj < idxTo) {
-                    this.get(idxObj, tempTri);
-                    func(tempTri, idxObj);
-                    idxObj += 1;
-                }
-            }
-            Triangle_1.TrianglePool.release(1);
-        }
-        getIndexedPoints(indices, tri) {
-            tri.point1.readFromArray(this._array, indices[0]);
-            tri.point2.readFromArray(this._array, indices[1]);
-            tri.point3.readFromArray(this._array, indices[2]);
-        }
-        forIndexedPoints(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_7.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_7.clamp(options.idxFrom, 0, idxTo);
-            let idxBuf = idxFrom * 3;
-            const tempTri = Triangle_1.TrianglePool.acquire();
-            {
-                const pointsIndices = [0, 0, 0];
-                for (let idxObj = idxFrom; idxObj < idxTo; idxObj++) {
-                    pointsIndices[0] = indices[idxBuf];
-                    pointsIndices[1] = indices[idxBuf + 1];
-                    pointsIndices[2] = indices[idxBuf + 2];
-                    tempTri.point1.readFromArray(this._array, pointsIndices[0] * 3);
-                    tempTri.point2.readFromArray(this._array, pointsIndices[1] * 3);
-                    tempTri.point3.readFromArray(this._array, pointsIndices[2] * 3);
-                    func(tempTri, idxObj, pointsIndices);
-                    idxBuf += 3;
-                }
-            }
-            Triangle_1.TrianglePool.release(1);
-        }
-    }
-    exports.TriangleListBase = TriangleListBase;
-    const TriangleList = TriangleListBase;
-    exports.TriangleList = TriangleList;
-});
-define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_8) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Vector3ListBase = exports.Vector3List = void 0;
-    class Vector3ListBase {
-        constructor(array) {
-            this._array = array || [];
-        }
-        get array() {
-            return this._array;
-        }
-        get count() {
-            return Math.floor(this._array.length / 3);
-        }
-        setArray(array) {
-            this._array = array;
-            return this;
-        }
-        forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
-            const count = this.count;
-            const idxTo = Snippets_8.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
-            let idxObj = idxFrom;
-            const tempVec = Vector3Pools_3.Vector3Pool.acquire();
-            {
-                while (idxObj < count) {
-                    this.get(idxObj, tempVec);
-                    func(tempVec, idxObj);
-                    idxObj += 1;
-                }
-            }
-            Vector3Pools_3.Vector3Pool.release(1);
-        }
-        forEachFromIndices(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_8.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
-            let idxBuf = idxFrom * 3;
-            const tempVec = Vector3Pools_3.Vector3Pool.acquire();
-            {
-                for (let idxObj = idxFrom; idxObj < idxTo; idxObj++) {
-                    const indice = indices[idxBuf];
-                    this.get(indice, tempVec);
-                    func(tempVec, idxObj, indice);
-                }
-            }
-            Vector3Pools_3.Vector3Pool.release(1);
-        }
-        indexOf(vec) {
-            const count = this.count;
-            let idxBuf = 0, idxObj = 0, indexOf = -1;
-            const tempVec = Vector3Pools_3.Vector3Pool.acquire();
-            {
-                while (idxBuf < count) {
-                    tempVec.readFromArray(this._array, idxBuf);
-                    if (vec.equals(tempVec)) {
-                        indexOf = idxObj;
-                        break;
-                    }
-                    idxObj += 1;
-                    idxBuf += 3;
-                }
-            }
-            Vector3Pools_3.Vector3Pool.release(1);
-            return indexOf;
-        }
-        get(idx, vec) {
-            if (idx >= this.count) {
-                throw new Error(`Index ${idx} out of bounds.`);
-            }
-            return vec.readFromArray(this._array, idx * 3);
-        }
-        set(idx, vec) {
-            if (idx >= this.count) {
-                throw new Error(`Index ${idx} out of bounds.`);
-            }
-            vec.writeIntoArray(this._array, idx * 3);
-        }
-    }
-    exports.Vector3ListBase = Vector3ListBase;
-    const Vector3List = Vector3ListBase;
-    exports.Vector3List = Vector3List;
-});
-define("engine/libs/maths/extensions/pools/lists/TriangleListPools", ["require", "exports", "engine/libs/maths/extensions/lists/TriangleList", "engine/libs/patterns/pools/StackPool"], function (require, exports, TriangleList_1, StackPool_4) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.TriangleListPool = void 0;
-    const TriangleListPool = new StackPool_4.StackPool(TriangleList_1.TriangleListBase);
-    exports.TriangleListPool = TriangleListPool;
-});
-define("engine/libs/maths/extensions/pools/lists/Vector3ListPools", ["require", "exports", "engine/libs/maths/extensions/lists/Vector3List", "engine/libs/patterns/pools/StackPool"], function (require, exports, Vector3List_1, StackPool_5) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Vector3ListPool = void 0;
-    const Vector3ListPool = new StackPool_5.StackPool(Vector3List_1.Vector3ListBase);
-    exports.Vector3ListPool = Vector3ListPool;
-});
-define("engine/core/rendering/scenes/geometries/GeometryUtils", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/extensions/pools/lists/TriangleListPools", "engine/libs/maths/extensions/pools/lists/Vector3ListPools"], function (require, exports, Vector3Pools_4, TriangleListPools_1, Vector3ListPools_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.GeometryUtils = void 0;
-    class GeometryUtils {
-        static computeTangentsAndBitangents(verticesArray, uvsArray, indicesArray, type) {
-            const tangentsArray = new type(verticesArray.length);
-            const bitangentsArray = new type(verticesArray.length);
-            for (let i = 0; i < verticesArray.length; i += 3) {
-                const vertStride = 3;
-                const p1x = verticesArray[indicesArray[i] * vertStride], p1y = verticesArray[indicesArray[i] * vertStride + 1], p1z = verticesArray[indicesArray[i] * vertStride + 2], p2x = verticesArray[indicesArray[i + 1] * vertStride], p2y = verticesArray[indicesArray[i + 1] * vertStride + 1], p2z = verticesArray[indicesArray[i + 1] * vertStride + 2], p3x = verticesArray[indicesArray[i + 2] * vertStride], p3y = verticesArray[indicesArray[i + 2] * vertStride + 1], p3z = verticesArray[indicesArray[i + 2] * vertStride + 2];
-                const edge1x = p2x - p1x, edge1y = p2y - p1y, edge1z = p2z - p1z;
-                const edge2x = p3x - p1x, edge2y = p3y - p1y, edge2z = p3z - p1z;
-                const uvStride = 2;
-                const deltaUV1x = uvsArray[indicesArray[i + 1] * uvStride] - uvsArray[indicesArray[i] * uvStride], deltaUV1y = uvsArray[indicesArray[i + 1] * uvStride + 1] - uvsArray[indicesArray[i] * uvStride + 1], deltaUV2x = uvsArray[indicesArray[i + 2] * uvStride] - uvsArray[indicesArray[i] * uvStride], deltaUV2y = uvsArray[indicesArray[i + 2] * uvStride + 1] - uvsArray[indicesArray[i] * uvStride + 1];
-                const r = 1.0 / (deltaUV1x * deltaUV2y - deltaUV1y * deltaUV2x);
-                const tx = (edge1x * deltaUV2y - edge2x * deltaUV1y) * r;
-                const ty = (edge1y * deltaUV2y - edge2y * deltaUV1y) * r;
-                const tz = (edge1z * deltaUV2y - edge2z * deltaUV1y) * r;
-                const btx = (edge2x * deltaUV1x - edge1x * deltaUV2x) * r;
-                const bty = (edge2y * deltaUV1x - edge1y * deltaUV2x) * r;
-                const btz = (edge2z * deltaUV1x - edge1z * deltaUV2x) * r;
-                tangentsArray[indicesArray[i] * vertStride] = tx;
-                tangentsArray[indicesArray[i] * vertStride + 1] = ty;
-                tangentsArray[indicesArray[i] * vertStride + 2] = tz;
-                tangentsArray[indicesArray[i + 1] * vertStride] = tx;
-                tangentsArray[indicesArray[i + 1] * vertStride + 1] = ty;
-                tangentsArray[indicesArray[i + 1] * vertStride + 2] = tz;
-                tangentsArray[indicesArray[i + 2] * vertStride] = tx;
-                tangentsArray[indicesArray[i + 2] * vertStride + 1] = ty;
-                tangentsArray[indicesArray[i + 2] * vertStride + 2] = tz;
-                bitangentsArray[indicesArray[i] * vertStride] = btx;
-                bitangentsArray[indicesArray[i] * vertStride + 1] = bty;
-                bitangentsArray[indicesArray[i] * vertStride + 2] = btz;
-                bitangentsArray[indicesArray[i + 1] * vertStride] = btx;
-                bitangentsArray[indicesArray[i + 1] * vertStride + 1] = bty;
-                bitangentsArray[indicesArray[i + 1] * vertStride + 2] = btz;
-                bitangentsArray[indicesArray[i + 2] * vertStride] = btx;
-                bitangentsArray[indicesArray[i + 2] * vertStride + 1] = bty;
-                bitangentsArray[indicesArray[i + 2] * vertStride + 2] = btz;
-            }
-            return {
-                tangentsArray: tangentsArray,
-                bitangentsArray: bitangentsArray,
+                map.set(path, file);
             };
+            await fetchResource(path, url, this.resources);
         }
-        static computeFacesNormals(verticesArray, indicesArray, type) {
-            const facesNormalsArray = new type(indicesArray.length);
-            let faces = TriangleListPools_1.TriangleListPool.acquire().setArray(verticesArray);
-            let facesNormals = Vector3ListPools_1.Vector3ListPool.acquire().setArray(facesNormalsArray);
-            let normal = Vector3Pools_4.Vector3Pool.acquire();
-            faces.forIndexedPoints((face, idx) => {
-                face.getNormal(normal);
-                facesNormals.set(idx, normal);
-            }, indicesArray);
-            Vector3Pools_4.Vector3Pool.release(1);
-            Vector3ListPools_1.Vector3ListPool.release(1);
-            TriangleListPools_1.TriangleListPool.release(1);
-            return facesNormalsArray;
+        async loadList(path) {
+            let url = this.folder.concat(path);
+            let resources;
+            try {
+                resources = await ResourceFetcher_2.ResourceFetcher.fetchJSON(url);
+            }
+            catch (e) {
+                Logger_1.Logger.error(`Resources list '${url}' not found.`);
+                return;
+            }
+            const fetchResource = async function (resource, folder, map) {
+                const fileExt = extractExtension(resource);
+                let file;
+                try {
+                    if (imageExtensions.includes(fileExt)) {
+                        file = await ResourceFetcher_2.ResourceFetcher.fetchImage(folder.concat(resource));
+                    }
+                    else if (textExtensions.includes(fileExt)) {
+                        file = await ResourceFetcher_2.ResourceFetcher.fetchTextFile(folder.concat(resource));
+                    }
+                }
+                catch (e) {
+                    Logger_1.Logger.error(`Resource item '${url}' not found.`);
+                    return;
+                }
+                map.set(resource, file);
+            };
+            for (const resource of resources.list) {
+                await fetchResource(resource, this.folder, this.resources);
+            }
         }
-        static computeVerticesNormals(verticesArray, indicesArray, weighted, type, facesNormalsArray) {
-            const verticesNormalsArray = new type(verticesArray.length);
-            let verticesNormals = Vector3ListPools_1.Vector3ListPool.acquire().setArray(verticesNormalsArray);
-            let vertices = Vector3ListPools_1.Vector3ListPool.acquire().setArray(verticesArray);
-            let faces = TriangleListPools_1.TriangleListPool.acquire().setArray(verticesArray);
-            let facesNormals = Vector3ListPools_1.Vector3ListPool.acquire().setArray(facesNormalsArray ? facesNormalsArray : this.computeFacesNormals(verticesArray, indicesArray, type));
-            Vector3Pools_4.Vector3Pool.acquireTemp(2, (vertexNormalsSum, faceNormal) => {
-                if (weighted) {
-                    vertices.forEach((vert, vertIdx) => {
-                        verticesNormals.get(vertIdx, vertexNormalsSum);
-                        faces.forIndexedPoints((face, faceIdx) => {
-                            if (face.indexOfPoint(vert) > -1) {
-                                facesNormals.get(faceIdx, faceNormal);
-                                vertexNormalsSum.add(faceNormal.multScalar(face.getArea()));
-                            }
-                        }, indicesArray);
-                        vertexNormalsSum.normalize();
-                        verticesNormals.set(vertIdx, vertexNormalsSum);
-                    });
+    }
+    const Resources = ResourcesBase;
+    exports.Resources = Resources;
+});
+define("engine/core/rendering/shaders/lib/PhongShader", ["require", "exports", "engine/core/rendering/shaders/Shader"], function (require, exports, Shader_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.PhongShader = void 0;
+    const name = 'Phong';
+    const vertex = `#version 330 es
+    uniform Model {
+        uniform mat4 u_model;
+        uniform mat4 u_modelInverseTranspose;
+    } model;
+
+    uniform View {
+        uniform mat4 u_viewInverse;
+    } view;
+
+    uniform mat4 u_modelViewProjection;
+
+    uniform mat4 u_viewInverse;
+
+    #define LIGHTS_COUNT 1
+
+    uniform Lights {
+        vec3 u_lightWorldPos;
+        vec4 u_lightColor;
+    } lights[LIGHTS_COUNT];
+
+    //in Geometry {
+        in vec4 a_position;
+        in vec3 a_normal;    
+    //} geometry;
+
+    out SurfacesToLights {
+        vec3 v_surfaceToLight;
+    } surfacesToLights;
+
+    out vec4 v_position;
+    out vec3 v_normal;
+    out vec3 v_surfaceToLight[LIGHTS_COUNT];
+    out vec3 v_surfaceToView;
+
+    //include<empty>
+
+    void main() {
+
+        #ifdef USE_HEIGHTMAP
+            lolcccc
+            cdvdv
+            kiii
+            u_lightWorldPos = 'lol'
+        #endif
+
+        #pragma unroll_loop_start
+        for (int i = 0; i < LIGHTS_COUNT; i++)
+        {
+            
+        }
+        #pragma unroll_loop_end
+
+        //v_position = u_modelViewProjection * a_position;
+        //v_normal = (u_modelInverseTranspose * vec4(a_normal, 0)).xyz;
+        //v_surfaceToLight = u_lightWorldPos - (u_model * a_position).xyz;
+        //v_surfaceToView = (u_viewInverse[3] - (u_model * a_position)).xyz;
+        gl_Position = v_position;
+}`;
+    const fragment = `#version 330 es
+
+    precision mediump float;
+
+    uniform MeshBasicMaterial {
+        uniform vec3 u_albedo;
+        uniform vec4 u_ambient;
+    } meshBasicMaterial;
+
+    uniform MeshPhongMaterial {
+        uniform vec4 u_specular;
+        uniform float u_shininess;
+        uniform float u_specularFactor;
+    } meshPhongMaterial;
+
+    in vec4 v_position;
+    in vec3 v_normal;
+    in vec3 v_color;
+    in vec3 v_surfaceToLight;
+    in vec3 v_surfaceToView;
+
+    out vec4 outColor;
+
+    vec4 lit(float l ,float h, float m) {
+    return vec4(1.0,
+                max(l, 0.0),
+                (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
+                1.0);
+    }
+
+    void main() {
+        vec4 diffuseColor = vec4(u_albedo, 1);
+        vec3 a_normal = normalize(v_normal);
+        vec3 surfaceToLight = normalize(v_surfaceToLight);
+        vec3 surfaceToView = normalize(v_surfaceToView);
+        vec3 halfVector = normalize(surfaceToLight + surfaceToView);
+        vec4 litR = lit(dot(a_normal, surfaceToLight),
+                            dot(a_normal, halfVector), u_shininess);
+        vec4 outColor = vec4((
+        u_lightColor * (diffuseColor * litR.y + diffuseColor * u_ambient +
+                        u_specular * litR.z * u_specularFactor)).rgb,
+            diffuseColor.a);
+}`;
+    class PhongShader extends Shader_1.Shader {
+        constructor() {
+            super({
+                name: name,
+                vertex: vertex,
+                fragment: fragment
+            });
+        }
+    }
+    exports.PhongShader = PhongShader;
+});
+define("engine/core/rendering/shaders/ShadersLib", ["require", "exports", "engine/core/rendering/shaders/lib/PhongShader"], function (require, exports, PhongShader_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.ShadersLib = void 0;
+    const ShadersLib = Object.freeze({
+        shaders: {
+            Phong: PhongShader_1.PhongShader
+        },
+        chunks: new Map([
+            ['empty', 'empty.glsl'],
+        ])
+    });
+    exports.ShadersLib = ShadersLib;
+});
+define("engine/core/rendering/shaders/Shader", ["require", "exports", "engine/core/logger/Logger", "engine/core/rendering/shaders/ShadersLib"], function (require, exports, Logger_2, ShadersLib_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Shader = exports.ShaderType = void 0;
+    var ShaderType;
+    (function (ShaderType) {
+        ShaderType[ShaderType["FRAGMENT_SHADER"] = 0] = "FRAGMENT_SHADER";
+        ShaderType[ShaderType["VERTEX_SHADER"] = 1] = "VERTEX_SHADER";
+    })(ShaderType || (ShaderType = {}));
+    exports.ShaderType = ShaderType;
+    let DefaultShader = /** @class */ (() => {
+        class DefaultShader {
+            constructor(args) {
+                this.name = args.name;
+                this._vertex = this.__vertex = args.vertex;
+                this._fragment = this.__fragment = args.fragment;
+                DefaultShader._dictionnary.set(this.name, this);
+            }
+            get vertex() {
+                return this._vertex;
+            }
+            get fragment() {
+                return this._fragment;
+            }
+            static get(name) {
+                return DefaultShader._dictionnary.get(name);
+            }
+            setDefinition(shader, sourceType, definitionName, definitionValue) {
+                const definitionPattern = new RegExp(`#define ${definitionName} (.*?)\n`, 'gms');
+                const shaderSource = shader.getSource(sourceType);
+                let match;
+                if ((match = definitionPattern.exec(shaderSource)) !== null) {
+                    let definitionValueMatch = match[1];
+                    this.replaceInSource(shader, sourceType, definitionValueMatch, definitionValue.toString());
                 }
                 else {
-                    faces.forIndexedPoints((face, faceIdx, pointsIndices) => {
-                        face.getNormal(faceNormal);
-                        verticesNormals.set(pointsIndices[0], faceNormal);
-                        verticesNormals.set(pointsIndices[1], faceNormal);
-                        verticesNormals.set(pointsIndices[2], faceNormal);
-                    }, indicesArray);
+                    this.prependToSource(shader, sourceType, `#define ${definitionName} ${definitionValue}\n`);
                 }
-            });
-            return verticesNormalsArray;
-        }
-    }
-    exports.GeometryUtils = GeometryUtils;
-});
-define("engine/libs/maths/extensions/pools/Vector2Pools", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/patterns/pools/StackPool"], function (require, exports, Vector2_2, StackPool_6) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Vector2Pool = void 0;
-    const Vector2Pool = new StackPool_6.StackPool(Vector2_2.Vector2Base);
-    exports.Vector2Pool = Vector2Pool;
-});
-define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_9) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Vector2ListBase = exports.Vector2List = void 0;
-    class Vector2ListBase {
-        constructor(array) {
-            this._array = array || [];
-        }
-        get array() {
-            return this._array;
-        }
-        get count() {
-            return Math.floor(this._array.length / 2);
-        }
-        setArray(array) {
-            this._array = array;
-            return this;
-        }
-        forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
-            const count = this.count;
-            const idxTo = Snippets_9.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
-            let idxObj = idxFrom;
-            Vector2Pools_1.Vector2Pool.acquireTemp(1, (vector) => {
-                while (idxObj < count) {
-                    this.get(idxObj, vector);
-                    func(vector, idxObj);
-                    idxObj += 1;
-                }
-            });
-        }
-        indexOf(vec) {
-            const count = this.count;
-            let idxBuf = 0, idxObj = 0, indexOf = -1;
-            Vector2Pools_1.Vector2Pool.acquireTemp(1, (vector) => {
-                while (idxBuf < count) {
-                    vector.readFromArray(this._array, idxBuf);
-                    if (vector.equals(vec)) {
-                        indexOf = idxObj;
-                        break;
+                return this;
+            }
+            resolveIncludes(shader, sourceType, resources) {
+                const includePattern = new RegExp('\/\/include+<(.*)+>', 'gm');
+                const shaderSource = shader.getSource(sourceType);
+                let match;
+                while ((match = includePattern.exec(shaderSource)) !== null) {
+                    let patternMatch = match[0];
+                    let includeMatch = match[1];
+                    let chunk = ShadersLib_1.ShadersLib.chunks.get(includeMatch);
+                    if (chunk !== undefined) {
+                        const chunkSource = resources.get(chunk);
+                        if (chunkSource) {
+                            this.replaceInSource(shader, sourceType, patternMatch, chunkSource);
+                        }
                     }
-                    idxObj += 1;
-                    idxBuf += 2;
-                }
-            });
-            return indexOf;
-        }
-        get(idx, vec) {
-            if (idx >= this.count) {
-                throw new Error(`Index ${idx} out of bounds.`);
-            }
-            return vec.readFromArray(this._array, idx * 2);
-        }
-        set(idx, vec) {
-            if (idx >= this.count) {
-                throw new Error(`Index ${idx} out of bounds.`);
-            }
-            vec.readFromArray(this._array, idx * 2);
-        }
-    }
-    exports.Vector2ListBase = Vector2ListBase;
-    const Vector2List = Vector2ListBase;
-    exports.Vector2List = Vector2List;
-});
-define("engine/libs/physics/collisions/BoundingSphere", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/physics/collisions/BoundingBox", "engine/libs/patterns/injectors/Injector"], function (require, exports, Vector3_5, BoundingBox_1, Injector_9) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BoundingSphereBase = exports.BoundingSphereInjector = exports.BoundingSphere = void 0;
-    class BoundingSphereBase {
-        constructor() {
-            this._center = new Vector3_5.Vector3([-Infinity, -Infinity, -Infinity]);
-            this._radius = 0;
-        }
-        get center() {
-            return this._center;
-        }
-        set center(center) {
-            this._center = center;
-        }
-        get radius() {
-            return this._radius;
-        }
-        set radius(radius) {
-            this._radius = radius;
-        }
-        set(center, radius) {
-            this._center.copy(center);
-            this._radius = radius;
-            return this;
-        }
-        copy(sphere) {
-            this._center.copy(sphere._center);
-            this._radius = sphere._radius;
-            return this;
-        }
-        clone() {
-            return new BoundingSphereBase().copy(this);
-        }
-        setFromPoints(points, center) {
-            if (center !== undefined) {
-                this._center.copy(center);
-            }
-            else {
-                BoundingBox_1.BoundingBoxPool.acquireTemp(1, (box) => {
-                    box.setFromPoints(points).getCenter(this._center);
-                });
-            }
-            let maxRadiusSq = 0;
-            points.forEach((point) => {
-                maxRadiusSq = Math.max(maxRadiusSq, this._center.distSq(point));
-            });
-            this._radius = Math.sqrt(maxRadiusSq);
-            return this;
-        }
-        isEmpty() {
-            return (this._radius < 0);
-        }
-        makeEmpty() {
-            this._center.setZeros();
-            this._radius = -1;
-            return this;
-        }
-        containsPoint(point) {
-            return (point.distSq(this._center) <= (this._radius * this._radius));
-        }
-        dist(point) {
-            return (point.dist(this._center) - this._radius);
-        }
-        distToPlane(plane) {
-            return plane.distanceToPoint(this._center) - this._radius;
-        }
-        intersectsSphere(sphere) {
-            const radiusSum = this._radius + sphere._radius;
-            return this._center.distSq(sphere._center) <= (radiusSum * radiusSum);
-        }
-        intersectsBox(box) {
-            return box.intersectsSphere(this);
-        }
-        intersectsPlane(plane) {
-            return Math.abs(plane.distanceToPoint(this._center)) <= this._radius;
-        }
-        clampPoint(point, out) {
-            const deltaLenSq = this._center.distSq(point);
-            out.copy(point);
-            if (deltaLenSq > (this._radius * this._radius)) {
-                out.sub(this._center).normalize();
-                out.multScalar(this._radius).add(this._center);
-            }
-            return out;
-        }
-        getBoundingBox(out) {
-            if (this.isEmpty()) {
-                out.makeEmpty();
-                return out;
-            }
-            out.set(this._center, this._center);
-            out.expandByScalar(this._radius);
-            return out;
-        }
-        transform(mat) {
-            this._center.setValues(mat.transformPoint(this._center));
-            this._radius = this._radius * mat.getMaxScaleOnAxis();
-        }
-        translate(offset) {
-            this._center.add(offset);
-        }
-    }
-    exports.BoundingSphereBase = BoundingSphereBase;
-    var BoundingSphere = BoundingSphereBase;
-    exports.BoundingSphere = BoundingSphere;
-    const BoundingSphereInjector = new Injector_9.Injector({
-        defaultCtor: BoundingSphereBase,
-        onDefaultOverride: (ctor) => {
-            exports.BoundingSphere = BoundingSphere = ctor;
-        }
-    });
-    exports.BoundingSphereInjector = BoundingSphereInjector;
-});
-define("engine/libs/physics/collisions/BoundingBox", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/injectors/Injector", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/extensions/pools/Vector3Pools"], function (require, exports, Vector3_6, Injector_10, StackPool_7, Vector3Pools_5) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BoundingBoxPool = exports.BoundingBoxBase = exports.BoundingBoxInjector = exports.BoundingBox = void 0;
-    class BoundingBoxBase {
-        constructor() {
-            this._min = new Vector3_6.Vector3([-Infinity, -Infinity, -Infinity]);
-            this._max = new Vector3_6.Vector3([+Infinity, +Infinity, +Infinity]);
-        }
-        get min() {
-            return this._min;
-        }
-        set min(min) {
-            this._min = min;
-        }
-        get max() {
-            return this._max;
-        }
-        set max(max) {
-            this._max = max;
-        }
-        set(min, max) {
-            this._min.copy(min);
-            this._max.copy(max);
-        }
-        copy(box) {
-            this._min = box._min;
-            this._max = box._max;
-            return this;
-        }
-        clone(box) {
-            return new BoundingBoxBase().copy(box);
-        }
-        makeEmpty() {
-            this._min.setValues([Infinity, Infinity, Infinity]);
-            this._max.setValues([+Infinity, +Infinity, +Infinity]);
-        }
-        isEmpty() {
-            return (this._max.x < this._min.x) || (this._max.y < this._min.y) || (this._max.z < this._min.z);
-        }
-        getCenter(out) {
-            this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._min).add(this._max).multScalar(0.5);
-            return out;
-        }
-        getSize(out) {
-            this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._max).sub(this._min);
-            return out;
-        }
-        setFromLengths(center, length, width, height) {
-            this._min.setValues([center.x - length / 2, center.y - width / 2, center.z - height / 2]);
-            this._max.setValues([center.x + length / 2, center.y + width / 2, center.z + height / 2]);
-            return this;
-        }
-        setFromPoints(points) {
-            this.makeEmpty();
-            points.forEach((vec) => {
-                this.expandByPoint(vec);
-            });
-            return this;
-        }
-        expandByPoint(point) {
-            this._min.min(point);
-            this._max.min(point);
-            return this;
-        }
-        expandByVector(vector) {
-            this._min.sub(vector);
-            this._max.add(vector);
-            return this;
-        }
-        expandByScalar(k) {
-            this._min.addScalar(-k);
-            this._max.addScalar(k);
-            return this;
-        }
-        clampPoint(point, out) {
-            return out.copy(point).clamp(this._min, this._max);
-        }
-        distanceToPoint(point) {
-            let dist = 0;
-            Vector3Pools_5.Vector3Pool.acquireTemp(1, (temp) => {
-                const clampedPoint = temp.copy(point).clamp(this._min, this._max);
-                dist = clampedPoint.sub(point).len();
-            });
-            return dist;
-        }
-        intersectsPlane(plane) {
-            let min = 0, max = 0;
-            if (plane.normal.x > 0) {
-                min = plane.normal.x * this._min.x;
-                max = plane.normal.x * this._max.x;
-            }
-            else {
-                min = plane.normal.x * this._max.x;
-                max = plane.normal.x * this._min.x;
-            }
-            if (plane.normal.y > 0) {
-                min += plane.normal.y * this._min.y;
-                max += plane.normal.y * this._max.y;
-            }
-            else {
-                min += plane.normal.y * this._max.y;
-                max += plane.normal.y * this._min.y;
-            }
-            if (plane.normal.z > 0) {
-                min += plane.normal.z * this._min.z;
-                max += plane.normal.z * this._max.z;
-            }
-            else {
-                min += plane.normal.z * this._max.z;
-                max += plane.normal.z * this._min.z;
-            }
-            return (min <= -plane.constant && max >= -plane.constant);
-        }
-        intersectsSphere(sphere) {
-            let intersects = false;
-            Vector3Pools_5.Vector3Pool.acquireTemp(1, (clamped) => {
-                this.clampPoint(sphere.center, clamped);
-                intersects = clamped.distSq(sphere.center) <= (sphere.radius * sphere.radius);
-            });
-            return intersects;
-        }
-        intersectsBox(box) {
-            return !(box._max.x < this._min.x || box._min.x > this._max.x ||
-                box._max.y < this._min.y || box._min.y > this._max.y ||
-                box._max.z < this._min.z || box._min.z > this._max.z);
-        }
-        getBoundingSphere(out) {
-            out.radius = this.getSize(out.center).len() * 0.5;
-            this.getCenter(out.center);
-            return out;
-        }
-        intersectsTriangle(triangle) {
-            if (this.isEmpty()) {
-                return false;
-            }
-            const point1 = triangle.point1, point2 = triangle.point2, point3 = triangle.point3;
-            let intersects = false;
-            Vector3Pools_5.Vector3Pool.acquireTemp(8, (center, extents, v1, v2, v3, edge1, edge2, edge3) => {
-                this.getCenter(center);
-                extents.copyAndSub(this._max, center),
-                    v1.copyAndSub(point1, center),
-                    v2.copyAndSub(point2, center),
-                    v3.copyAndSub(point3, center),
-                    edge1.copyAndSub(point2, point1),
-                    edge2.copyAndSub(point3, point2),
-                    edge3.copyAndSub(point1, point3);
-                let axes = new Float32Array([
-                    0, -edge1.z, edge1.y,
-                    0, -edge2.z, edge2.y,
-                    0, -edge3.z, edge3.y,
-                    edge1.z, 0, -edge1.x,
-                    edge2.z, 0, -edge2.x,
-                    edge3.z, 0, -edge3.x,
-                    -edge1.y, edge1.x, 0,
-                    -edge2.y, edge2.x, 0,
-                    -edge3.y, edge3.x, 0
-                ]);
-                if (!this.satForAxes(axes, v1, v2, v3, extents)) {
-                    intersects = false;
-                    return;
-                }
-                axes = new Float32Array([
-                    1, 0, 0,
-                    0, 1, 0,
-                    0, 0, 1
-                ]);
-                if (!this.satForAxes(axes, v1, v2, v3, extents)) {
-                    intersects = false;
-                    return;
-                }
-                const triangleNormal = center.copyAndCross(edge1, edge2);
-                intersects = this.satForAxes(triangleNormal.values, v1, v2, v3, extents);
-            });
-            return intersects;
-        }
-        satForAxes(axes, v1, v2, v3, extents) {
-            let sat = true;
-            Vector3Pools_5.Vector3Pool.acquireTemp(1, (axis) => {
-                for (let i = 0, j = axes.length - 3; i <= j; i += 3) {
-                    axis.x = axes[i];
-                    axis.y = axes[i + 1];
-                    axis.z = axes[i + 2];
-                    const r = extents.x * Math.abs(axis.x) + extents.y * Math.abs(axis.y) + extents.z * Math.abs(axis.z);
-                    const p1 = v1.dot(axis);
-                    const p2 = v2.dot(axis);
-                    const p3 = v3.dot(axis);
-                    if (Math.max(-Math.max(p1, p2, p3), Math.min(p1, p2, p3)) > r) {
-                        sat = false;
+                    else {
+                        Logger_2.Logger.info(`Shader chunk '${includeMatch}' is unknown!`);
                     }
                 }
-            });
-            return sat;
-        }
-    }
-    exports.BoundingBoxBase = BoundingBoxBase;
-    var BoundingBox = BoundingBoxBase;
-    exports.BoundingBox = BoundingBox;
-    const BoundingBoxInjector = new Injector_10.Injector({
-        defaultCtor: BoundingBoxBase,
-        onDefaultOverride: (ctor) => {
-            exports.BoundingBox = BoundingBox = ctor;
-        }
-    });
-    exports.BoundingBoxInjector = BoundingBoxInjector;
-    const BoundingBoxPool = new StackPool_7.StackPool(BoundingBoxBase);
-    exports.BoundingBoxPool = BoundingBoxPool;
-});
-// Vertices : counter clock-wise ordered
-define("engine/core/rendering/scenes/geometries/Geometry", ["require", "exports", "engine/core/rendering/scenes/geometries/GeometryUtils", "engine/libs/maths/extensions/lists/TriangleList", "engine/libs/maths/extensions/lists/Vector2List", "engine/libs/maths/extensions/lists/Vector3List", "engine/libs/maths/statistics/random/UUIDGenerator", "engine/libs/physics/collisions/BoundingBox", "engine/libs/physics/collisions/BoundingSphere"], function (require, exports, GeometryUtils_1, TriangleList_2, Vector2List_1, Vector3List_2, UUIDGenerator_2, BoundingBox_2, BoundingSphere_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.GeometryBase = exports.isGeometry = exports.GeometryPropertyKeys = void 0;
-    var GeometryPropertyKeys;
-    (function (GeometryPropertyKeys) {
-        GeometryPropertyKeys[GeometryPropertyKeys["vertices"] = 0] = "vertices";
-        GeometryPropertyKeys[GeometryPropertyKeys["indices"] = 1] = "indices";
-        GeometryPropertyKeys[GeometryPropertyKeys["uvs"] = 2] = "uvs";
-        GeometryPropertyKeys[GeometryPropertyKeys["facesNormals"] = 3] = "facesNormals";
-        GeometryPropertyKeys[GeometryPropertyKeys["verticesNormals"] = 4] = "verticesNormals";
-        GeometryPropertyKeys[GeometryPropertyKeys["tangents"] = 5] = "tangents";
-        GeometryPropertyKeys[GeometryPropertyKeys["bitangents"] = 6] = "bitangents";
-    })(GeometryPropertyKeys || (GeometryPropertyKeys = {}));
-    exports.GeometryPropertyKeys = GeometryPropertyKeys;
-    function isGeometry(obj) {
-        return obj.isGeometry;
-    }
-    exports.isGeometry = isGeometry;
-    class GeometryBase {
-        constructor(desc) {
-            this.uuid = UUIDGenerator_2.UUIDGenerator.newUUID();
-            this.isGeometry = true;
-            this._verticesArray = desc.vertices;
-            this._vertices = new Vector3List_2.Vector3List(this._verticesArray);
-            this._faces = new TriangleList_2.TriangleList(this._verticesArray);
-            this._indicesArray = desc.indices;
-            this._uvsArray = desc.uvs;
-            this._uvs = new Vector2List_1.Vector2List(this._uvsArray);
-            this._weightedVerticesNormals = desc.weightedVerticesNormals || false;
-            this._facesNormalsArray = GeometryUtils_1.GeometryUtils.computeFacesNormals(this._verticesArray, this._indicesArray, Float32Array);
-            this._facesNormals = new Vector3List_2.Vector3List(this._facesNormalsArray);
-            this._verticesNormalsArray = GeometryUtils_1.GeometryUtils.computeVerticesNormals(this._verticesArray, this._indicesArray, this._weightedVerticesNormals, Float32Array, this._facesNormalsArray);
-            this._verticesNormals = new Vector3List_2.Vector3List(this._verticesNormalsArray);
-            const { tangentsArray, bitangentsArray } = GeometryUtils_1.GeometryUtils.computeTangentsAndBitangents(this._verticesArray, this._uvsArray, this._indicesArray, Float32Array);
-            this._tangentsArray = tangentsArray;
-            this._bitangentsArray = bitangentsArray;
-            this._tangents = new Vector3List_2.Vector3List(this._tangentsArray);
-            this._bitangents = new Vector3List_2.Vector3List(this._bitangentsArray);
-        }
-        /*public builder(): GeometryBuilder {
-            return new GeometryBuilderBase(this);
-        }*/
-        get indices() {
-            return this._indicesArray;
-        }
-        get vertices() {
-            return this._vertices;
-        }
-        get uvs() {
-            return this._uvs;
-        }
-        get faces() {
-            return this._faces;
-        }
-        get facesNormals() {
-            return this._facesNormals;
-        }
-        get verticesNormals() {
-            return this._verticesNormals;
-        }
-        get tangents() {
-            return this._tangents;
-        }
-        get bitangents() {
-            return this._bitangents;
-        }
-        get boundingBox() {
-            return this._boundingBox;
-        }
-        get boundingSphere() {
-            return this._boundingSphere;
-        }
-        /*public copy(geometry: GeometryBase): GeometryBase {
-            this._verticesArray = geometry._verticesArray.slice();
-            this._indicesArray = geometry._indicesArray.slice();
-            this._uvsArray = geometry._uvsArray.slice();
-            this._facesNormalsArray = geometry._facesNormalsArray.slice();
-            this._verticesNormalsArray = geometry._verticesNormalsArray.slice();
-            this._tangentsArray = geometry._tangentsArray.slice();
-            this._bitangentsArray = geometry._bitangentsArray.slice();
-    
-            if (typeof geometry._boundingBox !== 'undefined') {
-                this.computeBoundingBox();
             }
-    
-            if (typeof geometry._boundingSphere !== 'undefined') {
-                this.computeBoundingSphere();
+            getUniformBlockIndex(shader, sourceType, blockName) {
+                const uniformBlockPattern = new RegExp(`uniform ${blockName}`, 'gms');
+                const shaderSource = shader.getSource(sourceType);
+                let match;
+                if ((match = uniformBlockPattern.exec(shaderSource)) !== null) {
+                    return match.index;
+                }
+                Logger_2.Logger.info(`Block '${blockName}' is not present in shader '${shader.name}' !`);
+                return null;
             }
-    
-            return this;
-        }
-    
-        public updateVertices(vertices: TypedArray, offset: number = 0): GeometryBase {
-            const idxFrom = offset;
-            const idxTo = offset + vertices.length;
-            this._verticesArray.set(vertices, offset);
-            this._updateFacesNormals({idxFrom, idxTo});
-            this._updateVerticesNormals(this._weightedVerticesNormals, {idxFrom, idxTo});
-            //this._changes.publish({prop: GeometryPropertyKeys.vertices, section: [idxFrom, idxTo]});
-            return this;
-        }
-    
-        public updateUvs(uvs: TypedArray, offset: number = 0): GeometryBase {
-            const idxFrom = offset;
-            const idxTo = offset + uvs.length;
-            this._uvsArray.set(uvs, offset);
-            if (typeof this._tangents !== 'undefined') {
-                this._updateTangentsAndBitangents({idxFrom, idxTo});
+            replaceInSource(shader, sourceType, oldStr, newStr) {
+                const shaderSource = shader.getSource(sourceType);
+                shader._setSource(sourceType, shaderSource.replace(oldStr, newStr));
             }
-            //this._changes.publish({prop: GeometryPropertyKeys.uvs, section: [idxFrom, idxTo]});
-            return this;
-        }
-    
-        public clone(): GeometryBase {
-            return new GeometryBase({
-                vertices: this._verticesArray.slice(),
-                indices: this._indicesArray.slice(),
-                uvs: this._uvsArray.slice()
-            }).copy(this);
-        }
-    
-        private _updateFacesNormals(options?: {
-            idxFrom: number;
-            idxTo: number;
-        }): GeometryBase {
-            GeometryUtils.computeFacesNormals(this._faces,  this._indicesArray, this._facesNormals, options);
-            //this._changes.publish({prop: GeometryPropertyKeys.facesNormals, section: [options?.idxFrom || 0, options?.idxTo || this._facesNormals.buffer.length]});
-            return this;
-        }
-    
-        private _updateVerticesNormals(weighted: boolean = false, options?: {
-            idxFrom: number;
-            idxTo: number;
-        }): GeometryBase {
-            this._weightedVerticesNormals = weighted;
-            if (typeof this.facesNormals === 'undefined') {
-                this._updateFacesNormals();
+            prependToSource(shader, sourceType, str) {
+                const shaderSource = shader.getSource(sourceType);
+                shader._setSource(sourceType, str.concat(shaderSource));
             }
-            GeometryUtils.computeVerticesNormals(this._vertices, this._faces, this._indicesArray, this._facesNormals!, this._verticesNormals, weighted, options);
-            //this._changes.publish({prop: GeometryPropertyKeys.verticesNormals, section: [options?.idxFrom || 0, options?.idxTo || this._verticesNormals.buffer.length]});
-            return this;
-        }
-    
-        private _updateTangentsAndBitangents(options?: {
-            idxFrom: number;
-            idxTo: number;
-        }): GeometryBase {
-            //this._changes.publish({prop: GeometryPropertyKeys.tangents, section: [options?.idxFrom || 0, options?.idxTo || this._tangents.buffer.length]});
-            //this._changes.publish({prop: GeometryPropertyKeys.bitangents, section: [options?.idxFrom || 0, options?.idxTo || this._bitangents.buffer.length]});
-            GeometryUtils.computeTangentsAndBitangents(this._verticesArray, this._uvsArray, this._indicesArray, this._tangentsArray, this._bitangentsArray, options);
-            return this;
-        }*/
-        computeBoundingBox() {
-            if (this._boundingBox === undefined) {
-                this._boundingBox = new BoundingBox_2.BoundingBox().setFromPoints(this._vertices);
+            getSource(type) {
+                if (type == ShaderType.VERTEX_SHADER) {
+                    return this._vertex;
+                }
+                else {
+                    return this._fragment;
+                }
             }
-            else {
-                this._boundingBox.setFromPoints(this._vertices);
+            _setSource(type, value) {
+                if (type == ShaderType.VERTEX_SHADER) {
+                    this._vertex = value;
+                }
+                else {
+                    this._fragment = value;
+                }
             }
-            return this._boundingBox;
         }
-        computeBoundingSphere() {
-            if (this._boundingSphere === undefined) {
-                this._boundingSphere = new BoundingSphere_1.BoundingSphere().setFromPoints(this._vertices);
-            }
-            else {
-                this._boundingSphere.setFromPoints(this._vertices);
-            }
-            return this._boundingSphere;
-        }
-    }
-    exports.GeometryBase = GeometryBase;
-});
-define("engine/core/rendering/scenes/materials/Material", ["require", "exports", "engine/libs/maths/statistics/random/UUIDGenerator"], function (require, exports, UUIDGenerator_3) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.MaterialBase = exports.isMaterial = void 0;
-    function isMaterial(obj) {
-        return obj.isMaterial;
-    }
-    exports.isMaterial = isMaterial;
-    class MaterialBase {
-        constructor(name) {
-            this.isMaterial = true;
-            this.uuid = UUIDGenerator_3.UUIDGenerator.newUUID();
-            this.name = name;
-        }
-    }
-    exports.MaterialBase = MaterialBase;
-});
-define("engine/core/rendering/scenes/objects/meshes/Mesh", ["require", "exports", "engine/core/rendering/scenes/objects/Object3D"], function (require, exports, Object3D_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.MeshBase = exports.isMesh = void 0;
-    function isMesh(obj) {
-        return obj.isMesh;
-    }
-    exports.isMesh = isMesh;
-    class MeshBase extends Object3D_1.Object3DBase {
-        constructor(geometry, material) {
-            super();
-            this.isMesh = true;
-            this.geometry = geometry;
-            this.material = material;
-        }
-    }
-    exports.MeshBase = MeshBase;
-});
-define("engine/libs/physics/collisions/Frustrum", ["require", "exports", "engine/libs/maths/geometry/primitives/Plane", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/extensions/pools/Vector3Pools"], function (require, exports, Plane_1, Injector_11, Vector3Pools_6) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.FrustrumBase = exports.FrustrumInjector = exports.Frustrum = void 0;
-    class FrustrumBase {
-        constructor() {
-            const planeCtor = Plane_1.PlaneInjector.defaultCtor;
-            this._nearPlane = new planeCtor();
-            this._farPlane = new planeCtor();
-            this._topPlane = new planeCtor();
-            this._bottomPlane = new planeCtor();
-            this._leftPlane = new planeCtor();
-            this._rightPlane = new planeCtor();
-        }
-        get nearPlane() {
-            return this._nearPlane;
-        }
-        set nearPlane(nearPlane) {
-            this._nearPlane = nearPlane;
-        }
-        get farPlane() {
-            return this._farPlane;
-        }
-        set farPlane(farPlane) {
-            this._farPlane = farPlane;
-        }
-        get topPlane() {
-            return this._topPlane;
-        }
-        set topPlane(topPlane) {
-            this._topPlane = topPlane;
-        }
-        get bottomPlane() {
-            return this._bottomPlane;
-        }
-        set bottomPlane(bottomPlane) {
-            this._bottomPlane = bottomPlane;
-        }
-        get leftPlane() {
-            return this._leftPlane;
-        }
-        set leftPlane(leftPlane) {
-            this._leftPlane = leftPlane;
-        }
-        get rightPlane() {
-            return this._rightPlane;
-        }
-        set rightPlane(rightPlane) {
-            this._rightPlane = rightPlane;
-        }
-        set(nearPlane, farPlane, topPlane, bottomPlane, leftPlane, rightPlane) {
-            this._nearPlane.copy(nearPlane);
-            this._farPlane.copy(farPlane);
-            this._topPlane.copy(topPlane);
-            this._bottomPlane.copy(bottomPlane);
-            this._leftPlane.copy(leftPlane);
-            this._rightPlane.copy(rightPlane);
-            return this;
-        }
-        copy(frustrum) {
-            this.set(frustrum._nearPlane, frustrum._farPlane, frustrum._topPlane, frustrum._bottomPlane, frustrum._leftPlane, frustrum._rightPlane);
-            return this;
-        }
-        clone() {
-            return new FrustrumBase().copy(this);
-        }
-        setFromPerspectiveMatrix(mat) {
-            const m = mat.values;
-            const m11 = m[0];
-            const m12 = m[1];
-            const m13 = m[2];
-            const m14 = m[3];
-            const m21 = m[4];
-            const m22 = m[5];
-            const m23 = m[6];
-            const m24 = m[7];
-            const m31 = m[8];
-            const m32 = m[9];
-            const m33 = m[10];
-            const m34 = m[11];
-            const m41 = m[12];
-            const m42 = m[13];
-            const m43 = m[14];
-            const m44 = m[15];
-            this._nearPlane.set(m31 + m41, m32 + m42, m33 + m43, m34 + m44).normalized();
-            this._farPlane.set(-m31 + m41, -m32 + m42, -m33 + m43, -m34 + m44).normalized();
-            this._bottomPlane.set(m21 + m41, m22 + m42, m23 + m43, m24 + m44).normalized();
-            this._topPlane.set(-m21 + m41, -m22 + m42, -m23 + m43, -m24 + m44).normalized();
-            this._leftPlane.set(m11 + m41, m12 + m42, m13 + m43, m14 + m44).normalized();
-            this._rightPlane.set(-m11 + m41, -m12 + m42, -m13 + m43, -m14 + m44).normalized();
-            return this;
-        }
-        intersectsSphere(sphere) {
-            const center = sphere.center;
-            const radius = sphere.radius;
-            return center.dot(this._nearPlane.normal) + this._nearPlane.constant + radius <= 0 ||
-                center.dot(this._farPlane.normal) + this._farPlane.constant + radius <= 0 ||
-                center.dot(this._bottomPlane.normal) + this._bottomPlane.constant + radius <= 0 ||
-                center.dot(this._topPlane.normal) + this._topPlane.constant + radius <= 0 ||
-                center.dot(this._leftPlane.normal) + this._leftPlane.constant + radius <= 0 ||
-                center.dot(this._rightPlane.normal) + this._rightPlane.constant + radius <= 0;
-        }
-        intersectsBox(box) {
-            let intersects = true;
-            const boxMax = box.max;
-            const boxMin = box.min;
-            const temp = Vector3Pools_6.Vector3Pool.acquire();
-            {
-                intersects =
-                    this._nearPlane.distanceToPoint(temp.setValues([
-                        this._nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                        this._nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                        this._nearPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                    ])) >= 0 &&
-                        this._farPlane.distanceToPoint(temp.setValues([
-                            this._farPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                            this._farPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                            this._farPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                        ])) >= 0 &&
-                        this._bottomPlane.distanceToPoint(temp.setValues([
-                            this._bottomPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                            this._bottomPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                            this._bottomPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                        ])) >= 0 &&
-                        this._topPlane.distanceToPoint(temp.setValues([
-                            this._topPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                            this._topPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                            this._topPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                        ])) >= 0 &&
-                        this._leftPlane.distanceToPoint(temp.setValues([
-                            this._leftPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                            this._leftPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                            this._leftPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                        ])) >= 0 &&
-                        this._rightPlane.distanceToPoint(temp.setValues([
-                            this._rightPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                            this._rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                            this._rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                        ])) >= 0;
-            }
-            Vector3Pools_6.Vector3Pool.release(1);
-            return intersects;
-        }
-        containsPoint(point) {
-            return this._nearPlane.distanceToPoint(point) >= 0 &&
-                this._farPlane.distanceToPoint(point) >= 0 &&
-                this._bottomPlane.distanceToPoint(point) >= 0 &&
-                this._topPlane.distanceToPoint(point) >= 0 &&
-                this._leftPlane.distanceToPoint(point) >= 0 &&
-                this._rightPlane.distanceToPoint(point) >= 0;
-        }
-    }
-    exports.FrustrumBase = FrustrumBase;
-    var Frustrum = FrustrumBase;
-    exports.Frustrum = Frustrum;
-    const FrustrumInjector = new Injector_11.Injector({
-        defaultCtor: FrustrumBase,
-        onDefaultOverride: (ctor) => {
-            exports.Frustrum = Frustrum = ctor;
-        }
-    });
-    exports.FrustrumInjector = FrustrumInjector;
-});
-define("engine/core/rendering/scenes/cameras/Camera", ["require", "exports", "engine/core/rendering/scenes/objects/Object3D", "engine/libs/physics/collisions/Frustrum", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/statistics/random/UUIDGenerator"], function (require, exports, Object3D_2, Frustrum_1, Matrix4_2, UUIDGenerator_4) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.CameraBase = void 0;
-    class CameraBase extends Object3D_2.Object3DBase {
-        constructor(projection) {
-            super();
-            this.uuid = UUIDGenerator_4.UUIDGenerator.newUUID();
-            this._projection = projection || new Matrix4_2.Matrix4();
-            this._frustrum = new Frustrum_1.Frustrum().setFromPerspectiveMatrix(this._projection);
-        }
-        get projection() {
-            return this._projection;
-        }
-        getProjection(mat) {
-            return mat.copy(this._projection);
-        }
-        isViewing(mesh) {
-            if (typeof mesh.geometry.boundingBox === 'undefined') {
-                const boundingBox = mesh.geometry.computeBoundingBox();
-                return this._frustrum.intersectsBox(boundingBox);
-            }
-            return this._frustrum.intersectsBox(mesh.geometry.boundingBox);
-        }
-        updateFrustrum() {
-            this._frustrum.setFromPerspectiveMatrix(this._projection);
-        }
-    }
-    exports.CameraBase = CameraBase;
-});
-define("engine/core/rendering/scenes/cameras/PerspectiveCamera", ["require", "exports", "engine/libs/maths/algebra/matrices/Matrix4", "engine/core/rendering/scenes/cameras/Camera"], function (require, exports, Matrix4_3, Camera_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.PerspectiveCamera = void 0;
-    class PerspectiveCamera extends Camera_1.CameraBase {
-        constructor(fieldOfViewYInRadians = Math.PI, aspect = 1, zNear = 400, zFar = -400) {
-            super(new Matrix4_3.Matrix4().asPerspective(fieldOfViewYInRadians, aspect, zNear, zFar));
-        }
-        setValues(fieldOfViewYInRadians = Math.PI, aspect = 1, zNear = 400, zFar = -400) {
-            this._projection.asPerspective(fieldOfViewYInRadians, aspect, zNear, zFar);
-            this.updateFrustrum();
-            return this;
-        }
-    }
-    exports.PerspectiveCamera = PerspectiveCamera;
+        DefaultShader._dictionnary = new Map();
+        return DefaultShader;
+    })();
+    const Shader = DefaultShader;
+    exports.Shader = Shader;
 });
 define("engine/utils/Snippets", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -8739,377 +8191,11 @@ define("engine/utils/Snippets", ["require", "exports"], function (require, expor
     }
     exports.safeQuerySelector = safeQuerySelector;
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_10) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.CubeGeometry = void 0;
-    class CubeGeometry extends geometry_1.GeometryBase {
-        constructor() {
-            super({
-                vertices: new Float32Array(cubeVertices),
-                indices: new Uint8Array(cubeIndices),
-                uvs: new Float32Array(cubeUVS),
-            });
-        }
-    }
-    exports.CubeGeometry = CubeGeometry;
-    /**
-     *     y axis
-     * 	      ^   z axis
-     *     UP |   ^  FORWARD
-     *        | /
-     *        +------> x axis
-     *         RIGHT
-     *
-     *  left-handed coordinates system
-     *
-     */
-    /**
-    *      v0       v1
-    * 		+_______+      o   ^
-    * 	    \      /\     /     \
-    *       \   /   \    \     /
-    *        \/      \    \ _ /
-    *        +--------+
-    *       v2         v3
-    *
-    *  counter-clockwise winding order:
-    * 		v0 -> v2 -> v1
-    * 		v1 -> v2 -> v3
-    */
-    /**
-     *              v0_______v1
-     *              |\        |
-     *              |  \   f1 |
-     *              |    \    |
-     *              |  f0  \  |
-     *    v0________v2_______\v3________v1
-     *    |\        |\        |\        |
-     *    |  \  f3  |  \  f5  |  \  f7  |
-     *    |    \    |    \    |    \    |
-     *    | f2   \  | f4   \  | f6   \  |
-     *    v4_______\v5_______\v6_______\v7
-     *              |\        |
-     *              |  \   f9 |
-     *              |    \    |
-     *              |  f8  \  |
-     *              v4_______\v7
-     *              |\        |
-     *              |  \  f11 |
-     *              |    \    |
-     *              | f10  \  |
-     *              v0_______\v1
-     *
-     * v0 = [-1, +1, -1]
-     * v1 = [+1, +1, -1]
-     * v2 = [-1, +1, +1]
-     * v3 = [+1, +1, +1]
-     * v4 = [-1, -1, -1]
-     * v5 = [-1, -1, +1]
-     * v6 = [+1, -1, +1]
-     * v7 = [+1, -1, -1]
-     */
-    /**
-     * 	texture mappings
-     *
-     *
-     *    uv0_____uv1
-     *    | \       |
-     *    |   \     |
-     *    |     \   |
-     *    |       \ |
-     *    uv2_____uv3
-     *
-     *
-     * uv0 = [0,0]
-     * uv1 = [1,0]
-     * uv2 = [0,1]
-     * uv3 = [1,1]
-     */
-    const cubeVerticesSet = [
-        [-1, +1, -1],
-        [+1, +1, -1],
-        [-1, +1, +1],
-        [+1, +1, +1],
-        [-1, -1, -1],
-        [-1, -1, +1],
-        [+1, -1, +1],
-        [+1, -1, -1],
-    ];
-    const cubeVertices = Snippets_10.buildArrayFromIndexedArrays(cubeVerticesSet, [
-        0, 2, 3, 1,
-        0, 4, 5, 2,
-        2, 5, 6, 3,
-        3, 6, 7, 1,
-        5, 4, 7, 6,
-        4, 0, 1, 7,
-    ]);
-    const cubeUVsSet = [
-        [0, 0],
-        [1, 0],
-        [0, 1],
-        [1, 1],
-    ];
-    const cubeUVS = Snippets_10.buildArrayFromIndexedArrays(cubeUVsSet, [
-        0, 1, 3, 2,
-        0, 1, 3, 2,
-        0, 1, 3, 2,
-        0, 1, 3, 2,
-        0, 1, 3, 2,
-        0, 1, 3, 2,
-    ]);
-    const cubeIndices = [
-        0, 1, 2,
-        0, 2, 3,
-        4, 5, 6,
-        4, 6, 7,
-        8, 9, 10,
-        8, 10, 11,
-        12, 13, 14,
-        12, 14, 15,
-        16, 17, 18,
-        16, 18, 19,
-        20, 21, 22,
-        20, 22, 23,
-    ];
-});
-define("engine/libs/maths/geometry/GeometryConstants", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.GOLDEN_RATIO = void 0;
-    const GOLDEN_RATIO = 1.6180;
-    exports.GOLDEN_RATIO = GOLDEN_RATIO;
-});
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_2, GeometryConstants_1, Snippets_11) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.IcosahedronGeometry = void 0;
-    class IcosahedronGeometry extends geometry_2.GeometryBase {
-        constructor() {
-            super({
-                vertices: new Float32Array(icosahedronVertices),
-                uvs: new Float32Array(icosahedronUVS),
-                indices: new Uint8Array(icosahedronIndices)
-            });
-        }
-    }
-    exports.IcosahedronGeometry = IcosahedronGeometry;
-    /**
-     *
-     *      v0        v0        v0        v0        v0
-     *     / \       / \       / \       / \       / \
-     *    /   \     /   \     /   \     /   \     /   \
-     *   /     \   /     \   /     \   /     \   /     \
-     *  /  f0   \ /  f1   \ /  f2   \ /  f3   \ /  f4   \
-     * v1--------v2--------v3--------v4--------v5--------v1
-     *  \        /\        /\        /\        /\        /\
-     *   \  f5  /  \  f7  /  \  f9  /  \  11  /  \ f13  /  \
-     *    \    /    \    /    \    /    \    /    \    /    \
-     *     \  /  f6  \  /  f8  \  / f10  \  / f12  \  / f14  \
-     *      v6--------v7--------v8--------v9--------v10-------v6
-     *       \        /\        /\        /\        /\        /
-     * 	      \ f15  /  \ f16  /  \ f17  /  \ f18  /  \ f19  /
-     *         \    /    \    /    \    /    \    /    \    /
-     *          \  /      \  /      \  /      \  /      \  /
-     *           v11       v11       v11       v11       v11
-     *
-     * v0  = [ 0, +p, +h]
-     * v1  = [+h,  0, +p]
-     * v2  = [+p, +h,  0]
-     * v3  = [ 0, +p, -h]
-     * v4  = [-p, +h,  0]
-     * v5  = [-h,  0, +p]
-     * v6  = [+p, -h,  0]
-     * v7  = [+h,  0, -p]
-     * v8  = [-h,  0, -p]
-     * v9  = [-p, -h,  0]
-     * v10 = [ 0, -p, +h]
-     * v11 = [ 0, -p, -h]
-     *
-     */
-    const icosahedronVerticesSet = [
-        [0, +GeometryConstants_1.GOLDEN_RATIO, +1],
-        [+1, 0, +GeometryConstants_1.GOLDEN_RATIO],
-        [+GeometryConstants_1.GOLDEN_RATIO, +1, 0],
-        [0, +GeometryConstants_1.GOLDEN_RATIO, -1],
-        [-GeometryConstants_1.GOLDEN_RATIO, +1, 0],
-        [-1, 0, +GeometryConstants_1.GOLDEN_RATIO],
-        [+GeometryConstants_1.GOLDEN_RATIO, -1, 0],
-        [+1, 0, -GeometryConstants_1.GOLDEN_RATIO],
-        [-1, 0, -GeometryConstants_1.GOLDEN_RATIO],
-        [-GeometryConstants_1.GOLDEN_RATIO, -1, 0],
-        [0, -GeometryConstants_1.GOLDEN_RATIO, +1],
-        [0, -GeometryConstants_1.GOLDEN_RATIO, -1],
-    ];
-    const IcosahedronUVsSet = [
-        [0, 0],
-        [1, 0],
-        [0, 1],
-        [1, 1],
-    ];
-    const icosahedronVertices = Snippets_11.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
-        0, 1, 2,
-        0, 2, 3,
-        0, 3, 4,
-        0, 4, 5,
-        0, 5, 1,
-        1, 6, 2,
-        2, 6, 7,
-        2, 7, 3,
-        3, 7, 8,
-        3, 8, 4,
-        4, 8, 9,
-        4, 9, 5,
-        5, 9, 10,
-        5, 10, 1,
-        1, 10, 6,
-        6, 11, 7,
-        7, 11, 8,
-        8, 11, 9,
-        9, 11, 10,
-        10, 11, 6,
-    ]);
-    const icosahedronUVS = Snippets_11.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-        1, 2, 0,
-    ]);
-    const icosahedronIndices = [
-        0, 1, 2,
-        3, 4, 5,
-        6, 7, 8,
-        9, 10, 11,
-        12, 13, 14,
-        15, 16, 17,
-        18, 19, 20,
-        21, 22, 23,
-        24, 25, 26,
-        27, 28, 29,
-        30, 31, 32,
-        33, 34, 35,
-        36, 37, 38,
-        39, 40, 41,
-        42, 43, 44,
-        45, 46, 47,
-        48, 49, 50,
-        51, 52, 53,
-        54, 55, 56,
-        57, 58, 59,
-    ];
-});
-define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_12) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.QuadGeometry = void 0;
-    class QuadGeometry extends geometry_3.GeometryBase {
-        constructor() {
-            super({
-                vertices: new Float32Array(quadVertices),
-                uvs: new Float32Array(quadUVS),
-                indices: new Uint8Array(quadIndices)
-            });
-        }
-    }
-    exports.QuadGeometry = QuadGeometry;
-    /**
-     *     y axis
-     * 	      ^   z axis
-     *     UP |   ^  FORWARD
-     *        | /
-     *        +------> x axis
-     *         RIGHT
-     *
-     *  left-handed coordinates system
-     *
-     */
-    /**
-    *      v0       v1
-    * 		+_______+      o   ^
-    * 	    \      /\     /     \
-    *       \   /   \    \     /
-    *        \/      \    \ _ /
-    *        +--------+
-    *       v2         v3
-    *
-    *  counter-clockwise winding order:
-    * 		v0 -> v2 -> v1
-    * 		v1 -> v2 -> v3
-    */
-    /**
-     *     v0_______v1
-     *     |\        |
-     *     |  \   f1 |
-     *     |    \    |
-     *     |  f0  \  |
-     *    v2_______\v3
-     *
-     * v0 = [-1, +1, -1]
-     * v1 = [+1, +1, -1]
-     * v2 = [-1, +1, +1]
-     * v3 = [+1, +1, +1]
-     */
-    /**
-     * 	texture mappings
-     *
-     *
-     *    uv0_____uv1
-     *    | \       |
-     *    |   \     |
-     *    |     \   |
-     *    |       \ |
-     *    uv2_____uv3
-     *
-     *
-     * uv0 = [0,0]
-     * uv1 = [1,0]
-     * uv2 = [0,1]
-     * uv3 = [1,1]
-     */
-    const quadVerticesSet = [
-        [-1, +1, 1],
-        [+1, +1, 1],
-        [-1, -1, 1],
-        [+1, -1, 1],
-    ];
-    const quadUVsSet = [
-        [0, 0],
-        [1, 0],
-        [0, 1],
-        [1, 1]
-    ];
-    const quadVertices = Snippets_12.buildArrayFromIndexedArrays(quadVerticesSet, [
-        0, 2, 3, 1,
-    ]);
-    const quadUVS = Snippets_12.buildArrayFromIndexedArrays(quadUVsSet, [
-        0, 2, 3, 1,
-    ]);
-    const quadIndices = [
-        0, 1, 2,
-        0, 2, 3,
-    ];
-});
-define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_13) {
+define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.VertexAttribute = exports.UniformType = exports.UniformQuery = exports.TextureWrapMode = exports.TextureMinFilter = exports.TextureMagFilter = exports.TextureTarget = exports.TextureParameter = exports.TextureUnits = exports.TestFunction = exports.StencilAction = exports.ShaderPrecision = exports.ShaderType = exports.Shader = exports.RenderbufferTarget = exports.PixelType = exports.PixelStorageMode = exports.PixelFormat = exports.Parameter = exports.HintMode = exports.HintTarget = exports.FrontFace = exports.FramebufferTextureTarget = exports.FramebufferTarget = exports.FramebufferAttachmentParameter = exports.FramebufferAttachment = exports.Error = exports.DataType = exports.DrawMode = exports.CullFaceMode = exports.Capabilities = exports.BufferTarget = exports.BufferInterpolation = exports.BufferIndexType = exports.BufferBindingPoint = exports.BufferMaskBit = exports.BufferMask = exports.BufferDataUsage = exports.BlendingEquation = exports.BlendingMode = void 0;
-    const gl = Snippets_13.crashIfNull(document.createElement('canvas').getContext('webgl2'));
+    const gl = Snippets_7.crashIfNull(document.createElement('canvas').getContext('webgl2'));
     var BlendingMode;
     (function (BlendingMode) {
         BlendingMode[BlendingMode["ZERO"] = gl.ZERO] = "ZERO";
@@ -9740,100 +8826,6 @@ define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "eng
     })(VertexAttribute || (VertexAttribute = {}));
     exports.VertexAttribute = VertexAttribute;
 });
-define("engine/core/rendering/webgl/WebGLFramebufferUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLConstants_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.WebGLFramebufferUtilities = void 0;
-    class WebGLFramebufferUtilities {
-        constructor() { }
-        static createFramebuffer(gl) {
-            const glFb = gl.createFramebuffer();
-            if (glFb === null) {
-                console.error(`Could not create WebGLFramebuffer.`);
-                return null;
-            }
-            return {
-                glFb: glFb
-            };
-        }
-        static attachTexture(gl, fb, props) {
-            const target = WebGLConstants_1.FramebufferTarget.FRAMEBUFFER;
-            gl.bindFramebuffer(target, fb.glFb);
-            gl.framebufferTexture2D(target, props.attachment, props.texTarget, props.glTex, 0);
-            gl.bindFramebuffer(target, null);
-            return {
-                ...props,
-                ...fb
-            };
-        }
-        static attachTextures(gl, fb, props) {
-            const target = gl.FRAMEBUFFER;
-            gl.bindFramebuffer(target, fb.glFb);
-            const attachments = props.map((props) => {
-                gl.framebufferTexture2D(target, props.attachment, props.texTarget, props.glTex, 0);
-                return {
-                    ...props,
-                    ...fb
-                };
-            });
-            gl.bindFramebuffer(target, null);
-            return attachments;
-        }
-        static attachRenderbuffers(gl, fb, props) {
-            const target = gl.FRAMEBUFFER;
-            gl.bindFramebuffer(target, fb.glFb);
-            const attachments = props.map((props) => {
-                gl.framebufferRenderbuffer(target, props.attachment, gl.RENDERBUFFER, props.glRb);
-                return {
-                    ...props,
-                    ...fb
-                };
-            });
-            gl.bindFramebuffer(target, null);
-            return attachments;
-        }
-        static attachRenderbuffer(gl, fb, props) {
-            const target = gl.FRAMEBUFFER;
-            gl.bindFramebuffer(target, fb.glFb);
-            gl.framebufferRenderbuffer(target, props.attachment, gl.RENDERBUFFER, props.glRb);
-            gl.bindFramebuffer(target, null);
-            return {
-                ...props,
-                ...fb
-            };
-        }
-        static blit(gl, readFb, drawFb, readRec, drawRec, mask, filter) {
-            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, (readFb !== null) ? readFb.glFb : null);
-            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, (drawFb !== null) ? drawFb.glFb : null);
-            gl.blitFramebuffer(readRec[0], readRec[1], readRec[2], readRec[3], drawRec[0], drawRec[1], drawRec[2], drawRec[3], mask, filter);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        }
-        static clearColor(gl, fb, buff, offset = 0) {
-            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fb.glFb);
-            gl.clearBufferfv(gl.COLOR, 0, buff, offset);
-        }
-        static clearDepthStencil(gl, fb, depth, stencil) {
-            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fb.glFb);
-            gl.clearBufferfi(gl.DEPTH_STENCIL, 0, depth, stencil);
-        }
-        static checkFramebufferStatus(gl) {
-            return gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-        }
-        static deleteFramebuffer(gl, fb) {
-            const glFb = fb.glFb;
-            if (gl.isFramebuffer(glFb)) {
-                gl.deleteFramebuffer(glFb);
-            }
-        }
-        static bindFramebuffer(gl, fb) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fb.glFb);
-        }
-        static unbindFramebuffer(gl) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        }
-    }
-    exports.WebGLFramebufferUtilities = WebGLFramebufferUtilities;
-});
 define("engine/core/rendering/webgl/WebGLBufferUtilities", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -9865,7 +8857,7 @@ define("engine/core/rendering/webgl/WebGLVertexArrayUtilities", ["require", "exp
     }
     exports.WebGLVertexArrayUtilities = WebGLVertexArrayUtilities;
 });
-define("engine/core/rendering/webgl/WebGLAttributeUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLBufferUtilities", "engine/core/rendering/webgl/WebGLVertexArrayUtilities"], function (require, exports, WebGLConstants_2, WebGLBufferUtilities_1, WebGLVertexArrayUtilities_1) {
+define("engine/core/rendering/webgl/WebGLAttributeUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLBufferUtilities", "engine/core/rendering/webgl/WebGLVertexArrayUtilities"], function (require, exports, WebGLConstants_1, WebGLBufferUtilities_1, WebGLVertexArrayUtilities_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.WebGLAttributeUtilities = void 0;
@@ -9887,14 +8879,14 @@ define("engine/core/rendering/webgl/WebGLAttributeUtilities", ["require", "expor
             const props = list.props;
             const instanced = (props === null || props === void 0 ? void 0 : props.instanced) || false;
             const divisor = (props === null || props === void 0 ? void 0 : props.divisor) || 1;
-            const target = (props === null || props === void 0 ? void 0 : props.target) || WebGLConstants_2.BufferTarget.ARRAY_BUFFER;
-            const usage = (props === null || props === void 0 ? void 0 : props.usage) || WebGLConstants_2.BufferDataUsage.STATIC_DRAW;
+            const target = (props === null || props === void 0 ? void 0 : props.target) || WebGLConstants_1.BufferTarget.ARRAY_BUFFER;
+            const usage = (props === null || props === void 0 ? void 0 : props.usage) || WebGLConstants_1.BufferDataUsage.STATIC_DRAW;
             const attributesNames = Object.keys(attributes);
             const attributesValues = attributesNames.map((attributeName) => {
                 return attributes[attributeName];
             });
             const numElements = (typeof list.indices !== 'undefined') ? list.indices.length : this.getAttributesListNumElements(list);
-            const indexType = (typeof list.indices !== 'undefined') ? this.getAttributeIndicesBufferType(list.indices) : WebGLConstants_2.BufferIndexType.UNSIGNED_SHORT;
+            const indexType = (typeof list.indices !== 'undefined') ? this.getAttributeIndicesBufferType(list.indices) : WebGLConstants_1.BufferIndexType.UNSIGNED_SHORT;
             const settersList = {
                 setters: {}
             };
@@ -9930,8 +8922,8 @@ define("engine/core/rendering/webgl/WebGLAttributeUtilities", ["require", "expor
             let hasIndices = false;
             if (typeof list.indices !== 'undefined') {
                 hasIndices = true;
-                gl.bindBuffer(WebGLConstants_2.BufferTarget.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
-                gl.bufferData(WebGLConstants_2.BufferTarget.ELEMENT_ARRAY_BUFFER, list.indices.byteLength, WebGLConstants_2.BufferDataUsage.STATIC_READ);
+                gl.bindBuffer(WebGLConstants_1.BufferTarget.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
+                gl.bufferData(WebGLConstants_1.BufferTarget.ELEMENT_ARRAY_BUFFER, list.indices.byteLength, WebGLConstants_1.BufferDataUsage.STATIC_READ);
             }
             gl.bindVertexArray(null);
             settersList.glBuffer = glBuffer;
@@ -9967,8 +8959,8 @@ define("engine/core/rendering/webgl/WebGLAttributeUtilities", ["require", "expor
                 }
             }
             if (typeof list.indices !== 'undefined') {
-                gl.bindBuffer(WebGLConstants_2.BufferTarget.ELEMENT_ARRAY_BUFFER, settersList.glIndicesBuffer);
-                gl.bufferSubData(WebGLConstants_2.BufferTarget.ELEMENT_ARRAY_BUFFER, 0, list.indices);
+                gl.bindBuffer(WebGLConstants_1.BufferTarget.ELEMENT_ARRAY_BUFFER, settersList.glIndicesBuffer);
+                gl.bufferSubData(WebGLConstants_1.BufferTarget.ELEMENT_ARRAY_BUFFER, 0, list.indices);
             }
             gl.bindVertexArray(null);
         }
@@ -9980,46 +8972,46 @@ define("engine/core/rendering/webgl/WebGLAttributeUtilities", ["require", "expor
         }
         static getAttributeArrayDataType(array) {
             if (array instanceof Float32Array || array instanceof Int32Array || array instanceof Uint32Array) {
-                return WebGLConstants_2.DataType.FLOAT;
+                return WebGLConstants_1.DataType.FLOAT;
             }
             else if (array instanceof Int16Array) {
-                return WebGLConstants_2.DataType.SHORT;
+                return WebGLConstants_1.DataType.SHORT;
             }
             else if (array instanceof Uint16Array) {
-                return WebGLConstants_2.DataType.UNSIGNED_SHORT;
+                return WebGLConstants_1.DataType.UNSIGNED_SHORT;
             }
             else if (array instanceof Int8Array) {
-                return WebGLConstants_2.DataType.BYTE;
+                return WebGLConstants_1.DataType.BYTE;
             }
             else if (array instanceof Uint8Array) {
-                return WebGLConstants_2.DataType.UNSIGNED_BYTE;
+                return WebGLConstants_1.DataType.UNSIGNED_BYTE;
             }
             console.error(`Unsupported attribute array ${array}.`);
             return -1;
         }
         static getDataTypeByteLength(dataType) {
             switch (dataType) {
-                case WebGLConstants_2.DataType.FLOAT:
+                case WebGLConstants_1.DataType.FLOAT:
                     return 4;
-                case WebGLConstants_2.DataType.SHORT:
-                case WebGLConstants_2.DataType.UNSIGNED_SHORT:
+                case WebGLConstants_1.DataType.SHORT:
+                case WebGLConstants_1.DataType.UNSIGNED_SHORT:
                     return 2;
-                case WebGLConstants_2.DataType.BYTE:
-                case WebGLConstants_2.DataType.UNSIGNED_BYTE:
+                case WebGLConstants_1.DataType.BYTE:
+                case WebGLConstants_1.DataType.UNSIGNED_BYTE:
                     return 1;
             }
-            console.error(`Unsupported data type ${WebGLConstants_2.DataType[dataType]}.`);
+            console.error(`Unsupported data type ${WebGLConstants_1.DataType[dataType]}.`);
             return -1;
         }
         static getAttributeIndicesBufferType(indices) {
             if (indices instanceof Uint8Array) {
-                return WebGLConstants_2.BufferIndexType.UNSIGNED_BYTE;
+                return WebGLConstants_1.BufferIndexType.UNSIGNED_BYTE;
             }
             else if (indices instanceof Uint16Array) {
-                return WebGLConstants_2.BufferIndexType.UNSIGNED_SHORT;
+                return WebGLConstants_1.BufferIndexType.UNSIGNED_SHORT;
             }
             else {
-                return WebGLConstants_2.BufferIndexType.UNSIGNED_INT;
+                return WebGLConstants_1.BufferIndexType.UNSIGNED_INT;
             }
         }
         static getAttributesListNumElements(list) {
@@ -10040,7 +9032,7 @@ define("engine/core/rendering/webgl/WebGLAttributeUtilities", ["require", "expor
     }
     exports.WebGLAttributeUtilities = WebGLAttributeUtilities;
 });
-define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLConstants_3) {
+define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLConstants_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.WebGLTextureUtilities = void 0;
@@ -10078,7 +9070,7 @@ define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports
             this._freeTextureUnit(ctx, tex.unit);
         }
         static setTexture(gl, tex) {
-            gl.activeTexture(WebGLConstants_3.TextureUnits.TEXTURE0 + tex.unit);
+            gl.activeTexture(WebGLConstants_2.TextureUnits.TEXTURE0 + tex.unit);
             gl.bindTexture(tex.target, tex.glTex);
             this.setTextureParameters(gl, tex);
             const pixels = tex.pixels;
@@ -10088,12 +9080,12 @@ define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports
             }
             else {
                 if ('xPos' in pixels) {
-                    gl.texImage2D(WebGLConstants_3.TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_X, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.xPos);
-                    gl.texImage2D(WebGLConstants_3.TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_X, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.xNeg);
-                    gl.texImage2D(WebGLConstants_3.TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Y, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.yPos);
-                    gl.texImage2D(WebGLConstants_3.TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Y, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.yNeg);
-                    gl.texImage2D(WebGLConstants_3.TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Z, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.zPos);
-                    gl.texImage2D(WebGLConstants_3.TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Z, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.zNeg);
+                    gl.texImage2D(WebGLConstants_2.TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_X, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.xPos);
+                    gl.texImage2D(WebGLConstants_2.TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_X, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.xNeg);
+                    gl.texImage2D(WebGLConstants_2.TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Y, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.yPos);
+                    gl.texImage2D(WebGLConstants_2.TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Y, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.yNeg);
+                    gl.texImage2D(WebGLConstants_2.TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Z, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.zPos);
+                    gl.texImage2D(WebGLConstants_2.TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Z, tex.lod, internalFormat, tex.width, tex.height, 0, tex.format, tex.type, pixels.zNeg);
                 }
                 else {
                     if (typeof tex.subimage !== 'undefined') {
@@ -10108,33 +9100,33 @@ define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports
             }
         }
         static setTextureParameters(gl, tex) {
-            gl.activeTexture(WebGLConstants_3.TextureUnits.TEXTURE0 + tex.unit);
+            gl.activeTexture(WebGLConstants_2.TextureUnits.TEXTURE0 + tex.unit);
             gl.bindTexture(tex.target, tex.glTex);
             if (typeof tex.min !== 'undefined')
-                gl.texParameteri(tex.target, WebGLConstants_3.TextureParameter.TEXTURE_MIN_FILTER, tex.min);
+                gl.texParameteri(tex.target, WebGLConstants_2.TextureParameter.TEXTURE_MIN_FILTER, tex.min);
             if (typeof tex.mag !== 'undefined')
-                gl.texParameteri(tex.target, WebGLConstants_3.TextureParameter.TEXTURE_MAG_FILTER, tex.mag);
+                gl.texParameteri(tex.target, WebGLConstants_2.TextureParameter.TEXTURE_MAG_FILTER, tex.mag);
             if (typeof tex.wrapS !== 'undefined')
-                gl.texParameteri(tex.target, WebGLConstants_3.TextureParameter.TEXTURE_WRAP_S, tex.wrapS);
+                gl.texParameteri(tex.target, WebGLConstants_2.TextureParameter.TEXTURE_WRAP_S, tex.wrapS);
             if (typeof tex.wrapT !== 'undefined')
-                gl.texParameteri(tex.target, WebGLConstants_3.TextureParameter.TEXTURE_WRAP_T, tex.wrapT);
+                gl.texParameteri(tex.target, WebGLConstants_2.TextureParameter.TEXTURE_WRAP_T, tex.wrapT);
             if (typeof tex.wrapR !== 'undefined')
-                gl.texParameteri(tex.target, WebGLConstants_3.TextureParameter.TEXTURE_WRAP_R, tex.wrapR);
+                gl.texParameteri(tex.target, WebGLConstants_2.TextureParameter.TEXTURE_WRAP_R, tex.wrapR);
             if (typeof tex.baseLod !== 'undefined')
-                gl.texParameteri(tex.target, WebGLConstants_3.TextureParameter.TEXTURE_BASE_LEVEL, tex.baseLod);
+                gl.texParameteri(tex.target, WebGLConstants_2.TextureParameter.TEXTURE_BASE_LEVEL, tex.baseLod);
             if (typeof tex.maxLod !== 'undefined')
-                gl.texParameteri(tex.target, WebGLConstants_3.TextureParameter.TEXTURE_MAX_LEVEL, tex.maxLod);
+                gl.texParameteri(tex.target, WebGLConstants_2.TextureParameter.TEXTURE_MAX_LEVEL, tex.maxLod);
         }
         static bindTexture(gl, tex) {
             gl.bindTexture(tex.target, tex.glTex);
         }
         static guessTextureProperties(tex) {
             if (typeof tex.target === 'undefined')
-                tex.target = WebGLConstants_3.TextureTarget.TEXTURE_2D;
+                tex.target = WebGLConstants_2.TextureTarget.TEXTURE_2D;
             if (typeof tex.format === 'undefined')
-                tex.format = WebGLConstants_3.PixelFormat.RGBA;
+                tex.format = WebGLConstants_2.PixelFormat.RGBA;
             if (typeof tex.type === 'undefined')
-                tex.type = WebGLConstants_3.PixelType.UNSIGNED_BYTE;
+                tex.type = WebGLConstants_2.PixelType.UNSIGNED_BYTE;
             if (typeof tex.lod === 'undefined')
                 tex.lod = 0;
             if (typeof tex.pixels === 'undefined')
@@ -10142,12 +9134,12 @@ define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports
             const pixels = tex.pixels;
             if (pixels !== null) {
                 if ('xPos' in pixels) {
-                    tex.target = WebGLConstants_3.TextureTarget.TEXTURE_CUBE_MAP;
+                    tex.target = WebGLConstants_2.TextureTarget.TEXTURE_CUBE_MAP;
                     tex.width = pixels.xPos.width;
                     tex.height = pixels.xPos.height;
                 }
                 else {
-                    tex.target = WebGLConstants_3.TextureTarget.TEXTURE_2D;
+                    tex.target = WebGLConstants_2.TextureTarget.TEXTURE_2D;
                     if ('width' in pixels) {
                         tex.width = pixels.width;
                         tex.height = pixels.height;
@@ -10155,19 +9147,19 @@ define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports
                     else {
                         let length = 0;
                         if (pixels instanceof Uint8Array || Array.isArray(pixels)) {
-                            tex.type = WebGLConstants_3.PixelType.UNSIGNED_BYTE;
+                            tex.type = WebGLConstants_2.PixelType.UNSIGNED_BYTE;
                             length = pixels.length;
                         }
                         else if (pixels instanceof Uint16Array) {
-                            tex.type = WebGLConstants_3.PixelType.UNSIGNED_SHORT_4_4_4_4;
+                            tex.type = WebGLConstants_2.PixelType.UNSIGNED_SHORT_4_4_4_4;
                             length = pixels.length;
                         }
                         else if (pixels instanceof Uint32Array) {
-                            tex.type = WebGLConstants_3.PixelType.UNSIGNED_INT;
+                            tex.type = WebGLConstants_2.PixelType.UNSIGNED_INT;
                             length = pixels.length;
                         }
                         else if (pixels instanceof Float32Array) {
-                            tex.type = WebGLConstants_3.PixelType.FLOAT;
+                            tex.type = WebGLConstants_2.PixelType.FLOAT;
                             length = pixels.length;
                         }
                         const channels = this.getNumChannelsFromPixelFormat(tex.format);
@@ -10182,24 +9174,24 @@ define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports
         }
         static getNumBytesFromPixelTypeAndFormat(type, format) {
             switch (format) {
-                case WebGLConstants_3.PixelFormat.LUMINANCE:
-                case WebGLConstants_3.PixelFormat.ALPHA:
+                case WebGLConstants_2.PixelFormat.LUMINANCE:
+                case WebGLConstants_2.PixelFormat.ALPHA:
                     return 1;
-                case WebGLConstants_3.PixelFormat.LUMINANCE_ALPHA:
+                case WebGLConstants_2.PixelFormat.LUMINANCE_ALPHA:
                     return 2;
-                case WebGLConstants_3.PixelFormat.RGB:
+                case WebGLConstants_2.PixelFormat.RGB:
                     switch (type) {
-                        case WebGLConstants_3.PixelType.UNSIGNED_BYTE:
+                        case WebGLConstants_2.PixelType.UNSIGNED_BYTE:
                             return 3;
-                        case WebGLConstants_3.PixelType.UNSIGNED_SHORT_5_6_5:
+                        case WebGLConstants_2.PixelType.UNSIGNED_SHORT_5_6_5:
                             return 2;
                     }
-                case WebGLConstants_3.PixelFormat.RGBA:
+                case WebGLConstants_2.PixelFormat.RGBA:
                     switch (type) {
-                        case WebGLConstants_3.PixelType.UNSIGNED_BYTE:
+                        case WebGLConstants_2.PixelType.UNSIGNED_BYTE:
                             return 4;
-                        case WebGLConstants_3.PixelType.UNSIGNED_SHORT_4_4_4_4:
-                        case WebGLConstants_3.PixelType.UNSIGNED_SHORT_5_5_5_1:
+                        case WebGLConstants_2.PixelType.UNSIGNED_SHORT_4_4_4_4:
+                        case WebGLConstants_2.PixelType.UNSIGNED_SHORT_5_5_5_1:
                             return 2;
                     }
                 default:
@@ -10208,14 +9200,14 @@ define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports
         }
         static getNumChannelsFromPixelFormat(format) {
             switch (format) {
-                case WebGLConstants_3.PixelFormat.LUMINANCE:
-                case WebGLConstants_3.PixelFormat.ALPHA:
+                case WebGLConstants_2.PixelFormat.LUMINANCE:
+                case WebGLConstants_2.PixelFormat.ALPHA:
                     return 1;
-                case WebGLConstants_3.PixelFormat.LUMINANCE_ALPHA:
+                case WebGLConstants_2.PixelFormat.LUMINANCE_ALPHA:
                     return 2;
-                case WebGLConstants_3.PixelFormat.RGB:
+                case WebGLConstants_2.PixelFormat.RGB:
                     return 3;
-                case WebGLConstants_3.PixelFormat.RGBA:
+                case WebGLConstants_2.PixelFormat.RGBA:
                     return 4;
                 default:
                     return 4;
@@ -10236,7 +9228,7 @@ define("engine/core/rendering/webgl/WebGLTextureUtilities", ["require", "exports
     }
     exports.WebGLTextureUtilities = WebGLTextureUtilities;
 });
-define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLConstants_4) {
+define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLConstants_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.WebGLUniformUtilities = void 0;
@@ -10297,7 +9289,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                 console.error(`Uniform ${uniformName} could not be found.`);
                 return null;
             }
-            const uniformType = gl.getActiveUniforms(glProg, uniformIndices, WebGLConstants_4.UniformQuery.UNIFORM_TYPE)[0];
+            const uniformType = gl.getActiveUniforms(glProg, uniformIndices, WebGLConstants_3.UniformQuery.UNIFORM_TYPE)[0];
             const value = uniform.value;
             const props = (typeof uniform.props === 'undefined') ? {
                 srcOffset: undefined,
@@ -10309,10 +9301,10 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                 transpose: uniform.props.transpose || false
             };
             const uniformTypeWarning = (uniformType, valueType) => {
-                console.warn(`Uniform ${uniformName} of type ${WebGLConstants_4.UniformType[uniformType]} should have a value of type ${valueType}`);
+                console.warn(`Uniform ${uniformName} of type ${WebGLConstants_3.UniformType[uniformType]} should have a value of type ${valueType}`);
             };
             switch (uniformType) {
-                case WebGLConstants_4.UniformType.FLOAT:
+                case WebGLConstants_3.UniformType.FLOAT:
                     if (typeof value === 'number') {
                         return {
                             type: uniformType,
@@ -10325,7 +9317,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'number');
                     }
                     break;
-                case WebGLConstants_4.UniformType.UNSIGNED_INT:
+                case WebGLConstants_3.UniformType.UNSIGNED_INT:
                     if (typeof value === 'number') {
                         return {
                             type: uniformType,
@@ -10338,8 +9330,8 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'number');
                     }
                     break;
-                case WebGLConstants_4.UniformType.BOOL:
-                case WebGLConstants_4.UniformType.INT:
+                case WebGLConstants_3.UniformType.BOOL:
+                case WebGLConstants_3.UniformType.INT:
                     if (typeof value === 'number') {
                         return {
                             type: uniformType,
@@ -10352,26 +9344,26 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'number');
                     }
                     break;
-                case WebGLConstants_4.UniformType.INT_SAMPLER_2D:
-                case WebGLConstants_4.UniformType.INT_SAMPLER_2D_ARRAY:
-                case WebGLConstants_4.UniformType.INT_SAMPLER_3D:
-                case WebGLConstants_4.UniformType.INT_SAMPLER_CUBE:
-                case WebGLConstants_4.UniformType.SAMPLER_2D:
-                case WebGLConstants_4.UniformType.SAMPLER_3D:
-                case WebGLConstants_4.UniformType.SAMPLER_CUBE:
-                case WebGLConstants_4.UniformType.SAMPLER_2D_SHADOW:
-                case WebGLConstants_4.UniformType.SAMPLER_2D_ARRAY:
-                case WebGLConstants_4.UniformType.SAMPLER_2D_ARRAY_SHADOW:
-                case WebGLConstants_4.UniformType.SAMPLER_CUBE_SHADOW:
-                case WebGLConstants_4.UniformType.UNSIGNED_INT_SAMPLER_2D:
-                case WebGLConstants_4.UniformType.UNSIGNED_INT_SAMPLER_3D:
-                case WebGLConstants_4.UniformType.UNSIGNED_INT_SAMPLER_CUBE:
-                case WebGLConstants_4.UniformType.UNSIGNED_INT_SAMPLER_2D_ARRAY:
+                case WebGLConstants_3.UniformType.INT_SAMPLER_2D:
+                case WebGLConstants_3.UniformType.INT_SAMPLER_2D_ARRAY:
+                case WebGLConstants_3.UniformType.INT_SAMPLER_3D:
+                case WebGLConstants_3.UniformType.INT_SAMPLER_CUBE:
+                case WebGLConstants_3.UniformType.SAMPLER_2D:
+                case WebGLConstants_3.UniformType.SAMPLER_3D:
+                case WebGLConstants_3.UniformType.SAMPLER_CUBE:
+                case WebGLConstants_3.UniformType.SAMPLER_2D_SHADOW:
+                case WebGLConstants_3.UniformType.SAMPLER_2D_ARRAY:
+                case WebGLConstants_3.UniformType.SAMPLER_2D_ARRAY_SHADOW:
+                case WebGLConstants_3.UniformType.SAMPLER_CUBE_SHADOW:
+                case WebGLConstants_3.UniformType.UNSIGNED_INT_SAMPLER_2D:
+                case WebGLConstants_3.UniformType.UNSIGNED_INT_SAMPLER_3D:
+                case WebGLConstants_3.UniformType.UNSIGNED_INT_SAMPLER_CUBE:
+                case WebGLConstants_3.UniformType.UNSIGNED_INT_SAMPLER_2D_ARRAY:
                     if (typeof value !== 'number' && 'unit' in value) {
                         return {
                             type: uniformType,
                             func: (tex) => {
-                                gl.activeTexture(WebGLConstants_4.TextureUnits.TEXTURE0 + tex.unit);
+                                gl.activeTexture(WebGLConstants_3.TextureUnits.TEXTURE0 + tex.unit);
                                 gl.bindTexture(tex.target, tex.glTex);
                                 gl.uniform1i(location, tex.unit);
                             }
@@ -10381,7 +9373,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'TextureSetter');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_VEC2:
+                case WebGLConstants_3.UniformType.FLOAT_VEC2:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10394,8 +9386,8 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.BOOL_VEC2:
-                case WebGLConstants_4.UniformType.INT_VEC2:
+                case WebGLConstants_3.UniformType.BOOL_VEC2:
+                case WebGLConstants_3.UniformType.INT_VEC2:
                     if (value instanceof Int32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10408,7 +9400,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Int32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.UNSIGNED_INT_VEC2:
+                case WebGLConstants_3.UniformType.UNSIGNED_INT_VEC2:
                     if (value instanceof Uint32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10421,7 +9413,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Uint32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_VEC3:
+                case WebGLConstants_3.UniformType.FLOAT_VEC3:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10434,8 +9426,8 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.BOOL_VEC3:
-                case WebGLConstants_4.UniformType.INT_VEC3:
+                case WebGLConstants_3.UniformType.BOOL_VEC3:
+                case WebGLConstants_3.UniformType.INT_VEC3:
                     if (value instanceof Int32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10448,7 +9440,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Int32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.UNSIGNED_INT_VEC3:
+                case WebGLConstants_3.UniformType.UNSIGNED_INT_VEC3:
                     if (value instanceof Uint32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10461,7 +9453,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Uint32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_VEC4:
+                case WebGLConstants_3.UniformType.FLOAT_VEC4:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10474,8 +9466,8 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.BOOL_VEC4:
-                case WebGLConstants_4.UniformType.INT_VEC4:
+                case WebGLConstants_3.UniformType.BOOL_VEC4:
+                case WebGLConstants_3.UniformType.INT_VEC4:
                     if (value instanceof Int32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10488,7 +9480,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Int32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.UNSIGNED_INT_VEC4:
+                case WebGLConstants_3.UniformType.UNSIGNED_INT_VEC4:
                     if (value instanceof Uint32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10501,7 +9493,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Uint32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_MAT2:
+                case WebGLConstants_3.UniformType.FLOAT_MAT2:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10514,7 +9506,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_MAT3:
+                case WebGLConstants_3.UniformType.FLOAT_MAT3:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10527,7 +9519,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_MAT4:
+                case WebGLConstants_3.UniformType.FLOAT_MAT4:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10540,7 +9532,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_MAT2x3:
+                case WebGLConstants_3.UniformType.FLOAT_MAT2x3:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10553,7 +9545,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_MAT2x4:
+                case WebGLConstants_3.UniformType.FLOAT_MAT2x4:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10566,7 +9558,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_MAT3x2:
+                case WebGLConstants_3.UniformType.FLOAT_MAT3x2:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10579,7 +9571,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_MAT3x4:
+                case WebGLConstants_3.UniformType.FLOAT_MAT3x4:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10592,7 +9584,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_MAT4x2:
+                case WebGLConstants_3.UniformType.FLOAT_MAT4x2:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10605,7 +9597,7 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
                         uniformTypeWarning(uniformType, 'Float32List');
                     }
                     break;
-                case WebGLConstants_4.UniformType.FLOAT_MAT4x3:
+                case WebGLConstants_3.UniformType.FLOAT_MAT4x3:
                     if (value instanceof Float32Array || Array.isArray(value)) {
                         return {
                             type: uniformType,
@@ -10625,592 +9617,28 @@ define("engine/core/rendering/webgl/WebGLUniformUtilities", ["require", "exports
     }
     exports.WebGLUniformUtilities = WebGLUniformUtilities;
 });
-define("engine/core/rendering/webgl/WebGLUniformBlockUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLBufferUtilities", "engine/core/rendering/webgl/WebGLUniformUtilities", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLBufferUtilities_2, WebGLUniformUtilities_1, WebGLConstants_5) {
+define("engine/core/rendering/renderers/RenderPacket", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.WebGLUniformBlockUtilities = void 0;
-    class WebGLUniformBlockUtilities {
-        constructor() { }
-        static createBindingsContext(gl) {
-            const maxBindingPoints = gl.MAX_UNIFORM_BUFFER_BINDINGS;
-            const registeredBindingPoints = new Array(maxBindingPoints);
-            return {
-                maxBindingPoints: maxBindingPoints,
-                registeredBindingPoints: registeredBindingPoints
-            };
-        }
-        static createUniformBlock(gl, ctx, name) {
-            const glBuffer = WebGLBufferUtilities_2.WebGLBufferUtilities.createBuffer(gl);
-            if (glBuffer === null) {
-                return null;
-            }
-            const bindingPoint = this._allocateBindingPoint(ctx);
-            if (bindingPoint === null) {
-                console.error(`Could not allocate another binding point.`);
-                return null;
-            }
-            return {
-                name: name,
-                bindingPoint: bindingPoint,
-                glBuffer: glBuffer,
-            };
-        }
-        static getUniformBlockSetter(gl, glProg, block) {
-            gl.bindBuffer(WebGLConstants_5.BufferTarget.UNIFORM_BUFFER, block.glBuffer);
-            const blockIndex = gl.getUniformBlockIndex(glProg, block.name);
-            if (blockIndex === gl.INVALID_INDEX) {
-                console.error(`Block '${block.name}' does not identify a valid uniform block.`);
-                return null;
-            }
-            const usage = (typeof block.usage === 'undefined') ? gl.DYNAMIC_DRAW : block.usage;
-            const bindingPoint = block.bindingPoint;
-            gl.uniformBlockBinding(glProg, blockIndex, bindingPoint);
-            const blockSize = gl.getActiveUniformBlockParameter(glProg, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE);
-            gl.bufferData(gl.UNIFORM_BUFFER, blockSize, usage);
-            const uniforms = {};
-            const blockUniformsIndices = gl.getActiveUniformBlockParameter(glProg, blockIndex, gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES);
-            gl.getActiveUniforms(glProg, blockUniformsIndices, gl.UNIFORM_OFFSET).forEach((uniformOffset, idx) => {
-                const uniformIndex = blockUniformsIndices[idx];
-                const uniformInfo = gl.getActiveUniform(glProg, uniformIndex);
-                if (uniformInfo !== null) {
-                    const uniformName = uniformInfo.name;
-                    uniforms[uniformName] = {
-                        offset: uniformOffset
-                    };
-                }
-            });
-            return {
-                name: block.name,
-                usage: usage,
-                bindingPoint: bindingPoint,
-                index: blockIndex,
-                uniforms: uniforms,
-                bufferByteLength: blockSize,
-                glBuffer: block.glBuffer,
-                glProg: glProg
-            };
-        }
-        static setUniformBlockValues(gl, setter, uniforms) {
-            const blockUniformsNames = Object.keys(setter.uniforms);
-            const matchingUniformsNames = Object.keys(uniforms).filter((name) => {
-                return blockUniformsNames.includes(name);
-            });
-            gl.bindBuffer(gl.UNIFORM_BUFFER, setter.glBuffer);
-            gl.bindBufferRange(gl.UNIFORM_BUFFER, setter.bindingPoint, setter.glBuffer, 0, setter.bufferByteLength);
-            for (const uniformName of matchingUniformsNames) {
-                const uniform = setter.uniforms[uniformName];
-                const newUniformValue = WebGLUniformUtilities_1.WebGLUniformUtilities.getUniformValueArrayBufferView(uniforms[uniformName].value);
-                gl.bufferSubData(gl.UNIFORM_BUFFER, uniform.offset, newUniformValue);
-            }
-        }
-        static bindUniformBlock(gl, setter) {
-            gl.bindBufferBase(WebGLConstants_5.BufferTarget.UNIFORM_BUFFER, setter.bindingPoint, setter.glBuffer);
-        }
-        static _allocateBindingPoint(ctx) {
-            for (let unit = 0; unit < ctx.maxBindingPoints; unit++) {
-                if (!ctx.registeredBindingPoints[unit]) {
-                    ctx.registeredBindingPoints[unit] = true;
-                    return unit;
-                }
-            }
-            return null;
-        }
-        static _freeBindingPoint(ctx, bindingPoint) {
-            ctx.registeredBindingPoints[bindingPoint] = false;
+    exports.RenderPacket = void 0;
+    class RenderPacket {
+        //TODO: Setters common to all instances (for example MeshPhong)
+        // but arrays/values specific per instance
+        constructor(shader) {
+            this.shader = shader;
+            this.attributes = new Map();
+            this.uniforms = new Map();
         }
     }
-    exports.WebGLUniformBlockUtilities = WebGLUniformBlockUtilities;
+    exports.RenderPacket = RenderPacket;
 });
-define("engine/core/rendering/webgl/WebGLDrawUtilities", ["require", "exports"], function (require, exports) {
+define("engine/core/rendering/renderers/RenderPipeline", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.WebGLDrawUtilities = void 0;
-    class WebGLDrawUtilities {
-        constructor() { }
-        static drawElements(gl, mode, indexType, count, offset) {
-            gl.drawElements(mode, count, indexType, offset);
-        }
-        static drawElementsInstanced(gl, mode, indexType, count, offset, instanceCount) {
-            gl.drawElementsInstanced(mode, count, indexType, offset, instanceCount);
-        }
-        static drawRangeElements(gl, mode, start, end, count, indexType, offset) {
-            gl.drawRangeElements(mode, start, end, count, indexType, offset);
-        }
-        static drawArrays(gl, mode, first, count) {
-            gl.drawArrays(mode, first, count);
-        }
-        static drawArraysInstanced(gl, mode, first, count, instances) {
-            gl.drawArraysInstanced(mode, first, count, instances);
-        }
+    exports.RenderPipeline = void 0;
+    class RenderPipeline {
     }
-    exports.WebGLDrawUtilities = WebGLDrawUtilities;
-});
-define("engine/core/rendering/webgl/WebGLPacketUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLAttributeUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/core/rendering/webgl/WebGLUniformBlockUtilities", "engine/core/rendering/webgl/WebGLUniformUtilities", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLDrawUtilities"], function (require, exports, WebGLAttributeUtilities_1, WebGLTextureUtilities_1, WebGLUniformBlockUtilities_1, WebGLUniformUtilities_2, WebGLConstants_6, WebGLDrawUtilities_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.WebGLPacketUtilities = void 0;
-    class WebGLPacketUtilities {
-        constructor() { }
-        static createPacketBindings(gl, props) {
-            let textures = {};
-            let blocks = {};
-            let texturesCtx = props.texturesCtx;
-            let blocksCtx = props.blocksCtx;
-            const texturesProps = props.texturesProps;
-            const blocksProps = props.blocksProps;
-            if (typeof texturesProps !== 'undefined') {
-                texturesCtx = texturesCtx || WebGLTextureUtilities_1.WebGLTextureUtilities.createBindingsContext(gl);
-                const texturesNames = Object.keys(texturesProps);
-                for (const textureName of texturesNames) {
-                    const textureProps = texturesProps[textureName];
-                    const texture = WebGLTextureUtilities_1.WebGLTextureUtilities.createTexture(gl, texturesCtx, textureProps);
-                    if (texture == null) {
-                        return null;
-                    }
-                    textures[textureName] = texture;
-                }
-            }
-            if (typeof blocksProps !== 'undefined') {
-                blocksCtx = blocksCtx || WebGLUniformBlockUtilities_1.WebGLUniformBlockUtilities.createBindingsContext(gl);
-                const blockNames = Object.keys(blocksProps);
-                for (const blockName of blockNames) {
-                    const blockProp = blocksProps[blockName];
-                    const block = WebGLUniformBlockUtilities_1.WebGLUniformBlockUtilities.createUniformBlock(gl, blocksCtx, blockProp.name);
-                    if (block == null) {
-                        return null;
-                    }
-                    blocks[blockName] = block;
-                }
-                ;
-            }
-            return {
-                textures: textures,
-                blocks: blocks,
-                texturesCtx: texturesCtx,
-                blocksCtx: blocksCtx
-            };
-        }
-        static getPacketSetter(gl, glProg, packet) {
-            const attributes = packet.attributes;
-            const uniforms = packet.uniforms;
-            const uniformBlocks = packet.uniformBlocks;
-            const props = packet.props;
-            const drawMode = (typeof props === 'undefined' || typeof props.drawMode === 'undefined') ? WebGLConstants_6.DrawMode.TRIANGLES : props.drawMode;
-            const instanced = (typeof props === 'undefined' || typeof props.instanced === 'undefined') ? false : props.instanced;
-            const instanceCount = (typeof props === 'undefined' || typeof props.instanceCount === 'undefined') ? 0 : props.instanceCount;
-            let attributesSetter;
-            if (typeof attributes !== 'undefined') {
-                attributesSetter = WebGLAttributeUtilities_1.WebGLAttributeUtilities.getAttributesListSetter(gl, glProg, attributes);
-                if (attributesSetter == null) {
-                    return null;
-                }
-            }
-            let uniformBlockSetters;
-            if (typeof uniformBlocks !== 'undefined') {
-                const blockNames = Object.keys(uniformBlocks);
-                uniformBlockSetters = {};
-                for (const blockName of blockNames) {
-                    const uniformBlock = uniformBlocks[blockName];
-                    const uniformBlockSetter = WebGLUniformBlockUtilities_1.WebGLUniformBlockUtilities.getUniformBlockSetter(gl, glProg, uniformBlock.block);
-                    if (uniformBlockSetter == null) {
-                        return null;
-                    }
-                    uniformBlockSetters[blockName] = uniformBlockSetter;
-                }
-            }
-            let uniformsSetter;
-            if (typeof uniforms !== 'undefined') {
-                uniformsSetter = WebGLUniformUtilities_2.WebGLUniformUtilities.getUniformsListSetter(gl, glProg, uniforms);
-                if (uniformsSetter == null) {
-                    return null;
-                }
-            }
-            return {
-                attributesSetter: attributesSetter,
-                uniformsSetter: uniformsSetter,
-                uniformBlockSetters: uniformBlockSetters,
-                drawMode: drawMode,
-                instanced: instanced,
-                instanceCount: instanceCount
-            };
-        }
-        static setPacketValues(gl, setter, packet) {
-            const attributes = packet.attributes;
-            const uniforms = packet.uniforms;
-            const uniformBlocks = packet.uniformBlocks;
-            const attributeSetter = setter.attributesSetter;
-            const uniformsSetter = setter.uniformsSetter;
-            const uniformBlockSetters = setter.uniformBlockSetters;
-            if (typeof attributes !== 'undefined' && attributeSetter) {
-                WebGLAttributeUtilities_1.WebGLAttributeUtilities.setAttributesListValues(gl, attributeSetter, attributes);
-            }
-            if (typeof uniforms !== 'undefined' && uniformsSetter) {
-                WebGLUniformUtilities_2.WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, uniforms);
-            }
-            if (typeof uniformBlocks !== 'undefined') {
-                if (typeof uniformBlockSetters !== 'undefined') {
-                    const blockNames = Object.keys(uniformBlocks);
-                    for (const blockName of blockNames) {
-                        const uniformBlockSetter = uniformBlockSetters[blockName];
-                        const uniformBlock = uniformBlocks[blockName];
-                        if (uniformBlockSetter) {
-                            WebGLUniformBlockUtilities_1.WebGLUniformBlockUtilities.setUniformBlockValues(gl, uniformBlockSetter, uniformBlock.list);
-                        }
-                    }
-                }
-            }
-        }
-        static drawPacket(gl, setter) {
-            const attributeSetter = setter.attributesSetter;
-            if (typeof attributeSetter !== 'undefined') {
-                WebGLAttributeUtilities_1.WebGLAttributeUtilities.bindAttributesList(gl, attributeSetter);
-                if (attributeSetter.hasIndices) {
-                    if (setter.instanced) {
-                        WebGLDrawUtilities_1.WebGLDrawUtilities.drawElementsInstanced(gl, setter.drawMode, attributeSetter.indexType, attributeSetter.numElements, 0, setter.instanceCount);
-                    }
-                    else {
-                        WebGLDrawUtilities_1.WebGLDrawUtilities.drawElements(gl, setter.drawMode, attributeSetter.indexType, attributeSetter.numElements, 0);
-                    }
-                }
-                else {
-                    if (setter.instanced) {
-                        WebGLDrawUtilities_1.WebGLDrawUtilities.drawArraysInstanced(gl, setter.drawMode, 0, attributeSetter.numElements, setter.instanceCount);
-                    }
-                    else {
-                        WebGLDrawUtilities_1.WebGLDrawUtilities.drawArrays(gl, setter.drawMode, 0, attributeSetter.numElements);
-                    }
-                }
-                WebGLAttributeUtilities_1.WebGLAttributeUtilities.unbindAttributesList(gl);
-            }
-            else {
-                console.error(`No attributes to draw.`);
-            }
-        }
-    }
-    exports.WebGLPacketUtilities = WebGLPacketUtilities;
-});
-define("engine/core/rendering/webgl/WebGLShaderUtilities", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.WebGLShaderUtilities = void 0;
-    class WebGLShaderUtilities {
-        constructor() { }
-        static createShader(gl, type, source) {
-            const glShader = gl.createShader(type);
-            if (glShader == null) {
-                return null;
-            }
-            gl.shaderSource(glShader, source);
-            gl.compileShader(glShader);
-            const success = gl.getShaderParameter(glShader, gl.COMPILE_STATUS);
-            if (success) {
-                return glShader;
-            }
-            const shaderInfoLog = gl.getShaderInfoLog(glShader);
-            if (shaderInfoLog !== null) {
-                console.warn(shaderInfoLog);
-            }
-            gl.deleteShader(glShader);
-            return null;
-        }
-        static deleteShader(gl, glShader) {
-            gl.deleteShader(glShader);
-        }
-    }
-    exports.WebGLShaderUtilities = WebGLShaderUtilities;
-});
-define("engine/core/rendering/webgl/WebGLProgramUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLShaderUtilities"], function (require, exports, WebGLConstants_7, WebGLShaderUtilities_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.WebGLProgramUtilties = void 0;
-    class WebGLProgramUtilties {
-        constructor() { }
-        static createProgramFromSources(gl, vertexSource, fragmentSource) {
-            const vertexShader = WebGLShaderUtilities_1.WebGLShaderUtilities.createShader(gl, WebGLConstants_7.ShaderType.VERTEX_SHADER, vertexSource);
-            if (vertexShader == null) {
-                return null;
-            }
-            const fragmentShader = WebGLShaderUtilities_1.WebGLShaderUtilities.createShader(gl, WebGLConstants_7.ShaderType.FRAGMENT_SHADER, fragmentSource);
-            if (fragmentShader == null) {
-                return null;
-            }
-            return this.createProgram(gl, vertexShader, fragmentShader);
-        }
-        static createProgram(gl, vertexShader, fragmentShader) {
-            const glProg = gl.createProgram();
-            if (glProg == null) {
-                return null;
-            }
-            gl.attachShader(glProg, vertexShader);
-            gl.attachShader(glProg, fragmentShader);
-            gl.linkProgram(glProg);
-            const success = gl.getProgramParameter(glProg, gl.LINK_STATUS);
-            if (success) {
-                return glProg;
-            }
-            const programInfoLog = gl.getProgramInfoLog(glProg);
-            if (programInfoLog !== null) {
-                console.warn(programInfoLog);
-            }
-            gl.deleteProgram(glProg);
-            return null;
-        }
-        static deleteProgram(gl, glProg) {
-            gl.deleteProgram(glProg);
-        }
-        static useProgram(gl, glProg) {
-            gl.useProgram(glProg);
-        }
-    }
-    exports.WebGLProgramUtilties = WebGLProgramUtilties;
-});
-define("engine/core/rendering/webgl/WebGLRenderbuffersUtilities", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.WebGLRenderbufferUtilities = void 0;
-    class WebGLRenderbufferUtilities {
-        constructor() { }
-        static createRenderbuffer(gl, props) {
-            const glRb = gl.createRenderbuffer();
-            if (glRb === null) {
-                console.error('Could not create WebGLRenderbuffer.');
-                return null;
-            }
-            gl.bindRenderbuffer(gl.RENDERBUFFER, glRb);
-            if (typeof props.samples !== 'undefined') {
-                gl.renderbufferStorageMultisample(gl.RENDERBUFFER, props.samples, props.internalFormat, props.width, props.height);
-            }
-            else {
-                gl.renderbufferStorage(gl.RENDERBUFFER, props.internalFormat, props.width, props.height);
-            }
-            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-            return {
-                ...props,
-                glRb: glRb
-            };
-        }
-    }
-    exports.WebGLRenderbufferUtilities = WebGLRenderbufferUtilities;
-});
-define("engine/core/rendering/webgl/WebGLRendererUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLConstants_8) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.WebGLRendererUtilities = void 0;
-    class WebGLRendererUtilities {
-        constructor() { }
-        static setScissor(gl, x, y, width, height) {
-            gl.scissor(x, y, width, height);
-        }
-        static setViewport(gl, x, y, width, height) {
-            gl.viewport(x, y, width, height);
-        }
-        static getViewport(gl) {
-            return gl.getParameter(WebGLConstants_8.Parameter.VIEWPORT);
-        }
-        static getScissorBox(gl) {
-            return gl.getParameter(WebGLConstants_8.Parameter.SCISSOR_BOX);
-        }
-        static getParameter(gl, param) {
-            return gl.getParameter(param);
-        }
-        static enable(gl, cap) {
-            gl.enable(cap);
-        }
-        static depthFunc(gl, func) {
-            gl.depthFunc(func);
-        }
-        static stencilFunc(gl, func, ref, mask) {
-            gl.stencilFunc(func, ref, mask);
-        }
-        static clear(gl, buff) {
-            gl.clear(buff);
-        }
-        static clearRgba(gl, red, green, blue, alpha) {
-            gl.clearColor(red, green, blue, alpha);
-        }
-        static clearColor(gl, color) {
-            gl.clearColor(color[0], color[1], color[2], color[3]);
-        }
-    }
-    exports.WebGLRendererUtilities = WebGLRendererUtilities;
-});
-define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_23) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.PanelElement = void 0;
-    let PanelElement = /** @class */ (() => {
-        let PanelElement = class PanelElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_23.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: block;
-                }
-
-                :host([state='closed']) #label,
-                :host([state='closed']) #content {
-                    display: none;
-                }
-
-                :host([state='closed']) #header {
-                    padding: 0;
-                }
-
-                :host([state='closed']) #arrow {
-                    display: inherit;
-                }
-                
-                :host([state='opened']) #label,
-                :host([state='opened']) #content {
-                    display: inherit;
-                }
-
-                :host([state='opened']) #arrow {
-                    display: none;
-                }
-
-                #content {
-                    padding: var(--content-padding, inherit);
-                }
-
-                #header {
-                    color: var(--header-color, inherit);
-                    text-align: center;
-                    padding-top: 0;
-
-                    user-select: none;
-                }
-
-                #header:hover {
-                    --color: var(--header-hover-color, var(--header-color));
-                    color: var(--header-hover-color, var(--header-color));
-                    font-weight: var(--header-hover-font-weight);
-                }
-            </style>
-            <div>
-                <div id="header">
-                    <span id="arrow"></span>
-                    <span id="label"></span>
-                </div>
-                <div id="content">
-                    <slot></slot>
-                </div>
-            </div>
-        `);
-                const header = this.shadowRoot.getElementById('header');
-                header.addEventListener('click', () => {
-                    this.state = (this.state === 'opened') ? 'closed' : 'opened';
-                });
-            }
-            async render() {
-                const label = this.shadowRoot.getElementById('label');
-                const arrow = this.shadowRoot.getElementById('arrow');
-                let rect = this.getBoundingClientRect();
-                const arr = (rect.left < window.innerWidth / 2) ? '>' : '<';
-                arrow.innerHTML = arr;
-                label.innerHTML = this.label || '';
-            }
-            connectedCallback() {
-                this.label = this.label || 'label';
-                this.state = this.state || 'opened';
-                this.render();
-            }
-        };
-        PanelElement = __decorate([
-            HTMLElement_23.RegisterCustomHTMLElement({
-                name: 'e-panel',
-                observedAttributes: ['state']
-            }),
-            HTMLElement_23.GenerateAttributeAccessors([
-                { name: 'label', type: 'string' },
-                { name: 'state', type: 'string' },
-            ])
-        ], PanelElement);
-        return PanelElement;
-    })();
-    exports.PanelElement = PanelElement;
-});
-define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.PanelGroupElement = void 0;
-    let PanelGroupElement = /** @class */ (() => {
-        let PanelGroupElement = class PanelGroupElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_24.bindShadowRoot(this, /*template*/ `
-            <link rel="stylesheet" href="css/theme.css"/>
-            <style>
-                :host {
-                    display: block;
-                }
-
-                :host([state='closed']) #content {
-                    display: none;
-                }
-
-                :host([state='closed']) #less {
-                    display: none;
-                }
-
-                :host([state='opened']) #more {
-                    display: none;
-                }
-
-                #toggler {
-                    display: flex;
-                }
-
-                #toggler:hover {
-                    font-weight: 500;
-                    color: var(--label-on-hover-color);
-                }
-
-                #label {
-                    flex: 1;
-                }
-            </style>
-            <div>
-                <div id="toggler">
-                    <span id="arrow"><!--<icon #less><icon #more>--></span>
-                    <span id="label"></span>
-                </div>
-                <div id="content">
-                    <slot></slot>
-                </div>
-            </div>
-        `);
-                this.state = this.state || 'closed';
-            }
-            connectedCallback() {
-                const toggler = this.shadowRoot.querySelector('#toggler');
-                const arrow = this.shadowRoot.querySelector('#arrow');
-                const label = this.shadowRoot.querySelector('#label');
-                toggler.addEventListener('click', () => {
-                    if (this.state === 'opened') {
-                        this.state = 'closed';
-                    }
-                    else if (this.state === 'closed') {
-                        this.state = 'opened';
-                    }
-                });
-                label.innerHTML = this.label;
-            }
-        };
-        PanelGroupElement.observedAttributes = ['state'];
-        PanelGroupElement = __decorate([
-            HTMLElement_24.RegisterCustomHTMLElement({
-                name: 'e-panel-group'
-            }),
-            HTMLElement_24.GenerateAttributeAccessors([
-                { name: 'label', type: 'string' },
-                { name: 'state', type: 'string' },
-            ])
-        ], PanelGroupElement);
-        return PanelGroupElement;
-    })();
-    exports.PanelGroupElement = PanelGroupElement;
+    exports.RenderPipeline = RenderPipeline;
 });
 define("engine/libs/graphics/colors/Color", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -11321,2069 +9749,1210 @@ define("engine/libs/graphics/colors/Color", ["require", "exports"], function (re
     const Color = ColorBase;
     exports.Color = Color;
 });
-define("engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker", ["require", "exports"], function (require, exports) {
+define("engine/libs/maths/extensions/pools/Vector3Pools", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/pools/StackPool"], function (require, exports, Vector3_2, StackPool_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SingleTopicMessageBrokerBase = exports.SingleTopicMessageBroker = void 0;
-    ;
-    class SingleTopicMessageBrokerBase {
-        constructor() {
-            this._subscriptions = [];
-        }
-        hasSubscriptions() {
-            return this._subscriptions.length > 0;
-        }
-        subscribe(subscription) {
-            const index = this._subscriptions.indexOf(subscription);
-            if (index < 0) {
-                this._subscriptions.push(subscription);
-            }
-            return subscription;
-        }
-        unsubscribe(subscription) {
-            const index = this._subscriptions.indexOf(subscription);
-            if (index > -1) {
-                this._subscriptions.splice(index, 1);
-            }
-            return this._subscriptions.length;
-        }
-        publish(message) {
-            for (const subscription of this._subscriptions) {
-                subscription(message);
-            }
-        }
-    }
-    exports.SingleTopicMessageBrokerBase = SingleTopicMessageBrokerBase;
-    const SingleTopicMessageBroker = SingleTopicMessageBrokerBase;
-    exports.SingleTopicMessageBroker = SingleTopicMessageBroker;
+    exports.Vector3Pool = void 0;
+    const Vector3Pool = new StackPool_2.StackPool(Vector3_2.Vector3Base);
+    exports.Vector3Pool = Vector3Pool;
 });
-define("engine/core/logger/Logger", ["require", "exports", "engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker"], function (require, exports, SingleTopicMessageBroker_1) {
+define("engine/libs/maths/geometry/primitives/Plane", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/patterns/injectors/Injector"], function (require, exports, Vector3_3, Vector3Pools_1, Injector_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.LoggerBase = exports.Logger = exports.LogLevel = void 0;
-    var LogLevel;
-    (function (LogLevel) {
-        LogLevel[LogLevel["DEBUG"] = 0] = "DEBUG";
-        LogLevel[LogLevel["ERROR"] = 1] = "ERROR";
-        LogLevel[LogLevel["INFO"] = 2] = "INFO";
-        LogLevel[LogLevel["LOG"] = 3] = "LOG";
-        LogLevel[LogLevel["WARN"] = 4] = "WARN";
-    })(LogLevel || (LogLevel = {}));
-    exports.LogLevel = LogLevel;
-    class LoggerBase {
-        constructor() {
-            this._broker = new SingleTopicMessageBroker_1.SingleTopicMessageBroker();
+    exports.PlaneBase = exports.PlaneInjector = exports.Plane = void 0;
+    class PlaneBase {
+        constructor(normal, constant) {
+            this._normal = normal || new Vector3_3.Vector3([0, 0, 0]);
+            this._constant = constant || 0;
         }
-        log(message) {
-            const level = LogLevel.LOG;
-            message = this.formatMessage(level, message);
-            console.log(message);
-            this._onLog(level, message);
+        static fromNormalAndConstant(normal, constant) {
+            return new PlaneBase().setFromNormalAndConstant(normal, constant);
         }
-        info(message) {
-            const level = LogLevel.INFO;
-            message = this.formatMessage(level, message);
-            console.info(message);
-            this._onLog(level, message);
+        static fromNormalAndCoplanarPoint(normal, point) {
+            return new PlaneBase().setFromNormalAndCoplanarPoint(normal, point);
         }
-        warn(message) {
-            const level = LogLevel.WARN;
-            message = this.formatMessage(level, message);
-            console.warn(message);
-            this._onLog(level, message);
+        static fromCoplanarPoints(a, b, c) {
+            return new PlaneBase().setFromCoplanarPoints(a, b, c);
         }
-        debug(message) {
-            const level = LogLevel.DEBUG;
-            message = this.formatMessage(level, message);
-            console.debug(message);
-            this._onLog(level, message);
+        get normal() {
+            return this._normal;
         }
-        error(message) {
-            const level = LogLevel.ERROR;
-            message = this.formatMessage(level, message);
-            console.error(message);
-            this._onLog(level, message);
+        set normal(normal) {
+            this._normal = normal;
         }
-        _onLog(level, message) {
-            this._broker.publish({ level: level, message: message });
+        get constant() {
+            return this._constant;
         }
-        subscribe(subscription) {
-            return this._broker.subscribe(subscription);
+        set constant(constant) {
+            this._constant = constant;
         }
-        unsubscribe(subscription) {
-            return this._broker.unsubscribe(subscription);
+        copy(plane) {
+            this._normal = plane._normal.clone();
+            this._constant = plane._constant;
+            return this;
         }
-        formatMessage(level, message) {
-            const time = this.getTimestamp();
-            return `[${time}] ${message}`;
+        set(x, y, z, constant) {
+            this._normal.setValues([x, y, z]);
+            this._constant = constant;
+            return this;
         }
-        getTimestamp() {
-            return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "numeric", second: "numeric", hour12: false });
+        setFromNormalAndConstant(normal, constant) {
+            this._normal.copy(normal);
+            this._constant = constant;
+            return this;
+        }
+        setFromNormalAndCoplanarPoint(normal, point) {
+            this._normal.copy(normal);
+            this._constant = -point.dot(this._normal);
+            return this;
+        }
+        setFromCoplanarPoints(point1, point2, point3) {
+            const normal = point3.clone();
+            Vector3Pools_1.Vector3Pool.acquireTemp(1, (temp) => {
+                temp.copy(point1);
+                normal.sub(point2).cross(temp.sub(point2)).normalize();
+                this.setFromNormalAndCoplanarPoint(normal, point1);
+            });
+            return this;
+        }
+        distanceToPoint(point) {
+            return this._normal.dot(point) + this._constant;
+        }
+        normalized() {
+            const inverseNormalLength = 1.0 / this._normal.len();
+            this._normal.multScalar(inverseNormalLength);
+            this._constant *= inverseNormalLength;
+            return this;
         }
     }
-    exports.LoggerBase = LoggerBase;
-    const Logger = new LoggerBase();
-    exports.Logger = Logger;
+    exports.PlaneBase = PlaneBase;
+    var Plane = PlaneBase;
+    exports.Plane = Plane;
+    const PlaneInjector = new Injector_7.Injector({
+        defaultCtor: PlaneBase,
+        onDefaultOverride: (ctor) => {
+            exports.Plane = Plane = ctor;
+        }
+    });
+    exports.PlaneInjector = PlaneInjector;
 });
-define("engine/resources/Resources", ["require", "exports", "engine/resources/ResourceFetcher", "engine/core/logger/Logger"], function (require, exports, ResourceFetcher_2, Logger_1) {
+define("engine/libs/maths/geometry/primitives/Triangle", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/pools/StackPool", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/extensions/pools/Vector3Pools"], function (require, exports, Vector3_4, StackPool_3, Injector_8, Vector3Pools_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Resources = void 0;
-    function extractExtension(filename) {
-        return filename.substring(filename.lastIndexOf('.') + 1);
-    }
-    const imageExtensions = ['png', 'jpg'];
-    const textExtensions = ['txt', 'md', 'vert', 'frag', 'glsl', 'json', 'html', 'css'];
-    class ResourcesBase {
-        constructor(folder) {
-            this.folder = folder || '';
-            this.resources = new Map();
+    exports.TrianglePool = exports.TriangleBase = exports.TriangleInjector = exports.Triangle = void 0;
+    class TriangleBase {
+        constructor(point1, point2, point3) {
+            this._point1 = point1 || new Vector3_4.Vector3();
+            this._point2 = point2 || new Vector3_4.Vector3();
+            this._point3 = point3 || new Vector3_4.Vector3();
         }
-        get(file) {
-            const resource = this.resources.get(file);
-            if (typeof resource === 'undefined') {
-                Logger_1.Logger.error(`Unknown resource '${file}'.`);
-                return null;
-            }
-            return resource;
+        get point1() {
+            return this._point1;
         }
-        toString() {
-            return `[\n\t\'${Array.from(this.resources.keys()).join("\',\n\t\'")}\'\n]`;
+        set point1(point1) {
+            this._point1 = point1;
         }
-        async load(path) {
-            let url = this.folder.concat(path);
-            const fetchResource = async function (path, url, map) {
-                const fileExt = extractExtension(path);
-                let file;
-                try {
-                    if (imageExtensions.includes(fileExt)) {
-                        file = await ResourceFetcher_2.ResourceFetcher.fetchImage(url);
-                    }
-                    else if (textExtensions.includes(fileExt)) {
-                        file = await ResourceFetcher_2.ResourceFetcher.fetchTextFile(url);
-                    }
-                }
-                catch (e) {
-                    Logger_1.Logger.error(`Resource item '${url}' not found.`);
+        get point2() {
+            return this._point2;
+        }
+        set point2(point2) {
+            this._point2 = point2;
+        }
+        get point3() {
+            return this._point3;
+        }
+        set point3(point3) {
+            this._point3 = point3;
+        }
+        getValues() {
+            const point1 = this._point1, point2 = this._point2, point3 = this._point3;
+            return [
+                point1.x, point1.y, point1.z,
+                point2.x, point2.y, point2.z,
+                point3.x, point3.y, point3.z
+            ];
+        }
+        set(point1, point2, point3) {
+            this._point1.copy(point1);
+            this._point2.copy(point2);
+            this._point3.copy(point3);
+            return this;
+        }
+        setValues(values) {
+            this._point1.setValues([values[0], values[1], values[2]]);
+            this._point2.setValues([values[3], values[4], values[5]]);
+            this._point3.setValues([values[6], values[7], values[8]]);
+            return this;
+        }
+        clone() {
+            return new TriangleBase().copy(this);
+        }
+        copy(triangle) {
+            this._point1 = triangle._point1;
+            this._point2 = triangle._point2;
+            this._point3 = triangle._point3;
+            return this;
+        }
+        getNormal(out) {
+            Vector3Pools_2.Vector3Pool.acquireTemp(1, (temp) => {
+                out.copyAndSub(this._point2, this.point1);
+                temp.copyAndSub(this._point3, this.point1);
+                out.cross(temp).normalize();
+            });
+            return out;
+        }
+        getBarycentricCoordinates(point, out) {
+            Vector3Pools_2.Vector3Pool.acquireTemp(3, (v1, v2, vp) => {
+                v1.copyAndSub(this._point2, this._point1),
+                    v2.copyAndSub(this._point3, this._point1),
+                    vp.copyAndSub(point, this._point1);
+                const dotxx = v1.dot(v1);
+                const dotxy = v1.dot(v2);
+                const dotxz = v1.dot(vp);
+                const dotyy = v2.dot(v2);
+                const dotyz = v2.dot(vp);
+                const denom = (dotxx * dotyy - dotxy * dotxy);
+                if (denom === 0) {
+                    // TODO: Handle ?
+                    out.setValues([-2, -1, -1]);
                     return;
                 }
-                map.set(path, file);
-            };
-            await fetchResource(path, url, this.resources);
+                const invDenom = 1 / denom;
+                const u = (dotyy * dotxz - dotxy * dotyz) * invDenom;
+                const v = (dotxx * dotyz - dotxy * dotxz) * invDenom;
+                out.setValues([1 - u - v, v, u]);
+            });
+            return out;
         }
-        async loadList(path) {
-            let url = this.folder.concat(path);
-            let resources;
-            try {
-                resources = await ResourceFetcher_2.ResourceFetcher.fetchJSON(url);
-            }
-            catch (e) {
-                Logger_1.Logger.error(`Resources list '${url}' not found.`);
-                return;
-            }
-            const fetchResource = async function (resource, folder, map) {
-                const fileExt = extractExtension(resource);
-                let file;
-                try {
-                    if (imageExtensions.includes(fileExt)) {
-                        file = await ResourceFetcher_2.ResourceFetcher.fetchImage(folder.concat(resource));
-                    }
-                    else if (textExtensions.includes(fileExt)) {
-                        file = await ResourceFetcher_2.ResourceFetcher.fetchTextFile(folder.concat(resource));
-                    }
+        *sharedPointsWith(triangle) {
+            if (this._point1.equals(triangle._point1) || this._point1.equals(triangle._point2) || this._point1.equals(triangle._point3))
+                yield this._point1;
+            if (this._point2.equals(triangle._point1) || this._point2.equals(triangle._point2) || this._point2.equals(triangle._point3))
+                yield this._point2;
+            if (this._point3.equals(triangle._point1) || this._point3.equals(triangle._point2) || this._point3.equals(triangle._point3))
+                yield this._point3;
+        }
+        indexOfPoint(point) {
+            return (point.equals(this._point1)) ? 0 :
+                (point.equals(this._point2)) ? 1 :
+                    (point.equals(this._point3)) ? 2 : -1;
+        }
+        containsPoint(point) {
+            let contains = false;
+            Vector3Pools_2.Vector3Pool.acquireTemp(1, (pointCoords) => {
+                this.getBarycentricCoordinates(point, pointCoords);
+                contains = (pointCoords.x >= 0) && (pointCoords.y >= 0) && ((pointCoords.x + pointCoords.y) <= 1);
+            });
+            return contains;
+        }
+        getUV(point, uv1, uv2, uv3, out) {
+            Vector3Pools_2.Vector3Pool.acquireTemp(1, (pointCoords) => {
+                this.getBarycentricCoordinates(point, pointCoords);
+                out.setZeros();
+                out.addScaled(uv1, pointCoords.x);
+                out.addScaled(uv2, pointCoords.y);
+                out.addScaled(uv3, pointCoords.z);
+            });
+            return out;
+        }
+        isFrontFacing(direction) {
+            let result = false;
+            Vector3Pools_2.Vector3Pool.acquireTemp(2, (v1, v2) => {
+                v1.copyAndSub(this._point2, this._point1),
+                    v2.copyAndSub(this._point3, this._point1);
+                result = (v1.cross(v2).dot(direction) < 0);
+            });
+            return result;
+        }
+        getArea() {
+            let area = 0;
+            Vector3Pools_2.Vector3Pool.acquireTemp(2, (v1, v2) => {
+                v1.copyAndSub(this._point2, this._point1),
+                    v2.copyAndSub(this._point3, this._point1);
+                area = v1.cross(v2).len() * 0.5;
+            });
+            return area;
+        }
+        getMidpoint(out) {
+            return out.copy(this._point1).add(this._point2).add(this._point3).multScalar(1 / 3);
+        }
+        getPlane(out) {
+            throw Error('Not implemented yet.');
+        }
+        closestPointToPoint(point, out) {
+            const point1 = this._point1, point2 = this._point2, point3 = this._point3;
+            let v, w;
+            Vector3Pools_2.Vector3Pool.acquireTemp(4, (vb, vc, vp, vbp) => {
+                vb.copyAndSub(point2, point1),
+                    vc.copyAndSub(point3, point1),
+                    vp.copyAndSub(point, point1);
+                const d1 = vb.dot(vp);
+                const d2 = vc.dot(vp);
+                if (d1 <= 0 && d2 <= 0) {
+                    return out.copy(point1);
                 }
-                catch (e) {
-                    Logger_1.Logger.error(`Resource item '${url}' not found.`);
-                    return;
+                vbp.copyAndSub(point, point2);
+                const d3 = point1.dot(vbp);
+                const d4 = vc.dot(vbp);
+                if (d3 >= 0 && d4 <= d3) {
+                    return out.copy(point2);
                 }
-                map.set(resource, file);
-            };
-            for (const resource of resources.list) {
-                await fetchResource(resource, this.folder, this.resources);
-            }
+                const dc = d1 * d4 - d3 * d2;
+                if (dc <= 0 && d1 >= 0 && d3 <= 0) {
+                    v = d1 / (d1 - d3);
+                    return out.copy(point1).addScaled(vb, v);
+                }
+                vp.copyAndSub(point, point3);
+                const d5 = vb.dot(vp);
+                const d6 = vc.dot(vp);
+                if (d6 >= 0 && d5 <= d6) {
+                    return out.copy(point3);
+                }
+                const db = d5 * d2 - d1 * d6;
+                if (db <= 0 && d2 >= 0 && d6 <= 0) {
+                    w = d2 / (d2 - d6);
+                    return out.copy(point1).addScaled(vc, w);
+                }
+                const da = d3 * d6 - d5 * d4;
+                if (da <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0) {
+                    vc.copyAndSub(point3, point2);
+                    w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+                    return out.copy(point2).addScaled(vc, w);
+                }
+                const denom = 1 / (da + db + dc);
+                v = db * denom;
+                w = dc * denom;
+                out.copy(point1).addScaled(vb, v).addScaled(vc, w);
+            });
+            return out;
+        }
+        equals(triangle) {
+            return triangle._point1.equals(this._point1)
+                && triangle._point2.equals(this._point2)
+                && triangle._point3.equals(this._point3);
+        }
+        translate(vec) {
+            this._point1.add(vec);
+            this._point2.add(vec);
+            this._point3.add(vec);
+        }
+        transform(mat) {
+            this._point1.setValues(mat.transformDirection(this._point1));
+            this._point2.setValues(mat.transformDirection(this._point2));
+            this._point3.setValues(mat.transformDirection(this._point3));
+        }
+        readFromArray(arr, offset) {
+            this.point1.readFromArray(arr, offset);
+            this.point2.readFromArray(arr, offset + 3);
+            this.point3.readFromArray(arr, offset + 6);
+            return this;
+        }
+        writeIntoArray(arr, offset) {
+            this.point1.writeIntoArray(arr, offset);
+            this.point2.writeIntoArray(arr, offset + 3);
+            this.point3.writeIntoArray(arr, offset + 6);
         }
     }
-    const Resources = ResourcesBase;
-    exports.Resources = Resources;
+    exports.TriangleBase = TriangleBase;
+    var Triangle = TriangleBase;
+    exports.Triangle = Triangle;
+    const TriangleInjector = new Injector_8.Injector({
+        defaultCtor: TriangleBase,
+        onDefaultOverride: (ctor) => {
+            exports.Triangle = Triangle = ctor;
+        }
+    });
+    exports.TriangleInjector = TriangleInjector;
+    const TrianglePool = new StackPool_3.StackPool(TriangleBase);
+    exports.TrianglePool = TrianglePool;
 });
-define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_25) {
+define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.isDropdownElement = exports.HTMLEDropdownElement = void 0;
-    function isDropdownElement(elem) {
-        return elem.tagName.toLowerCase() === 'e-dropdown';
-    }
-    exports.isDropdownElement = isDropdownElement;
-    let HTMLEDropdownElement = /** @class */ (() => {
-        let HTMLEDropdownElement = class HTMLEDropdownElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_25.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: block;
-                    position: relative;
-                    user-select: none;
-                    white-space: nowrap;
-                }
-
-                :host(:not([expanded])) ::slotted([slot="content"]) {
-                    display: none;
-                }
-
-                :host ::slotted([slot="content"]) {
-                    display: flex;
-                    z-index: 1;
-                    position: absolute;
-
-                    left: 0;
-                    top: 100%;
-
-                    padding: 8px 0;
-                    background-color: white;
-                    border: 1px solid grey;
-                }
-            </style>
-            <slot id="button" name="button"></slot>
-            <slot id="content" name="content"></slot>
-        `);
-                this.button = null;
-                this.content = null;
-            }
-            connectedCallback() {
-                var _a, _b;
-                const buttonSlot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.getElementById('button');
-                if (buttonSlot) {
-                    buttonSlot.addEventListener('slotchange', (event) => {
-                        const button = event.target.assignedElements()[0];
-                        this.button = button;
-                        button.addEventListener('click', () => {
-                            if (!this.expanded) {
-                                this.expanded = true;
-                                setTimeout(() => {
-                                    document.addEventListener('click', clickOutListener);
-                                });
-                            }
-                            else {
-                                this.expanded = false;
-                                document.removeEventListener('click', clickOutListener);
-                            }
-                        });
-                        const clickOutListener = (event) => {
-                            if (!this.contains(event.currentTarget)) {
-                                this.expanded = false;
-                                document.removeEventListener('click', clickOutListener);
-                            }
-                        };
-                    });
-                }
-                const contentSlot = (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.getElementById('content');
-                if (contentSlot) {
-                    contentSlot.addEventListener('slotchange', (event) => {
-                        const contentElem = event.target.assignedElements()[0];
-                        this.content = contentElem;
-                        this.content.addEventListener('click', (event) => {
-                            event.stopImmediatePropagation();
-                        });
-                    });
-                }
-            }
-        };
-        HTMLEDropdownElement = __decorate([
-            HTMLElement_25.RegisterCustomHTMLElement({
-                name: 'e-dropdown'
-            }),
-            HTMLElement_25.GenerateAttributeAccessors([
-                { name: 'expanded', type: 'boolean' },
-            ])
-        ], HTMLEDropdownElement);
-        return HTMLEDropdownElement;
-    })();
-    exports.HTMLEDropdownElement = HTMLEDropdownElement;
-});
-define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_26) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLEMenuButtonElement = void 0;
-    let BaseHTMLEMenuButtonElement = /** @class */ (() => {
-        let BaseHTMLEMenuButtonElement = class BaseHTMLEMenuButtonElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_26.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    position: relative;
-                    display: inline-block;
-
-                    user-select: none;
-                    white-space: nowrap;
-
-                    padding: 3px 6px;
-                    background-color: white;
-
-                    cursor: pointer;
-                }
-
-                :host(:focus) {
-                    outline: 1px solid -webkit-focus-ring-color;
-                }
-
-                :host(:hover),
-                :host(:focus-within) {
-                    color: white;
-                    background-color: rgb(92, 92, 92);
-                }
-
-                :host([disabled]) {
-                    color: rgb(180, 180, 180);
-                }
-
-                :host(:hover) [part~="visual"],
-                :host(:focus) [part~="visual"],
-                :host(:focus-within) [part~="visual"] {
-                    color: inherit;
-                }
-
-                :host(:focus) ::slotted([slot="menu"]),
-                :host(:focus-within) ::slotted([slot="menu"]) {
-                    color: initial;
-                }
-
-                :host(:focus[disabled]),
-                :host(:focus-within[disabled]) {
-                    background-color: rgb(220, 220, 220);
-                }
-
-                :host ::slotted([slot="menu"]) {
-                    z-index: 1;
-                    position: absolute;
-                    
-                    top: 100%;
-                    left: 0;
-                }
-
-                :host ::slotted([slot="menu"]:not(:focus-within)) {
-                    max-width: 0;
-                    max-height: 0;
-                    padding: 0;
-                    overflow: clip;
-                }
-
-                [part~="li"] {
-                    display: flex;
-                    height: 100%;
-                    list-style-type: none;
-                }
-
-                [part~="content"] {
-                    font-size: 1em;
-                    flex: auto;
-                    display: flex;
-                }
-
-                [part~="icon"] {
-                    flex: none;
-                    display: none;
-                    width: 16px;
-                    margin-right: 2px;
-                }
-
-                [part~="label"] {
-                    flex: auto;
-                    text-align: left;
-                }
-
-                [part~="arrow"] {
-                    flex: none;
-                    margin-left: 8px;
-                    transform: rotate(90deg);
-                }
-
-                [part~="visual"] {
-                    color: rgb(92, 92, 92);
-                    font-size: 1.6em;
-                    line-height: 0.625;
-                }
-
-                [part~="visual"]::after {
-                    pointer-events: none;
-                }
-
-                :host(:not([icon])) [part~="icon"] {
-                    visibility: hidden;
-                }
-
-                :host [part~="arrow"]::after {
-                    content: "»";
-                }
-            </style>
-            <li part="li">
-                <span part="content">
-                    <span part="visual icon"></span>
-                    <span part="label"></span>
-                    <span part="visual arrow"></span>
-                </span>
-                <slot name="menu" part="menu"></slot>
-            </li>
-        `);
-                this.childMenu = null;
-                this.addEventListener("keydown", (event) => {
-                    switch (event.key) {
-                        case "Enter":
-                            if (!this.active) {
-                                this.active = true;
-                                if (this.childMenu) {
-                                    this.childMenu.focusItemAt(0);
-                                }
-                            }
-                            break;
-                        case "Escape":
-                            this.focus();
-                            this.active = false;
-                            break;
-                    }
-                });
-                this.addEventListener("click", () => {
-                    this.trigger();
-                });
-                this.addEventListener("blur", (event) => {
-                    let containsNewFocus = (event.relatedTarget !== null) && this.contains(event.relatedTarget);
-                    if (!containsNewFocus) {
-                        this.active = false;
-                    }
-                }, { capture: true });
-            }
-            trigger() {
-                if (!this.active) {
-                    this.active = true;
-                    if (this.childMenu) {
-                        this.childMenu.focus();
-                    }
-                }
-                else {
-                    this.active = false;
-                }
-            }
-            attributeChangedCallback(name, oldValue, newValue) {
-                var _a, _b;
-                if (newValue !== oldValue) {
-                    switch (name) {
-                        case "label":
-                            if (oldValue !== newValue) {
-                                const labelPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
-                                if (labelPart) {
-                                    labelPart.textContent = newValue;
-                                }
-                            }
-                            break;
-                        case "icon":
-                            if (oldValue !== newValue) {
-                                const iconPart = (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector("[part~=icon]");
-                                if (iconPart) {
-                                    iconPart.textContent = newValue;
-                                }
-                            }
-                            break;
-                    }
-                }
-            }
-            connectedCallback() {
-                var _a;
-                this.tabIndex = this.tabIndex;
-                const menuSlot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot[name=menu]");
-                if (menuSlot) {
-                    menuSlot.addEventListener("slotchange", () => {
-                        const menuElem = menuSlot.assignedElements()[0];
-                        if (HTMLElement_26.isTagElement("e-menu", menuElem)) {
-                            this.childMenu = menuElem;
-                        }
-                    });
-                }
-            }
-        };
-        BaseHTMLEMenuButtonElement = __decorate([
-            HTMLElement_26.RegisterCustomHTMLElement({
-                name: "e-menubutton",
-                observedAttributes: ["icon", "label", "checked"]
-            }),
-            HTMLElement_26.GenerateAttributeAccessors([
-                { name: "name", type: "string" },
-                { name: "active", type: "boolean" },
-                { name: "label", type: "string" },
-                { name: "icon", type: "string" },
-                { name: "type", type: "string" },
-                { name: "disabled", type: "boolean" },
-            ])
-        ], BaseHTMLEMenuButtonElement);
-        return BaseHTMLEMenuButtonElement;
-    })();
-    exports.BaseHTMLEMenuButtonElement = BaseHTMLEMenuButtonElement;
-});
-define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_27) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.PaletteElement = void 0;
-    let PaletteElement = /** @class */ (() => {
-        let PaletteElement = class PaletteElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_27.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: block;
-                    content: contains;
-                }
-
-               :host #container {
-                    display: grid;
-                    grid-template-cols: repeat(5, 1fr);
-                    grid-auto-rows: 16px;
-                }
-            </style>
-            <div id="container">
-            </div>
-        `);
-            }
-            connectedCallback() {
-                const colors = this.colors;
-                if (colors.length > 0) {
-                    this.shadowRoot.querySelector('#container').append(...colors.map((color) => {
-                        const div = document.createElement('div');
-                        div.setAttribute('style', `background-color: ${color}`);
-                        return div;
-                    }));
-                }
-            }
-        };
-        PaletteElement = __decorate([
-            HTMLElement_27.RegisterCustomHTMLElement({
-                name: 'e-palette'
-            }),
-            HTMLElement_27.GenerateAttributeAccessors([{ name: 'colors', type: 'json' }])
-        ], PaletteElement);
-        return PaletteElement;
-    })();
-    exports.PaletteElement = PaletteElement;
-});
-define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_28) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BaseHTMLELoaderElement = void 0;
-    let BaseHTMLELoaderElement = /** @class */ (() => {
-        let BaseHTMLELoaderElement = class BaseHTMLELoaderElement extends HTMLElement {
-            constructor() {
-                super();
-                HTMLElement_28.bindShadowRoot(this, /*template*/ `
-            <style>
-                :host {
-                    display: inline-block;
-                }
-                
-                :host([type="bar"]) {
-                    display: inline-block;
-                    width: 64px;
-                }
-
-                :host([type]:not([type="circle"])) [part~="circle"] {
-                    display: none !important;
-                }
-                
-                :host(:not([type="bar"])) [part~="bar"] {
-                    display: none !important;
-                }
-
-                [part~="circle"] {
-                    position: relative;
-                    width: 12px;
-                    height: 12px;
-                    border-top: 4px solid rgb(0, 128, 255);
-                    border-right: 4px solid rgb(0, 128, 255);
-                    border-left: 4px solid transparent;
-                    border-bottom: 4px solid transparent;
-                    border-radius: 50%;
-                    animation-duration: 1s;
-                    animation-name: circle;
-                    animation-timing-function: linear;
-                    animation-iteration-count: infinite;
-                }
-
-                @keyframes circle {
-                    0% {
-                        transform: rotate(0);
-                    }
-                    100% {
-                        transform: rotate(360deg);
-                    }
-                }
-
-                [part~="bar"] {
-                    display: block;
-                    position: relative;
-                    overflow: hidden;
-                }
-
-                [part~="slider"] {
-                    position: relative;
-                    display: flex;
-                    will-change: transform;
-                    animation-duration: 1s;
-                    animation-name: slider;
-                    animation-timing-function: linear;
-                    animation-iteration-count: infinite;
-                }
-
-                [part~="cursor"] {
-                    position: relative;
-                    display: inline-block;
-                    width: 16px;
-                    height: 4px;
-                    background-color: rgb(0, 128, 255);
-                    border-radius: 4px;
-
-                    will-change: transform;
-                    animation-duration: 1s;
-                    animation-name: cursor;
-                    animation-timing-function: linear;
-                    animation-iteration-count: infinite;
-                }
-
-                @keyframes slider {
-                    0% {
-                        transform: translateX(0);
-                    }
-                    100% {
-                        transform: translateX(100%);
-                    }
-                }
-
-                @keyframes cursor {
-                    0% {
-                        transform: translateX(-100%);
-                    }
-                    100% {
-                        transform: translateX(100%);
-                    }
-                }
-            </style>
-            <div part="bar">
-                <div part="slider">
-                    <div part="cursor"></div>
-                </div>
-            </div>
-            <div part="circle"></div>
-        `);
-            }
-        };
-        BaseHTMLELoaderElement = __decorate([
-            HTMLElement_28.RegisterCustomHTMLElement({
-                name: "e-loader"
-            }),
-            HTMLElement_28.GenerateAttributeAccessors([
-                { name: "type", type: "string" }
-            ])
-        ], BaseHTMLELoaderElement);
-        return BaseHTMLELoaderElement;
-    })();
-    exports.BaseHTMLELoaderElement = BaseHTMLELoaderElement;
-});
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_2, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_4, Vector2_3, Vector3_7, Snippets_14, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_2, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_29, Loader_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.launchScene = exports.start = void 0;
-    StatusBar_1.HTMLEStatusBarElement;
-    StatusItem_2.HTMLEStatusItemElement;
-    Import_1.BaseHTMLEImportElement;
-    Panel_1.PanelElement;
-    PanelGroup_1.PanelGroupElement;
-    Tab_1.BaseHTMLETabElement;
-    TabList_1.BaseHTMLETabListElement;
-    TabPanel_2.BaseHTMLETabPanelElement;
-    Dropdown_1.HTMLEDropdownElement;
-    BreadcrumbTrail_1.HTMLEBreadcrumbTrailElement;
-    BreadcrumbItem_2.HTMLEBreadcrumbItemElement;
-    Palette_1.PaletteElement;
-    Draggable_1.BaseHTMLEDraggableElement;
-    MenuBar_1.BaseHTMLEMenuBarElement;
-    MenuButton_1.BaseHTMLEMenuButtonElement;
-    Menu_1.BaseHTMLEMenuElement;
-    MenuItem_1.BaseHTMLEMenuItemElement;
-    Dropzone_1.BaseHTMLEDropzoneElement;
-    MenuItemGroup_2.BaseHTMLEMenuItemGroupElement;
-    MenuItem_1.BaseHTMLEMenuItemElement;
-    Loader_1.BaseHTMLELoaderElement;
-    const simpleSceneDOM = /*template*/ `
-<link rel="stylesheet" href="../css/main.css"/>
-  <div>
-
-    <div class="flex-rows">
-
-      <!--<e-import src="html/samples/menus.html"></e-import>-->
-      <nav class="flex-cols">
-          <div id="menubar-container"></div>
-        <!--<button data-command="get">get</button>
-        <button data-command="set">set</button>-->
-      </nav>
-
-      <div class="flex-auto flex-cols">
-
-        <!--<e-window title="My window">-->
-<!--
-
-        </e-window>-->
-
-        <e-panel id="panel-1" class="flex-rows flex-none" state="opened" label="L.Panel">
-
-            <e-tablist id="list">
-              <e-tab name="play" controls="play-panel" active>Play tab</e-tab>
-              <e-tab name="pause" controls="pause-panel">Pause Tab</e-tab>
-            </e-tablist>
-            <e-tabpanel id="play-panel">
-              <e-loader></e-loader>
-              assets/editor/icons/play.svg
-            </e-tabpanel>
-            <e-tabpanel id="pause-panel">
-              <!--<e-palette cols="5" colors='[
-                "var(--theme-color-50)",
-                "var(--theme-color-100)",
-                "var(--theme-color-200)",
-                "var(--theme-color-300)",
-                "var(--theme-color-400)",
-                "var(--theme-color-500)",
-                "var(--theme-color-600)",
-                "var(--theme-color-700)",
-                "var(--theme-color-800)",
-                "var(--theme-color-900)",
-                "var(--theme-palette-color-1)",
-                "var(--theme-palette-color-2)",
-                "var(--theme-palette-color-3)"
-              ]'></e-palette>-->
-              <e-breadcrumbtrail>
-                <e-breadcrumbitem label="label 1"></e-breadcrumbitem>
-                <e-breadcrumbitem label="label 2"></e-breadcrumbitem>
-              </e-breadcrumbtrail>
-              <!--<e-dragzone>
-                <e-draggable id="draggableA" tabindex="-1" ref="A">A</e-draggable>
-                <e-draggable id="draggableB" tabindex="-1" ref="B">B</e-draggable>
-                <e-draggable id="draggableC" tabindex="-1" ref="C">C</e-draggable>
-                <e-draggable id="draggableD" tabindex="-1" ref="D">D</e-draggable>
-              </e-dragzone>
-              <e-dropzone id="dropzone1" tabindex="-1" multiple></e-dropzone>-->
-              <!--<details>
-                <summary>Summary..</summary>
-                <fieldset>
-                  <label>My label</label><input value="My input"></input>
-                  <details>
-                    <summary><label>aggregates</label><input value="1" type="number"></input></summary>
-                    <fieldset>
-                    <label>My internal label</label><input value="My internal input"></input>
-                  </details>
-                </fieldset>
-                </fieldset>
-              </details>-->
-              <input type="number" name="temp-radio" value="1"></input>
-            </e-tabpanel>
-              
-            <section>
-              <form id="test-form" novalidate>
-                <input name="number-input" type="number" value="10"></input><br/>
-                <input type="text" name="text-input"  value="Test"></input><br/>
-                <select>
-                  <option>Kek</option>
-                  <option>Kikou</option>
-                </select>
-                <input type="range" name="range-input" min="10" max="20" step="5"></input>
-                <progress id="file" max="100" value="70"> 70% </progress>
-                <br/>
-                <input type="radio" name="temp-radio" value="1"></input>
-                <input type="radio" name="temp-radio" value="2"></input><br/>
-                <textarea name="textarea-input">This is my tyext area.</textarea>
-                <a href="#">Follow this link</a>
-              </form>
-              <e-dropdown>
-                <button slot="button">My button</button>
-                <div slot="content">
-                  <ul>
-                    <li>1</li>
-                    <li>2</li>
-                  </ul>
-                  <input id="range" type="range" min="10" max="20" step="5"></input>
-                </div>
-              </e-dropdown>
-
-              <button data-button-role="dropdown" data-button-dropdown-target="dropdown">My button</button>
-              <div slot="content">
-                <ul>
-                  <li>1</li>
-                  <li>2</li>
-                </ul>
-                <input id="range" type="range" min="10" max="20" step="5"></input>
-              </div>
-              <!--<details>
-                <summary>Sum</summary>
-                <p>Requires a computer running an operating system.</p>
-              </details>-->
-            </section>
-        </e-panel>
-
-        <main class="flex-rows flex-auto">
-            <header class="centered">Toolbar</header>
-            <section class="centered padded">
-    
-              <div id="ui" class="flex-cols">
-                <div class="flex-auto"><span class="blue">"RigidBuddy FTW!"</span> <span class="yellow">:-)</span></div>
-                <div class="flex-none">FPS: <span id="canvas-fps">-.-</span></div>
-              </div>
-
-              <canvas id="canvas" tabindex="0" tooltip="mon-canvas"></canvas>
-              <e-logs-feed></e-logs-feed>
-
-            </section>
-
-            <footer class="centered">
-              <p id="status-bar"></p>
-            </footer>
-        </main>
-        
-        <e-panel id="panel-3" class="flex-rows flex-none" style="margin-left: 6px;" state="closed" label="R.Panel">
-            <section>
-              <e-panel-group label="My group" state="closed">
-                <div>My content</div>
-              </e-panel-group>
-            </section>
-        </e-panel>
-      </div>
-
-      <e-statusbar>
-        <e-statusitem name="show-fps-status"></e-statusitem>
-        <e-statusitem name="letter-status"></e-statusitem>
-        <!--<output>125</output>
-        <output>Kek</output>
-        <button id="play" data-lol="" data-kek="kek">Play</button>
-        <button id="pause" data-command-lol="pause-canvas">Pause</button>
-        <progress max="100" value="100" style="height: 100%">100%</progress>-->
-        <!--<e-dropdown class="statusbar-dropdown">
-          <button slot="button">My button</button>
-          <div slot="content">
-            <ul>
-              <li>1</li>
-              <li>2</li>
-            </ul>
-            <input id="range" type="range" min="10" max="20" step="5"></input>
-          </div>
-        </e-dropdown>-->
-      </e-statusbar>
-    </div>
-  </div>`;
-    async function start() {
-        document.addEventListener("contextmenu", (event) => {
-            let menu = HTMLElement_29.HTMLElementConstructor("e-menu", { children: [HTMLElement_29.HTMLElementConstructor("e-menuitem", { attr: { label: "Say my name!" } })] });
-            menu.style.position = "absolute";
-            menu.style.top = `${event.clientY}px`;
-            menu.style.left = `${event.clientX}px`;
-            document.body.append(menu);
-            let listener = (event) => {
-                let target = event.target;
-                if (!(menu == target || menu.contains(target))) {
-                    menu.remove();
-                    document.removeEventListener("focusin", listener);
-                }
-            };
-            menu.focus();
-            document.addEventListener("focusin", listener);
-            event.preventDefault();
-        });
-        const template = document.createElement('template');
-        template.innerHTML = simpleSceneDOM;
-        document.body.insertBefore(template.content, document.body.firstChild);
-        const imports = Array.from(document.getElementsByTagName('e-import'));
-        Promise.all(imports.map((imp) => {
-            return new Promise((resolve) => {
-                imp.addEventListener('loaded', () => {
-                    resolve(true);
-                }, { once: true });
-            });
-        })).then(function () {
-            Editor_3.editor.setup().then(() => {
-                launchScene();
-            });
-        });
-    }
-    exports.start = start;
-    /*
-    function test() {
-      const data = [
-        {
-          name: 'John Doe',
-          age: 25
-        },
-        {
-          name: 'Jane Doe',
-          age: 24
+    exports.TriangleListBase = exports.TriangleList = void 0;
+    class TriangleListBase {
+        constructor(array) {
+            this._array = array || [];
         }
-      ];
-    
-      const table = HTMLTableTemplate({
-        headerCells: Object.keys(data[0]),
-        bodyCells: data.map(data => {
-          return [{type: 'header', content: data.name}, data.age.toString()];
-        }),
-        footerCells: [
-          {type: 'header', content: 'Total age'},
-          data.reduce((acc, curr) => {
-            return (acc + curr.age);
-          }, 0).toString()
-        ]
-      });
-    
-      document.querySelector('#play-panel')!.append(table);
-    }*/
-    window["editor"] = Editor_3.editor;
-    async function launchScene() {
-        var _a, _b, _c;
-        let frameRequest;
-        let render;
-        let fps = 0;
-        Editor_3.editor.registerCommand("play-canvas", {
-            exec() {
-                cancelAnimationFrame(frameRequest);
-                frameRequest = requestAnimationFrame(render);
-                canvas.focus();
-            },
-            context: 'default'
-        });
-        Editor_3.editor.registerCommand("pause-canvas", {
-            exec() {
-                cancelAnimationFrame(frameRequest);
-                canvas.focus();
-            },
-            context: 'default'
-        });
-        const showFpsMenuItem = (_a = Editor_3.editor.menubar) === null || _a === void 0 ? void 0 : _a.findItem((item) => item.name === "show-fps-item");
-        const canvasFPS = document.getElementById("canvas-fps");
-        if (showFpsMenuItem) {
-            showFpsMenuItem.command = "toggle-show-fps";
-            Editor_3.editor.addStateListener("show-fps", (showFps) => {
-                showFpsMenuItem.checked = showFps;
-            });
+        get array() {
+            return this._array;
         }
-        if (canvasFPS) {
-            Editor_3.editor.registerCommand('toggle-show-fps', {
-                exec() {
-                    Editor_3.editor.setState("show-fps", true);
-                    canvasFPS.parentElement.classList.remove('hidden');
-                },
-                undo() {
-                    Editor_3.editor.setState("show-fps", false);
-                    canvasFPS.parentElement.classList.add('hidden');
-                },
-                context: 'default'
-            });
+        get count() {
+            return Math.floor(this._array.length / 9);
         }
-        const showFpsStatusItem = (_b = Editor_3.editor.statusbar) === null || _b === void 0 ? void 0 : _b.findItem((item) => item.name === "show-fps-status");
-        if (showFpsStatusItem) {
-            showFpsStatusItem.stateMap = (showFps) => {
-                return {
-                    content: `${showFps ? "FPS" : "--"}`
-                };
-            };
-            //showFpsStatusItem.update(editor.getState("show-fps"));
-            Editor_3.editor.addStateListener("show-fps", (showFps) => {
-                showFpsStatusItem.update(showFps);
-            });
-            showFpsStatusItem.command = "toggle-show-fps";
+        setArray(array) {
+            this._array = array;
+            return this;
         }
-        Editor_3.editor.registerCommand('change-favorite-letter', {
-            exec(value) {
-                Editor_3.editor.setState("favorite-letter", value);
-            },
-            undo(value) {
-            },
-            context: 'default'
-        });
-        const radiosGroup = document.querySelector("e-menuitemgroup[name='favorite-letter']");
-        if (radiosGroup) {
-            Editor_3.editor.addStateListener("favorite-letter", (favoriteLetter) => {
-                let radioToCheck = radiosGroup.items.find((item) => item.type === "radio" && item.value === favoriteLetter);
-                if (radioToCheck) {
-                    radioToCheck.checked = true;
-                }
-            });
-            radiosGroup.items.filter(item => item.type === "radio").forEach((item) => {
-                item.command = "change-favorite-letter";
-                item.commandArgs = item.value;
-            });
-        }
-        const letterStatus = (_c = Editor_3.editor.statusbar) === null || _c === void 0 ? void 0 : _c.findItem((item) => item.name === "letter-status");
-        if (letterStatus) {
-            letterStatus.stateMap = (letter) => {
-                return {
-                    content: `U like ${letter.toUpperCase()}`
-                };
-            };
-            //letterStatus.update(editor.getState("favorite-letter"));
-            Editor_3.editor.addStateListener("favorite-letter", (favoriteLetter) => {
-                letterStatus.update(favoriteLetter);
-            });
-        }
-        await Editor_3.editor.reloadState();
-        /*const showFPSAction = (showFPS: boolean) => {
-          if (showFPS) {
-            canvasFPS.parentElement!.classList.remove('hidden');
-          }
-          else {
-            canvasFPS.parentElement!.classList.add('hidden');
-          }
-        };*/
-        /*showFPSAction(showFpsCheckbox.checked);
-      
-        if (showFpsCheckbox && canvasFPS) {
-          showFpsCheckbox.addEventListener('click', () => {
-            showFPSAction(showFpsCheckbox.checked);
-          });
-        }*/
-        /*const dropzone1 = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone1");
-        dropzone1?.addEventListener("datatransfer", ((event: EDataTransferEvent) => {
-          console.log(event.detail.data);
-          console.log(event.detail.success);
-          console.log(event.detail.position);
-        }) as EventListener);*/
-        /*
-        const draggableA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");
-        if (draggableA) {
-          draggableA.data = "A";
-          
-        }
-      
-        const draggableB = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableB");
-        if (draggableB) {
-          draggableB.data = "B";
-        }*/
-        const canvas = document.getElementById('canvas');
-        if (!canvas) {
-            return;
-        }
-        canvas.width = 1200;
-        canvas.height = 800;
-        const gl = canvas.getContext('webgl2', { antialias: true });
-        const assets = new Resources_1.Resources('assets/engine/');
-        await assets.loadList('resources.json');
-        // Shaders
-        const phongVert = assets.get('shaders/common/phong.vert');
-        const phongFrag = assets.get('shaders/common/phong.frag');
-        const skyboxVert = assets.get('shaders/common/skybox.vert');
-        const skyboxFrag = assets.get('shaders/common/skybox.frag');
-        const textureVert = assets.get('shaders/common/texture.vert');
-        const textureFrag = assets.get('shaders/common/texture.frag');
-        const primitiveVert = assets.get('shaders/common/primitive.vert');
-        const primitiveFrag = assets.get('shaders/common/primitive.frag');
-        // Images
-        const albedoMapImg = assets.get('img/brickwall.jpg');
-        const normalMapImg = assets.get('img/brickwall_normal.jpg');
-        const skyboxXPosImg = assets.get('img/skybox_x_pos.png');
-        const skyboxXNegImg = assets.get('img/skybox_x_neg.png');
-        const skyboxYPosImg = assets.get('img/skybox_y_pos.png');
-        const skyboxYNegImg = assets.get('img/skybox_y_neg.png');
-        const skyboxZPosImg = assets.get('img/skybox_z_pos.png');
-        const skyboxZNegImg = assets.get('img/skybox_z_neg.png');
-        const wavesNormalImg = assets.get('img/waves_normal.png');
-        const phongGlProg = WebGLProgramUtilities_1.WebGLProgramUtilties.createProgramFromSources(gl, phongVert, phongFrag);
-        const skyboxGlProg = WebGLProgramUtilities_1.WebGLProgramUtilties.createProgramFromSources(gl, skyboxVert, skyboxFrag);
-        const texGlProg = WebGLProgramUtilities_1.WebGLProgramUtilties.createProgramFromSources(gl, textureVert, textureFrag);
-        const primitiveGlProg = WebGLProgramUtilities_1.WebGLProgramUtilties.createProgramFromSources(gl, primitiveVert, primitiveFrag);
-        const cube = new CubeGeometry_1.CubeGeometry();
-        const icosahedron = new IcosahedronGeometry_1.IcosahedronGeometry();
-        const quad = new QuadGeometry_1.QuadGeometry();
-        const packetBindings = WebGLPacketUtilities_1.WebGLPacketUtilities.createPacketBindings(gl, {
-            texturesProps: {
-                albedoMap: WebGLTextureUtilities_2.WebGLTextureUtilities.guessTextureProperties({ pixels: albedoMapImg }),
-                normalMap: WebGLTextureUtilities_2.WebGLTextureUtilities.guessTextureProperties({ pixels: normalMapImg }),
-                skybox: WebGLTextureUtilities_2.WebGLTextureUtilities.guessTextureProperties({
-                    pixels: {
-                        xPos: skyboxXPosImg, xNeg: skyboxXNegImg,
-                        yPos: skyboxYPosImg, yNeg: skyboxYNegImg,
-                        zPos: skyboxZPosImg, zNeg: skyboxZNegImg
-                    },
-                    wrapS: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
-                    wrapT: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
-                    wrapR: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
-                    mag: WebGLConstants_9.TextureMagFilter.LINEAR,
-                    min: WebGLConstants_9.TextureMinFilter.LINEAR
-                }),
-                fbColorTex: WebGLTextureUtilities_2.WebGLTextureUtilities.guessTextureProperties({
-                    width: canvas.width, height: canvas.height, pixels: null,
-                    wrapS: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
-                    wrapT: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
-                    wrapR: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
-                    mag: WebGLConstants_9.TextureMagFilter.LINEAR,
-                    min: WebGLConstants_9.TextureMinFilter.LINEAR
-                }),
-            },
-            blocksProps: {
-                worldViewBlock: { name: 'WorldViewBlock', usage: WebGLConstants_9.BufferDataUsage.DYNAMIC_COPY },
-                lightsBlock: { name: 'LightsBlock', usage: WebGLConstants_9.BufferDataUsage.STATIC_READ },
-                phongBlock: { name: 'PhongBlock', usage: WebGLConstants_9.BufferDataUsage.STATIC_READ }
+        get(idx, tri) {
+            if (idx >= this.count) {
+                throw new Error(`Index ${idx} out of bounds.`);
             }
-        });
-        const worldViewBlock = packetBindings.blocks.worldViewBlock;
-        const lightsBlock = packetBindings.blocks.lightsBlock;
-        const phongBlock = packetBindings.blocks.phongBlock;
-        const albedoMap = packetBindings.textures.albedoMap;
-        const normalMap = packetBindings.textures.normalMap;
-        const skybox = packetBindings.textures.skybox;
-        const fbColorTex = packetBindings.textures.fbColorTex;
-        const fov = 30 * Math.PI / 180;
-        const aspect = gl.canvas.width / gl.canvas.height;
-        const zNear = 1;
-        const zFar = 100;
-        const projection = new Matrix4_4.Matrix4().asPerspective(fov, aspect, zNear, zFar);
-        const cam = new PerspectiveCamera_1.PerspectiveCamera(fov, aspect, zNear, zFar);
-        const eye = new Vector3_7.Vector3([3, 3, 0]);
-        const target = new Vector3_7.Vector3([0, 0, 0]);
-        const up = new Vector3_7.Vector3([0, 1, 0]);
-        const camera = new Matrix4_4.Matrix4().lookAt(eye, target, up);
-        const viewInverse = camera.clone();
-        const view = camera.clone().invert();
-        const viewProjection = projection.clone().mult(view);
-        const viewProjectionInverse = viewProjection.clone().invert();
-        const cubeTransform = new Transform_2.Transform();
-        const quadTransform = new Transform_2.Transform();
-        const cubeWorldArr = new Float32Array(16);
-        const cubeWorld = new Matrix4_4.Matrix4().setArray(cubeWorldArr).setIdentity().scaleScalar(0.5);
-        const quadWorld = new Matrix4_4.Matrix4().setIdentity().scaleScalar(2);
-        /*const vectorInput = document.createElement('e-vector3-input') as Vector3InputElement;
-        vectorInput.vector.setArray(cubeWorldArr.subarray(12, 15));
-        
-        document.querySelector('#panel-3 section')!.append(vectorInput);*/
-        const phongCubePacketValues = {
-            attributes: {
-                list: {
-                    a_position: { array: new Float32Array(cube.vertices.array), props: { numComponents: 3 } },
-                    a_normal: { array: new Float32Array(cube.verticesNormals.array), props: { numComponents: 3 } },
-                    a_tangent: { array: new Float32Array(cube.tangents.array), props: { numComponents: 3 } },
-                    a_bitangent: { array: new Float32Array(cube.bitangents.array), props: { numComponents: 3 } },
-                    a_color: { array: new Float32Array(Color_1.Color.array(...Array(cube.indices.length).fill(Color_1.Color.BLUE))), props: { numComponents: 4, normalized: true }
-                    },
-                    a_uv: { array: new Float32Array(cube.uvs.array), props: { numComponents: 2 } },
-                },
-                indices: new Uint16Array(cube.indices),
-            },
-            uniformBlocks: {
-                worldViewBlock: {
-                    block: worldViewBlock,
-                    list: {
-                        u_world: { value: new Float32Array(cubeWorld.array) },
-                        u_viewInverse: { value: new Float32Array(camera.array) },
-                        u_worldInverseTranspose: { value: new Float32Array(cubeWorld.clone().invert().transpose().array) },
-                        u_worldViewProjection: { value: new Float32Array(viewProjection.clone().mult(cubeWorld).array) }
-                    }
-                },
-                lightsBlock: {
-                    block: lightsBlock,
-                    list: {
-                        u_lightWorldPos: { value: [1, 6, -6] },
-                        u_lightColor: { value: [1, 0.8, 0.8, 1] },
-                        u_ambient: { value: [0, 0, 0, 1] },
-                    }
-                },
-                phongBlock: {
-                    block: phongBlock,
-                    list: {
-                        u_specular: { value: [1, 1, 1, 1] },
-                        u_shininess: { value: 50 },
-                        u_specularFactor: { value: 1 }
-                    }
-                }
-            },
-            uniforms: {
-                u_diffuseMap: { value: albedoMap },
-                u_normalMap: { value: normalMap }
+            return tri.readFromArray(this._array, idx * 9);
+        }
+        set(idx, tri) {
+            if (idx >= this.count) {
+                throw new Error(`Index ${idx} out of bounds.`);
             }
-        };
-        const skyboxPacketValues = {
-            attributes: {
-                list: {
-                    a_position: { array: new Float32Array(quad.vertices.array), props: { numComponents: 3 } },
-                },
-                indices: new Uint16Array(quad.indices),
-            },
-            uniforms: {
-                u_world: { value: new Float32Array(quadWorld.array) },
-                u_viewDirectionProjectionInverse: { value: new Float32Array(viewProjectionInverse.array) },
-                u_skybox: { value: skybox },
-            }
-        };
-        const texPacketValues = {
-            attributes: {
-                list: {
-                    a_position: { array: new Float32Array(quad.vertices.array), props: { numComponents: 3 } },
-                    a_uv: { array: new Float32Array(quad.uvs.array), props: { numComponents: 2 } },
-                },
-                indices: new Uint16Array(quad.indices),
-            },
-            uniforms: {
-                u_world: { value: new Float32Array(new Matrix4_4.Matrix4().setIdentity().values) },
-                u_tex: { value: fbColorTex }
-            }
-        };
-        WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, phongGlProg);
-        const phongCubePacketSetter = WebGLPacketUtilities_1.WebGLPacketUtilities.getPacketSetter(gl, phongGlProg, phongCubePacketValues);
-        WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, phongCubePacketSetter, phongCubePacketValues);
-        WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, skyboxGlProg);
-        const skyboxPacketSetter = WebGLPacketUtilities_1.WebGLPacketUtilities.getPacketSetter(gl, skyboxGlProg, skyboxPacketValues);
-        WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, skyboxPacketSetter, skyboxPacketValues);
-        const fb = WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.createFramebuffer(gl);
-        WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.attachTexture(gl, fb, {
-            texTarget: WebGLConstants_9.FramebufferTextureTarget.TEXTURE_2D,
-            glTex: fbColorTex.glTex,
-            attachment: WebGLConstants_9.FramebufferAttachment.COLOR_ATTACHMENT0
-        });
-        const maxSamples = WebGLRendererUtilities_1.WebGLRendererUtilities.getParameter(gl, WebGLConstants_9.Parameter.MAX_SAMPLES);
-        const stencilRb = WebGLRenderbuffersUtilities_1.WebGLRenderbufferUtilities.createRenderbuffer(gl, {
-            internalFormat: WebGLConstants_9.PixelFormat.DEPTH24_STENCIL8,
-            width: canvas.width,
-            height: canvas.height,
-            samples: maxSamples
-        });
-        const antialiasRb = WebGLRenderbuffersUtilities_1.WebGLRenderbufferUtilities.createRenderbuffer(gl, {
-            internalFormat: WebGLConstants_9.PixelFormat.RGBA8,
-            width: canvas.width,
-            height: canvas.height,
-            samples: maxSamples
-        });
-        WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.attachRenderbuffers(gl, fb, [{
-                glRb: stencilRb.glRb,
-                attachment: WebGLConstants_9.FramebufferAttachment.DEPTH_STENCIL_ATTACHMENT
-            },
+            tri.writeIntoArray(this._array, idx * 9);
+        }
+        indexOf(tri) {
+            const count = this.count;
+            let idxBuf = 0, idxObj = 0, indexOf = -1;
+            const tempTri = Triangle_1.TrianglePool.acquire();
             {
-                glRb: antialiasRb.glRb,
-                attachment: WebGLConstants_9.FramebufferAttachment.COLOR_ATTACHMENT0,
-            }]);
-        const postFb = WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.createFramebuffer(gl);
-        WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.attachTexture(gl, postFb, {
-            texTarget: WebGLConstants_9.FramebufferTextureTarget.TEXTURE_2D,
-            glTex: fbColorTex.glTex,
-            attachment: WebGLConstants_9.FramebufferAttachment.COLOR_ATTACHMENT0
-        });
-        WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, texGlProg);
-        const texPacketSetter = WebGLPacketUtilities_1.WebGLPacketUtilities.getPacketSetter(gl, texGlProg, texPacketValues);
-        WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, texPacketSetter, texPacketValues);
-        WebGLRendererUtilities_1.WebGLRendererUtilities.setViewport(gl, 0, 0, gl.canvas.width, gl.canvas.height);
-        WebGLRendererUtilities_1.WebGLRendererUtilities.enable(gl, WebGLConstants_9.Capabilities.DEPTH_TEST);
-        WebGLRendererUtilities_1.WebGLRendererUtilities.enable(gl, WebGLConstants_9.Capabilities.CULL_FACE);
-        let lastFrameTime = 0;
-        let deltaTime = 0;
-        let lastPos = new Vector2_3.Vector2();
-        await Input_3.Input.initialize(canvas);
-        render = function (frameTime) {
-            frameTime *= 0.001;
-            deltaTime = frameTime - lastFrameTime;
-            lastFrameTime = frameTime;
-            fps = 1 / deltaTime;
-            canvasFPS.innerHTML = fps.toFixed(2);
-            WebGLRendererUtilities_1.WebGLRendererUtilities.clearColor(gl, Color_1.Color.GREEN.valuesNormalized());
-            WebGLRendererUtilities_1.WebGLRendererUtilities.clear(gl, WebGLConstants_9.BufferMaskBit.COLOR_BUFFER_BIT | WebGLConstants_9.BufferMaskBit.DEPTH_BUFFER_BIT);
-            if (Input_3.Input.getMouseButtonDown(Input_3.MouseButton.RIGHT)) {
-                lastPos.copy(Input_3.Input.getMouseButtonPosition());
-            }
-            if (Input_3.Input.getMouseButton(Input_3.MouseButton.RIGHT)) {
-                const newPos = Input_3.Input.getMouseButtonPosition();
-                if (!newPos.equals(lastPos)) {
-                    const cameraPos = new Vector3_7.Vector3().setValues([camera.getAt(12), camera.getAt(13), camera.getAt(14)]);
-                    //console.log(`cameraPos ${cameraPos.x.toFixed(4)} ${cameraPos.y.toFixed(4)} ${cameraPos.z.toFixed(4)}`);
-                    const cameraTarget = target.clone();
-                    const deltaX = lastPos.y - newPos.y;
-                    const deltaY = newPos.x - lastPos.x;
-                    const deltaPhi = (Math.PI / canvas.clientWidth) * deltaX * 1000;
-                    const deltaTheta = (Math.PI / canvas.clientHeight) * deltaY * 1000;
-                    const cameraToTarget = cameraPos.clone().sub(cameraTarget);
-                    const radius = cameraToTarget.len();
-                    //console.log(`cameraToTarget ${cameraToTarget.x.toFixed(4)} ${cameraToTarget.y.toFixed(4)} ${cameraToTarget.z.toFixed(4)}`);
-                    let theta = Math.acos(cameraToTarget.z / radius);
-                    let phi = Math.atan2(cameraToTarget.y, cameraToTarget.x);
-                    theta = Snippets_14.clamp(theta - deltaTheta, 0, Math.PI);
-                    phi -= deltaPhi;
-                    //console.log(`theta ${theta.toFixed(4)} phi ${phi.toFixed(4)}`);
-                    // Turn back into Cartesian coordinates
-                    const newCameraPos = new Vector3_7.Vector3([
-                        radius * Math.sin(theta) * Math.cos(phi),
-                        radius * Math.sin(theta) * Math.sin(phi),
-                        radius * Math.cos(theta)
-                    ]);
-                    camera.setAt(12, newCameraPos.x);
-                    camera.setAt(13, newCameraPos.y);
-                    camera.setAt(14, newCameraPos.z);
-                    //console.log(`newCameraPos ${newCameraPos.x.toFixed(4)} ${newCameraPos.y.toFixed(4)} ${newCameraPos.z.toFixed(4)}`);
-                    camera.lookAt(newCameraPos, target, up);
-                    lastPos.copy(newPos);
-                }
-            }
-            viewInverse.copy(camera);
-            view.copy(viewInverse).invert();
-            viewProjection.copy(projection).mult(view);
-            viewProjectionInverse.copy(viewProjection).invert();
-            //cubeWorld.rotateY(deltaTime);
-            //viewProjectionInverse.rotateY(deltaTime / 2);
-            //viewProjectionInverse.rotateX(deltaTime);
-            WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.bindFramebuffer(gl, fb);
-            WebGLRendererUtilities_1.WebGLRendererUtilities.clear(gl, WebGLConstants_9.BufferMaskBit.COLOR_BUFFER_BIT | WebGLConstants_9.BufferMaskBit.DEPTH_BUFFER_BIT);
-            WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, phongGlProg);
-            WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, phongCubePacketSetter, {
-                uniformBlocks: {
-                    worldViewBlock: {
-                        block: worldViewBlock,
-                        list: {
-                            u_world: { value: new Float32Array(cubeWorld.array) },
-                            u_viewInverse: { value: new Float32Array(viewInverse.array) },
-                            u_worldInverseTranspose: { value: new Float32Array(cubeWorld.clone().invert().transpose().array) },
-                            u_worldViewProjection: { value: new Float32Array(viewProjection.clone().mult(cubeWorld).array) }
-                        }
+                while (idxBuf < count) {
+                    tempTri.readFromArray(this._array, idxBuf);
+                    if (tri.equals(tempTri)) {
+                        indexOf = idxObj;
+                        idxObj += 1;
+                        break;
                     }
+                    idxObj += 1;
+                    idxBuf += 9;
                 }
-            });
-            WebGLRendererUtilities_1.WebGLRendererUtilities.depthFunc(gl, WebGLConstants_9.TestFunction.LESS);
-            WebGLPacketUtilities_1.WebGLPacketUtilities.drawPacket(gl, phongCubePacketSetter);
-            WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, skyboxGlProg);
-            WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, skyboxPacketSetter, {
-                uniforms: {
-                    u_world: { value: new Float32Array(quadWorld.array) },
-                    u_viewDirectionProjectionInverse: { value: new Float32Array(viewProjectionInverse.array) }
+            }
+            Triangle_1.TrianglePool.release(1);
+            return indexOf;
+        }
+        forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, this.count);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
+            let idxObj = idxFrom;
+            const tempTri = Triangle_1.TrianglePool.acquire();
+            {
+                while (idxObj < idxTo) {
+                    this.get(idxObj, tempTri);
+                    func(tempTri, idxObj);
+                    idxObj += 1;
                 }
-            });
-            WebGLRendererUtilities_1.WebGLRendererUtilities.depthFunc(gl, WebGLConstants_9.TestFunction.LEQUAL);
-            WebGLPacketUtilities_1.WebGLPacketUtilities.drawPacket(gl, skyboxPacketSetter);
-            //WebGLFramebufferUtilities.unbindFramebuffer(gl, stencilFb);
-            WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.blit(gl, fb, postFb, [0, 0, canvas.width, canvas.height], [0, 0, canvas.width, canvas.height], WebGLConstants_9.BufferMaskBit.COLOR_BUFFER_BIT, WebGLConstants_9.TextureMagFilter.LINEAR);
-            //WebGLFramebufferUtilities.clearColor(gl, fb, [1, 1, 1, 1]);
-            WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.unbindFramebuffer(gl);
-            /*WebGLFramebufferUtilities.blit(gl, postFb, null,
-              [0, 0, canvas.width, canvas.height],
-              [0, 0, canvas.width, canvas.height],
-              BufferMaskBit.COLOR_BUFFER_BIT,
-              TextureMagFilter.LINEAR
-            );*/
-            //WebGLFramebufferUtilities.clearColor(gl, postFb, [1, 1, 1, 1]);
-            WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, texGlProg);
-            WebGLRendererUtilities_1.WebGLRendererUtilities.depthFunc(gl, WebGLConstants_9.TestFunction.LEQUAL);
-            WebGLPacketUtilities_1.WebGLPacketUtilities.drawPacket(gl, texPacketSetter);
-            Input_3.Input.clear();
-            frameRequest = requestAnimationFrame(render);
-        };
+            }
+            Triangle_1.TrianglePool.release(1);
+        }
+        getIndexedPoints(indices, tri) {
+            tri.point1.readFromArray(this._array, indices[0]);
+            tri.point2.readFromArray(this._array, indices[1]);
+            tri.point3.readFromArray(this._array, indices[2]);
+        }
+        forIndexedPoints(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
+            let idxBuf = idxFrom * 3;
+            const tempTri = Triangle_1.TrianglePool.acquire();
+            {
+                const pointsIndices = [0, 0, 0];
+                for (let idxObj = idxFrom; idxObj < idxTo; idxObj++) {
+                    pointsIndices[0] = indices[idxBuf];
+                    pointsIndices[1] = indices[idxBuf + 1];
+                    pointsIndices[2] = indices[idxBuf + 2];
+                    tempTri.point1.readFromArray(this._array, pointsIndices[0] * 3);
+                    tempTri.point2.readFromArray(this._array, pointsIndices[1] * 3);
+                    tempTri.point3.readFromArray(this._array, pointsIndices[2] * 3);
+                    func(tempTri, idxObj, pointsIndices);
+                    idxBuf += 3;
+                }
+            }
+            Triangle_1.TrianglePool.release(1);
+        }
     }
-    exports.launchScene = launchScene;
+    exports.TriangleListBase = TriangleListBase;
+    const TriangleList = TriangleListBase;
+    exports.TriangleList = TriangleList;
 });
-define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "samples/scenes/Mockup"], function (require, exports, HTMLElement_30, Mockup_1) {
+define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.sandbox = void 0;
-    class DataClassMixin extends HTMLElement_30.BaseAttributeMutationMixin {
-        constructor(attributeValue) {
-            super("data-class", "listitem", attributeValue);
+    exports.Vector3ListBase = exports.Vector3List = void 0;
+    class Vector3ListBase {
+        constructor(array) {
+            this._array = array || [];
+        }
+        get array() {
+            return this._array;
+        }
+        get count() {
+            return Math.floor(this._array.length / 3);
+        }
+        setArray(array) {
+            this._array = array;
+            return this;
+        }
+        forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
+            const count = this.count;
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
+            let idxObj = idxFrom;
+            const tempVec = Vector3Pools_3.Vector3Pool.acquire();
+            {
+                while (idxObj < count) {
+                    this.get(idxObj, tempVec);
+                    func(tempVec, idxObj);
+                    idxObj += 1;
+                }
+            }
+            Vector3Pools_3.Vector3Pool.release(1);
+        }
+        forEachFromIndices(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
+            let idxBuf = idxFrom * 3;
+            const tempVec = Vector3Pools_3.Vector3Pool.acquire();
+            {
+                for (let idxObj = idxFrom; idxObj < idxTo; idxObj++) {
+                    const indice = indices[idxBuf];
+                    this.get(indice, tempVec);
+                    func(tempVec, idxObj, indice);
+                }
+            }
+            Vector3Pools_3.Vector3Pool.release(1);
+        }
+        indexOf(vec) {
+            const count = this.count;
+            let idxBuf = 0, idxObj = 0, indexOf = -1;
+            const tempVec = Vector3Pools_3.Vector3Pool.acquire();
+            {
+                while (idxBuf < count) {
+                    tempVec.readFromArray(this._array, idxBuf);
+                    if (vec.equals(tempVec)) {
+                        indexOf = idxObj;
+                        break;
+                    }
+                    idxObj += 1;
+                    idxBuf += 3;
+                }
+            }
+            Vector3Pools_3.Vector3Pool.release(1);
+            return indexOf;
+        }
+        get(idx, vec) {
+            if (idx >= this.count) {
+                throw new Error(`Index ${idx} out of bounds.`);
+            }
+            return vec.readFromArray(this._array, idx * 3);
+        }
+        set(idx, vec) {
+            if (idx >= this.count) {
+                throw new Error(`Index ${idx} out of bounds.`);
+            }
+            vec.writeIntoArray(this._array, idx * 3);
         }
     }
-    let TestDataClassMixin = /** @class */ (() => {
-        class TestDataClassMixin extends DataClassMixin {
-            constructor() {
-                super("test");
+    exports.Vector3ListBase = Vector3ListBase;
+    const Vector3List = Vector3ListBase;
+    exports.Vector3List = Vector3List;
+});
+define("engine/libs/maths/extensions/pools/lists/TriangleListPools", ["require", "exports", "engine/libs/maths/extensions/lists/TriangleList", "engine/libs/patterns/pools/StackPool"], function (require, exports, TriangleList_1, StackPool_4) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.TriangleListPool = void 0;
+    const TriangleListPool = new StackPool_4.StackPool(TriangleList_1.TriangleListBase);
+    exports.TriangleListPool = TriangleListPool;
+});
+define("engine/libs/maths/extensions/pools/lists/Vector3ListPools", ["require", "exports", "engine/libs/maths/extensions/lists/Vector3List", "engine/libs/patterns/pools/StackPool"], function (require, exports, Vector3List_1, StackPool_5) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Vector3ListPool = void 0;
+    const Vector3ListPool = new StackPool_5.StackPool(Vector3List_1.Vector3ListBase);
+    exports.Vector3ListPool = Vector3ListPool;
+});
+define("engine/core/rendering/scenes/geometries/GeometryUtils", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/extensions/pools/lists/TriangleListPools", "engine/libs/maths/extensions/pools/lists/Vector3ListPools"], function (require, exports, Vector3Pools_4, TriangleListPools_1, Vector3ListPools_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.GeometryUtils = void 0;
+    class GeometryUtils {
+        static computeTangentsAndBitangents(verticesArray, uvsArray, indicesArray, type) {
+            const tangentsArray = new type(verticesArray.length);
+            const bitangentsArray = new type(verticesArray.length);
+            for (let i = 0; i < verticesArray.length; i += 3) {
+                const vertStride = 3;
+                const p1x = verticesArray[indicesArray[i] * vertStride], p1y = verticesArray[indicesArray[i] * vertStride + 1], p1z = verticesArray[indicesArray[i] * vertStride + 2], p2x = verticesArray[indicesArray[i + 1] * vertStride], p2y = verticesArray[indicesArray[i + 1] * vertStride + 1], p2z = verticesArray[indicesArray[i + 1] * vertStride + 2], p3x = verticesArray[indicesArray[i + 2] * vertStride], p3y = verticesArray[indicesArray[i + 2] * vertStride + 1], p3z = verticesArray[indicesArray[i + 2] * vertStride + 2];
+                const edge1x = p2x - p1x, edge1y = p2y - p1y, edge1z = p2z - p1z;
+                const edge2x = p3x - p1x, edge2y = p3y - p1y, edge2z = p3z - p1z;
+                const uvStride = 2;
+                const deltaUV1x = uvsArray[indicesArray[i + 1] * uvStride] - uvsArray[indicesArray[i] * uvStride], deltaUV1y = uvsArray[indicesArray[i + 1] * uvStride + 1] - uvsArray[indicesArray[i] * uvStride + 1], deltaUV2x = uvsArray[indicesArray[i + 2] * uvStride] - uvsArray[indicesArray[i] * uvStride], deltaUV2y = uvsArray[indicesArray[i + 2] * uvStride + 1] - uvsArray[indicesArray[i] * uvStride + 1];
+                const r = 1.0 / (deltaUV1x * deltaUV2y - deltaUV1y * deltaUV2x);
+                const tx = (edge1x * deltaUV2y - edge2x * deltaUV1y) * r;
+                const ty = (edge1y * deltaUV2y - edge2y * deltaUV1y) * r;
+                const tz = (edge1z * deltaUV2y - edge2z * deltaUV1y) * r;
+                const btx = (edge2x * deltaUV1x - edge1x * deltaUV2x) * r;
+                const bty = (edge2y * deltaUV1x - edge1y * deltaUV2x) * r;
+                const btz = (edge2z * deltaUV1x - edge1z * deltaUV2x) * r;
+                tangentsArray[indicesArray[i] * vertStride] = tx;
+                tangentsArray[indicesArray[i] * vertStride + 1] = ty;
+                tangentsArray[indicesArray[i] * vertStride + 2] = tz;
+                tangentsArray[indicesArray[i + 1] * vertStride] = tx;
+                tangentsArray[indicesArray[i + 1] * vertStride + 1] = ty;
+                tangentsArray[indicesArray[i + 1] * vertStride + 2] = tz;
+                tangentsArray[indicesArray[i + 2] * vertStride] = tx;
+                tangentsArray[indicesArray[i + 2] * vertStride + 1] = ty;
+                tangentsArray[indicesArray[i + 2] * vertStride + 2] = tz;
+                bitangentsArray[indicesArray[i] * vertStride] = btx;
+                bitangentsArray[indicesArray[i] * vertStride + 1] = bty;
+                bitangentsArray[indicesArray[i] * vertStride + 2] = btz;
+                bitangentsArray[indicesArray[i + 1] * vertStride] = btx;
+                bitangentsArray[indicesArray[i + 1] * vertStride + 1] = bty;
+                bitangentsArray[indicesArray[i + 1] * vertStride + 2] = btz;
+                bitangentsArray[indicesArray[i + 2] * vertStride] = btx;
+                bitangentsArray[indicesArray[i + 2] * vertStride + 1] = bty;
+                bitangentsArray[indicesArray[i + 2] * vertStride + 2] = btz;
             }
-            attach(element) {
-                element.addEventListener("click", TestDataClassMixin._clickEventListener);
-            }
-            detach(element) {
-                element.removeEventListener("click", TestDataClassMixin._clickEventListener);
-            }
+            return {
+                tangentsArray: tangentsArray,
+                bitangentsArray: bitangentsArray,
+            };
         }
-        TestDataClassMixin._clickEventListener = () => {
-            alert("data-class test");
-        };
-        return TestDataClassMixin;
-    })();
-    class InputDropzoneDataClassMixin extends DataClassMixin {
-        constructor() {
-            super("input-dropzone");
-            this.datatransferEventListener = ((event) => {
-                let target = event.target;
-                if (HTMLElement_30.isTagElement("e-dropzone", target)) {
-                    this.handlePostdatatransferInputNaming(target);
-                }
-            });
+        static computeFacesNormals(verticesArray, indicesArray, type) {
+            const facesNormalsArray = new type(indicesArray.length);
+            let faces = TriangleListPools_1.TriangleListPool.acquire().setArray(verticesArray);
+            let facesNormals = Vector3ListPools_1.Vector3ListPool.acquire().setArray(facesNormalsArray);
+            let normal = Vector3Pools_4.Vector3Pool.acquire();
+            faces.forIndexedPoints((face, idx) => {
+                face.getNormal(normal);
+                facesNormals.set(idx, normal);
+            }, indicesArray);
+            Vector3Pools_4.Vector3Pool.release(1);
+            Vector3ListPools_1.Vector3ListPool.release(1);
+            TriangleListPools_1.TriangleListPool.release(1);
+            return facesNormalsArray;
         }
-        attach(element) {
-            if (HTMLElement_30.isTagElement("e-dropzone", element)) {
-                this.handlePostdatatransferInputNaming(element);
-            }
-            element.addEventListener("datachange", this.datatransferEventListener);
-        }
-        detach(element) {
-            element.removeEventListener("datachange", this.datatransferEventListener);
-        }
-        handlePostdatatransferInputNaming(dropzone) {
-            let name = dropzone.getAttribute("data-input-dropzone-name");
-            if (name) {
-                if (dropzone.multiple) {
-                    let inputs = Array.from(dropzone.querySelectorAll("input"));
-                    inputs.forEach((input, index) => {
-                        input.name = `${name}[${index}]`;
+        static computeVerticesNormals(verticesArray, indicesArray, weighted, type, facesNormalsArray) {
+            const verticesNormalsArray = new type(verticesArray.length);
+            let verticesNormals = Vector3ListPools_1.Vector3ListPool.acquire().setArray(verticesNormalsArray);
+            let vertices = Vector3ListPools_1.Vector3ListPool.acquire().setArray(verticesArray);
+            let faces = TriangleListPools_1.TriangleListPool.acquire().setArray(verticesArray);
+            let facesNormals = Vector3ListPools_1.Vector3ListPool.acquire().setArray(facesNormalsArray ? facesNormalsArray : this.computeFacesNormals(verticesArray, indicesArray, type));
+            Vector3Pools_4.Vector3Pool.acquireTemp(2, (vertexNormalsSum, faceNormal) => {
+                if (weighted) {
+                    vertices.forEach((vert, vertIdx) => {
+                        verticesNormals.get(vertIdx, vertexNormalsSum);
+                        faces.forIndexedPoints((face, faceIdx) => {
+                            if (face.indexOfPoint(vert) > -1) {
+                                facesNormals.get(faceIdx, faceNormal);
+                                vertexNormalsSum.add(faceNormal.multScalar(face.getArea()));
+                            }
+                        }, indicesArray);
+                        vertexNormalsSum.normalize();
+                        verticesNormals.set(vertIdx, vertexNormalsSum);
                     });
                 }
                 else {
-                    let input = dropzone.querySelector("input");
-                    if (input) {
-                        input.name = name;
-                    }
+                    faces.forIndexedPoints((face, faceIdx, pointsIndices) => {
+                        face.getNormal(faceNormal);
+                        verticesNormals.set(pointsIndices[0], faceNormal);
+                        verticesNormals.set(pointsIndices[1], faceNormal);
+                        verticesNormals.set(pointsIndices[2], faceNormal);
+                    }, indicesArray);
                 }
-            }
+            });
+            return verticesNormalsArray;
         }
     }
-    class TogglerSelectDataClassMixin extends DataClassMixin {
-        constructor() {
-            super("toggler-select");
-            this.changeEventListener = (event) => {
-                let target = event.target;
-                if (HTMLElement_30.isTagElement("select", target)) {
-                    this.handlePostchangeToggle(target);
+    exports.GeometryUtils = GeometryUtils;
+});
+define("engine/libs/maths/extensions/pools/Vector2Pools", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/patterns/pools/StackPool"], function (require, exports, Vector2_2, StackPool_6) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Vector2Pool = void 0;
+    const Vector2Pool = new StackPool_6.StackPool(Vector2_2.Vector2Base);
+    exports.Vector2Pool = Vector2Pool;
+});
+define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_10) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Vector2ListBase = exports.Vector2List = void 0;
+    class Vector2ListBase {
+        constructor(array) {
+            this._array = array || [];
+        }
+        get array() {
+            return this._array;
+        }
+        get count() {
+            return Math.floor(this._array.length / 2);
+        }
+        setArray(array) {
+            this._array = array;
+            return this;
+        }
+        forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
+            const count = this.count;
+            const idxTo = Snippets_10.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_10.clamp(options.idxFrom, 0, idxTo);
+            let idxObj = idxFrom;
+            Vector2Pools_1.Vector2Pool.acquireTemp(1, (vector) => {
+                while (idxObj < count) {
+                    this.get(idxObj, vector);
+                    func(vector, idxObj);
+                    idxObj += 1;
                 }
-            };
-        }
-        attach(element) {
-            element.addEventListener("change", this.changeEventListener);
-            this.handlePostchangeToggle(element);
-        }
-        detach(element) {
-            element.removeEventListener("change", this.changeEventListener);
-        }
-        handlePostchangeToggle(select) {
-            const closestFieldset = select.closest("fieldset");
-            let toToggleElement = null;
-            if (closestFieldset) {
-                Array.from(select.options).forEach((option, index) => {
-                    toToggleElement = closestFieldset.querySelector(`[name=${option.value}]`);
-                    if (toToggleElement) {
-                        toToggleElement.hidden = (index !== select.selectedIndex);
-                    }
-                });
-            }
-        }
-    }
-    class DuplicaterInputDataClassMixin extends DataClassMixin {
-        constructor() {
-            super("duplicater-input");
-            this.changeEventListener = (event) => {
-                let target = event.target;
-                if (HTMLElement_30.isTagElement("input", target)) {
-                    this.handlePostchangeDuplicate(target);
-                }
-            };
-        }
-        attach(element) {
-            element.addEventListener("change", this.changeEventListener);
-            this.handlePostchangeDuplicate(element);
-        }
-        detach(element) {
-            element.removeEventListener("change", this.changeEventListener);
-        }
-        handlePostchangeDuplicate(input) {
-            const closestFieldset = input.closest("fieldset");
-            const template = input.getAttribute("data-duplicater-template");
-            const inputValue = parseInt(input.value);
-            if (closestFieldset && template) {
-                const duplicateElements = Array.from(closestFieldset.querySelectorAll(`[name=${template}]`));
-                if (duplicateElements.length > 0) {
-                    const lastElement = duplicateElements[duplicateElements.length - 1];
-                    const templateElement = duplicateElements.splice(0, 1)[0];
-                    templateElement.hidden = true;
-                    while (duplicateElements.length > Math.max(inputValue, 0)) {
-                        duplicateElements.pop().remove();
-                    }
-                    while (duplicateElements.length < inputValue) {
-                        let newDuplicateElement = templateElement.cloneNode(true);
-                        newDuplicateElement.hidden = false;
-                        let duplicateIndex = newDuplicateElement.querySelector("[data-duplicater-index]");
-                        if (duplicateIndex) {
-                            duplicateIndex.textContent = (duplicateElements.length + 1).toString();
-                        }
-                        lastElement.insertAdjacentElement("afterend", newDuplicateElement);
-                        duplicateElements.push(newDuplicateElement);
-                    }
-                }
-            }
-        }
-    }
-    class EnablerInputDataClassMixin extends DataClassMixin {
-        constructor() {
-            super("enabler-input");
-            this.changeEventListener = (event) => {
-                let target = event.target;
-                if (HTMLElement_30.isTagElement("input", target)) {
-                    this.handlePostchangeDuplicate(target);
-                }
-            };
-        }
-        attach(element) {
-            element.addEventListener("change", this.changeEventListener);
-            this.handlePostchangeDuplicate(element);
-        }
-        detach(element) {
-            element.removeEventListener("change", this.changeEventListener);
-        }
-        handlePostchangeDuplicate(input) {
-            const closestFieldset = input.closest("fieldset");
-            const template = input.getAttribute("data-duplicater-template");
-            const inputValue = parseInt(input.value);
-            if (closestFieldset && template) {
-                const duplicateElements = Array.from(closestFieldset.querySelectorAll(`[name=${template}]`));
-                if (duplicateElements.length > 0) {
-                    const lastDuplicateElement = duplicateElements[duplicateElements.length - 1];
-                    const templateElement = duplicateElements.splice(0, 1)[0];
-                    templateElement.hidden = true;
-                    while (duplicateElements.length > Math.max(inputValue, 0)) {
-                        duplicateElements.pop().remove();
-                    }
-                    while (duplicateElements.length < inputValue) {
-                        let newDuplicateElement = templateElement.cloneNode(true);
-                        newDuplicateElement.hidden = false;
-                        let duplicateIndex = newDuplicateElement.querySelector("[data-duplicater-index]");
-                        if (duplicateIndex) {
-                            duplicateIndex.textContent = (duplicateElements.length + 1).toString();
-                        }
-                        lastDuplicateElement.insertAdjacentElement("afterend", newDuplicateElement);
-                        duplicateElements.push(newDuplicateElement);
-                    }
-                }
-            }
-        }
-    }
-    class AutosizedDataClassMixin extends DataClassMixin {
-        constructor() {
-            super("autosized-input");
-            this.changeEventListener = (event) => {
-                let target = event.target;
-                if (HTMLElement_30.isTagElement("input", target)) {
-                    this.handlePostchangeDuplicate(target);
-                }
-            };
-        }
-        attach(element) {
-            element.addEventListener("change", this.changeEventListener);
-            this.handlePostchangeDuplicate(element);
-        }
-        detach(element) {
-            element.removeEventListener("change", this.changeEventListener);
-        }
-        handlePostchangeDuplicate(input) {
-            input.style.setProperty("width", parseInt(window.getComputedStyle(input).getPropertyValue("font-size")) * Math.max(input.value.length, input.placeholder.length) + "px");
-        }
-    }
-    const attributeMutationMixins = [
-        new TestDataClassMixin(),
-        new InputDropzoneDataClassMixin(),
-        new TogglerSelectDataClassMixin(),
-        new DuplicaterInputDataClassMixin(),
-        new AutosizedDataClassMixin()
-    ];
-    const mainObserver = new MutationObserver(HTMLElement_30.createMutationObserverCallback(attributeMutationMixins));
-    mainObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributeFilter: attributeMutationMixins.map((mixin => mixin.attributeName))
-    });
-    async function sandbox() {
-        await Mockup_1.mockup();
-        //await start();
-        /*editor.registerCommand("test", {
-          exec: () => {
-            alert("test");
-          },
-          context: "default"
-        });*/
-        /*window.addEventListener("blur", () => {
-          document.body.focus();
-        });*/
-        /*const myWindow = window.open("http://localhost:8080/", "MsgWindow", "width=200,height=100");
-        if (myWindow) {
-        myWindow.document.write("<p>This is 'MsgWindow'. I am 200px wide and 100px tall!</p>");
-        myWindow.addEventListener("message", (event) => {
-            myWindow.document.body.innerHTML = event.data;
-        }, false);
-      
-        setTimeout(() => {
-            myWindow.postMessage("The user is 'bob' and the password is 'secret'", "http://localhost:8080/");
-        }, 100);
-      }*/
-    }
-    exports.sandbox = sandbox;
-});
-define("boot", ["require", "exports", "samples/Sandbox"], function (require, exports, Sandbox_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.boot = void 0;
-    async function boot() {
-        await Sandbox_1.sandbox();
-    }
-    exports.boot = boot;
-});
-define("engine/Engine", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Engine = void 0;
-    class Engine {
-        async boot() {
-            this.run();
-        }
-        run() {
-        }
-    }
-    exports.Engine = Engine;
-});
-define("engine/config/Configuration", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SConfiguration = void 0;
-    class SConfiguration {
-        constructor() {
-            this.options = {
-                renderingCanvasId: 'canvas'
-            };
-        }
-        static get instance() {
-            if (this._instance === undefined) {
-                this._instance = new SConfiguration();
-            }
-            return this._instance;
-        }
-    }
-    exports.SConfiguration = SConfiguration;
-});
-define("engine/core/general/ComponentsRegistry", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ComponentsRegistry = void 0;
-    class ComponentsRegistry {
-        constructor() {
-            this._dictionary = new Map();
-        }
-        static get instance() {
-            if (this._instance === undefined) {
-                this._instance = new ComponentsRegistry();
-            }
-            return this._instance;
-        }
-        register(name, type) {
-            if (!this._dictionary.has(name)) {
-                this._dictionary.set(name, type);
-            }
-        }
-        create(name, owner, desc) {
-            const ctor = this._dictionary.get(name);
-            if (ctor !== undefined) {
-                return new ctor(owner, desc);
-            }
-            return undefined;
-        }
-    }
-    exports.ComponentsRegistry = ComponentsRegistry;
-});
-define("engine/core/general/Entity", ["require", "exports", "engine/libs/maths/statistics/random/UUIDGenerator", "engine/core/general/ComponentsRegistry", "engine/core/general/Transform"], function (require, exports, UUIDGenerator_5, ComponentsRegistry_1, Transform_3) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.EntityBase = exports.Entity = void 0;
-    class EntityBase {
-        constructor(name, parent) {
-            this.uuid = UUIDGenerator_5.UUIDGenerator.newUUID();
-            this.desc = {};
-            this.name = name;
-            this.active = false;
-            this.parent = parent;
-            this.children = [];
-            this.components = new Map();
-            this.transform = new Transform_3.Transform();
-        }
-        setup(desc) {
-            this.desc = desc;
-        }
-        getComponent(name) {
-            return this.components.get(name);
-        }
-        addComponent(name, desc) {
-            const component = ComponentsRegistry_1.ComponentsRegistry.instance.create(name, this, desc);
-            this.components.set(name, component);
-            return component;
-        }
-    }
-    exports.EntityBase = EntityBase;
-    const Entity = EntityBase;
-    exports.Entity = Entity;
-});
-define("engine/core/general/Component", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AbstractComponent = void 0;
-    class AbstractComponent {
-        constructor(owner, desc) {
-            this.type = this.constructor.name;
-            this.owner = owner;
-            this.desc = desc;
-            this.enabled = false;
-        }
-    }
-    exports.AbstractComponent = AbstractComponent;
-});
-define("engine/core/general/System", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.System = void 0;
-    class System {
-    }
-    exports.System = System;
-});
-define("engine/core/audio/AudioSystem", ["require", "exports", "engine/core/general/System"], function (require, exports, System_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AudioSystem = exports.GAudioContext = void 0;
-    exports.GAudioContext = new AudioContext();
-    class AudioSystem extends System_1.System {
-    }
-    exports.AudioSystem = AudioSystem;
-});
-define("engine/core/components/rendering/MeshComponent", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.MeshComponent = void 0;
-    class MeshComponent {
-        setup() {
-        }
-        cleanup() {
-        }
-        render() { }
-    }
-    exports.MeshComponent = MeshComponent;
-});
-define("engine/core/general/Clock", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Clock = void 0;
-    class Clock {
-        constructor() {
-            this.deltaTime = 0;
-        }
-    }
-    exports.Clock = Clock;
-});
-define("engine/core/general/Scene", ["require", "exports", "engine/core/general/Entity", "engine/libs/maths/statistics/random/UUIDGenerator"], function (require, exports, Entity_1, UUIDGenerator_6) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.SceneBase = exports.Scene = void 0;
-    class SceneBase {
-        constructor() {
-            this.uuid = UUIDGenerator_6.UUIDGenerator.newUUID();
-            this.root = new Entity_1.EntityBase('root', undefined);
-        }
-        parseEntityRecursive(name, desc, parent) {
-            const entity = new Entity_1.EntityBase(name, parent);
-            // Parsing children
-            if (desc.children !== undefined) {
-                for (const childName in desc.children) {
-                    const childDesc = desc.children[childName];
-                    const childEntity = this.parseEntityRecursive(childName, childDesc, entity);
-                    childEntity.parent = entity;
-                    entity.children.push(childEntity);
-                }
-            }
-            // Parsing components
-            if (desc.components !== undefined) {
-                for (const componentName in desc.components) {
-                    const component = entity.addComponent(componentName, desc.components[componentName]);
-                }
-            }
-            return entity;
-        }
-        build(desc, root) {
-            if (root === undefined) {
-                root = this.root;
-            }
-            for (const key in desc) {
-                const entity = this.parseEntityRecursive(key, desc[key], this.root);
-                root.children.push(entity);
-            }
-        }
-    }
-    exports.SceneBase = SceneBase;
-    const Scene = SceneBase;
-    exports.Scene = Scene;
-});
-define("engine/core/rendering/pipelines/RenderingPipeline", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.RenderingPipeline = void 0;
-    class RenderingPipeline {
-        addPass() {
-        }
-    }
-    exports.RenderingPipeline = RenderingPipeline;
-});
-define("engine/core/rendering/renderers/MeshRenderer", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.MeshRenderer = void 0;
-    class MeshRenderer {
-    }
-    exports.MeshRenderer = MeshRenderer;
-});
-define("engine/core/rendering/shaders/lib/PhongShader", ["require", "exports", "engine/core/rendering/shaders/Shader"], function (require, exports, Shader_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.PhongShader = void 0;
-    const name = 'Phong';
-    const vertex = `#version 330 es
-    uniform Model {
-        uniform mat4 u_model;
-        uniform mat4 u_modelInverseTranspose;
-    } model;
-
-    uniform View {
-        uniform mat4 u_viewInverse;
-    } view;
-
-    uniform mat4 u_modelViewProjection;
-
-    uniform mat4 u_viewInverse;
-
-    #define LIGHTS_COUNT 1
-
-    uniform Lights {
-        vec3 u_lightWorldPos;
-        vec4 u_lightColor;
-    } lights[LIGHTS_COUNT];
-
-    //in Geometry {
-        in vec4 a_position;
-        in vec3 a_normal;    
-    //} geometry;
-
-    out SurfacesToLights {
-        vec3 v_surfaceToLight;
-    } surfacesToLights;
-
-    out vec4 v_position;
-    out vec3 v_normal;
-    out vec3 v_surfaceToLight[LIGHTS_COUNT];
-    out vec3 v_surfaceToView;
-
-    //include<empty>
-
-    void main() {
-
-        #ifdef USE_HEIGHTMAP
-            lolcccc
-            cdvdv
-            kiii
-            u_lightWorldPos = 'lol'
-        #endif
-
-        #pragma unroll_loop_start
-        for (int i = 0; i < LIGHTS_COUNT; i++)
-        {
-            
-        }
-        #pragma unroll_loop_end
-
-        //v_position = u_modelViewProjection * a_position;
-        //v_normal = (u_modelInverseTranspose * vec4(a_normal, 0)).xyz;
-        //v_surfaceToLight = u_lightWorldPos - (u_model * a_position).xyz;
-        //v_surfaceToView = (u_viewInverse[3] - (u_model * a_position)).xyz;
-        gl_Position = v_position;
-}`;
-    const fragment = `#version 330 es
-
-    precision mediump float;
-
-    uniform MeshBasicMaterial {
-        uniform vec3 u_albedo;
-        uniform vec4 u_ambient;
-    } meshBasicMaterial;
-
-    uniform MeshPhongMaterial {
-        uniform vec4 u_specular;
-        uniform float u_shininess;
-        uniform float u_specularFactor;
-    } meshPhongMaterial;
-
-    in vec4 v_position;
-    in vec3 v_normal;
-    in vec3 v_color;
-    in vec3 v_surfaceToLight;
-    in vec3 v_surfaceToView;
-
-    out vec4 outColor;
-
-    vec4 lit(float l ,float h, float m) {
-    return vec4(1.0,
-                max(l, 0.0),
-                (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
-                1.0);
-    }
-
-    void main() {
-        vec4 diffuseColor = vec4(u_albedo, 1);
-        vec3 a_normal = normalize(v_normal);
-        vec3 surfaceToLight = normalize(v_surfaceToLight);
-        vec3 surfaceToView = normalize(v_surfaceToView);
-        vec3 halfVector = normalize(surfaceToLight + surfaceToView);
-        vec4 litR = lit(dot(a_normal, surfaceToLight),
-                            dot(a_normal, halfVector), u_shininess);
-        vec4 outColor = vec4((
-        u_lightColor * (diffuseColor * litR.y + diffuseColor * u_ambient +
-                        u_specular * litR.z * u_specularFactor)).rgb,
-            diffuseColor.a);
-}`;
-    class PhongShader extends Shader_1.Shader {
-        constructor() {
-            super({
-                name: name,
-                vertex: vertex,
-                fragment: fragment
             });
         }
+        indexOf(vec) {
+            const count = this.count;
+            let idxBuf = 0, idxObj = 0, indexOf = -1;
+            Vector2Pools_1.Vector2Pool.acquireTemp(1, (vector) => {
+                while (idxBuf < count) {
+                    vector.readFromArray(this._array, idxBuf);
+                    if (vector.equals(vec)) {
+                        indexOf = idxObj;
+                        break;
+                    }
+                    idxObj += 1;
+                    idxBuf += 2;
+                }
+            });
+            return indexOf;
+        }
+        get(idx, vec) {
+            if (idx >= this.count) {
+                throw new Error(`Index ${idx} out of bounds.`);
+            }
+            return vec.readFromArray(this._array, idx * 2);
+        }
+        set(idx, vec) {
+            if (idx >= this.count) {
+                throw new Error(`Index ${idx} out of bounds.`);
+            }
+            vec.readFromArray(this._array, idx * 2);
+        }
     }
-    exports.PhongShader = PhongShader;
+    exports.Vector2ListBase = Vector2ListBase;
+    const Vector2List = Vector2ListBase;
+    exports.Vector2List = Vector2List;
 });
-define("engine/core/rendering/shaders/ShadersLib", ["require", "exports", "engine/core/rendering/shaders/lib/PhongShader"], function (require, exports, PhongShader_1) {
+define("engine/libs/physics/collisions/BoundingSphere", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/physics/collisions/BoundingBox", "engine/libs/patterns/injectors/Injector"], function (require, exports, Vector3_5, BoundingBox_1, Injector_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ShadersLib = void 0;
-    const ShadersLib = Object.freeze({
-        shaders: {
-            Phong: PhongShader_1.PhongShader
-        },
-        chunks: new Map([
-            ['empty', 'empty.glsl'],
-        ])
+    exports.BoundingSphereBase = exports.BoundingSphereInjector = exports.BoundingSphere = void 0;
+    class BoundingSphereBase {
+        constructor() {
+            this._center = new Vector3_5.Vector3([-Infinity, -Infinity, -Infinity]);
+            this._radius = 0;
+        }
+        get center() {
+            return this._center;
+        }
+        set center(center) {
+            this._center = center;
+        }
+        get radius() {
+            return this._radius;
+        }
+        set radius(radius) {
+            this._radius = radius;
+        }
+        set(center, radius) {
+            this._center.copy(center);
+            this._radius = radius;
+            return this;
+        }
+        copy(sphere) {
+            this._center.copy(sphere._center);
+            this._radius = sphere._radius;
+            return this;
+        }
+        clone() {
+            return new BoundingSphereBase().copy(this);
+        }
+        setFromPoints(points, center) {
+            if (center !== undefined) {
+                this._center.copy(center);
+            }
+            else {
+                BoundingBox_1.BoundingBoxPool.acquireTemp(1, (box) => {
+                    box.setFromPoints(points).getCenter(this._center);
+                });
+            }
+            let maxRadiusSq = 0;
+            points.forEach((point) => {
+                maxRadiusSq = Math.max(maxRadiusSq, this._center.distSq(point));
+            });
+            this._radius = Math.sqrt(maxRadiusSq);
+            return this;
+        }
+        isEmpty() {
+            return (this._radius < 0);
+        }
+        makeEmpty() {
+            this._center.setZeros();
+            this._radius = -1;
+            return this;
+        }
+        containsPoint(point) {
+            return (point.distSq(this._center) <= (this._radius * this._radius));
+        }
+        dist(point) {
+            return (point.dist(this._center) - this._radius);
+        }
+        distToPlane(plane) {
+            return plane.distanceToPoint(this._center) - this._radius;
+        }
+        intersectsSphere(sphere) {
+            const radiusSum = this._radius + sphere._radius;
+            return this._center.distSq(sphere._center) <= (radiusSum * radiusSum);
+        }
+        intersectsBox(box) {
+            return box.intersectsSphere(this);
+        }
+        intersectsPlane(plane) {
+            return Math.abs(plane.distanceToPoint(this._center)) <= this._radius;
+        }
+        clampPoint(point, out) {
+            const deltaLenSq = this._center.distSq(point);
+            out.copy(point);
+            if (deltaLenSq > (this._radius * this._radius)) {
+                out.sub(this._center).normalize();
+                out.multScalar(this._radius).add(this._center);
+            }
+            return out;
+        }
+        getBoundingBox(out) {
+            if (this.isEmpty()) {
+                out.makeEmpty();
+                return out;
+            }
+            out.set(this._center, this._center);
+            out.expandByScalar(this._radius);
+            return out;
+        }
+        transform(mat) {
+            this._center.setValues(mat.transformPoint(this._center));
+            this._radius = this._radius * mat.getMaxScaleOnAxis();
+        }
+        translate(offset) {
+            this._center.add(offset);
+        }
+    }
+    exports.BoundingSphereBase = BoundingSphereBase;
+    var BoundingSphere = BoundingSphereBase;
+    exports.BoundingSphere = BoundingSphere;
+    const BoundingSphereInjector = new Injector_9.Injector({
+        defaultCtor: BoundingSphereBase,
+        onDefaultOverride: (ctor) => {
+            exports.BoundingSphere = BoundingSphere = ctor;
+        }
     });
-    exports.ShadersLib = ShadersLib;
+    exports.BoundingSphereInjector = BoundingSphereInjector;
 });
-define("engine/core/rendering/shaders/Shader", ["require", "exports", "engine/core/logger/Logger", "engine/core/rendering/shaders/ShadersLib"], function (require, exports, Logger_2, ShadersLib_1) {
+define("engine/libs/physics/collisions/BoundingBox", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/injectors/Injector", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/extensions/pools/Vector3Pools"], function (require, exports, Vector3_6, Injector_10, StackPool_7, Vector3Pools_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Shader = exports.ShaderType = void 0;
-    var ShaderType;
-    (function (ShaderType) {
-        ShaderType[ShaderType["FRAGMENT_SHADER"] = 0] = "FRAGMENT_SHADER";
-        ShaderType[ShaderType["VERTEX_SHADER"] = 1] = "VERTEX_SHADER";
-    })(ShaderType || (ShaderType = {}));
-    exports.ShaderType = ShaderType;
-    let DefaultShader = /** @class */ (() => {
-        class DefaultShader {
-            constructor(args) {
-                this.name = args.name;
-                this._vertex = this.__vertex = args.vertex;
-                this._fragment = this.__fragment = args.fragment;
-                DefaultShader._dictionnary.set(this.name, this);
-            }
-            get vertex() {
-                return this._vertex;
-            }
-            get fragment() {
-                return this._fragment;
-            }
-            static get(name) {
-                return DefaultShader._dictionnary.get(name);
-            }
-            setDefinition(shader, sourceType, definitionName, definitionValue) {
-                const definitionPattern = new RegExp(`#define ${definitionName} (.*?)\n`, 'gms');
-                const shaderSource = shader.getSource(sourceType);
-                let match;
-                if ((match = definitionPattern.exec(shaderSource)) !== null) {
-                    let definitionValueMatch = match[1];
-                    this.replaceInSource(shader, sourceType, definitionValueMatch, definitionValue.toString());
-                }
-                else {
-                    this.prependToSource(shader, sourceType, `#define ${definitionName} ${definitionValue}\n`);
-                }
-                return this;
-            }
-            resolveIncludes(shader, sourceType, resources) {
-                const includePattern = new RegExp('\/\/include+<(.*)+>', 'gm');
-                const shaderSource = shader.getSource(sourceType);
-                let match;
-                while ((match = includePattern.exec(shaderSource)) !== null) {
-                    let patternMatch = match[0];
-                    let includeMatch = match[1];
-                    let chunk = ShadersLib_1.ShadersLib.chunks.get(includeMatch);
-                    if (chunk !== undefined) {
-                        const chunkSource = resources.get(chunk);
-                        if (chunkSource) {
-                            this.replaceInSource(shader, sourceType, patternMatch, chunkSource);
-                        }
-                    }
-                    else {
-                        Logger_2.Logger.info(`Shader chunk '${includeMatch}' is unknown!`);
-                    }
-                }
-            }
-            getUniformBlockIndex(shader, sourceType, blockName) {
-                const uniformBlockPattern = new RegExp(`uniform ${blockName}`, 'gms');
-                const shaderSource = shader.getSource(sourceType);
-                let match;
-                if ((match = uniformBlockPattern.exec(shaderSource)) !== null) {
-                    return match.index;
-                }
-                Logger_2.Logger.info(`Block '${blockName}' is not present in shader '${shader.name}' !`);
-                return null;
-            }
-            replaceInSource(shader, sourceType, oldStr, newStr) {
-                const shaderSource = shader.getSource(sourceType);
-                shader._setSource(sourceType, shaderSource.replace(oldStr, newStr));
-            }
-            prependToSource(shader, sourceType, str) {
-                const shaderSource = shader.getSource(sourceType);
-                shader._setSource(sourceType, str.concat(shaderSource));
-            }
-            getSource(type) {
-                if (type == ShaderType.VERTEX_SHADER) {
-                    return this._vertex;
-                }
-                else {
-                    return this._fragment;
-                }
-            }
-            _setSource(type, value) {
-                if (type == ShaderType.VERTEX_SHADER) {
-                    this._vertex = value;
-                }
-                else {
-                    this._fragment = value;
-                }
-            }
+    exports.BoundingBoxPool = exports.BoundingBoxBase = exports.BoundingBoxInjector = exports.BoundingBox = void 0;
+    class BoundingBoxBase {
+        constructor() {
+            this._min = new Vector3_6.Vector3([-Infinity, -Infinity, -Infinity]);
+            this._max = new Vector3_6.Vector3([+Infinity, +Infinity, +Infinity]);
         }
-        DefaultShader._dictionnary = new Map();
-        return DefaultShader;
-    })();
-    const Shader = DefaultShader;
-    exports.Shader = Shader;
-});
-define("engine/core/rendering/renderers/RenderPacket", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.RenderPacket = void 0;
-    class RenderPacket {
-        //TODO: Setters common to all instances (for example MeshPhong)
-        // but arrays/values specific per instance
-        constructor(shader) {
-            this.shader = shader;
-            this.attributes = new Map();
-            this.uniforms = new Map();
+        get min() {
+            return this._min;
+        }
+        set min(min) {
+            this._min = min;
+        }
+        get max() {
+            return this._max;
+        }
+        set max(max) {
+            this._max = max;
+        }
+        set(min, max) {
+            this._min.copy(min);
+            this._max.copy(max);
+        }
+        copy(box) {
+            this._min = box._min;
+            this._max = box._max;
+            return this;
+        }
+        clone(box) {
+            return new BoundingBoxBase().copy(box);
+        }
+        makeEmpty() {
+            this._min.setValues([Infinity, Infinity, Infinity]);
+            this._max.setValues([+Infinity, +Infinity, +Infinity]);
+        }
+        isEmpty() {
+            return (this._max.x < this._min.x) || (this._max.y < this._min.y) || (this._max.z < this._min.z);
+        }
+        getCenter(out) {
+            this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._min).add(this._max).multScalar(0.5);
+            return out;
+        }
+        getSize(out) {
+            this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._max).sub(this._min);
+            return out;
+        }
+        setFromLengths(center, length, width, height) {
+            this._min.setValues([center.x - length / 2, center.y - width / 2, center.z - height / 2]);
+            this._max.setValues([center.x + length / 2, center.y + width / 2, center.z + height / 2]);
+            return this;
+        }
+        setFromPoints(points) {
+            this.makeEmpty();
+            points.forEach((vec) => {
+                this.expandByPoint(vec);
+            });
+            return this;
+        }
+        expandByPoint(point) {
+            this._min.min(point);
+            this._max.min(point);
+            return this;
+        }
+        expandByVector(vector) {
+            this._min.sub(vector);
+            this._max.add(vector);
+            return this;
+        }
+        expandByScalar(k) {
+            this._min.addScalar(-k);
+            this._max.addScalar(k);
+            return this;
+        }
+        clampPoint(point, out) {
+            return out.copy(point).clamp(this._min, this._max);
+        }
+        distanceToPoint(point) {
+            let dist = 0;
+            Vector3Pools_5.Vector3Pool.acquireTemp(1, (temp) => {
+                const clampedPoint = temp.copy(point).clamp(this._min, this._max);
+                dist = clampedPoint.sub(point).len();
+            });
+            return dist;
+        }
+        intersectsPlane(plane) {
+            let min = 0, max = 0;
+            if (plane.normal.x > 0) {
+                min = plane.normal.x * this._min.x;
+                max = plane.normal.x * this._max.x;
+            }
+            else {
+                min = plane.normal.x * this._max.x;
+                max = plane.normal.x * this._min.x;
+            }
+            if (plane.normal.y > 0) {
+                min += plane.normal.y * this._min.y;
+                max += plane.normal.y * this._max.y;
+            }
+            else {
+                min += plane.normal.y * this._max.y;
+                max += plane.normal.y * this._min.y;
+            }
+            if (plane.normal.z > 0) {
+                min += plane.normal.z * this._min.z;
+                max += plane.normal.z * this._max.z;
+            }
+            else {
+                min += plane.normal.z * this._max.z;
+                max += plane.normal.z * this._min.z;
+            }
+            return (min <= -plane.constant && max >= -plane.constant);
+        }
+        intersectsSphere(sphere) {
+            let intersects = false;
+            Vector3Pools_5.Vector3Pool.acquireTemp(1, (clamped) => {
+                this.clampPoint(sphere.center, clamped);
+                intersects = clamped.distSq(sphere.center) <= (sphere.radius * sphere.radius);
+            });
+            return intersects;
+        }
+        intersectsBox(box) {
+            return !(box._max.x < this._min.x || box._min.x > this._max.x ||
+                box._max.y < this._min.y || box._min.y > this._max.y ||
+                box._max.z < this._min.z || box._min.z > this._max.z);
+        }
+        getBoundingSphere(out) {
+            out.radius = this.getSize(out.center).len() * 0.5;
+            this.getCenter(out.center);
+            return out;
+        }
+        intersectsTriangle(triangle) {
+            if (this.isEmpty()) {
+                return false;
+            }
+            const point1 = triangle.point1, point2 = triangle.point2, point3 = triangle.point3;
+            let intersects = false;
+            Vector3Pools_5.Vector3Pool.acquireTemp(8, (center, extents, v1, v2, v3, edge1, edge2, edge3) => {
+                this.getCenter(center);
+                extents.copyAndSub(this._max, center),
+                    v1.copyAndSub(point1, center),
+                    v2.copyAndSub(point2, center),
+                    v3.copyAndSub(point3, center),
+                    edge1.copyAndSub(point2, point1),
+                    edge2.copyAndSub(point3, point2),
+                    edge3.copyAndSub(point1, point3);
+                let axes = new Float32Array([
+                    0, -edge1.z, edge1.y,
+                    0, -edge2.z, edge2.y,
+                    0, -edge3.z, edge3.y,
+                    edge1.z, 0, -edge1.x,
+                    edge2.z, 0, -edge2.x,
+                    edge3.z, 0, -edge3.x,
+                    -edge1.y, edge1.x, 0,
+                    -edge2.y, edge2.x, 0,
+                    -edge3.y, edge3.x, 0
+                ]);
+                if (!this.satForAxes(axes, v1, v2, v3, extents)) {
+                    intersects = false;
+                    return;
+                }
+                axes = new Float32Array([
+                    1, 0, 0,
+                    0, 1, 0,
+                    0, 0, 1
+                ]);
+                if (!this.satForAxes(axes, v1, v2, v3, extents)) {
+                    intersects = false;
+                    return;
+                }
+                const triangleNormal = center.copyAndCross(edge1, edge2);
+                intersects = this.satForAxes(triangleNormal.values, v1, v2, v3, extents);
+            });
+            return intersects;
+        }
+        satForAxes(axes, v1, v2, v3, extents) {
+            let sat = true;
+            Vector3Pools_5.Vector3Pool.acquireTemp(1, (axis) => {
+                for (let i = 0, j = axes.length - 3; i <= j; i += 3) {
+                    axis.x = axes[i];
+                    axis.y = axes[i + 1];
+                    axis.z = axes[i + 2];
+                    const r = extents.x * Math.abs(axis.x) + extents.y * Math.abs(axis.y) + extents.z * Math.abs(axis.z);
+                    const p1 = v1.dot(axis);
+                    const p2 = v2.dot(axis);
+                    const p3 = v3.dot(axis);
+                    if (Math.max(-Math.max(p1, p2, p3), Math.min(p1, p2, p3)) > r) {
+                        sat = false;
+                    }
+                }
+            });
+            return sat;
         }
     }
-    exports.RenderPacket = RenderPacket;
+    exports.BoundingBoxBase = BoundingBoxBase;
+    var BoundingBox = BoundingBoxBase;
+    exports.BoundingBox = BoundingBox;
+    const BoundingBoxInjector = new Injector_10.Injector({
+        defaultCtor: BoundingBoxBase,
+        onDefaultOverride: (ctor) => {
+            exports.BoundingBox = BoundingBox = ctor;
+        }
+    });
+    exports.BoundingBoxInjector = BoundingBoxInjector;
+    const BoundingBoxPool = new StackPool_7.StackPool(BoundingBoxBase);
+    exports.BoundingBoxPool = BoundingBoxPool;
 });
-define("engine/core/rendering/renderers/RenderPipeline", ["require", "exports"], function (require, exports) {
+// Vertices : counter clock-wise ordered
+define("engine/core/rendering/scenes/geometries/Geometry", ["require", "exports", "engine/core/rendering/scenes/geometries/GeometryUtils", "engine/libs/maths/extensions/lists/TriangleList", "engine/libs/maths/extensions/lists/Vector2List", "engine/libs/maths/extensions/lists/Vector3List", "engine/libs/maths/statistics/random/UUIDGenerator", "engine/libs/physics/collisions/BoundingBox", "engine/libs/physics/collisions/BoundingSphere"], function (require, exports, GeometryUtils_1, TriangleList_2, Vector2List_1, Vector3List_2, UUIDGenerator_4, BoundingBox_2, BoundingSphere_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.RenderPipeline = void 0;
-    class RenderPipeline {
+    exports.GeometryBase = exports.isGeometry = exports.GeometryPropertyKeys = void 0;
+    var GeometryPropertyKeys;
+    (function (GeometryPropertyKeys) {
+        GeometryPropertyKeys[GeometryPropertyKeys["vertices"] = 0] = "vertices";
+        GeometryPropertyKeys[GeometryPropertyKeys["indices"] = 1] = "indices";
+        GeometryPropertyKeys[GeometryPropertyKeys["uvs"] = 2] = "uvs";
+        GeometryPropertyKeys[GeometryPropertyKeys["facesNormals"] = 3] = "facesNormals";
+        GeometryPropertyKeys[GeometryPropertyKeys["verticesNormals"] = 4] = "verticesNormals";
+        GeometryPropertyKeys[GeometryPropertyKeys["tangents"] = 5] = "tangents";
+        GeometryPropertyKeys[GeometryPropertyKeys["bitangents"] = 6] = "bitangents";
+    })(GeometryPropertyKeys || (GeometryPropertyKeys = {}));
+    exports.GeometryPropertyKeys = GeometryPropertyKeys;
+    function isGeometry(obj) {
+        return obj.isGeometry;
     }
-    exports.RenderPipeline = RenderPipeline;
+    exports.isGeometry = isGeometry;
+    class GeometryBase {
+        constructor(desc) {
+            this.uuid = UUIDGenerator_4.UUIDGenerator.newUUID();
+            this.isGeometry = true;
+            this._verticesArray = desc.vertices;
+            this._vertices = new Vector3List_2.Vector3List(this._verticesArray);
+            this._faces = new TriangleList_2.TriangleList(this._verticesArray);
+            this._indicesArray = desc.indices;
+            this._uvsArray = desc.uvs;
+            this._uvs = new Vector2List_1.Vector2List(this._uvsArray);
+            this._weightedVerticesNormals = desc.weightedVerticesNormals || false;
+            this._facesNormalsArray = GeometryUtils_1.GeometryUtils.computeFacesNormals(this._verticesArray, this._indicesArray, Float32Array);
+            this._facesNormals = new Vector3List_2.Vector3List(this._facesNormalsArray);
+            this._verticesNormalsArray = GeometryUtils_1.GeometryUtils.computeVerticesNormals(this._verticesArray, this._indicesArray, this._weightedVerticesNormals, Float32Array, this._facesNormalsArray);
+            this._verticesNormals = new Vector3List_2.Vector3List(this._verticesNormalsArray);
+            const { tangentsArray, bitangentsArray } = GeometryUtils_1.GeometryUtils.computeTangentsAndBitangents(this._verticesArray, this._uvsArray, this._indicesArray, Float32Array);
+            this._tangentsArray = tangentsArray;
+            this._bitangentsArray = bitangentsArray;
+            this._tangents = new Vector3List_2.Vector3List(this._tangentsArray);
+            this._bitangents = new Vector3List_2.Vector3List(this._bitangentsArray);
+        }
+        /*public builder(): GeometryBuilder {
+            return new GeometryBuilderBase(this);
+        }*/
+        get indices() {
+            return this._indicesArray;
+        }
+        get vertices() {
+            return this._vertices;
+        }
+        get uvs() {
+            return this._uvs;
+        }
+        get faces() {
+            return this._faces;
+        }
+        get facesNormals() {
+            return this._facesNormals;
+        }
+        get verticesNormals() {
+            return this._verticesNormals;
+        }
+        get tangents() {
+            return this._tangents;
+        }
+        get bitangents() {
+            return this._bitangents;
+        }
+        get boundingBox() {
+            return this._boundingBox;
+        }
+        get boundingSphere() {
+            return this._boundingSphere;
+        }
+        /*public copy(geometry: GeometryBase): GeometryBase {
+            this._verticesArray = geometry._verticesArray.slice();
+            this._indicesArray = geometry._indicesArray.slice();
+            this._uvsArray = geometry._uvsArray.slice();
+            this._facesNormalsArray = geometry._facesNormalsArray.slice();
+            this._verticesNormalsArray = geometry._verticesNormalsArray.slice();
+            this._tangentsArray = geometry._tangentsArray.slice();
+            this._bitangentsArray = geometry._bitangentsArray.slice();
+    
+            if (typeof geometry._boundingBox !== 'undefined') {
+                this.computeBoundingBox();
+            }
+    
+            if (typeof geometry._boundingSphere !== 'undefined') {
+                this.computeBoundingSphere();
+            }
+    
+            return this;
+        }
+    
+        public updateVertices(vertices: TypedArray, offset: number = 0): GeometryBase {
+            const idxFrom = offset;
+            const idxTo = offset + vertices.length;
+            this._verticesArray.set(vertices, offset);
+            this._updateFacesNormals({idxFrom, idxTo});
+            this._updateVerticesNormals(this._weightedVerticesNormals, {idxFrom, idxTo});
+            //this._changes.publish({prop: GeometryPropertyKeys.vertices, section: [idxFrom, idxTo]});
+            return this;
+        }
+    
+        public updateUvs(uvs: TypedArray, offset: number = 0): GeometryBase {
+            const idxFrom = offset;
+            const idxTo = offset + uvs.length;
+            this._uvsArray.set(uvs, offset);
+            if (typeof this._tangents !== 'undefined') {
+                this._updateTangentsAndBitangents({idxFrom, idxTo});
+            }
+            //this._changes.publish({prop: GeometryPropertyKeys.uvs, section: [idxFrom, idxTo]});
+            return this;
+        }
+    
+        public clone(): GeometryBase {
+            return new GeometryBase({
+                vertices: this._verticesArray.slice(),
+                indices: this._indicesArray.slice(),
+                uvs: this._uvsArray.slice()
+            }).copy(this);
+        }
+    
+        private _updateFacesNormals(options?: {
+            idxFrom: number;
+            idxTo: number;
+        }): GeometryBase {
+            GeometryUtils.computeFacesNormals(this._faces,  this._indicesArray, this._facesNormals, options);
+            //this._changes.publish({prop: GeometryPropertyKeys.facesNormals, section: [options?.idxFrom || 0, options?.idxTo || this._facesNormals.buffer.length]});
+            return this;
+        }
+    
+        private _updateVerticesNormals(weighted: boolean = false, options?: {
+            idxFrom: number;
+            idxTo: number;
+        }): GeometryBase {
+            this._weightedVerticesNormals = weighted;
+            if (typeof this.facesNormals === 'undefined') {
+                this._updateFacesNormals();
+            }
+            GeometryUtils.computeVerticesNormals(this._vertices, this._faces, this._indicesArray, this._facesNormals!, this._verticesNormals, weighted, options);
+            //this._changes.publish({prop: GeometryPropertyKeys.verticesNormals, section: [options?.idxFrom || 0, options?.idxTo || this._verticesNormals.buffer.length]});
+            return this;
+        }
+    
+        private _updateTangentsAndBitangents(options?: {
+            idxFrom: number;
+            idxTo: number;
+        }): GeometryBase {
+            //this._changes.publish({prop: GeometryPropertyKeys.tangents, section: [options?.idxFrom || 0, options?.idxTo || this._tangents.buffer.length]});
+            //this._changes.publish({prop: GeometryPropertyKeys.bitangents, section: [options?.idxFrom || 0, options?.idxTo || this._bitangents.buffer.length]});
+            GeometryUtils.computeTangentsAndBitangents(this._verticesArray, this._uvsArray, this._indicesArray, this._tangentsArray, this._bitangentsArray, options);
+            return this;
+        }*/
+        computeBoundingBox() {
+            if (this._boundingBox === undefined) {
+                this._boundingBox = new BoundingBox_2.BoundingBox().setFromPoints(this._vertices);
+            }
+            else {
+                this._boundingBox.setFromPoints(this._vertices);
+            }
+            return this._boundingBox;
+        }
+        computeBoundingSphere() {
+            if (this._boundingSphere === undefined) {
+                this._boundingSphere = new BoundingSphere_1.BoundingSphere().setFromPoints(this._vertices);
+            }
+            else {
+                this._boundingSphere.setFromPoints(this._vertices);
+            }
+            return this._boundingSphere;
+        }
+    }
+    exports.GeometryBase = GeometryBase;
 });
-define("engine/core/rendering/scenes/objects/lights/Light", ["require", "exports", "engine/core/rendering/scenes/objects/Object3D"], function (require, exports, Object3D_3) {
+define("engine/core/rendering/scenes/materials/Material", ["require", "exports", "engine/libs/maths/statistics/random/UUIDGenerator"], function (require, exports, UUIDGenerator_5) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.MaterialBase = exports.isMaterial = void 0;
+    function isMaterial(obj) {
+        return obj.isMaterial;
+    }
+    exports.isMaterial = isMaterial;
+    class MaterialBase {
+        constructor(name) {
+            this.isMaterial = true;
+            this.uuid = UUIDGenerator_5.UUIDGenerator.newUUID();
+            this.name = name;
+        }
+    }
+    exports.MaterialBase = MaterialBase;
+});
+define("engine/core/rendering/scenes/objects/meshes/Mesh", ["require", "exports", "engine/core/rendering/scenes/objects/Object3D"], function (require, exports, Object3D_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.MeshBase = exports.isMesh = void 0;
+    function isMesh(obj) {
+        return obj.isMesh;
+    }
+    exports.isMesh = isMesh;
+    class MeshBase extends Object3D_1.Object3DBase {
+        constructor(geometry, material) {
+            super();
+            this.isMesh = true;
+            this.geometry = geometry;
+            this.material = material;
+        }
+    }
+    exports.MeshBase = MeshBase;
+});
+define("engine/core/rendering/scenes/objects/lights/Light", ["require", "exports", "engine/core/rendering/scenes/objects/Object3D"], function (require, exports, Object3D_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.LightBase = exports.isLight = exports.LightProperties = void 0;
@@ -13397,7 +10966,7 @@ define("engine/core/rendering/scenes/objects/lights/Light", ["require", "exports
         return light.isObject3D && light.isLight;
     }
     exports.isLight = isLight;
-    class LightBase extends Object3D_3.Object3DBase {
+    class LightBase extends Object3D_2.Object3DBase {
         constructor(color) {
             super();
             this.isLight = true;
@@ -13426,11 +10995,11 @@ define("engine/core/rendering/scenes/objects/meshes/Submesh", ["require", "expor
     }
     exports.BaseSubmesh = BaseSubmesh;
 });
-define("engine/core/rendering/scenes/objects/meshes/CompositeMesh", ["require", "exports", "engine/core/rendering/scenes/objects/Object3D"], function (require, exports, Object3D_4) {
+define("engine/core/rendering/scenes/objects/meshes/CompositeMesh", ["require", "exports", "engine/core/rendering/scenes/objects/Object3D"], function (require, exports, Object3D_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CompositeMeshBase = void 0;
-    class CompositeMeshBase extends Object3D_4.Object3DBase {
+    class CompositeMeshBase extends Object3D_3.Object3DBase {
         constructor(geometry, ...submeshes) {
             super();
             this.geometry = geometry;
@@ -13439,14 +11008,14 @@ define("engine/core/rendering/scenes/objects/meshes/CompositeMesh", ["require", 
     }
     exports.CompositeMeshBase = CompositeMeshBase;
 });
-define("engine/core/rendering/scenes/Scene", ["require", "exports", "engine/core/rendering/scenes/objects/lights/Light", "engine/core/rendering/scenes/objects/meshes/Mesh", "engine/core/general/Transform"], function (require, exports, Light_1, Mesh_1, Transform_4) {
+define("engine/core/rendering/scenes/Scene", ["require", "exports", "engine/core/rendering/scenes/objects/lights/Light", "engine/core/rendering/scenes/objects/meshes/Mesh", "engine/core/general/Transform"], function (require, exports, Light_1, Mesh_1, Transform_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseScene = void 0;
     class BaseScene {
         //background: Background;
         constructor() {
-            this.root = new Transform_4.TransformBase();
+            this.root = new Transform_3.TransformBase();
             this.meshes = [];
             this.compositeMeshes = [];
             this.lights = [];
@@ -13474,6 +11043,199 @@ define("engine/core/rendering/scenes/Scene", ["require", "exports", "engine/core
         }
     }
     exports.BaseScene = BaseScene;
+});
+define("engine/libs/physics/collisions/Frustrum", ["require", "exports", "engine/libs/maths/geometry/primitives/Plane", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/extensions/pools/Vector3Pools"], function (require, exports, Plane_1, Injector_11, Vector3Pools_6) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.FrustrumBase = exports.FrustrumInjector = exports.Frustrum = void 0;
+    class FrustrumBase {
+        constructor() {
+            const planeCtor = Plane_1.PlaneInjector.defaultCtor;
+            this._nearPlane = new planeCtor();
+            this._farPlane = new planeCtor();
+            this._topPlane = new planeCtor();
+            this._bottomPlane = new planeCtor();
+            this._leftPlane = new planeCtor();
+            this._rightPlane = new planeCtor();
+        }
+        get nearPlane() {
+            return this._nearPlane;
+        }
+        set nearPlane(nearPlane) {
+            this._nearPlane = nearPlane;
+        }
+        get farPlane() {
+            return this._farPlane;
+        }
+        set farPlane(farPlane) {
+            this._farPlane = farPlane;
+        }
+        get topPlane() {
+            return this._topPlane;
+        }
+        set topPlane(topPlane) {
+            this._topPlane = topPlane;
+        }
+        get bottomPlane() {
+            return this._bottomPlane;
+        }
+        set bottomPlane(bottomPlane) {
+            this._bottomPlane = bottomPlane;
+        }
+        get leftPlane() {
+            return this._leftPlane;
+        }
+        set leftPlane(leftPlane) {
+            this._leftPlane = leftPlane;
+        }
+        get rightPlane() {
+            return this._rightPlane;
+        }
+        set rightPlane(rightPlane) {
+            this._rightPlane = rightPlane;
+        }
+        set(nearPlane, farPlane, topPlane, bottomPlane, leftPlane, rightPlane) {
+            this._nearPlane.copy(nearPlane);
+            this._farPlane.copy(farPlane);
+            this._topPlane.copy(topPlane);
+            this._bottomPlane.copy(bottomPlane);
+            this._leftPlane.copy(leftPlane);
+            this._rightPlane.copy(rightPlane);
+            return this;
+        }
+        copy(frustrum) {
+            this.set(frustrum._nearPlane, frustrum._farPlane, frustrum._topPlane, frustrum._bottomPlane, frustrum._leftPlane, frustrum._rightPlane);
+            return this;
+        }
+        clone() {
+            return new FrustrumBase().copy(this);
+        }
+        setFromPerspectiveMatrix(mat) {
+            const m = mat.values;
+            const m11 = m[0];
+            const m12 = m[1];
+            const m13 = m[2];
+            const m14 = m[3];
+            const m21 = m[4];
+            const m22 = m[5];
+            const m23 = m[6];
+            const m24 = m[7];
+            const m31 = m[8];
+            const m32 = m[9];
+            const m33 = m[10];
+            const m34 = m[11];
+            const m41 = m[12];
+            const m42 = m[13];
+            const m43 = m[14];
+            const m44 = m[15];
+            this._nearPlane.set(m31 + m41, m32 + m42, m33 + m43, m34 + m44).normalized();
+            this._farPlane.set(-m31 + m41, -m32 + m42, -m33 + m43, -m34 + m44).normalized();
+            this._bottomPlane.set(m21 + m41, m22 + m42, m23 + m43, m24 + m44).normalized();
+            this._topPlane.set(-m21 + m41, -m22 + m42, -m23 + m43, -m24 + m44).normalized();
+            this._leftPlane.set(m11 + m41, m12 + m42, m13 + m43, m14 + m44).normalized();
+            this._rightPlane.set(-m11 + m41, -m12 + m42, -m13 + m43, -m14 + m44).normalized();
+            return this;
+        }
+        intersectsSphere(sphere) {
+            const center = sphere.center;
+            const radius = sphere.radius;
+            return center.dot(this._nearPlane.normal) + this._nearPlane.constant + radius <= 0 ||
+                center.dot(this._farPlane.normal) + this._farPlane.constant + radius <= 0 ||
+                center.dot(this._bottomPlane.normal) + this._bottomPlane.constant + radius <= 0 ||
+                center.dot(this._topPlane.normal) + this._topPlane.constant + radius <= 0 ||
+                center.dot(this._leftPlane.normal) + this._leftPlane.constant + radius <= 0 ||
+                center.dot(this._rightPlane.normal) + this._rightPlane.constant + radius <= 0;
+        }
+        intersectsBox(box) {
+            let intersects = true;
+            const boxMax = box.max;
+            const boxMin = box.min;
+            const temp = Vector3Pools_6.Vector3Pool.acquire();
+            {
+                intersects =
+                    this._nearPlane.distanceToPoint(temp.setValues([
+                        this._nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                        this._nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                        this._nearPlane.normal.z > 0 ? boxMax.z : boxMin.z
+                    ])) >= 0 &&
+                        this._farPlane.distanceToPoint(temp.setValues([
+                            this._farPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                            this._farPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                            this._farPlane.normal.z > 0 ? boxMax.z : boxMin.z
+                        ])) >= 0 &&
+                        this._bottomPlane.distanceToPoint(temp.setValues([
+                            this._bottomPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                            this._bottomPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                            this._bottomPlane.normal.z > 0 ? boxMax.z : boxMin.z
+                        ])) >= 0 &&
+                        this._topPlane.distanceToPoint(temp.setValues([
+                            this._topPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                            this._topPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                            this._topPlane.normal.z > 0 ? boxMax.z : boxMin.z
+                        ])) >= 0 &&
+                        this._leftPlane.distanceToPoint(temp.setValues([
+                            this._leftPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                            this._leftPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                            this._leftPlane.normal.z > 0 ? boxMax.z : boxMin.z
+                        ])) >= 0 &&
+                        this._rightPlane.distanceToPoint(temp.setValues([
+                            this._rightPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                            this._rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                            this._rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
+                        ])) >= 0;
+            }
+            Vector3Pools_6.Vector3Pool.release(1);
+            return intersects;
+        }
+        containsPoint(point) {
+            return this._nearPlane.distanceToPoint(point) >= 0 &&
+                this._farPlane.distanceToPoint(point) >= 0 &&
+                this._bottomPlane.distanceToPoint(point) >= 0 &&
+                this._topPlane.distanceToPoint(point) >= 0 &&
+                this._leftPlane.distanceToPoint(point) >= 0 &&
+                this._rightPlane.distanceToPoint(point) >= 0;
+        }
+    }
+    exports.FrustrumBase = FrustrumBase;
+    var Frustrum = FrustrumBase;
+    exports.Frustrum = Frustrum;
+    const FrustrumInjector = new Injector_11.Injector({
+        defaultCtor: FrustrumBase,
+        onDefaultOverride: (ctor) => {
+            exports.Frustrum = Frustrum = ctor;
+        }
+    });
+    exports.FrustrumInjector = FrustrumInjector;
+});
+define("engine/core/rendering/scenes/cameras/Camera", ["require", "exports", "engine/core/rendering/scenes/objects/Object3D", "engine/libs/physics/collisions/Frustrum", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/statistics/random/UUIDGenerator"], function (require, exports, Object3D_4, Frustrum_1, Matrix4_2, UUIDGenerator_6) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.CameraBase = void 0;
+    class CameraBase extends Object3D_4.Object3DBase {
+        constructor(projection) {
+            super();
+            this.uuid = UUIDGenerator_6.UUIDGenerator.newUUID();
+            this._projection = projection || new Matrix4_2.Matrix4();
+            this._frustrum = new Frustrum_1.Frustrum().setFromPerspectiveMatrix(this._projection);
+        }
+        get projection() {
+            return this._projection;
+        }
+        getProjection(mat) {
+            return mat.copy(this._projection);
+        }
+        isViewing(mesh) {
+            if (typeof mesh.geometry.boundingBox === 'undefined') {
+                const boundingBox = mesh.geometry.computeBoundingBox();
+                return this._frustrum.intersectsBox(boundingBox);
+            }
+            return this._frustrum.intersectsBox(mesh.geometry.boundingBox);
+        }
+        updateFrustrum() {
+            this._frustrum.setFromPerspectiveMatrix(this._projection);
+        }
+    }
+    exports.CameraBase = CameraBase;
 });
 define("engine/core/rendering/renderers/Renderer", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -13530,13 +11292,13 @@ define("engine/core/rendering/renderers/Renderer", ["require", "exports"], funct
     }
     exports.Renderer = Renderer;
 });
-define("engine/core/rendering/scenes/cameras/OrthographicCamera", ["require", "exports", "engine/libs/maths/algebra/matrices/Matrix4", "engine/core/rendering/scenes/cameras/Camera"], function (require, exports, Matrix4_5, Camera_2) {
+define("engine/core/rendering/scenes/cameras/OrthographicCamera", ["require", "exports", "engine/libs/maths/algebra/matrices/Matrix4", "engine/core/rendering/scenes/cameras/Camera"], function (require, exports, Matrix4_3, Camera_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OrthographicCamera = void 0;
-    class OrthographicCamera extends Camera_2.CameraBase {
+    class OrthographicCamera extends Camera_1.CameraBase {
         constructor(left = 0, width = 0, height = 400, top = 400, near = 400, far = -400) {
-            super(new Matrix4_5.Matrix4().asOrthographic(left, left + width, top + height, top, near, far));
+            super(new Matrix4_3.Matrix4().asOrthographic(left, left + width, top + height, top, near, far));
         }
         setValues(left = 0, width = 0, height = 400, top = 400, near = 400, far = -400) {
             this._projection.asOrthographic(left, left + width, top + height, top, near, far);
@@ -13545,6 +11307,22 @@ define("engine/core/rendering/scenes/cameras/OrthographicCamera", ["require", "e
         }
     }
     exports.OrthographicCamera = OrthographicCamera;
+});
+define("engine/core/rendering/scenes/cameras/PerspectiveCamera", ["require", "exports", "engine/libs/maths/algebra/matrices/Matrix4", "engine/core/rendering/scenes/cameras/Camera"], function (require, exports, Matrix4_4, Camera_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.PerspectiveCamera = void 0;
+    class PerspectiveCamera extends Camera_2.CameraBase {
+        constructor(fieldOfViewYInRadians = Math.PI, aspect = 1, zNear = 400, zFar = -400) {
+            super(new Matrix4_4.Matrix4().asPerspective(fieldOfViewYInRadians, aspect, zNear, zFar));
+        }
+        setValues(fieldOfViewYInRadians = Math.PI, aspect = 1, zNear = 400, zFar = -400) {
+            this._projection.asPerspective(fieldOfViewYInRadians, aspect, zNear, zFar);
+            this.updateFrustrum();
+            return this;
+        }
+    }
+    exports.PerspectiveCamera = PerspectiveCamera;
 });
 define("engine/core/rendering/scenes/cameras/controls/OrbitingControls", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -13655,11 +11433,102 @@ define("engine/core/rendering/scenes/geometries/PhongGeometry", ["require", "exp
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });
-define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_4, Snippets_15) {
+define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_11) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.QuadGeometry = void 0;
+    class QuadGeometry extends geometry_1.GeometryBase {
+        constructor() {
+            super({
+                vertices: new Float32Array(quadVertices),
+                uvs: new Float32Array(quadUVS),
+                indices: new Uint8Array(quadIndices)
+            });
+        }
+    }
+    exports.QuadGeometry = QuadGeometry;
+    /**
+     *     y axis
+     * 	      ^   z axis
+     *     UP |   ^  FORWARD
+     *        | /
+     *        +------> x axis
+     *         RIGHT
+     *
+     *  left-handed coordinates system
+     *
+     */
+    /**
+    *      v0       v1
+    * 		+_______+      o   ^
+    * 	    \      /\     /     \
+    *       \   /   \    \     /
+    *        \/      \    \ _ /
+    *        +--------+
+    *       v2         v3
+    *
+    *  counter-clockwise winding order:
+    * 		v0 -> v2 -> v1
+    * 		v1 -> v2 -> v3
+    */
+    /**
+     *     v0_______v1
+     *     |\        |
+     *     |  \   f1 |
+     *     |    \    |
+     *     |  f0  \  |
+     *    v2_______\v3
+     *
+     * v0 = [-1, +1, -1]
+     * v1 = [+1, +1, -1]
+     * v2 = [-1, +1, +1]
+     * v3 = [+1, +1, +1]
+     */
+    /**
+     * 	texture mappings
+     *
+     *
+     *    uv0_____uv1
+     *    | \       |
+     *    |   \     |
+     *    |     \   |
+     *    |       \ |
+     *    uv2_____uv3
+     *
+     *
+     * uv0 = [0,0]
+     * uv1 = [1,0]
+     * uv2 = [0,1]
+     * uv3 = [1,1]
+     */
+    const quadVerticesSet = [
+        [-1, +1, 1],
+        [+1, +1, 1],
+        [-1, -1, 1],
+        [+1, -1, 1],
+    ];
+    const quadUVsSet = [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1]
+    ];
+    const quadVertices = Snippets_11.buildArrayFromIndexedArrays(quadVerticesSet, [
+        0, 2, 3, 1,
+    ]);
+    const quadUVS = Snippets_11.buildArrayFromIndexedArrays(quadUVsSet, [
+        0, 2, 3, 1,
+    ]);
+    const quadIndices = [
+        0, 1, 2,
+        0, 2, 3,
+    ];
+});
+define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_2, Snippets_12) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SphereGeometry = void 0;
-    class SphereGeometry extends geometry_4.GeometryBase {
+    class SphereGeometry extends geometry_2.GeometryBase {
         constructor() {
             super({
                 vertices: new Float32Array(sphereVertices),
@@ -13735,15 +11604,149 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
         [0, 1],
         [1, 1]
     ];
-    const sphereVertices = Snippets_15.buildArrayFromIndexedArrays(sphereVerticesSet, [
+    const sphereVertices = Snippets_12.buildArrayFromIndexedArrays(sphereVerticesSet, [
         0, 2, 3, 1,
     ]);
-    const sphereUVS = Snippets_15.buildArrayFromIndexedArrays(sphereUVsSet, [
+    const sphereUVS = Snippets_12.buildArrayFromIndexedArrays(sphereUVsSet, [
         0, 2, 3, 1,
     ]);
     const sphereIndices = [
         0, 1, 2,
         0, 2, 3,
+    ];
+});
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_13) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.CubeGeometry = void 0;
+    class CubeGeometry extends geometry_3.GeometryBase {
+        constructor() {
+            super({
+                vertices: new Float32Array(cubeVertices),
+                indices: new Uint8Array(cubeIndices),
+                uvs: new Float32Array(cubeUVS),
+            });
+        }
+    }
+    exports.CubeGeometry = CubeGeometry;
+    /**
+     *     y axis
+     * 	      ^   z axis
+     *     UP |   ^  FORWARD
+     *        | /
+     *        +------> x axis
+     *         RIGHT
+     *
+     *  left-handed coordinates system
+     *
+     */
+    /**
+    *      v0       v1
+    * 		+_______+      o   ^
+    * 	    \      /\     /     \
+    *       \   /   \    \     /
+    *        \/      \    \ _ /
+    *        +--------+
+    *       v2         v3
+    *
+    *  counter-clockwise winding order:
+    * 		v0 -> v2 -> v1
+    * 		v1 -> v2 -> v3
+    */
+    /**
+     *              v0_______v1
+     *              |\        |
+     *              |  \   f1 |
+     *              |    \    |
+     *              |  f0  \  |
+     *    v0________v2_______\v3________v1
+     *    |\        |\        |\        |
+     *    |  \  f3  |  \  f5  |  \  f7  |
+     *    |    \    |    \    |    \    |
+     *    | f2   \  | f4   \  | f6   \  |
+     *    v4_______\v5_______\v6_______\v7
+     *              |\        |
+     *              |  \   f9 |
+     *              |    \    |
+     *              |  f8  \  |
+     *              v4_______\v7
+     *              |\        |
+     *              |  \  f11 |
+     *              |    \    |
+     *              | f10  \  |
+     *              v0_______\v1
+     *
+     * v0 = [-1, +1, -1]
+     * v1 = [+1, +1, -1]
+     * v2 = [-1, +1, +1]
+     * v3 = [+1, +1, +1]
+     * v4 = [-1, -1, -1]
+     * v5 = [-1, -1, +1]
+     * v6 = [+1, -1, +1]
+     * v7 = [+1, -1, -1]
+     */
+    /**
+     * 	texture mappings
+     *
+     *
+     *    uv0_____uv1
+     *    | \       |
+     *    |   \     |
+     *    |     \   |
+     *    |       \ |
+     *    uv2_____uv3
+     *
+     *
+     * uv0 = [0,0]
+     * uv1 = [1,0]
+     * uv2 = [0,1]
+     * uv3 = [1,1]
+     */
+    const cubeVerticesSet = [
+        [-1, +1, -1],
+        [+1, +1, -1],
+        [-1, +1, +1],
+        [+1, +1, +1],
+        [-1, -1, -1],
+        [-1, -1, +1],
+        [+1, -1, +1],
+        [+1, -1, -1],
+    ];
+    const cubeVertices = Snippets_13.buildArrayFromIndexedArrays(cubeVerticesSet, [
+        0, 2, 3, 1,
+        0, 4, 5, 2,
+        2, 5, 6, 3,
+        3, 6, 7, 1,
+        5, 4, 7, 6,
+        4, 0, 1, 7,
+    ]);
+    const cubeUVsSet = [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+    ];
+    const cubeUVS = Snippets_13.buildArrayFromIndexedArrays(cubeUVsSet, [
+        0, 1, 3, 2,
+        0, 1, 3, 2,
+        0, 1, 3, 2,
+        0, 1, 3, 2,
+        0, 1, 3, 2,
+        0, 1, 3, 2,
+    ]);
+    const cubeIndices = [
+        0, 1, 2,
+        0, 2, 3,
+        4, 5, 6,
+        4, 6, 7,
+        8, 9, 10,
+        8, 10, 11,
+        12, 13, 14,
+        12, 14, 15,
+        16, 17, 18,
+        16, 18, 19,
+        20, 21, 22,
+        20, 22, 23,
     ];
 });
 /**
@@ -13766,7 +11769,148 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
  *                     v14
  *
  */ 
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_16) {
+define("engine/libs/maths/geometry/GeometryConstants", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.GOLDEN_RATIO = void 0;
+    const GOLDEN_RATIO = 1.6180;
+    exports.GOLDEN_RATIO = GOLDEN_RATIO;
+});
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_4, GeometryConstants_1, Snippets_14) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.IcosahedronGeometry = void 0;
+    class IcosahedronGeometry extends geometry_4.GeometryBase {
+        constructor() {
+            super({
+                vertices: new Float32Array(icosahedronVertices),
+                uvs: new Float32Array(icosahedronUVS),
+                indices: new Uint8Array(icosahedronIndices)
+            });
+        }
+    }
+    exports.IcosahedronGeometry = IcosahedronGeometry;
+    /**
+     *
+     *      v0        v0        v0        v0        v0
+     *     / \       / \       / \       / \       / \
+     *    /   \     /   \     /   \     /   \     /   \
+     *   /     \   /     \   /     \   /     \   /     \
+     *  /  f0   \ /  f1   \ /  f2   \ /  f3   \ /  f4   \
+     * v1--------v2--------v3--------v4--------v5--------v1
+     *  \        /\        /\        /\        /\        /\
+     *   \  f5  /  \  f7  /  \  f9  /  \  11  /  \ f13  /  \
+     *    \    /    \    /    \    /    \    /    \    /    \
+     *     \  /  f6  \  /  f8  \  / f10  \  / f12  \  / f14  \
+     *      v6--------v7--------v8--------v9--------v10-------v6
+     *       \        /\        /\        /\        /\        /
+     * 	      \ f15  /  \ f16  /  \ f17  /  \ f18  /  \ f19  /
+     *         \    /    \    /    \    /    \    /    \    /
+     *          \  /      \  /      \  /      \  /      \  /
+     *           v11       v11       v11       v11       v11
+     *
+     * v0  = [ 0, +p, +h]
+     * v1  = [+h,  0, +p]
+     * v2  = [+p, +h,  0]
+     * v3  = [ 0, +p, -h]
+     * v4  = [-p, +h,  0]
+     * v5  = [-h,  0, +p]
+     * v6  = [+p, -h,  0]
+     * v7  = [+h,  0, -p]
+     * v8  = [-h,  0, -p]
+     * v9  = [-p, -h,  0]
+     * v10 = [ 0, -p, +h]
+     * v11 = [ 0, -p, -h]
+     *
+     */
+    const icosahedronVerticesSet = [
+        [0, +GeometryConstants_1.GOLDEN_RATIO, +1],
+        [+1, 0, +GeometryConstants_1.GOLDEN_RATIO],
+        [+GeometryConstants_1.GOLDEN_RATIO, +1, 0],
+        [0, +GeometryConstants_1.GOLDEN_RATIO, -1],
+        [-GeometryConstants_1.GOLDEN_RATIO, +1, 0],
+        [-1, 0, +GeometryConstants_1.GOLDEN_RATIO],
+        [+GeometryConstants_1.GOLDEN_RATIO, -1, 0],
+        [+1, 0, -GeometryConstants_1.GOLDEN_RATIO],
+        [-1, 0, -GeometryConstants_1.GOLDEN_RATIO],
+        [-GeometryConstants_1.GOLDEN_RATIO, -1, 0],
+        [0, -GeometryConstants_1.GOLDEN_RATIO, +1],
+        [0, -GeometryConstants_1.GOLDEN_RATIO, -1],
+    ];
+    const IcosahedronUVsSet = [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+    ];
+    const icosahedronVertices = Snippets_14.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
+        0, 1, 2,
+        0, 2, 3,
+        0, 3, 4,
+        0, 4, 5,
+        0, 5, 1,
+        1, 6, 2,
+        2, 6, 7,
+        2, 7, 3,
+        3, 7, 8,
+        3, 8, 4,
+        4, 8, 9,
+        4, 9, 5,
+        5, 9, 10,
+        5, 10, 1,
+        1, 10, 6,
+        6, 11, 7,
+        7, 11, 8,
+        8, 11, 9,
+        9, 11, 10,
+        10, 11, 6,
+    ]);
+    const icosahedronUVS = Snippets_14.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+        1, 2, 0,
+    ]);
+    const icosahedronIndices = [
+        0, 1, 2,
+        3, 4, 5,
+        6, 7, 8,
+        9, 10, 11,
+        12, 13, 14,
+        15, 16, 17,
+        18, 19, 20,
+        21, 22, 23,
+        24, 25, 26,
+        27, 28, 29,
+        30, 31, 32,
+        33, 34, 35,
+        36, 37, 38,
+        39, 40, 41,
+        42, 43, 44,
+        45, 46, 47,
+        48, 49, 50,
+        51, 52, 53,
+        54, 55, 56,
+        57, 58, 59,
+    ];
+});
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_15) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TetrahedronGeometry = void 0;
@@ -13811,13 +11955,13 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const tetrahedronVertices = Snippets_16.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
+    const tetrahedronVertices = Snippets_15.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
         0, 1, 2,
         1, 0, 3,
         1, 3, 2,
         2, 3, 0,
     ]);
-    const tetrahedronUVS = Snippets_16.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
+    const tetrahedronUVS = Snippets_15.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
         1, 2, 0,
         1, 3, 0,
         2, 3, 0,
@@ -14385,6 +12529,270 @@ define("engine/core/rendering/scenes/rigs/Rig", ["require", "exports"], function
     }
     exports.Rig = Rig;
 });
+define("engine/core/rendering/webgl/WebGLUniformBlockUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLBufferUtilities", "engine/core/rendering/webgl/WebGLUniformUtilities", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLBufferUtilities_2, WebGLUniformUtilities_1, WebGLConstants_4) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.WebGLUniformBlockUtilities = void 0;
+    class WebGLUniformBlockUtilities {
+        constructor() { }
+        static createBindingsContext(gl) {
+            const maxBindingPoints = gl.MAX_UNIFORM_BUFFER_BINDINGS;
+            const registeredBindingPoints = new Array(maxBindingPoints);
+            return {
+                maxBindingPoints: maxBindingPoints,
+                registeredBindingPoints: registeredBindingPoints
+            };
+        }
+        static createUniformBlock(gl, ctx, name) {
+            const glBuffer = WebGLBufferUtilities_2.WebGLBufferUtilities.createBuffer(gl);
+            if (glBuffer === null) {
+                return null;
+            }
+            const bindingPoint = this._allocateBindingPoint(ctx);
+            if (bindingPoint === null) {
+                console.error(`Could not allocate another binding point.`);
+                return null;
+            }
+            return {
+                name: name,
+                bindingPoint: bindingPoint,
+                glBuffer: glBuffer,
+            };
+        }
+        static getUniformBlockSetter(gl, glProg, block) {
+            gl.bindBuffer(WebGLConstants_4.BufferTarget.UNIFORM_BUFFER, block.glBuffer);
+            const blockIndex = gl.getUniformBlockIndex(glProg, block.name);
+            if (blockIndex === gl.INVALID_INDEX) {
+                console.error(`Block '${block.name}' does not identify a valid uniform block.`);
+                return null;
+            }
+            const usage = (typeof block.usage === 'undefined') ? gl.DYNAMIC_DRAW : block.usage;
+            const bindingPoint = block.bindingPoint;
+            gl.uniformBlockBinding(glProg, blockIndex, bindingPoint);
+            const blockSize = gl.getActiveUniformBlockParameter(glProg, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE);
+            gl.bufferData(gl.UNIFORM_BUFFER, blockSize, usage);
+            const uniforms = {};
+            const blockUniformsIndices = gl.getActiveUniformBlockParameter(glProg, blockIndex, gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES);
+            gl.getActiveUniforms(glProg, blockUniformsIndices, gl.UNIFORM_OFFSET).forEach((uniformOffset, idx) => {
+                const uniformIndex = blockUniformsIndices[idx];
+                const uniformInfo = gl.getActiveUniform(glProg, uniformIndex);
+                if (uniformInfo !== null) {
+                    const uniformName = uniformInfo.name;
+                    uniforms[uniformName] = {
+                        offset: uniformOffset
+                    };
+                }
+            });
+            return {
+                name: block.name,
+                usage: usage,
+                bindingPoint: bindingPoint,
+                index: blockIndex,
+                uniforms: uniforms,
+                bufferByteLength: blockSize,
+                glBuffer: block.glBuffer,
+                glProg: glProg
+            };
+        }
+        static setUniformBlockValues(gl, setter, uniforms) {
+            const blockUniformsNames = Object.keys(setter.uniforms);
+            const matchingUniformsNames = Object.keys(uniforms).filter((name) => {
+                return blockUniformsNames.includes(name);
+            });
+            gl.bindBuffer(gl.UNIFORM_BUFFER, setter.glBuffer);
+            gl.bindBufferRange(gl.UNIFORM_BUFFER, setter.bindingPoint, setter.glBuffer, 0, setter.bufferByteLength);
+            for (const uniformName of matchingUniformsNames) {
+                const uniform = setter.uniforms[uniformName];
+                const newUniformValue = WebGLUniformUtilities_1.WebGLUniformUtilities.getUniformValueArrayBufferView(uniforms[uniformName].value);
+                gl.bufferSubData(gl.UNIFORM_BUFFER, uniform.offset, newUniformValue);
+            }
+        }
+        static bindUniformBlock(gl, setter) {
+            gl.bindBufferBase(WebGLConstants_4.BufferTarget.UNIFORM_BUFFER, setter.bindingPoint, setter.glBuffer);
+        }
+        static _allocateBindingPoint(ctx) {
+            for (let unit = 0; unit < ctx.maxBindingPoints; unit++) {
+                if (!ctx.registeredBindingPoints[unit]) {
+                    ctx.registeredBindingPoints[unit] = true;
+                    return unit;
+                }
+            }
+            return null;
+        }
+        static _freeBindingPoint(ctx, bindingPoint) {
+            ctx.registeredBindingPoints[bindingPoint] = false;
+        }
+    }
+    exports.WebGLUniformBlockUtilities = WebGLUniformBlockUtilities;
+});
+define("engine/core/rendering/webgl/WebGLDrawUtilities", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.WebGLDrawUtilities = void 0;
+    class WebGLDrawUtilities {
+        constructor() { }
+        static drawElements(gl, mode, indexType, count, offset) {
+            gl.drawElements(mode, count, indexType, offset);
+        }
+        static drawElementsInstanced(gl, mode, indexType, count, offset, instanceCount) {
+            gl.drawElementsInstanced(mode, count, indexType, offset, instanceCount);
+        }
+        static drawRangeElements(gl, mode, start, end, count, indexType, offset) {
+            gl.drawRangeElements(mode, start, end, count, indexType, offset);
+        }
+        static drawArrays(gl, mode, first, count) {
+            gl.drawArrays(mode, first, count);
+        }
+        static drawArraysInstanced(gl, mode, first, count, instances) {
+            gl.drawArraysInstanced(mode, first, count, instances);
+        }
+    }
+    exports.WebGLDrawUtilities = WebGLDrawUtilities;
+});
+define("engine/core/rendering/webgl/WebGLPacketUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLAttributeUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/core/rendering/webgl/WebGLUniformBlockUtilities", "engine/core/rendering/webgl/WebGLUniformUtilities", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLDrawUtilities"], function (require, exports, WebGLAttributeUtilities_1, WebGLTextureUtilities_1, WebGLUniformBlockUtilities_1, WebGLUniformUtilities_2, WebGLConstants_5, WebGLDrawUtilities_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.WebGLPacketUtilities = void 0;
+    class WebGLPacketUtilities {
+        constructor() { }
+        static createPacketBindings(gl, props) {
+            let textures = {};
+            let blocks = {};
+            let texturesCtx = props.texturesCtx;
+            let blocksCtx = props.blocksCtx;
+            const texturesProps = props.texturesProps;
+            const blocksProps = props.blocksProps;
+            if (typeof texturesProps !== 'undefined') {
+                texturesCtx = texturesCtx || WebGLTextureUtilities_1.WebGLTextureUtilities.createBindingsContext(gl);
+                const texturesNames = Object.keys(texturesProps);
+                for (const textureName of texturesNames) {
+                    const textureProps = texturesProps[textureName];
+                    const texture = WebGLTextureUtilities_1.WebGLTextureUtilities.createTexture(gl, texturesCtx, textureProps);
+                    if (texture == null) {
+                        return null;
+                    }
+                    textures[textureName] = texture;
+                }
+            }
+            if (typeof blocksProps !== 'undefined') {
+                blocksCtx = blocksCtx || WebGLUniformBlockUtilities_1.WebGLUniformBlockUtilities.createBindingsContext(gl);
+                const blockNames = Object.keys(blocksProps);
+                for (const blockName of blockNames) {
+                    const blockProp = blocksProps[blockName];
+                    const block = WebGLUniformBlockUtilities_1.WebGLUniformBlockUtilities.createUniformBlock(gl, blocksCtx, blockProp.name);
+                    if (block == null) {
+                        return null;
+                    }
+                    blocks[blockName] = block;
+                }
+                ;
+            }
+            return {
+                textures: textures,
+                blocks: blocks,
+                texturesCtx: texturesCtx,
+                blocksCtx: blocksCtx
+            };
+        }
+        static getPacketSetter(gl, glProg, packet) {
+            const attributes = packet.attributes;
+            const uniforms = packet.uniforms;
+            const uniformBlocks = packet.uniformBlocks;
+            const props = packet.props;
+            const drawMode = (typeof props === 'undefined' || typeof props.drawMode === 'undefined') ? WebGLConstants_5.DrawMode.TRIANGLES : props.drawMode;
+            const instanced = (typeof props === 'undefined' || typeof props.instanced === 'undefined') ? false : props.instanced;
+            const instanceCount = (typeof props === 'undefined' || typeof props.instanceCount === 'undefined') ? 0 : props.instanceCount;
+            let attributesSetter;
+            if (typeof attributes !== 'undefined') {
+                attributesSetter = WebGLAttributeUtilities_1.WebGLAttributeUtilities.getAttributesListSetter(gl, glProg, attributes);
+                if (attributesSetter == null) {
+                    return null;
+                }
+            }
+            let uniformBlockSetters;
+            if (typeof uniformBlocks !== 'undefined') {
+                const blockNames = Object.keys(uniformBlocks);
+                uniformBlockSetters = {};
+                for (const blockName of blockNames) {
+                    const uniformBlock = uniformBlocks[blockName];
+                    const uniformBlockSetter = WebGLUniformBlockUtilities_1.WebGLUniformBlockUtilities.getUniformBlockSetter(gl, glProg, uniformBlock.block);
+                    if (uniformBlockSetter == null) {
+                        return null;
+                    }
+                    uniformBlockSetters[blockName] = uniformBlockSetter;
+                }
+            }
+            let uniformsSetter;
+            if (typeof uniforms !== 'undefined') {
+                uniformsSetter = WebGLUniformUtilities_2.WebGLUniformUtilities.getUniformsListSetter(gl, glProg, uniforms);
+                if (uniformsSetter == null) {
+                    return null;
+                }
+            }
+            return {
+                attributesSetter: attributesSetter,
+                uniformsSetter: uniformsSetter,
+                uniformBlockSetters: uniformBlockSetters,
+                drawMode: drawMode,
+                instanced: instanced,
+                instanceCount: instanceCount
+            };
+        }
+        static setPacketValues(gl, setter, packet) {
+            const attributes = packet.attributes;
+            const uniforms = packet.uniforms;
+            const uniformBlocks = packet.uniformBlocks;
+            const attributeSetter = setter.attributesSetter;
+            const uniformsSetter = setter.uniformsSetter;
+            const uniformBlockSetters = setter.uniformBlockSetters;
+            if (typeof attributes !== 'undefined' && attributeSetter) {
+                WebGLAttributeUtilities_1.WebGLAttributeUtilities.setAttributesListValues(gl, attributeSetter, attributes);
+            }
+            if (typeof uniforms !== 'undefined' && uniformsSetter) {
+                WebGLUniformUtilities_2.WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, uniforms);
+            }
+            if (typeof uniformBlocks !== 'undefined') {
+                if (typeof uniformBlockSetters !== 'undefined') {
+                    const blockNames = Object.keys(uniformBlocks);
+                    for (const blockName of blockNames) {
+                        const uniformBlockSetter = uniformBlockSetters[blockName];
+                        const uniformBlock = uniformBlocks[blockName];
+                        if (uniformBlockSetter) {
+                            WebGLUniformBlockUtilities_1.WebGLUniformBlockUtilities.setUniformBlockValues(gl, uniformBlockSetter, uniformBlock.list);
+                        }
+                    }
+                }
+            }
+        }
+        static drawPacket(gl, setter) {
+            const attributeSetter = setter.attributesSetter;
+            if (typeof attributeSetter !== 'undefined') {
+                WebGLAttributeUtilities_1.WebGLAttributeUtilities.bindAttributesList(gl, attributeSetter);
+                if (attributeSetter.hasIndices) {
+                    if (setter.instanced) {
+                        WebGLDrawUtilities_1.WebGLDrawUtilities.drawElementsInstanced(gl, setter.drawMode, attributeSetter.indexType, attributeSetter.numElements, 0, setter.instanceCount);
+                    }
+                    else {
+                        WebGLDrawUtilities_1.WebGLDrawUtilities.drawElements(gl, setter.drawMode, attributeSetter.indexType, attributeSetter.numElements, 0);
+                    }
+                }
+                else {
+                    if (setter.instanced) {
+                        WebGLDrawUtilities_1.WebGLDrawUtilities.drawArraysInstanced(gl, setter.drawMode, 0, attributeSetter.numElements, setter.instanceCount);
+                    }
+                    else {
+                        WebGLDrawUtilities_1.WebGLDrawUtilities.drawArrays(gl, setter.drawMode, 0, attributeSetter.numElements);
+                    }
+                }
+                WebGLAttributeUtilities_1.WebGLAttributeUtilities.unbindAttributesList(gl);
+            }
+            else {
+                console.error(`No attributes to draw.`);
+            }
+        }
+    }
+    exports.WebGLPacketUtilities = WebGLPacketUtilities;
+});
 define("engine/core/rendering/shaders/packets/Packet", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -14735,11 +13143,11 @@ define("engine/core/rendering/shaders/textures/TextureReference", ["require", "e
     })();
     exports.TextureReference = TextureReference;
 });
-define("engine/libs/maths/extensions/pools/Matrix4Pools", ["require", "exports", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/patterns/pools/StackPool"], function (require, exports, Matrix4_6, StackPool_8) {
+define("engine/libs/maths/extensions/pools/Matrix4Pools", ["require", "exports", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/patterns/pools/StackPool"], function (require, exports, Matrix4_5, StackPool_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Matrix4Pool = void 0;
-    const Matrix4Pool = new StackPool_8.StackPool(Matrix4_6.Matrix4Base);
+    const Matrix4Pool = new StackPool_8.StackPool(Matrix4_5.Matrix4Base);
     exports.Matrix4Pool = Matrix4Pool;
 });
 define("engine/core/rendering/shaders/ubos/lib/WorldViewUBO", ["require", "exports", "engine/libs/maths/extensions/pools/Matrix4Pools", "engine/core/rendering/shaders/ubos/UBO"], function (require, exports, Matrix4Pools_1, UBO_2) {
@@ -14917,6 +13325,245 @@ define("engine/core/rendering/shaders/packets/lib/MeshPhongPacket", ["require", 
         }
     }
     exports.MeshPhongPacket = MeshPhongPacket;
+});
+define("engine/core/rendering/webgl/WebGLFramebufferUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLConstants_6) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.WebGLFramebufferUtilities = void 0;
+    class WebGLFramebufferUtilities {
+        constructor() { }
+        static createFramebuffer(gl) {
+            const glFb = gl.createFramebuffer();
+            if (glFb === null) {
+                console.error(`Could not create WebGLFramebuffer.`);
+                return null;
+            }
+            return {
+                glFb: glFb
+            };
+        }
+        static attachTexture(gl, fb, props) {
+            const target = WebGLConstants_6.FramebufferTarget.FRAMEBUFFER;
+            gl.bindFramebuffer(target, fb.glFb);
+            gl.framebufferTexture2D(target, props.attachment, props.texTarget, props.glTex, 0);
+            gl.bindFramebuffer(target, null);
+            return {
+                ...props,
+                ...fb
+            };
+        }
+        static attachTextures(gl, fb, props) {
+            const target = gl.FRAMEBUFFER;
+            gl.bindFramebuffer(target, fb.glFb);
+            const attachments = props.map((props) => {
+                gl.framebufferTexture2D(target, props.attachment, props.texTarget, props.glTex, 0);
+                return {
+                    ...props,
+                    ...fb
+                };
+            });
+            gl.bindFramebuffer(target, null);
+            return attachments;
+        }
+        static attachRenderbuffers(gl, fb, props) {
+            const target = gl.FRAMEBUFFER;
+            gl.bindFramebuffer(target, fb.glFb);
+            const attachments = props.map((props) => {
+                gl.framebufferRenderbuffer(target, props.attachment, gl.RENDERBUFFER, props.glRb);
+                return {
+                    ...props,
+                    ...fb
+                };
+            });
+            gl.bindFramebuffer(target, null);
+            return attachments;
+        }
+        static attachRenderbuffer(gl, fb, props) {
+            const target = gl.FRAMEBUFFER;
+            gl.bindFramebuffer(target, fb.glFb);
+            gl.framebufferRenderbuffer(target, props.attachment, gl.RENDERBUFFER, props.glRb);
+            gl.bindFramebuffer(target, null);
+            return {
+                ...props,
+                ...fb
+            };
+        }
+        static blit(gl, readFb, drawFb, readRec, drawRec, mask, filter) {
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, (readFb !== null) ? readFb.glFb : null);
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, (drawFb !== null) ? drawFb.glFb : null);
+            gl.blitFramebuffer(readRec[0], readRec[1], readRec[2], readRec[3], drawRec[0], drawRec[1], drawRec[2], drawRec[3], mask, filter);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+        static clearColor(gl, fb, buff, offset = 0) {
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fb.glFb);
+            gl.clearBufferfv(gl.COLOR, 0, buff, offset);
+        }
+        static clearDepthStencil(gl, fb, depth, stencil) {
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fb.glFb);
+            gl.clearBufferfi(gl.DEPTH_STENCIL, 0, depth, stencil);
+        }
+        static checkFramebufferStatus(gl) {
+            return gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        }
+        static deleteFramebuffer(gl, fb) {
+            const glFb = fb.glFb;
+            if (gl.isFramebuffer(glFb)) {
+                gl.deleteFramebuffer(glFb);
+            }
+        }
+        static bindFramebuffer(gl, fb) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fb.glFb);
+        }
+        static unbindFramebuffer(gl) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+    }
+    exports.WebGLFramebufferUtilities = WebGLFramebufferUtilities;
+});
+define("engine/core/rendering/webgl/WebGLShaderUtilities", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.WebGLShaderUtilities = void 0;
+    class WebGLShaderUtilities {
+        constructor() { }
+        static createShader(gl, type, source) {
+            const glShader = gl.createShader(type);
+            if (glShader == null) {
+                return null;
+            }
+            gl.shaderSource(glShader, source);
+            gl.compileShader(glShader);
+            const success = gl.getShaderParameter(glShader, gl.COMPILE_STATUS);
+            if (success) {
+                return glShader;
+            }
+            const shaderInfoLog = gl.getShaderInfoLog(glShader);
+            if (shaderInfoLog !== null) {
+                console.warn(shaderInfoLog);
+            }
+            gl.deleteShader(glShader);
+            return null;
+        }
+        static deleteShader(gl, glShader) {
+            gl.deleteShader(glShader);
+        }
+    }
+    exports.WebGLShaderUtilities = WebGLShaderUtilities;
+});
+define("engine/core/rendering/webgl/WebGLProgramUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLShaderUtilities"], function (require, exports, WebGLConstants_7, WebGLShaderUtilities_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.WebGLProgramUtilties = void 0;
+    class WebGLProgramUtilties {
+        constructor() { }
+        static createProgramFromSources(gl, vertexSource, fragmentSource) {
+            const vertexShader = WebGLShaderUtilities_1.WebGLShaderUtilities.createShader(gl, WebGLConstants_7.ShaderType.VERTEX_SHADER, vertexSource);
+            if (vertexShader == null) {
+                return null;
+            }
+            const fragmentShader = WebGLShaderUtilities_1.WebGLShaderUtilities.createShader(gl, WebGLConstants_7.ShaderType.FRAGMENT_SHADER, fragmentSource);
+            if (fragmentShader == null) {
+                return null;
+            }
+            return this.createProgram(gl, vertexShader, fragmentShader);
+        }
+        static createProgram(gl, vertexShader, fragmentShader) {
+            const glProg = gl.createProgram();
+            if (glProg == null) {
+                return null;
+            }
+            gl.attachShader(glProg, vertexShader);
+            gl.attachShader(glProg, fragmentShader);
+            gl.linkProgram(glProg);
+            const success = gl.getProgramParameter(glProg, gl.LINK_STATUS);
+            if (success) {
+                return glProg;
+            }
+            const programInfoLog = gl.getProgramInfoLog(glProg);
+            if (programInfoLog !== null) {
+                console.warn(programInfoLog);
+            }
+            gl.deleteProgram(glProg);
+            return null;
+        }
+        static deleteProgram(gl, glProg) {
+            gl.deleteProgram(glProg);
+        }
+        static useProgram(gl, glProg) {
+            gl.useProgram(glProg);
+        }
+    }
+    exports.WebGLProgramUtilties = WebGLProgramUtilties;
+});
+define("engine/core/rendering/webgl/WebGLRenderbuffersUtilities", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.WebGLRenderbufferUtilities = void 0;
+    class WebGLRenderbufferUtilities {
+        constructor() { }
+        static createRenderbuffer(gl, props) {
+            const glRb = gl.createRenderbuffer();
+            if (glRb === null) {
+                console.error('Could not create WebGLRenderbuffer.');
+                return null;
+            }
+            gl.bindRenderbuffer(gl.RENDERBUFFER, glRb);
+            if (typeof props.samples !== 'undefined') {
+                gl.renderbufferStorageMultisample(gl.RENDERBUFFER, props.samples, props.internalFormat, props.width, props.height);
+            }
+            else {
+                gl.renderbufferStorage(gl.RENDERBUFFER, props.internalFormat, props.width, props.height);
+            }
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            return {
+                ...props,
+                glRb: glRb
+            };
+        }
+    }
+    exports.WebGLRenderbufferUtilities = WebGLRenderbufferUtilities;
+});
+define("engine/core/rendering/webgl/WebGLRendererUtilities", ["require", "exports", "engine/core/rendering/webgl/WebGLConstants"], function (require, exports, WebGLConstants_8) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.WebGLRendererUtilities = void 0;
+    class WebGLRendererUtilities {
+        constructor() { }
+        static setScissor(gl, x, y, width, height) {
+            gl.scissor(x, y, width, height);
+        }
+        static setViewport(gl, x, y, width, height) {
+            gl.viewport(x, y, width, height);
+        }
+        static getViewport(gl) {
+            return gl.getParameter(WebGLConstants_8.Parameter.VIEWPORT);
+        }
+        static getScissorBox(gl) {
+            return gl.getParameter(WebGLConstants_8.Parameter.SCISSOR_BOX);
+        }
+        static getParameter(gl, param) {
+            return gl.getParameter(param);
+        }
+        static enable(gl, cap) {
+            gl.enable(cap);
+        }
+        static depthFunc(gl, func) {
+            gl.depthFunc(func);
+        }
+        static stencilFunc(gl, func, ref, mask) {
+            gl.stencilFunc(func, ref, mask);
+        }
+        static clear(gl, buff) {
+            gl.clear(buff);
+        }
+        static clearRgba(gl, red, green, blue, alpha) {
+            gl.clearColor(red, green, blue, alpha);
+        }
+        static clearColor(gl, color) {
+            gl.clearColor(color[0], color[1], color[2], color[3]);
+        }
+    }
+    exports.WebGLRendererUtilities = WebGLRendererUtilities;
 });
 define("engine/core/systems/RenderingSystem", ["require", "exports", "engine/core/general/System"], function (require, exports, System_2) {
     "use strict";
@@ -15108,7 +13755,7 @@ let html = function(parts: TemplateStringsArray, ...expr: any[]) {
     return parsedHTML;
   }
 */ 
-define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_31) {
+define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_23) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.setFormState = exports.getFormState = void 0;
@@ -15117,7 +13764,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
         const elements = Array.from(form.elements);
         let state = {};
         elements.forEach((element) => {
-            if (HTMLElement_31.isTagElement("input", element)) {
+            if (HTMLElement_23.isTagElement("input", element)) {
                 if (element.type === "radio") {
                     if (!(element.name in state)) {
                         state[element.name] = {
@@ -15150,12 +13797,12 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
                     };
                 }
             }
-            else if (HTMLElement_31.isTagElement("select", element)) {
+            else if (HTMLElement_23.isTagElement("select", element)) {
                 state[element.name] = {
                     value: element.value,
                 };
             }
-            else if (HTMLElement_31.isTagElement("textarea", element)) {
+            else if (HTMLElement_23.isTagElement("textarea", element)) {
                 state[element.name] = {
                     value: element.value,
                 };
@@ -15172,14 +13819,14 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
             if ("type" in elemState) {
                 if (elemState.type === "checkbox") {
                     let element = elements.find((elem) => elem.name === name);
-                    if (element && HTMLElement_31.isTagElement("input", element)) {
+                    if (element && HTMLElement_23.isTagElement("input", element)) {
                         element.checked = elemState.checked;
                     }
                 }
                 else if (elemState.type === "radio") {
                     elemState.nodes.forEach((radioNode) => {
                         let element = elements.find((elem) => elem.name === name && elem.value === radioNode.value);
-                        if (element && HTMLElement_31.isTagElement("input", element)) {
+                        if (element && HTMLElement_23.isTagElement("input", element)) {
                             element.checked = radioNode.checked;
                         }
                     });
@@ -15187,7 +13834,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
             }
             else {
                 let element = elements.find((elem) => elem.name === name);
-                if (element && (HTMLElement_31.isTagElement("input", element) || HTMLElement_31.isTagElement("select", element) || HTMLElement_31.isTagElement("textarea", element))) {
+                if (element && (HTMLElement_23.isTagElement("input", element) || HTMLElement_23.isTagElement("select", element) || HTMLElement_23.isTagElement("textarea", element))) {
                     element.value = elemState.value;
                 }
             }
@@ -15195,7 +13842,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
     };
     exports.setFormState = setFormState;
 });
-define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
+define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.NumberInputElement = void 0;
@@ -15233,13 +13880,13 @@ define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "ex
             }
         };
         NumberInputElement = __decorate([
-            HTMLElement_32.RegisterCustomHTMLElement({
+            HTMLElement_24.RegisterCustomHTMLElement({
                 name: 'number-input',
                 options: {
                     extends: 'input'
                 }
             }),
-            HTMLElement_32.GenerateAttributeAccessors([
+            HTMLElement_24.GenerateAttributeAccessors([
                 { name: 'cache' }
             ])
         ], NumberInputElement);
@@ -15247,7 +13894,498 @@ define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "ex
     })();
     exports.NumberInputElement = NumberInputElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_33) {
+define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_25) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.isDropdownElement = exports.HTMLEDropdownElement = void 0;
+    function isDropdownElement(elem) {
+        return elem.tagName.toLowerCase() === 'e-dropdown';
+    }
+    exports.isDropdownElement = isDropdownElement;
+    let HTMLEDropdownElement = /** @class */ (() => {
+        let HTMLEDropdownElement = class HTMLEDropdownElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_25.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                    position: relative;
+                    user-select: none;
+                    white-space: nowrap;
+                }
+
+                :host(:not([expanded])) ::slotted([slot="content"]) {
+                    display: none;
+                }
+
+                :host ::slotted([slot="content"]) {
+                    display: flex;
+                    z-index: 1;
+                    position: absolute;
+
+                    left: 0;
+                    top: 100%;
+
+                    padding: 8px 0;
+                    background-color: white;
+                    border: 1px solid grey;
+                }
+            </style>
+            <slot id="button" name="button"></slot>
+            <slot id="content" name="content"></slot>
+        `);
+                this.button = null;
+                this.content = null;
+            }
+            connectedCallback() {
+                var _a, _b;
+                const buttonSlot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.getElementById('button');
+                if (buttonSlot) {
+                    buttonSlot.addEventListener('slotchange', (event) => {
+                        const button = event.target.assignedElements()[0];
+                        this.button = button;
+                        button.addEventListener('click', () => {
+                            if (!this.expanded) {
+                                this.expanded = true;
+                                setTimeout(() => {
+                                    document.addEventListener('click', clickOutListener);
+                                });
+                            }
+                            else {
+                                this.expanded = false;
+                                document.removeEventListener('click', clickOutListener);
+                            }
+                        });
+                        const clickOutListener = (event) => {
+                            if (!this.contains(event.currentTarget)) {
+                                this.expanded = false;
+                                document.removeEventListener('click', clickOutListener);
+                            }
+                        };
+                    });
+                }
+                const contentSlot = (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.getElementById('content');
+                if (contentSlot) {
+                    contentSlot.addEventListener('slotchange', (event) => {
+                        const contentElem = event.target.assignedElements()[0];
+                        this.content = contentElem;
+                        this.content.addEventListener('click', (event) => {
+                            event.stopImmediatePropagation();
+                        });
+                    });
+                }
+            }
+        };
+        HTMLEDropdownElement = __decorate([
+            HTMLElement_25.RegisterCustomHTMLElement({
+                name: 'e-dropdown'
+            }),
+            HTMLElement_25.GenerateAttributeAccessors([
+                { name: 'expanded', type: 'boolean' },
+            ])
+        ], HTMLEDropdownElement);
+        return HTMLEDropdownElement;
+    })();
+    exports.HTMLEDropdownElement = HTMLEDropdownElement;
+});
+define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_26) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLEMenuButtonElement = void 0;
+    let BaseHTMLEMenuButtonElement = /** @class */ (() => {
+        let BaseHTMLEMenuButtonElement = class BaseHTMLEMenuButtonElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_26.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    position: relative;
+                    display: inline-block;
+
+                    user-select: none;
+                    white-space: nowrap;
+
+                    padding: 3px 6px;
+                    background-color: white;
+
+                    cursor: pointer;
+                }
+
+                :host(:focus) {
+                    outline: 1px solid -webkit-focus-ring-color;
+                }
+
+                :host(:hover),
+                :host(:focus-within) {
+                    color: white;
+                    background-color: rgb(92, 92, 92);
+                }
+
+                :host([disabled]) {
+                    color: rgb(180, 180, 180);
+                }
+
+                :host(:hover) [part~="visual"],
+                :host(:focus) [part~="visual"],
+                :host(:focus-within) [part~="visual"] {
+                    color: inherit;
+                }
+
+                :host(:focus) ::slotted([slot="menu"]),
+                :host(:focus-within) ::slotted([slot="menu"]) {
+                    color: initial;
+                }
+
+                :host(:focus[disabled]),
+                :host(:focus-within[disabled]) {
+                    background-color: rgb(220, 220, 220);
+                }
+
+                :host ::slotted([slot="menu"]) {
+                    z-index: 1;
+                    position: absolute;
+                    
+                    top: 100%;
+                    left: 0;
+                }
+
+                :host ::slotted([slot="menu"]:not(:focus-within)) {
+                    max-width: 0;
+                    max-height: 0;
+                    padding: 0;
+                    overflow: clip;
+                }
+
+                [part~="li"] {
+                    display: flex;
+                    height: 100%;
+                    list-style-type: none;
+                }
+
+                [part~="content"] {
+                    font-size: 1em;
+                    flex: auto;
+                    display: flex;
+                }
+
+                [part~="icon"] {
+                    flex: none;
+                    display: none;
+                    width: 16px;
+                    margin-right: 2px;
+                }
+
+                [part~="label"] {
+                    flex: auto;
+                    text-align: left;
+                }
+
+                [part~="arrow"] {
+                    flex: none;
+                    margin-left: 8px;
+                    transform: rotate(90deg);
+                }
+
+                [part~="visual"] {
+                    color: rgb(92, 92, 92);
+                    font-size: 1.6em;
+                    line-height: 0.625;
+                }
+
+                [part~="visual"]::after {
+                    pointer-events: none;
+                }
+
+                :host(:not([icon])) [part~="icon"] {
+                    visibility: hidden;
+                }
+
+                :host [part~="arrow"]::after {
+                    content: "»";
+                }
+            </style>
+            <li part="li">
+                <span part="content">
+                    <span part="visual icon"></span>
+                    <span part="label"></span>
+                    <span part="visual arrow"></span>
+                </span>
+                <slot name="menu" part="menu"></slot>
+            </li>
+        `);
+                this.childMenu = null;
+                this.addEventListener("keydown", (event) => {
+                    switch (event.key) {
+                        case "Enter":
+                            if (!this.active) {
+                                this.active = true;
+                                if (this.childMenu) {
+                                    this.childMenu.focusItemAt(0);
+                                }
+                            }
+                            break;
+                        case "Escape":
+                            this.focus();
+                            this.active = false;
+                            break;
+                    }
+                });
+                this.addEventListener("click", () => {
+                    this.trigger();
+                });
+                this.addEventListener("blur", (event) => {
+                    let containsNewFocus = (event.relatedTarget !== null) && this.contains(event.relatedTarget);
+                    if (!containsNewFocus) {
+                        this.active = false;
+                    }
+                }, { capture: true });
+            }
+            trigger() {
+                if (!this.active) {
+                    this.active = true;
+                    if (this.childMenu) {
+                        this.childMenu.focus();
+                    }
+                }
+                else {
+                    this.active = false;
+                }
+            }
+            attributeChangedCallback(name, oldValue, newValue) {
+                var _a, _b;
+                if (newValue !== oldValue) {
+                    switch (name) {
+                        case "label":
+                            if (oldValue !== newValue) {
+                                const labelPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=label]");
+                                if (labelPart) {
+                                    labelPart.textContent = newValue;
+                                }
+                            }
+                            break;
+                        case "icon":
+                            if (oldValue !== newValue) {
+                                const iconPart = (_b = this.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector("[part~=icon]");
+                                if (iconPart) {
+                                    iconPart.textContent = newValue;
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
+            connectedCallback() {
+                var _a;
+                this.tabIndex = this.tabIndex;
+                const menuSlot = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("slot[name=menu]");
+                if (menuSlot) {
+                    menuSlot.addEventListener("slotchange", () => {
+                        const menuElem = menuSlot.assignedElements()[0];
+                        if (HTMLElement_26.isTagElement("e-menu", menuElem)) {
+                            this.childMenu = menuElem;
+                        }
+                    });
+                }
+            }
+        };
+        BaseHTMLEMenuButtonElement = __decorate([
+            HTMLElement_26.RegisterCustomHTMLElement({
+                name: "e-menubutton",
+                observedAttributes: ["icon", "label", "checked"]
+            }),
+            HTMLElement_26.GenerateAttributeAccessors([
+                { name: "name", type: "string" },
+                { name: "active", type: "boolean" },
+                { name: "label", type: "string" },
+                { name: "icon", type: "string" },
+                { name: "type", type: "string" },
+                { name: "disabled", type: "boolean" },
+            ])
+        ], BaseHTMLEMenuButtonElement);
+        return BaseHTMLEMenuButtonElement;
+    })();
+    exports.BaseHTMLEMenuButtonElement = BaseHTMLEMenuButtonElement;
+});
+define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_27) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.PanelElement = void 0;
+    let PanelElement = /** @class */ (() => {
+        let PanelElement = class PanelElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_27.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                }
+
+                :host([state='closed']) #label,
+                :host([state='closed']) #content {
+                    display: none;
+                }
+
+                :host([state='closed']) #header {
+                    padding: 0;
+                }
+
+                :host([state='closed']) #arrow {
+                    display: inherit;
+                }
+                
+                :host([state='opened']) #label,
+                :host([state='opened']) #content {
+                    display: inherit;
+                }
+
+                :host([state='opened']) #arrow {
+                    display: none;
+                }
+
+                #content {
+                    padding: var(--content-padding, inherit);
+                }
+
+                #header {
+                    color: var(--header-color, inherit);
+                    text-align: center;
+                    padding-top: 0;
+
+                    user-select: none;
+                }
+
+                #header:hover {
+                    --color: var(--header-hover-color, var(--header-color));
+                    color: var(--header-hover-color, var(--header-color));
+                    font-weight: var(--header-hover-font-weight);
+                }
+            </style>
+            <div>
+                <div id="header">
+                    <span id="arrow"></span>
+                    <span id="label"></span>
+                </div>
+                <div id="content">
+                    <slot></slot>
+                </div>
+            </div>
+        `);
+                const header = this.shadowRoot.getElementById('header');
+                header.addEventListener('click', () => {
+                    this.state = (this.state === 'opened') ? 'closed' : 'opened';
+                });
+            }
+            async render() {
+                const label = this.shadowRoot.getElementById('label');
+                const arrow = this.shadowRoot.getElementById('arrow');
+                let rect = this.getBoundingClientRect();
+                const arr = (rect.left < window.innerWidth / 2) ? '>' : '<';
+                arrow.innerHTML = arr;
+                label.innerHTML = this.label || '';
+            }
+            connectedCallback() {
+                this.label = this.label || 'label';
+                this.state = this.state || 'opened';
+                this.render();
+            }
+        };
+        PanelElement = __decorate([
+            HTMLElement_27.RegisterCustomHTMLElement({
+                name: 'e-panel',
+                observedAttributes: ['state']
+            }),
+            HTMLElement_27.GenerateAttributeAccessors([
+                { name: 'label', type: 'string' },
+                { name: 'state', type: 'string' },
+            ])
+        ], PanelElement);
+        return PanelElement;
+    })();
+    exports.PanelElement = PanelElement;
+});
+define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_28) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.PanelGroupElement = void 0;
+    let PanelGroupElement = /** @class */ (() => {
+        let PanelGroupElement = class PanelGroupElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_28.bindShadowRoot(this, /*template*/ `
+            <link rel="stylesheet" href="css/theme.css"/>
+            <style>
+                :host {
+                    display: block;
+                }
+
+                :host([state='closed']) #content {
+                    display: none;
+                }
+
+                :host([state='closed']) #less {
+                    display: none;
+                }
+
+                :host([state='opened']) #more {
+                    display: none;
+                }
+
+                #toggler {
+                    display: flex;
+                }
+
+                #toggler:hover {
+                    font-weight: 500;
+                    color: var(--label-on-hover-color);
+                }
+
+                #label {
+                    flex: 1;
+                }
+            </style>
+            <div>
+                <div id="toggler">
+                    <span id="arrow"><!--<icon #less><icon #more>--></span>
+                    <span id="label"></span>
+                </div>
+                <div id="content">
+                    <slot></slot>
+                </div>
+            </div>
+        `);
+                this.state = this.state || 'closed';
+            }
+            connectedCallback() {
+                const toggler = this.shadowRoot.querySelector('#toggler');
+                const arrow = this.shadowRoot.querySelector('#arrow');
+                const label = this.shadowRoot.querySelector('#label');
+                toggler.addEventListener('click', () => {
+                    if (this.state === 'opened') {
+                        this.state = 'closed';
+                    }
+                    else if (this.state === 'closed') {
+                        this.state = 'opened';
+                    }
+                });
+                label.innerHTML = this.label;
+            }
+        };
+        PanelGroupElement.observedAttributes = ['state'];
+        PanelGroupElement = __decorate([
+            HTMLElement_28.RegisterCustomHTMLElement({
+                name: 'e-panel-group'
+            }),
+            HTMLElement_28.GenerateAttributeAccessors([
+                { name: 'label', type: 'string' },
+                { name: 'state', type: 'string' },
+            ])
+        ], PanelGroupElement);
+        return PanelGroupElement;
+    })();
+    exports.PanelGroupElement = PanelGroupElement;
+});
+define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_29) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuBarElement = exports.HTMLEMenuBarElement = void 0;
@@ -15259,11 +14397,11 @@ define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exp
         let HTMLEMenuBarElement = class HTMLEMenuBarElement extends HTMLElement {
         };
         HTMLEMenuBarElement = __decorate([
-            HTMLElement_33.RegisterCustomHTMLElement({
+            HTMLElement_29.RegisterCustomHTMLElement({
                 name: "e-menubar",
                 observedAttributes: ["active"]
             }),
-            HTMLElement_33.GenerateAttributeAccessors([
+            HTMLElement_29.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
                 { name: "active", type: "boolean" },
             ])
@@ -15272,7 +14410,7 @@ define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exp
     })();
     exports.HTMLEMenuBarElement = HTMLEMenuBarElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_34) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_30) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuItemElement = exports.HTMLEMenuItemElement = void 0;
@@ -15284,11 +14422,11 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
         let HTMLEMenuItemElement = class HTMLEMenuItemElement extends HTMLElement {
         };
         HTMLEMenuItemElement = __decorate([
-            HTMLElement_34.RegisterCustomHTMLElement({
+            HTMLElement_30.RegisterCustomHTMLElement({
                 name: "e-menuitem",
                 observedAttributes: ["icon", "label", "checked"]
             }),
-            HTMLElement_34.GenerateAttributeAccessors([
+            HTMLElement_30.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
                 { name: "label", type: "string" },
                 { name: "icon", type: "string" },
@@ -15302,7 +14440,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
     })();
     exports.HTMLEMenuItemElement = HTMLEMenuItemElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_35) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_31) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
@@ -15314,11 +14452,11 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
         let HTMLEMenuItemGroupElement = class HTMLEMenuItemGroupElement extends HTMLElement {
         };
         HTMLEMenuItemGroupElement = __decorate([
-            HTMLElement_35.RegisterCustomHTMLElement({
+            HTMLElement_31.RegisterCustomHTMLElement({
                 name: "e-menuitemgroup",
                 observedAttributes: ["label", "active"]
             }),
-            HTMLElement_35.GenerateAttributeAccessors([
+            HTMLElement_31.GenerateAttributeAccessors([
                 { name: "active", type: "boolean" },
                 { name: "label", type: "string" },
                 { name: "type", type: "string" },
@@ -15331,7 +14469,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
     })();
     exports.HTMLEMenuItemGroupElement = HTMLEMenuItemGroupElement;
 });
-define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_36) {
+define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.WindowElement = void 0;
@@ -15339,7 +14477,7 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
         let WindowElement = class WindowElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_36.bindShadowRoot(this, /*template*/ `
+                HTMLElement_32.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -15416,10 +14554,10 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
             }
         };
         WindowElement = __decorate([
-            HTMLElement_36.RegisterCustomHTMLElement({
+            HTMLElement_32.RegisterCustomHTMLElement({
                 name: 'e-window'
             }),
-            HTMLElement_36.GenerateAttributeAccessors([
+            HTMLElement_32.GenerateAttributeAccessors([
                 { name: 'title', type: 'string' },
                 { name: 'tooltip', type: 'string' },
                 { name: 'toggled', type: 'boolean' }
@@ -15429,7 +14567,7 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
     })();
     exports.WindowElement = WindowElement;
 });
-define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3"], function (require, exports, HTMLElement_37, Vector3_8) {
+define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3"], function (require, exports, HTMLElement_33, Vector3_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3InputElement = void 0;
@@ -15437,7 +14575,7 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
         let Vector3InputElement = class Vector3InputElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_37.bindShadowRoot(this, /*template*/ `
+                HTMLElement_33.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -15471,7 +14609,7 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
             Y <input part="input" id="y" is="number-input" type="text" spellcheck="false" value="0"/>
             Z <input part="input" id="z" is="number-input" type="text" spellcheck="false" value="0"/>
         `);
-                this.vector = new Vector3_8.Vector3();
+                this.vector = new Vector3_7.Vector3();
                 this.shadowRoot.getElementById('x').addEventListener('input', (event) => {
                     this.vector.x = parseFloat(event.target.value) || 0;
                 });
@@ -15494,10 +14632,10 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
             }
         };
         Vector3InputElement = __decorate([
-            HTMLElement_37.RegisterCustomHTMLElement({
+            HTMLElement_33.RegisterCustomHTMLElement({
                 name: 'e-vector3-input'
             }),
-            HTMLElement_37.GenerateAttributeAccessors([
+            HTMLElement_33.GenerateAttributeAccessors([
                 { name: 'label' },
                 { name: 'tooltip' }
             ])
@@ -15506,35 +14644,343 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
     })();
     exports.Vector3InputElement = Vector3InputElement;
 });
-class AbstractItemModel {
-    data() {
-    }
-}
-define("engine/editor/models/Model", ["require", "exports", "engine/libs/patterns/messaging/events/EventDispatcher"], function (require, exports, EventDispatcher_2) {
+define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_34) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    // set event
+    exports.PaletteElement = void 0;
+    let PaletteElement = /** @class */ (() => {
+        let PaletteElement = class PaletteElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_34.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: block;
+                    content: contains;
+                }
+
+               :host #container {
+                    display: grid;
+                    grid-template-cols: repeat(5, 1fr);
+                    grid-auto-rows: 16px;
+                }
+            </style>
+            <div id="container">
+            </div>
+        `);
+            }
+            connectedCallback() {
+                const colors = this.colors;
+                if (colors.length > 0) {
+                    this.shadowRoot.querySelector('#container').append(...colors.map((color) => {
+                        const div = document.createElement('div');
+                        div.setAttribute('style', `background-color: ${color}`);
+                        return div;
+                    }));
+                }
+            }
+        };
+        PaletteElement = __decorate([
+            HTMLElement_34.RegisterCustomHTMLElement({
+                name: 'e-palette'
+            }),
+            HTMLElement_34.GenerateAttributeAccessors([{ name: 'colors', type: 'json' }])
+        ], PaletteElement);
+        return PaletteElement;
+    })();
+    exports.PaletteElement = PaletteElement;
+});
+define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_35) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseHTMLELoaderElement = void 0;
+    let BaseHTMLELoaderElement = /** @class */ (() => {
+        let BaseHTMLELoaderElement = class BaseHTMLELoaderElement extends HTMLElement {
+            constructor() {
+                super();
+                HTMLElement_35.bindShadowRoot(this, /*template*/ `
+            <style>
+                :host {
+                    display: inline-block;
+                }
+                
+                :host([type="bar"]) {
+                    display: inline-block;
+                    width: 64px;
+                }
+
+                :host([type]:not([type="circle"])) [part~="circle"] {
+                    display: none !important;
+                }
+                
+                :host(:not([type="bar"])) [part~="bar"] {
+                    display: none !important;
+                }
+
+                [part~="circle"] {
+                    position: relative;
+                    width: 12px;
+                    height: 12px;
+                    border-top: 4px solid rgb(0, 128, 255);
+                    border-right: 4px solid rgb(0, 128, 255);
+                    border-left: 4px solid transparent;
+                    border-bottom: 4px solid transparent;
+                    border-radius: 50%;
+                    animation-duration: 1s;
+                    animation-name: circle;
+                    animation-timing-function: linear;
+                    animation-iteration-count: infinite;
+                }
+
+                @keyframes circle {
+                    0% {
+                        transform: rotate(0);
+                    }
+                    100% {
+                        transform: rotate(360deg);
+                    }
+                }
+
+                [part~="bar"] {
+                    display: block;
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                [part~="slider"] {
+                    position: relative;
+                    display: flex;
+                    will-change: transform;
+                    animation-duration: 1s;
+                    animation-name: slider;
+                    animation-timing-function: linear;
+                    animation-iteration-count: infinite;
+                }
+
+                [part~="cursor"] {
+                    position: relative;
+                    display: inline-block;
+                    width: 16px;
+                    height: 4px;
+                    background-color: rgb(0, 128, 255);
+                    border-radius: 4px;
+
+                    will-change: transform;
+                    animation-duration: 1s;
+                    animation-name: cursor;
+                    animation-timing-function: linear;
+                    animation-iteration-count: infinite;
+                }
+
+                @keyframes slider {
+                    0% {
+                        transform: translateX(0);
+                    }
+                    100% {
+                        transform: translateX(100%);
+                    }
+                }
+
+                @keyframes cursor {
+                    0% {
+                        transform: translateX(-100%);
+                    }
+                    100% {
+                        transform: translateX(100%);
+                    }
+                }
+            </style>
+            <div part="bar">
+                <div part="slider">
+                    <div part="cursor"></div>
+                </div>
+            </div>
+            <div part="circle"></div>
+        `);
+            }
+        };
+        BaseHTMLELoaderElement = __decorate([
+            HTMLElement_35.RegisterCustomHTMLElement({
+                name: "e-loader"
+            }),
+            HTMLElement_35.GenerateAttributeAccessors([
+                { name: "type", type: "string" }
+            ])
+        ], BaseHTMLELoaderElement);
+        return BaseHTMLELoaderElement;
+    })();
+    exports.BaseHTMLELoaderElement = BaseHTMLELoaderElement;
+});
+define("engine/editor/models/AbstractModel", ["require", "exports", "engine/libs/patterns/messaging/events/EventDispatcher"], function (require, exports, EventDispatcher_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.AbstractModel = exports.ModelModifiedEvent = void 0;
+    class ModelModifiedEvent {
+        constructor(modification, index, property) {
+            this.type = "modified";
+            this.modification = modification;
+            this.index = index;
+            this.property = property;
+        }
+    }
+    exports.ModelModifiedEvent = ModelModifiedEvent;
     class AbstractModel extends EventDispatcher_2.EventDispatcher {
+        constructor(data) {
+            super();
+            this._data = data;
+        }
+        replaceItem(index, data) {
+            let atIndex = this.getItem(index);
+            if (atIndex) {
+                let atIndexKeys = Object.keys(atIndex);
+                let dataKeys = Object.keys(data);
+                let oldKeys = atIndexKeys.filter((key) => dataKeys.indexOf(key) < 0);
+                for (let oldKey of oldKeys) {
+                    delete atIndex[oldKey];
+                }
+                for (let dataKey of dataKeys) {
+                    atIndex[dataKey] = data[dataKey];
+                }
+                this.dispatchEvent(new ModelModifiedEvent("replaceItem", index));
+            }
+        }
+        insertItem(index, data) {
+            let newIndex = this._createItem(index);
+            if (newIndex) {
+                for (let item in newIndex) {
+                    newIndex[item] = data[item];
+                }
+                this.dispatchEvent(new ModelModifiedEvent("insertItem", index));
+            }
+        }
+        removeItem(index) {
+            let removeSuccess = this._removeItem(index);
+            if (removeSuccess) {
+                this.dispatchEvent(new ModelModifiedEvent("removeItem", index));
+            }
+        }
+        getItemProperty(index, prop) {
+            let atIndex = this.getItem(index);
+            if (atIndex) {
+                return atIndex[prop];
+            }
+        }
+        setItemProperty(index, prop, data) {
+            let atIndex = this.getItem(index);
+            if (atIndex) {
+                atIndex[prop] = data;
+                this.dispatchEvent(new ModelModifiedEvent("setItemProperty", index, prop));
+            }
+        }
+        getProperty(prop) {
+            return this._data[prop];
+        }
+        setProperty(prop, data) {
+            this._data[prop] = data;
+            this.dispatchEvent(new ModelModifiedEvent("setProperty", {}, prop));
+        }
     }
-    // set event
-    class ItemModel extends AbstractModel {
+    exports.AbstractModel = AbstractModel;
+});
+define("engine/editor/models/ListModel", ["require", "exports", "engine/libs/patterns/messaging/events/EventDispatcher"], function (require, exports, EventDispatcher_3) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    class BaseItemModel extends EventDispatcher_3.EventDispatcher {
+        constructor(data) {
+            super();
+            this._data = data;
+        }
+        setProperties(data) {
+            let keys = Object.keys(data);
+            keys.forEach((key) => {
+                this._data[key] = data[key];
+            });
+            this.dispatchEvent(new EventDispatcher_3.Event("datachange", { model: this, properties: keys }));
+        }
     }
-    // insert event
-    // remove event
-    class ListModel extends AbstractModel {
-    }
-    // insert event
-    // remove event
-    class TreeModel extends AbstractModel {
+    class BaseListModel extends BaseItemModel {
+        constructor(data, items) {
+            super(data);
+            this._items = items;
+        }
+        get items() {
+            return this._items;
+        }
+        getItem(index) {
+            if (index >= 0 && index < this._items.length) {
+                return this._items[index];
+            }
+            return null;
+        }
+        itemsCount() {
+            return this._items.length;
+        }
+        updateItem(index, data) {
+            if (index >= 0 && index < this._items.length) {
+                let item = this._items[index];
+                for (let prop in data) {
+                    item[prop] = data[prop];
+                }
+                this.dispatchEvent(new EventDispatcher_3.Event("datachange", { type: "update", model: this, index: index }));
+            }
+        }
+        insertItem(index, data) {
+            if (index >= 0 && index < this._items.length) {
+                this._items.splice(index, 0, data);
+                this.dispatchEvent(new EventDispatcher_3.Event("datachange", { type: "insert", model: this, index: index }));
+            }
+        }
+        removeItem(index) {
+            if (index >= 0 && index < this._items.length) {
+                this._items.splice(index, 1);
+                this.dispatchEvent(new EventDispatcher_3.Event("datachange", { type: "remove", model: this, index: index }));
+            }
+        }
     }
 });
-// model() => item
-// Non-persistent i.e indexOf(this.element())
-// row / column / parent  (tree)
 // can be retrieved by row and column
-class MenuItemModel {
-}
-define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_17) {
+define("engine/editor/models/TreeModel", ["require", "exports", "engine/editor/models/AbstractModel"], function (require, exports, AbstractModel_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.TreeModel = void 0;
+    class TreeModel extends AbstractModel_1.AbstractModel {
+        constructor(data) {
+            super(data);
+        }
+        getItem(index) {
+            let parentIndex = index;
+            let nodeData = this._data;
+            while (parentIndex && parentIndex.parent) {
+                parentIndex = parentIndex.parent;
+                if (nodeData && nodeData.items) {
+                    nodeData = nodeData.items[parentIndex.index];
+                }
+            }
+            return nodeData;
+        }
+        _createItem(index) {
+            if (index.parent) {
+                let parent = this.getItem(index.parent);
+                if (parent && parent.items) {
+                    parent.items.splice(index.index, 0, {});
+                }
+            }
+            return {};
+        }
+        _removeItem(index) {
+            if (index.parent) {
+                let parent = this.getItem(index.parent);
+                if (parent && parent.items) {
+                    parent.items.splice(index.index, 1);
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+    exports.TreeModel = TreeModel;
+});
+define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_16) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StructuredFormData = void 0;
@@ -15549,7 +14995,7 @@ define("engine/editor/objects/StructuredFormData", ["require", "exports", "engin
             keys.forEach((key) => {
                 let value = formData.get(key);
                 if (value) {
-                    Snippets_17.setPropertyFromPath(structuredData, key, JSON.parse(value.toString()));
+                    Snippets_16.setPropertyFromPath(structuredData, key, JSON.parse(value.toString()));
                 }
             });
             return structuredData;
@@ -15557,20 +15003,45 @@ define("engine/editor/objects/StructuredFormData", ["require", "exports", "engin
     }
     exports.StructuredFormData = StructuredFormData;
 });
-define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_38) {
+define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_36) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.HTMLDraggableInputTemplate = void 0;
+    const HTMLDraggableInputTemplate = (desc) => {
+        return HTMLElement_36.HTMLElementConstructor("e-draggable", {
+            props: {
+                id: desc.id,
+                className: desc.className
+            },
+            children: [
+                HTMLElement_36.HTMLElementConstructor("input", {
+                    props: {
+                        name: desc.name,
+                        hidden: true
+                    },
+                    attr: {
+                        value: desc.value
+                    }
+                })
+            ]
+        });
+    };
+    exports.HTMLDraggableInputTemplate = HTMLDraggableInputTemplate;
+});
+define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_37) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLTableTemplate = void 0;
     const HTMLTableTemplate = (desc) => {
-        const thead = HTMLElement_38.HTMLElementConstructor("thead", {
+        const thead = HTMLElement_37.HTMLElementConstructor("thead", {
             children: [
-                HTMLElement_38.HTMLElementConstructor("tr", {
+                HTMLElement_37.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
                     },
                     children: desc.headerCells.map((cell) => {
-                        return HTMLElement_38.HTMLElementConstructor("th", {
+                        return HTMLElement_37.HTMLElementConstructor("th", {
                             props: {
                                 scope: "col"
                             },
@@ -15582,9 +15053,9 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 })
             ]
         });
-        const tbody = HTMLElement_38.HTMLElementConstructor("tbody", {
+        const tbody = HTMLElement_37.HTMLElementConstructor("tbody", {
             children: desc.bodyCells.map((row) => {
-                return HTMLElement_38.HTMLElementConstructor("tr", {
+                return HTMLElement_37.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
@@ -15594,13 +15065,13 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             switch (cell.type) {
                                 case "data":
                                 default:
-                                    return HTMLElement_38.HTMLElementConstructor("td", {
+                                    return HTMLElement_37.HTMLElementConstructor("td", {
                                         children: [
                                             cell.content
                                         ]
                                     });
                                 case "header":
-                                    return HTMLElement_38.HTMLElementConstructor("th", {
+                                    return HTMLElement_37.HTMLElementConstructor("th", {
                                         props: {
                                             scope: "row"
                                         },
@@ -15611,7 +15082,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             }
                         }
                         else {
-                            return HTMLElement_38.HTMLElementConstructor("td", {
+                            return HTMLElement_37.HTMLElementConstructor("td", {
                                 children: [
                                     cell
                                 ]
@@ -15621,9 +15092,9 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 });
             })
         });
-        const tfoot = HTMLElement_38.HTMLElementConstructor("tfoot", {
+        const tfoot = HTMLElement_37.HTMLElementConstructor("tfoot", {
             children: [
-                HTMLElement_38.HTMLElementConstructor("tr", {
+                HTMLElement_37.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
@@ -15633,13 +15104,13 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             switch (cell.type) {
                                 case "data":
                                 default:
-                                    return HTMLElement_38.HTMLElementConstructor("td", {
+                                    return HTMLElement_37.HTMLElementConstructor("td", {
                                         children: [
                                             cell.content
                                         ]
                                     });
                                 case "header":
-                                    return HTMLElement_38.HTMLElementConstructor("th", {
+                                    return HTMLElement_37.HTMLElementConstructor("th", {
                                         props: {
                                             scope: "row"
                                         },
@@ -15650,7 +15121,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             }
                         }
                         else {
-                            return HTMLElement_38.HTMLElementConstructor("td", {
+                            return HTMLElement_37.HTMLElementConstructor("td", {
                                 children: [
                                     cell
                                 ]
@@ -15660,7 +15131,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 })
             ]
         });
-        const table = HTMLElement_38.HTMLElementConstructor("table", {
+        const table = HTMLElement_37.HTMLElementConstructor("table", {
             props: {
                 id: desc.id,
                 className: desc.className,
@@ -15674,6 +15145,74 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
         return table;
     };
     exports.HTMLTableTemplate = HTMLTableTemplate;
+});
+define("engine/editor/views/MenuBarView", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_38) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    ;
+    ;
+    ;
+    ;
+    let HTMLMenuBarView = /** @class */ (() => {
+        let HTMLMenuBarView = class HTMLMenuBarView extends HTMLElement {
+            // index()
+            // parent
+            // parent.items.length
+            constructor() {
+                super();
+                HTMLElement_38.bindShadowRoot(this, /*template*/ `<e-menubar></e-menubar>`);
+                this._model = null;
+                this._element = this.shadowRoot.querySelector("e-menubar");
+            }
+            /*public getParentNode(index: TreeModelIndex): HTMLEMenuItemGroupElement | HTMLEMenuItemElement | null {
+                let parentIndex: ModelIndex | undefined = index;
+                let parentElement: HTMLEMenuBarElement | HTMLEMenuItemGroupElement | HTMLEMenuItemElement | null = this.element;
+                while (parentIndex && parentIndex.parent) {
+                    parentIndex = parentIndex.parent;
+                    parentElement =
+                        isTagElement("e-menuitem", parentElement) ? parentElement.childMenu!.items[parentIndex.index!] :
+                        isTagElement("e-menuitemgroup", parentElement) ? parentElement.items[parentIndex.index!] : null;
+                }
+                return isTagElement("e-menubar", parentElement) ? null : parentElement;
+            }*/
+            modelChanged(event) {
+                switch (event.modification) {
+                    case "insert":
+                        //this.getParentNode(event.index)?.insertAdjacentElement("beforebegin", HTMLElementConstructor("e-menuitem"));
+                        break;
+                    case "update":
+                        break;
+                    case "remove":
+                        break;
+                    //event.index.
+                }
+            }
+            get model() {
+                return this._model;
+            }
+            bindModel(model) {
+                if (this._model && this._model !== model) {
+                    this._model.removeEventListener("datachange", this.modelChanged);
+                    model.addEventListener("datachange", this.modelChanged);
+                }
+                this._model = model;
+                /*function handleItemsModels() {
+                    model.items.forEach((item) => {
+                        if (item.menu) {
+                            item.menu.items.forEach((item) => {*
+                            };
+                        }
+                    });
+                }*/
+            }
+        };
+        HTMLMenuBarView = __decorate([
+            HTMLElement_38.RegisterCustomHTMLElement({
+                name: "v-menubar"
+            })
+        ], HTMLMenuBarView);
+        return HTMLMenuBarView;
+    })();
 });
 define("engine/extras/profiler/Profiler", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -16167,11 +15706,11 @@ define("engine/libs/maths/extensions/pools/lists/Vector2LisPools", ["require", "
     const Vector2ListPool = new StackPool_12.StackPool(Vector2List_2.Vector2ListBase);
     exports.Vector2ListPool = Vector2ListPool;
 });
-define("engine/libs/maths/extensions/typed/TypedMatrix4", ["require", "exports", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/MathError"], function (require, exports, Matrix4_7, MathError_8) {
+define("engine/libs/maths/extensions/typed/TypedMatrix4", ["require", "exports", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/MathError"], function (require, exports, Matrix4_6, MathError_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TypedMatrix4Base = exports.TypedMatrix4 = void 0;
-    class TypedMatrix4Base extends Matrix4_7.Matrix4Base {
+    class TypedMatrix4Base extends Matrix4_6.Matrix4Base {
         constructor(type, values) {
             super();
             const ctor = (type || Float64Array);
@@ -16192,11 +15731,11 @@ define("engine/libs/maths/extensions/typed/TypedMatrix4", ["require", "exports",
     const TypedMatrix4 = TypedMatrix4Base;
     exports.TypedMatrix4 = TypedMatrix4;
 });
-define("engine/libs/maths/extensions/typed/TypedVector3", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/MathError"], function (require, exports, Vector3_9, MathError_9) {
+define("engine/libs/maths/extensions/typed/TypedVector3", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/MathError"], function (require, exports, Vector3_8, MathError_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TypedVector3Base = exports.TypedVector3 = void 0;
-    class TypedVector3Base extends Vector3_9.Vector3Base {
+    class TypedVector3Base extends Vector3_8.Vector3Base {
         constructor(type, values) {
             super();
             const ctor = (type || Float64Array);
@@ -16217,16 +15756,16 @@ define("engine/libs/maths/extensions/typed/TypedVector3", ["require", "exports",
     const TypedVector3 = TypedVector3Base;
     exports.TypedVector3 = TypedVector3;
 });
-define("engine/libs/maths/geometry/primitives/Quad", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/injectors/Injector"], function (require, exports, Vector3_10, Injector_13) {
+define("engine/libs/maths/geometry/primitives/Quad", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/injectors/Injector"], function (require, exports, Vector3_9, Injector_13) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuadBase = exports.QuadInjector = exports.Quad = void 0;
     class QuadBase {
         constructor(point1, point2, point3, point4) {
-            this._point1 = point1 || new Vector3_10.Vector3([0, 0, 0]);
-            this._point2 = point2 || new Vector3_10.Vector3([0, 0, 0]);
-            this._point3 = point3 || new Vector3_10.Vector3([0, 0, 0]);
-            this._point4 = point4 || new Vector3_10.Vector3([0, 0, 0]);
+            this._point1 = point1 || new Vector3_9.Vector3([0, 0, 0]);
+            this._point2 = point2 || new Vector3_9.Vector3([0, 0, 0]);
+            this._point3 = point3 || new Vector3_9.Vector3([0, 0, 0]);
+            this._point4 = point4 || new Vector3_9.Vector3([0, 0, 0]);
         }
         get point1() {
             return this._point1;
@@ -16297,14 +15836,14 @@ define("engine/libs/maths/geometry/primitives/Quad", ["require", "exports", "eng
     });
     exports.QuadInjector = QuadInjector;
 });
-define("engine/libs/maths/geometry/primitives/Ray", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/extensions/pools/Vector3Pools"], function (require, exports, Vector3_11, Injector_14, Vector3Pools_7) {
+define("engine/libs/maths/geometry/primitives/Ray", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/extensions/pools/Vector3Pools"], function (require, exports, Vector3_10, Injector_14, Vector3Pools_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RayBase = exports.RayInjector = exports.Ray = void 0;
     class RayBase {
         constructor(origin, direction) {
-            this._origin = origin || new Vector3_11.Vector3([0, 0, 0]);
-            this._direction = direction || new Vector3_11.Vector3([0, 0, 0]);
+            this._origin = origin || new Vector3_10.Vector3([0, 0, 0]);
+            this._direction = direction || new Vector3_10.Vector3([0, 0, 0]);
         }
         get origin() {
             return this._origin;
@@ -16760,4 +16299,689 @@ if (!Object.entries) {
         return resArray;
     };
 }
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_4, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_7, Vector2_3, Vector3_11, Snippets_17, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_1, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_39, Loader_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.launchScene = exports.start = void 0;
+    StatusBar_1.HTMLEStatusBarElement;
+    StatusItem_2.HTMLEStatusItemElement;
+    Import_1.BaseHTMLEImportElement;
+    Panel_1.PanelElement;
+    PanelGroup_1.PanelGroupElement;
+    Tab_1.BaseHTMLETabElement;
+    TabList_1.BaseHTMLETabListElement;
+    TabPanel_2.BaseHTMLETabPanelElement;
+    Dropdown_1.HTMLEDropdownElement;
+    BreadcrumbTrail_1.HTMLEBreadcrumbTrailElement;
+    BreadcrumbItem_2.HTMLEBreadcrumbItemElement;
+    Palette_1.PaletteElement;
+    Draggable_1.BaseHTMLEDraggableElement;
+    MenuBar_1.BaseHTMLEMenuBarElement;
+    MenuButton_1.BaseHTMLEMenuButtonElement;
+    Menu_1.BaseHTMLEMenuElement;
+    MenuItem_1.BaseHTMLEMenuItemElement;
+    Dropzone_1.BaseHTMLEDropzoneElement;
+    MenuItemGroup_1.BaseHTMLEMenuItemGroupElement;
+    MenuItem_1.BaseHTMLEMenuItemElement;
+    Loader_1.BaseHTMLELoaderElement;
+    const simpleSceneDOM = /*template*/ `
+<link rel="stylesheet" href="../css/main.css"/>
+  <div>
+
+    <div class="flex-rows">
+
+      <!--<e-import src="html/samples/menus.html"></e-import>-->
+      <nav class="flex-cols">
+          <div id="menubar-container"></div>
+        <!--<button data-command="get">get</button>
+        <button data-command="set">set</button>-->
+      </nav>
+
+      <div class="flex-auto flex-cols">
+
+        <!--<e-window title="My window">-->
+<!--
+
+        </e-window>-->
+
+        <e-panel id="panel-1" class="flex-rows flex-none" state="opened" label="L.Panel">
+
+            <e-tablist id="list">
+              <e-tab name="play" controls="play-panel" active>Play tab</e-tab>
+              <e-tab name="pause" controls="pause-panel">Pause Tab</e-tab>
+            </e-tablist>
+            <e-tabpanel id="play-panel">
+              <e-loader></e-loader>
+              assets/editor/icons/play.svg
+            </e-tabpanel>
+            <e-tabpanel id="pause-panel">
+              <!--<e-palette cols="5" colors='[
+                "var(--theme-color-50)",
+                "var(--theme-color-100)",
+                "var(--theme-color-200)",
+                "var(--theme-color-300)",
+                "var(--theme-color-400)",
+                "var(--theme-color-500)",
+                "var(--theme-color-600)",
+                "var(--theme-color-700)",
+                "var(--theme-color-800)",
+                "var(--theme-color-900)",
+                "var(--theme-palette-color-1)",
+                "var(--theme-palette-color-2)",
+                "var(--theme-palette-color-3)"
+              ]'></e-palette>-->
+              <e-breadcrumbtrail>
+                <e-breadcrumbitem label="label 1"></e-breadcrumbitem>
+                <e-breadcrumbitem label="label 2"></e-breadcrumbitem>
+              </e-breadcrumbtrail>
+              <!--<e-dragzone>
+                <e-draggable id="draggableA" tabindex="-1" ref="A">A</e-draggable>
+                <e-draggable id="draggableB" tabindex="-1" ref="B">B</e-draggable>
+                <e-draggable id="draggableC" tabindex="-1" ref="C">C</e-draggable>
+                <e-draggable id="draggableD" tabindex="-1" ref="D">D</e-draggable>
+              </e-dragzone>
+              <e-dropzone id="dropzone1" tabindex="-1" multiple></e-dropzone>-->
+              <!--<details>
+                <summary>Summary..</summary>
+                <fieldset>
+                  <label>My label</label><input value="My input"></input>
+                  <details>
+                    <summary><label>aggregates</label><input value="1" type="number"></input></summary>
+                    <fieldset>
+                    <label>My internal label</label><input value="My internal input"></input>
+                  </details>
+                </fieldset>
+                </fieldset>
+              </details>-->
+              <input type="number" name="temp-radio" value="1"></input>
+            </e-tabpanel>
+              
+            <section>
+              <form id="test-form" novalidate>
+                <input name="number-input" type="number" value="10"></input><br/>
+                <input type="text" name="text-input"  value="Test"></input><br/>
+                <select>
+                  <option>Kek</option>
+                  <option>Kikou</option>
+                </select>
+                <input type="range" name="range-input" min="10" max="20" step="5"></input>
+                <progress id="file" max="100" value="70"> 70% </progress>
+                <br/>
+                <input type="radio" name="temp-radio" value="1"></input>
+                <input type="radio" name="temp-radio" value="2"></input><br/>
+                <textarea name="textarea-input">This is my tyext area.</textarea>
+                <a href="#">Follow this link</a>
+              </form>
+              <e-dropdown>
+                <button slot="button">My button</button>
+                <div slot="content">
+                  <ul>
+                    <li>1</li>
+                    <li>2</li>
+                  </ul>
+                  <input id="range" type="range" min="10" max="20" step="5"></input>
+                </div>
+              </e-dropdown>
+
+              <button data-button-role="dropdown" data-button-dropdown-target="dropdown">My button</button>
+              <div slot="content">
+                <ul>
+                  <li>1</li>
+                  <li>2</li>
+                </ul>
+                <input id="range" type="range" min="10" max="20" step="5"></input>
+              </div>
+              <!--<details>
+                <summary>Sum</summary>
+                <p>Requires a computer running an operating system.</p>
+              </details>-->
+            </section>
+        </e-panel>
+
+        <main class="flex-rows flex-auto">
+            <header class="centered">Toolbar</header>
+            <section class="centered padded">
+    
+              <div id="ui" class="flex-cols">
+                <div class="flex-auto"><span class="blue">"RigidBuddy FTW!"</span> <span class="yellow">:-)</span></div>
+                <div class="flex-none">FPS: <span id="canvas-fps">-.-</span></div>
+              </div>
+
+              <canvas id="canvas" tabindex="0" tooltip="mon-canvas"></canvas>
+              <e-logs-feed></e-logs-feed>
+
+            </section>
+
+            <footer class="centered">
+              <p id="status-bar"></p>
+            </footer>
+        </main>
+        
+        <e-panel id="panel-3" class="flex-rows flex-none" style="margin-left: 6px;" state="closed" label="R.Panel">
+            <section>
+              <e-panel-group label="My group" state="closed">
+                <div>My content</div>
+              </e-panel-group>
+            </section>
+        </e-panel>
+      </div>
+
+      <e-statusbar>
+        <e-statusitem name="show-fps-status"></e-statusitem>
+        <e-statusitem name="letter-status"></e-statusitem>
+        <!--<output>125</output>
+        <output>Kek</output>
+        <button id="play" data-lol="" data-kek="kek">Play</button>
+        <button id="pause" data-command-lol="pause-canvas">Pause</button>
+        <progress max="100" value="100" style="height: 100%">100%</progress>-->
+        <!--<e-dropdown class="statusbar-dropdown">
+          <button slot="button">My button</button>
+          <div slot="content">
+            <ul>
+              <li>1</li>
+              <li>2</li>
+            </ul>
+            <input id="range" type="range" min="10" max="20" step="5"></input>
+          </div>
+        </e-dropdown>-->
+      </e-statusbar>
+    </div>
+  </div>`;
+    async function start() {
+        document.addEventListener("contextmenu", (event) => {
+            let menu = HTMLElement_39.HTMLElementConstructor("e-menu", { children: [HTMLElement_39.HTMLElementConstructor("e-menuitem", { attr: { label: "Say my name!" } })] });
+            menu.style.position = "absolute";
+            menu.style.top = `${event.clientY}px`;
+            menu.style.left = `${event.clientX}px`;
+            document.body.append(menu);
+            let listener = (event) => {
+                let target = event.target;
+                if (!(menu == target || menu.contains(target))) {
+                    menu.remove();
+                    document.removeEventListener("focusin", listener);
+                }
+            };
+            menu.focus();
+            document.addEventListener("focusin", listener);
+            event.preventDefault();
+        });
+        const template = document.createElement('template');
+        template.innerHTML = simpleSceneDOM;
+        document.body.insertBefore(template.content, document.body.firstChild);
+        const imports = Array.from(document.getElementsByTagName('e-import'));
+        Promise.all(imports.map((imp) => {
+            return new Promise((resolve) => {
+                imp.addEventListener('loaded', () => {
+                    resolve(true);
+                }, { once: true });
+            });
+        })).then(function () {
+            Editor_3.editor.setup().then(() => {
+                launchScene();
+            });
+        });
+    }
+    exports.start = start;
+    /*
+    function test() {
+      const data = [
+        {
+          name: 'John Doe',
+          age: 25
+        },
+        {
+          name: 'Jane Doe',
+          age: 24
+        }
+      ];
+    
+      const table = HTMLTableTemplate({
+        headerCells: Object.keys(data[0]),
+        bodyCells: data.map(data => {
+          return [{type: 'header', content: data.name}, data.age.toString()];
+        }),
+        footerCells: [
+          {type: 'header', content: 'Total age'},
+          data.reduce((acc, curr) => {
+            return (acc + curr.age);
+          }, 0).toString()
+        ]
+      });
+    
+      document.querySelector('#play-panel')!.append(table);
+    }*/
+    window["editor"] = Editor_3.editor;
+    async function launchScene() {
+        var _a, _b, _c;
+        let frameRequest;
+        let render;
+        let fps = 0;
+        Editor_3.editor.registerCommand("play-canvas", {
+            exec() {
+                cancelAnimationFrame(frameRequest);
+                frameRequest = requestAnimationFrame(render);
+                canvas.focus();
+            },
+            context: 'default'
+        });
+        Editor_3.editor.registerCommand("pause-canvas", {
+            exec() {
+                cancelAnimationFrame(frameRequest);
+                canvas.focus();
+            },
+            context: 'default'
+        });
+        const showFpsMenuItem = (_a = Editor_3.editor.menubar) === null || _a === void 0 ? void 0 : _a.findItem((item) => item.name === "show-fps-item");
+        const canvasFPS = document.getElementById("canvas-fps");
+        if (showFpsMenuItem) {
+            showFpsMenuItem.command = "toggle-show-fps";
+            Editor_3.editor.addStateListener("show-fps", (showFps) => {
+                showFpsMenuItem.checked = showFps;
+            });
+        }
+        if (canvasFPS) {
+            Editor_3.editor.registerCommand('toggle-show-fps', {
+                exec() {
+                    Editor_3.editor.setState("show-fps", true);
+                    canvasFPS.parentElement.classList.remove('hidden');
+                },
+                undo() {
+                    Editor_3.editor.setState("show-fps", false);
+                    canvasFPS.parentElement.classList.add('hidden');
+                },
+                context: 'default'
+            });
+        }
+        const showFpsStatusItem = (_b = Editor_3.editor.statusbar) === null || _b === void 0 ? void 0 : _b.findItem((item) => item.name === "show-fps-status");
+        if (showFpsStatusItem) {
+            showFpsStatusItem.stateMap = (showFps) => {
+                return {
+                    content: `${showFps ? "FPS" : "--"}`
+                };
+            };
+            //showFpsStatusItem.update(editor.getState("show-fps"));
+            Editor_3.editor.addStateListener("show-fps", (showFps) => {
+                showFpsStatusItem.update(showFps);
+            });
+            showFpsStatusItem.command = "toggle-show-fps";
+        }
+        Editor_3.editor.registerCommand('change-favorite-letter', {
+            exec(value) {
+                Editor_3.editor.setState("favorite-letter", value);
+            },
+            undo(value) {
+            },
+            context: 'default'
+        });
+        const radiosGroup = document.querySelector("e-menuitemgroup[name='favorite-letter']");
+        if (radiosGroup) {
+            Editor_3.editor.addStateListener("favorite-letter", (favoriteLetter) => {
+                let radioToCheck = radiosGroup.items.find((item) => item.type === "radio" && item.value === favoriteLetter);
+                if (radioToCheck) {
+                    radioToCheck.checked = true;
+                }
+            });
+            radiosGroup.items.filter(item => item.type === "radio").forEach((item) => {
+                item.command = "change-favorite-letter";
+                item.commandArgs = item.value;
+            });
+        }
+        const letterStatus = (_c = Editor_3.editor.statusbar) === null || _c === void 0 ? void 0 : _c.findItem((item) => item.name === "letter-status");
+        if (letterStatus) {
+            letterStatus.stateMap = (letter) => {
+                return {
+                    content: `U like ${letter.toUpperCase()}`
+                };
+            };
+            //letterStatus.update(editor.getState("favorite-letter"));
+            Editor_3.editor.addStateListener("favorite-letter", (favoriteLetter) => {
+                letterStatus.update(favoriteLetter);
+            });
+        }
+        await Editor_3.editor.reloadState();
+        /*const showFPSAction = (showFPS: boolean) => {
+          if (showFPS) {
+            canvasFPS.parentElement!.classList.remove('hidden');
+          }
+          else {
+            canvasFPS.parentElement!.classList.add('hidden');
+          }
+        };*/
+        /*showFPSAction(showFpsCheckbox.checked);
+      
+        if (showFpsCheckbox && canvasFPS) {
+          showFpsCheckbox.addEventListener('click', () => {
+            showFPSAction(showFpsCheckbox.checked);
+          });
+        }*/
+        /*const dropzone1 = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone1");
+        dropzone1?.addEventListener("datatransfer", ((event: EDataTransferEvent) => {
+          console.log(event.detail.data);
+          console.log(event.detail.success);
+          console.log(event.detail.position);
+        }) as EventListener);*/
+        /*
+        const draggableA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");
+        if (draggableA) {
+          draggableA.data = "A";
+          
+        }
+      
+        const draggableB = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableB");
+        if (draggableB) {
+          draggableB.data = "B";
+        }*/
+        const canvas = document.getElementById('canvas');
+        if (!canvas) {
+            return;
+        }
+        canvas.width = 1200;
+        canvas.height = 800;
+        const gl = canvas.getContext('webgl2', { antialias: true });
+        const assets = new Resources_1.Resources('assets/engine/');
+        await assets.loadList('resources.json');
+        // Shaders
+        const phongVert = assets.get('shaders/common/phong.vert');
+        const phongFrag = assets.get('shaders/common/phong.frag');
+        const skyboxVert = assets.get('shaders/common/skybox.vert');
+        const skyboxFrag = assets.get('shaders/common/skybox.frag');
+        const textureVert = assets.get('shaders/common/texture.vert');
+        const textureFrag = assets.get('shaders/common/texture.frag');
+        const primitiveVert = assets.get('shaders/common/primitive.vert');
+        const primitiveFrag = assets.get('shaders/common/primitive.frag');
+        // Images
+        const albedoMapImg = assets.get('img/brickwall.jpg');
+        const normalMapImg = assets.get('img/brickwall_normal.jpg');
+        const skyboxXPosImg = assets.get('img/skybox_x_pos.png');
+        const skyboxXNegImg = assets.get('img/skybox_x_neg.png');
+        const skyboxYPosImg = assets.get('img/skybox_y_pos.png');
+        const skyboxYNegImg = assets.get('img/skybox_y_neg.png');
+        const skyboxZPosImg = assets.get('img/skybox_z_pos.png');
+        const skyboxZNegImg = assets.get('img/skybox_z_neg.png');
+        const wavesNormalImg = assets.get('img/waves_normal.png');
+        const phongGlProg = WebGLProgramUtilities_1.WebGLProgramUtilties.createProgramFromSources(gl, phongVert, phongFrag);
+        const skyboxGlProg = WebGLProgramUtilities_1.WebGLProgramUtilties.createProgramFromSources(gl, skyboxVert, skyboxFrag);
+        const texGlProg = WebGLProgramUtilities_1.WebGLProgramUtilties.createProgramFromSources(gl, textureVert, textureFrag);
+        const primitiveGlProg = WebGLProgramUtilities_1.WebGLProgramUtilties.createProgramFromSources(gl, primitiveVert, primitiveFrag);
+        const cube = new CubeGeometry_1.CubeGeometry();
+        const icosahedron = new IcosahedronGeometry_1.IcosahedronGeometry();
+        const quad = new QuadGeometry_1.QuadGeometry();
+        const packetBindings = WebGLPacketUtilities_1.WebGLPacketUtilities.createPacketBindings(gl, {
+            texturesProps: {
+                albedoMap: WebGLTextureUtilities_2.WebGLTextureUtilities.guessTextureProperties({ pixels: albedoMapImg }),
+                normalMap: WebGLTextureUtilities_2.WebGLTextureUtilities.guessTextureProperties({ pixels: normalMapImg }),
+                skybox: WebGLTextureUtilities_2.WebGLTextureUtilities.guessTextureProperties({
+                    pixels: {
+                        xPos: skyboxXPosImg, xNeg: skyboxXNegImg,
+                        yPos: skyboxYPosImg, yNeg: skyboxYNegImg,
+                        zPos: skyboxZPosImg, zNeg: skyboxZNegImg
+                    },
+                    wrapS: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
+                    wrapT: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
+                    wrapR: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
+                    mag: WebGLConstants_9.TextureMagFilter.LINEAR,
+                    min: WebGLConstants_9.TextureMinFilter.LINEAR
+                }),
+                fbColorTex: WebGLTextureUtilities_2.WebGLTextureUtilities.guessTextureProperties({
+                    width: canvas.width, height: canvas.height, pixels: null,
+                    wrapS: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
+                    wrapT: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
+                    wrapR: WebGLConstants_9.TextureWrapMode.CLAMP_TO_EDGE,
+                    mag: WebGLConstants_9.TextureMagFilter.LINEAR,
+                    min: WebGLConstants_9.TextureMinFilter.LINEAR
+                }),
+            },
+            blocksProps: {
+                worldViewBlock: { name: 'WorldViewBlock', usage: WebGLConstants_9.BufferDataUsage.DYNAMIC_COPY },
+                lightsBlock: { name: 'LightsBlock', usage: WebGLConstants_9.BufferDataUsage.STATIC_READ },
+                phongBlock: { name: 'PhongBlock', usage: WebGLConstants_9.BufferDataUsage.STATIC_READ }
+            }
+        });
+        const worldViewBlock = packetBindings.blocks.worldViewBlock;
+        const lightsBlock = packetBindings.blocks.lightsBlock;
+        const phongBlock = packetBindings.blocks.phongBlock;
+        const albedoMap = packetBindings.textures.albedoMap;
+        const normalMap = packetBindings.textures.normalMap;
+        const skybox = packetBindings.textures.skybox;
+        const fbColorTex = packetBindings.textures.fbColorTex;
+        const fov = 30 * Math.PI / 180;
+        const aspect = gl.canvas.width / gl.canvas.height;
+        const zNear = 1;
+        const zFar = 100;
+        const projection = new Matrix4_7.Matrix4().asPerspective(fov, aspect, zNear, zFar);
+        const cam = new PerspectiveCamera_1.PerspectiveCamera(fov, aspect, zNear, zFar);
+        const eye = new Vector3_11.Vector3([3, 3, 0]);
+        const target = new Vector3_11.Vector3([0, 0, 0]);
+        const up = new Vector3_11.Vector3([0, 1, 0]);
+        const camera = new Matrix4_7.Matrix4().lookAt(eye, target, up);
+        const viewInverse = camera.clone();
+        const view = camera.clone().invert();
+        const viewProjection = projection.clone().mult(view);
+        const viewProjectionInverse = viewProjection.clone().invert();
+        const cubeTransform = new Transform_4.Transform();
+        const quadTransform = new Transform_4.Transform();
+        const cubeWorldArr = new Float32Array(16);
+        const cubeWorld = new Matrix4_7.Matrix4().setArray(cubeWorldArr).setIdentity().scaleScalar(0.5);
+        const quadWorld = new Matrix4_7.Matrix4().setIdentity().scaleScalar(2);
+        /*const vectorInput = document.createElement('e-vector3-input') as Vector3InputElement;
+        vectorInput.vector.setArray(cubeWorldArr.subarray(12, 15));
+        
+        document.querySelector('#panel-3 section')!.append(vectorInput);*/
+        const phongCubePacketValues = {
+            attributes: {
+                list: {
+                    a_position: { array: new Float32Array(cube.vertices.array), props: { numComponents: 3 } },
+                    a_normal: { array: new Float32Array(cube.verticesNormals.array), props: { numComponents: 3 } },
+                    a_tangent: { array: new Float32Array(cube.tangents.array), props: { numComponents: 3 } },
+                    a_bitangent: { array: new Float32Array(cube.bitangents.array), props: { numComponents: 3 } },
+                    a_color: { array: new Float32Array(Color_1.Color.array(...Array(cube.indices.length).fill(Color_1.Color.BLUE))), props: { numComponents: 4, normalized: true }
+                    },
+                    a_uv: { array: new Float32Array(cube.uvs.array), props: { numComponents: 2 } },
+                },
+                indices: new Uint16Array(cube.indices),
+            },
+            uniformBlocks: {
+                worldViewBlock: {
+                    block: worldViewBlock,
+                    list: {
+                        u_world: { value: new Float32Array(cubeWorld.array) },
+                        u_viewInverse: { value: new Float32Array(camera.array) },
+                        u_worldInverseTranspose: { value: new Float32Array(cubeWorld.clone().invert().transpose().array) },
+                        u_worldViewProjection: { value: new Float32Array(viewProjection.clone().mult(cubeWorld).array) }
+                    }
+                },
+                lightsBlock: {
+                    block: lightsBlock,
+                    list: {
+                        u_lightWorldPos: { value: [1, 6, -6] },
+                        u_lightColor: { value: [1, 0.8, 0.8, 1] },
+                        u_ambient: { value: [0, 0, 0, 1] },
+                    }
+                },
+                phongBlock: {
+                    block: phongBlock,
+                    list: {
+                        u_specular: { value: [1, 1, 1, 1] },
+                        u_shininess: { value: 50 },
+                        u_specularFactor: { value: 1 }
+                    }
+                }
+            },
+            uniforms: {
+                u_diffuseMap: { value: albedoMap },
+                u_normalMap: { value: normalMap }
+            }
+        };
+        const skyboxPacketValues = {
+            attributes: {
+                list: {
+                    a_position: { array: new Float32Array(quad.vertices.array), props: { numComponents: 3 } },
+                },
+                indices: new Uint16Array(quad.indices),
+            },
+            uniforms: {
+                u_world: { value: new Float32Array(quadWorld.array) },
+                u_viewDirectionProjectionInverse: { value: new Float32Array(viewProjectionInverse.array) },
+                u_skybox: { value: skybox },
+            }
+        };
+        const texPacketValues = {
+            attributes: {
+                list: {
+                    a_position: { array: new Float32Array(quad.vertices.array), props: { numComponents: 3 } },
+                    a_uv: { array: new Float32Array(quad.uvs.array), props: { numComponents: 2 } },
+                },
+                indices: new Uint16Array(quad.indices),
+            },
+            uniforms: {
+                u_world: { value: new Float32Array(new Matrix4_7.Matrix4().setIdentity().values) },
+                u_tex: { value: fbColorTex }
+            }
+        };
+        WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, phongGlProg);
+        const phongCubePacketSetter = WebGLPacketUtilities_1.WebGLPacketUtilities.getPacketSetter(gl, phongGlProg, phongCubePacketValues);
+        WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, phongCubePacketSetter, phongCubePacketValues);
+        WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, skyboxGlProg);
+        const skyboxPacketSetter = WebGLPacketUtilities_1.WebGLPacketUtilities.getPacketSetter(gl, skyboxGlProg, skyboxPacketValues);
+        WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, skyboxPacketSetter, skyboxPacketValues);
+        const fb = WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.createFramebuffer(gl);
+        WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.attachTexture(gl, fb, {
+            texTarget: WebGLConstants_9.FramebufferTextureTarget.TEXTURE_2D,
+            glTex: fbColorTex.glTex,
+            attachment: WebGLConstants_9.FramebufferAttachment.COLOR_ATTACHMENT0
+        });
+        const maxSamples = WebGLRendererUtilities_1.WebGLRendererUtilities.getParameter(gl, WebGLConstants_9.Parameter.MAX_SAMPLES);
+        const stencilRb = WebGLRenderbuffersUtilities_1.WebGLRenderbufferUtilities.createRenderbuffer(gl, {
+            internalFormat: WebGLConstants_9.PixelFormat.DEPTH24_STENCIL8,
+            width: canvas.width,
+            height: canvas.height,
+            samples: maxSamples
+        });
+        const antialiasRb = WebGLRenderbuffersUtilities_1.WebGLRenderbufferUtilities.createRenderbuffer(gl, {
+            internalFormat: WebGLConstants_9.PixelFormat.RGBA8,
+            width: canvas.width,
+            height: canvas.height,
+            samples: maxSamples
+        });
+        WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.attachRenderbuffers(gl, fb, [{
+                glRb: stencilRb.glRb,
+                attachment: WebGLConstants_9.FramebufferAttachment.DEPTH_STENCIL_ATTACHMENT
+            },
+            {
+                glRb: antialiasRb.glRb,
+                attachment: WebGLConstants_9.FramebufferAttachment.COLOR_ATTACHMENT0,
+            }]);
+        const postFb = WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.createFramebuffer(gl);
+        WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.attachTexture(gl, postFb, {
+            texTarget: WebGLConstants_9.FramebufferTextureTarget.TEXTURE_2D,
+            glTex: fbColorTex.glTex,
+            attachment: WebGLConstants_9.FramebufferAttachment.COLOR_ATTACHMENT0
+        });
+        WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, texGlProg);
+        const texPacketSetter = WebGLPacketUtilities_1.WebGLPacketUtilities.getPacketSetter(gl, texGlProg, texPacketValues);
+        WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, texPacketSetter, texPacketValues);
+        WebGLRendererUtilities_1.WebGLRendererUtilities.setViewport(gl, 0, 0, gl.canvas.width, gl.canvas.height);
+        WebGLRendererUtilities_1.WebGLRendererUtilities.enable(gl, WebGLConstants_9.Capabilities.DEPTH_TEST);
+        WebGLRendererUtilities_1.WebGLRendererUtilities.enable(gl, WebGLConstants_9.Capabilities.CULL_FACE);
+        let lastFrameTime = 0;
+        let deltaTime = 0;
+        let lastPos = new Vector2_3.Vector2();
+        await Input_3.Input.initialize(canvas);
+        render = function (frameTime) {
+            frameTime *= 0.001;
+            deltaTime = frameTime - lastFrameTime;
+            lastFrameTime = frameTime;
+            fps = 1 / deltaTime;
+            canvasFPS.innerHTML = fps.toFixed(2);
+            WebGLRendererUtilities_1.WebGLRendererUtilities.clearColor(gl, Color_1.Color.GREEN.valuesNormalized());
+            WebGLRendererUtilities_1.WebGLRendererUtilities.clear(gl, WebGLConstants_9.BufferMaskBit.COLOR_BUFFER_BIT | WebGLConstants_9.BufferMaskBit.DEPTH_BUFFER_BIT);
+            if (Input_3.Input.getMouseButtonDown(Input_3.MouseButton.RIGHT)) {
+                lastPos.copy(Input_3.Input.getMouseButtonPosition());
+            }
+            if (Input_3.Input.getMouseButton(Input_3.MouseButton.RIGHT)) {
+                const newPos = Input_3.Input.getMouseButtonPosition();
+                if (!newPos.equals(lastPos)) {
+                    const cameraPos = new Vector3_11.Vector3().setValues([camera.getAt(12), camera.getAt(13), camera.getAt(14)]);
+                    //console.log(`cameraPos ${cameraPos.x.toFixed(4)} ${cameraPos.y.toFixed(4)} ${cameraPos.z.toFixed(4)}`);
+                    const cameraTarget = target.clone();
+                    const deltaX = lastPos.y - newPos.y;
+                    const deltaY = newPos.x - lastPos.x;
+                    const deltaPhi = (Math.PI / canvas.clientWidth) * deltaX * 1000;
+                    const deltaTheta = (Math.PI / canvas.clientHeight) * deltaY * 1000;
+                    const cameraToTarget = cameraPos.clone().sub(cameraTarget);
+                    const radius = cameraToTarget.len();
+                    //console.log(`cameraToTarget ${cameraToTarget.x.toFixed(4)} ${cameraToTarget.y.toFixed(4)} ${cameraToTarget.z.toFixed(4)}`);
+                    let theta = Math.acos(cameraToTarget.z / radius);
+                    let phi = Math.atan2(cameraToTarget.y, cameraToTarget.x);
+                    theta = Snippets_17.clamp(theta - deltaTheta, 0, Math.PI);
+                    phi -= deltaPhi;
+                    //console.log(`theta ${theta.toFixed(4)} phi ${phi.toFixed(4)}`);
+                    // Turn back into Cartesian coordinates
+                    const newCameraPos = new Vector3_11.Vector3([
+                        radius * Math.sin(theta) * Math.cos(phi),
+                        radius * Math.sin(theta) * Math.sin(phi),
+                        radius * Math.cos(theta)
+                    ]);
+                    camera.setAt(12, newCameraPos.x);
+                    camera.setAt(13, newCameraPos.y);
+                    camera.setAt(14, newCameraPos.z);
+                    //console.log(`newCameraPos ${newCameraPos.x.toFixed(4)} ${newCameraPos.y.toFixed(4)} ${newCameraPos.z.toFixed(4)}`);
+                    camera.lookAt(newCameraPos, target, up);
+                    lastPos.copy(newPos);
+                }
+            }
+            viewInverse.copy(camera);
+            view.copy(viewInverse).invert();
+            viewProjection.copy(projection).mult(view);
+            viewProjectionInverse.copy(viewProjection).invert();
+            //cubeWorld.rotateY(deltaTime);
+            //viewProjectionInverse.rotateY(deltaTime / 2);
+            //viewProjectionInverse.rotateX(deltaTime);
+            WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.bindFramebuffer(gl, fb);
+            WebGLRendererUtilities_1.WebGLRendererUtilities.clear(gl, WebGLConstants_9.BufferMaskBit.COLOR_BUFFER_BIT | WebGLConstants_9.BufferMaskBit.DEPTH_BUFFER_BIT);
+            WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, phongGlProg);
+            WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, phongCubePacketSetter, {
+                uniformBlocks: {
+                    worldViewBlock: {
+                        block: worldViewBlock,
+                        list: {
+                            u_world: { value: new Float32Array(cubeWorld.array) },
+                            u_viewInverse: { value: new Float32Array(viewInverse.array) },
+                            u_worldInverseTranspose: { value: new Float32Array(cubeWorld.clone().invert().transpose().array) },
+                            u_worldViewProjection: { value: new Float32Array(viewProjection.clone().mult(cubeWorld).array) }
+                        }
+                    }
+                }
+            });
+            WebGLRendererUtilities_1.WebGLRendererUtilities.depthFunc(gl, WebGLConstants_9.TestFunction.LESS);
+            WebGLPacketUtilities_1.WebGLPacketUtilities.drawPacket(gl, phongCubePacketSetter);
+            WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, skyboxGlProg);
+            WebGLPacketUtilities_1.WebGLPacketUtilities.setPacketValues(gl, skyboxPacketSetter, {
+                uniforms: {
+                    u_world: { value: new Float32Array(quadWorld.array) },
+                    u_viewDirectionProjectionInverse: { value: new Float32Array(viewProjectionInverse.array) }
+                }
+            });
+            WebGLRendererUtilities_1.WebGLRendererUtilities.depthFunc(gl, WebGLConstants_9.TestFunction.LEQUAL);
+            WebGLPacketUtilities_1.WebGLPacketUtilities.drawPacket(gl, skyboxPacketSetter);
+            //WebGLFramebufferUtilities.unbindFramebuffer(gl, stencilFb);
+            WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.blit(gl, fb, postFb, [0, 0, canvas.width, canvas.height], [0, 0, canvas.width, canvas.height], WebGLConstants_9.BufferMaskBit.COLOR_BUFFER_BIT, WebGLConstants_9.TextureMagFilter.LINEAR);
+            //WebGLFramebufferUtilities.clearColor(gl, fb, [1, 1, 1, 1]);
+            WebGLFramebufferUtilities_1.WebGLFramebufferUtilities.unbindFramebuffer(gl);
+            /*WebGLFramebufferUtilities.blit(gl, postFb, null,
+              [0, 0, canvas.width, canvas.height],
+              [0, 0, canvas.width, canvas.height],
+              BufferMaskBit.COLOR_BUFFER_BIT,
+              TextureMagFilter.LINEAR
+            );*/
+            //WebGLFramebufferUtilities.clearColor(gl, postFb, [1, 1, 1, 1]);
+            WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, texGlProg);
+            WebGLRendererUtilities_1.WebGLRendererUtilities.depthFunc(gl, WebGLConstants_9.TestFunction.LEQUAL);
+            WebGLPacketUtilities_1.WebGLPacketUtilities.drawPacket(gl, texPacketSetter);
+            Input_3.Input.clear();
+            frameRequest = requestAnimationFrame(render);
+        };
+    }
+    exports.launchScene = launchScene;
+});
 //# sourceMappingURL=merged.js.map

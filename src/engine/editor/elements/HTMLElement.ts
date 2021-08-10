@@ -1,6 +1,5 @@
 import { forAllHierarchyElements } from "./Snippets";
 
-export { isElement };
 export { isTagElement };
 export { RegisterCustomHTMLElement };
 export { GenerateAttributeAccessors };
@@ -15,13 +14,6 @@ export { AttributeType };
 export { areAttributesMatching };
 export { BaseAttributeMutationMixin };
 export { createMutationObserverCallback };
-/*export { Property };
-export { CustomHTMLElement };
-export { HTMLEELement };
-*/
-function isElement(obj: any): obj is Element {
-    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE;
-}
 
 function isTagElement<K extends keyof HTMLElementTagNameMap>(tagName: K, obj: any): obj is HTMLElementTagNameMap[K] {
     return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() == tagName;
@@ -435,8 +427,8 @@ function createMutationObserverCallback(
     return (mutationsList: MutationRecord[]) =>  {
         mutationsList.forEach((mutation: MutationRecord) => {
             mutation.addedNodes.forEach((node: Node) => {
-                if (isElement(node)) {
-                    let element = node;
+                if (node.nodeType === node.ELEMENT_NODE) {
+                    let element = node as Element;
                     forAllHierarchyElements(element, (childElement: Element) => {
                         [...childElement.attributes].forEach((attr) => {
                             let matchingMixins = mixins.filter(
@@ -452,20 +444,20 @@ function createMutationObserverCallback(
                     });
                 }
             });
-            const target = mutation.target;
-            if (isElement(target)) {
+            if (mutation.target.nodeType === Node.ELEMENT_NODE) {
+                let targetElement = mutation.target as Element;
                 let attrName = mutation.attributeName;
                 if (attrName) {
                     let relatedMixins = mixins.filter(mixin => mixin.attributeName === attrName);
                     relatedMixins.forEach((mixin) => {
                         if (areAttributesMatching(
                                 mixin.attributeType, mixin.attributeName, mixin.attributeValue,
-                                attrName!, target.getAttribute(attrName!)
+                                attrName!, targetElement.getAttribute(attrName!)
                             )) {
-                                mixin.attach(target);
+                                mixin.attach(targetElement);
                         }
                         else {
-                            mixin.detach(target);
+                            mixin.detach(targetElement);
                         }
                     });
                 }

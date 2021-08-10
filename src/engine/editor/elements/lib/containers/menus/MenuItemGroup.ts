@@ -3,12 +3,13 @@ import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menu
 import { pointIntersectsWithDOMRect } from "engine/editor/elements/Snippets";
 import { HTMLEMenuElement } from "./Menu";
 
-export { isHTMLEMenuItemGroupElement };
+export { HTMLEMenuItemGroupElementData };
 export { HTMLEMenuItemGroupElement };
 export { BaseHTMLEMenuItemGroupElement };
 
-function isHTMLEMenuItemGroupElement(elem: any): elem is HTMLEMenuItemGroupElement {
-    return  elem instanceof Node && elem.nodeType === elem.ELEMENT_NODE && (elem as Element).tagName.toLowerCase() === "e-menuitemgroup";
+interface HTMLEMenuItemGroupElementData {
+    name: string;
+    label: string;
 }
 
 interface HTMLEMenuItemGroupElement extends HTMLElement {
@@ -20,6 +21,9 @@ interface HTMLEMenuItemGroupElement extends HTMLElement {
 
     parentMenu: HTMLEMenuElement | null;
     items: HTMLEMenuItemElement[];
+
+    setData(data: HTMLEMenuItemGroupElementData): void;
+    getData(): HTMLEMenuItemGroupElementData;
 
     readonly activeIndex: number;
     readonly activeItem: HTMLEMenuItemElement | null;
@@ -242,6 +246,18 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
                     break;
             }
         });
+    }
+
+    public setData(data: HTMLEMenuItemGroupElementData): void {
+        this.name = data.name;
+        this.label = data.label;
+    }
+
+    public getData(): HTMLEMenuItemGroupElementData {
+        return {
+            name: this.name,
+            label: this.label
+        };
     }
 
     public attributeChangedCallback(name: string, oldValue: string, newValue: string): void {

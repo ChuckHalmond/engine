@@ -1,7 +1,7 @@
 import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { pointIntersectsWithDOMRect } from "engine/editor/elements/Snippets";
-import { HTMLEMenuItemGroupElement, isHTMLEMenuItemGroupElement } from "./MenuItemGroup";
+import { HTMLEMenuItemGroupElement } from "./MenuItemGroup";
 
 export { HTMLEMenuElement };
 export { BaseHTMLEMenuElement };
@@ -171,28 +171,28 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
             switch (event.key) {
                 case "ArrowUp":
                     this.focusItemAt((this.activeIndex <= 0) ? this.items.length - 1 : this.activeIndex - 1);
-                    if (isHTMLEMenuItemGroupElement(this.activeItem)) {
+                    if (isTagElement("e-menuitemgroup", this.activeItem)) {
                         this.activeItem.focusItemAt(this.activeItem.items.length - 1);
                     }
                     event.stopPropagation();
                     break;
                 case "ArrowDown":
                     this.focusItemAt((this.activeIndex >= this.items.length - 1) ? 0 : this.activeIndex + 1);
-                    if (isHTMLEMenuItemGroupElement(this.activeItem)) {
+                    if (isTagElement("e-menuitemgroup", this.activeItem)) {
                         this.activeItem.focusItemAt(0);
                     }
                     event.stopPropagation();
                     break;
                 case "Home":
                     this.focusItemAt(0);
-                    if (isHTMLEMenuItemGroupElement(this.activeItem)) {
+                    if (isTagElement("e-menuitemgroup", this.activeItem)) {
                         this.activeItem.focusItemAt(0);
                     }
                     event.stopPropagation();
                     break;
                 case "End":
                     this.focusItemAt(this.items.length - 1);
-                    if (isHTMLEMenuItemGroupElement(this.activeItem)) {
+                    if (isTagElement("e-menuitemgroup", this.activeItem)) {
                         this.activeItem.focusItemAt(this.activeItem.items.length - 1);
                     }
                     event.stopPropagation();
@@ -299,7 +299,7 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
                     }
                 }
             }
-            else if (isHTMLEMenuItemGroupElement(item)) {
+            else if (isTagElement("e-menuitemgroup", item)) {
                 foundItem = item.findItem(predicate, subitems);
                 if (foundItem) {
                     return foundItem;

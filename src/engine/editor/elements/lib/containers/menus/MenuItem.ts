@@ -5,6 +5,7 @@ import { HTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Me
 import { HTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
 import { HTMLEMenuItemGroupElement } from "./MenuItemGroup";
 
+export { EMenuItemElementType };
 export { HTMLEMenuItemElement };
 export { BaseHTMLEMenuItemElement };
 

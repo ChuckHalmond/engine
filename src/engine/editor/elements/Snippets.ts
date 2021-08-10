@@ -5,9 +5,11 @@ export { pointIntersectsWithDOMRect };
 
 function forAllHierarchyElements(element: Element, func: (element: Element) => void) {
   func(element);
-  Array.from(element.children).forEach((child) => {
-    forAllHierarchyElements(child, func);
-  });
+  let index = element.children.length - 1;
+  while (index >= 0) {
+    forAllHierarchyElements(element.children.item(index)!, func);
+    index++;
+  }
 }
 
 function getPropertyFromPath(src: object, path: string): any {

@@ -15,16 +15,19 @@ export { EditorHotKey };
 
 interface EditorEventsMap {
     "contextenter": {
+        type: "contextenter",
         data: {
             value: any
         }
     },
     "contextleave": {
+        type: "contextleave",
         data: {
             value: any
         }
     },
     "statechange": {
+        type: "statechange",
         data: {
             value: any
         }

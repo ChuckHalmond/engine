@@ -1,7 +1,6 @@
 import { AttributeMutationMixin, BaseAttributeMutationMixin, createMutationObserverCallback, isTagElement } from "engine/editor/elements/HTMLElement";
 import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { mockup } from "./scenes/Mockup";
-import { start } from "./scenes/SimpleScene";
 
 abstract class DataClassMixin extends BaseAttributeMutationMixin {
   constructor(attributeValue: string) {
@@ -260,6 +259,13 @@ mainObserver.observe(document.body, {
 
 
 export async function sandbox(): Promise<void> {
+  // let tree = new TreeModel<MyNodeModel>({label: "lol", items: [{label: "hey"}]});
+  // tree.addEventListener("modified", (event: ModelModifiedEvent) => {
+  //   console.log(event);
+  // });
+  // console.log(tree);
+  // tree.setItemProperty({row: 0}, "label", "lol");
+  // console.log(tree.getItemProperty({row: 0}, "label"));
 
   await mockup();
   //await start();
