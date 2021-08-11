@@ -19,6 +19,9 @@ import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 import { HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { StructuredFormData } from "engine/editor/elements/forms/StructuredFormData";
 import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
+import { TestFunction } from "engine/core/rendering/webgl/WebGLConstants";
+import { BaseListModel, ListModel, ModelDataChangeEvent } from "engine/editor/models/ListModel";
+import { forAllHierarchyNodes } from "engine/editor/elements/Snippets";
 
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
@@ -270,16 +273,6 @@ export async function mockup() {
     const transformButton = document.querySelector<HTMLButtonElement>("button#transform-button");
     const exportButton = document.querySelector<HTMLButtonElement>("button#export-button");
 
-    let kik = HTMLElementConstructor("span", {props: {textContent: "kik"}});
-    let kek = HTMLElementConstructor("span", {props: {textContent: "kek"}});
-    let comment = document.createComment("Hey");
-    let frag1 = document.createDocumentFragment();
-    let frag2 = document.createDocumentFragment();
-    frag1.appendChild(comment);
-    frag1.appendChild(kik);
-    frag2.appendChild(kek);
-    frag1.appendChild(frag2);
-    document.body.appendChild(frag1);
 
     /*if (extractForm) {
         const jsonData = new JSONFormData(extractForm);
@@ -426,6 +419,68 @@ export async function mockup() {
         type: "df",
         name: "df"
     };
+
+    interface ForEachDirective {
+        <I extends object>(model: ListModel<I>, callback: (item: I) => void): void;
+    }
+
+    interface DirectiveLocation {
+        parentNode?: Node;
+        previousSibling?: Node;
+    }
+
+    abstract class Directive {
+        public abstract execute(location: DirectiveLocation): any;
+    }
+
+    class _ForEachDirective<I extends object> extends Directive {
+        model: ListModel<I>;
+        callback: (item: I) => void;
+
+        constructor(model: ListModel<I>, callback: (item: I) => void) {
+            super();
+            this.model = model;
+            this.callback = callback;
+        }
+
+        public execute(location: DirectiveLocation): void {
+            this.model.addEventListener("datachange", (event: ModelDataChangeEvent) => {
+                switch (event.data.type) {
+                    
+                }
+            });
+        }
+    }
+
+    function template(parts: TemplateStringsArray, ...expr: any[]): any {
+        const parser = new DOMParser();
+        const html = parser.parseFromString(parts.join("<!--0-->"), "text/html");
+        forAllHierarchyNodes(html.body, (child, parent) => {
+            if (child.nodeType === Node.COMMENT_NODE && child.nodeValue) {
+                let index = parseInt(child.nodeValue);
+                if (expr[index] instanceof Directive) {
+                    console.log("previous");
+                    console.log(child.previousSibling);
+                    console.log("parent");
+                    console.log(parent);
+                }
+            }
+        });
+        console.log(html.body.innerHTML);
+        return 1;
+    }
+
+    const forEach: ForEachDirective = function<I extends object>(model: ListModel<I>, callback: (item: I) => void) {
+        return new _ForEachDirective(model, callback);
+    }
+
+    const for: ForDirective = function<I extends object>(model: Model<I>, callback: (item: I) => void) {
+        return new _ForDirective(model, callback);
+    }
+
+    const items = new BaseListModel({}, [{lol: 1}])
+    template`<div> ${forEach(items, () => {})} </div>`;
+    let div = document.createElement("div");
 
     const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#columns");
     if (dropzone) {

@@ -8,16 +8,31 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 define("engine/editor/elements/Snippets", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.pointIntersectsWithDOMRect = exports.setPropertyFromPath = exports.getPropertyFromPath = exports.forAllHierarchyElements = void 0;
+    exports.pointIntersectsWithDOMRect = exports.setPropertyFromPath = exports.getPropertyFromPath = exports.forAllHierarchyNodes = exports.forAllHierarchyElements = void 0;
     function forAllHierarchyElements(element, func) {
-        func(element);
-        let index = element.children.length - 1;
-        while (index >= 0) {
-            forAllHierarchyElements(element.children.item(index), func);
+        let index = 0;
+        while (index < element.children.length) {
+            let child = element.children.item(index);
+            if (child) {
+                func(element);
+                forAllHierarchyElements(child, func);
+            }
             index++;
         }
     }
     exports.forAllHierarchyElements = forAllHierarchyElements;
+    function forAllHierarchyNodes(parent, func) {
+        let index = 0;
+        while (index < parent.childNodes.length) {
+            let child = parent.childNodes.item(index);
+            if (child) {
+                func(child, parent);
+                forAllHierarchyNodes(child, func);
+            }
+            index++;
+        }
+    }
+    exports.forAllHierarchyNodes = forAllHierarchyNodes;
     function getPropertyFromPath(src, path) {
         const props = path.split(".");
         let obj = src;
@@ -3575,7 +3590,736 @@ define("engine/editor/elements/forms/StructuredFormData", ["require", "exports",
     }
     exports.StructuredFormData = StructuredFormData;
 });
-define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, HTMLElement_22) {
+define("engine/utils/Snippets", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.safeQuerySelector = exports.buildArrayFromIndexedArrays = exports.hasFunctionMember = exports.isOfPrototype = exports.hasMemberOfPrototype = exports.crashIfNull = exports.isNotNull = void 0;
+    function isNotNull(obj) {
+        return !(obj === null);
+    }
+    exports.isNotNull = isNotNull;
+    function crashIfNull(obj) {
+        if (isNotNull(obj)) {
+            return obj;
+        }
+        throw new TypeError(`Argument is null.`);
+    }
+    exports.crashIfNull = crashIfNull;
+    function hasMemberOfPrototype(obj, key, ctor) {
+        return !!obj && (obj[key]).constructor.prototype === ctor.prototype;
+    }
+    exports.hasMemberOfPrototype = hasMemberOfPrototype;
+    function isOfPrototype(obj, ctor) {
+        return obj.constructor.prototype === ctor.prototype;
+    }
+    exports.isOfPrototype = isOfPrototype;
+    function hasFunctionMember(obj, key) {
+        return (typeof obj[key] === 'function');
+    }
+    exports.hasFunctionMember = hasFunctionMember;
+    function buildArrayFromIndexedArrays(arrays, indexes) {
+        const len = indexes.length;
+        const array = [];
+        let i = -1;
+        while (++i < len) {
+            array.push(...arrays[indexes[i]]);
+        }
+        return array;
+    }
+    exports.buildArrayFromIndexedArrays = buildArrayFromIndexedArrays;
+    function safeQuerySelector(parent, query) {
+        const element = parent.querySelector(query);
+        if (isNotNull(element)) {
+            return element;
+        }
+        throw new Error(`Query '${query}' returned no result.`);
+    }
+    exports.safeQuerySelector = safeQuerySelector;
+});
+define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_6) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.VertexAttribute = exports.UniformType = exports.UniformQuery = exports.TextureWrapMode = exports.TextureMinFilter = exports.TextureMagFilter = exports.TextureTarget = exports.TextureParameter = exports.TextureUnits = exports.TestFunction = exports.StencilAction = exports.ShaderPrecision = exports.ShaderType = exports.Shader = exports.RenderbufferTarget = exports.PixelType = exports.PixelStorageMode = exports.PixelFormat = exports.Parameter = exports.HintMode = exports.HintTarget = exports.FrontFace = exports.FramebufferTextureTarget = exports.FramebufferTarget = exports.FramebufferAttachmentParameter = exports.FramebufferAttachment = exports.Error = exports.DataType = exports.DrawMode = exports.CullFaceMode = exports.Capabilities = exports.BufferTarget = exports.BufferInterpolation = exports.BufferIndexType = exports.BufferBindingPoint = exports.BufferMaskBit = exports.BufferMask = exports.BufferDataUsage = exports.BlendingEquation = exports.BlendingMode = void 0;
+    const gl = Snippets_6.crashIfNull(document.createElement('canvas').getContext('webgl2'));
+    var BlendingMode;
+    (function (BlendingMode) {
+        BlendingMode[BlendingMode["ZERO"] = gl.ZERO] = "ZERO";
+        BlendingMode[BlendingMode["ONE"] = gl.ONE] = "ONE";
+        BlendingMode[BlendingMode["SRC_COLOR"] = gl.SRC_COLOR] = "SRC_COLOR";
+        BlendingMode[BlendingMode["ONE_MINUS_SRC_COLOR"] = gl.ONE_MINUS_SRC_COLOR] = "ONE_MINUS_SRC_COLOR";
+        BlendingMode[BlendingMode["DST_COLOR"] = gl.DST_COLOR] = "DST_COLOR";
+        BlendingMode[BlendingMode["ONE_MINUS_DST_COLOR"] = gl.ONE_MINUS_DST_COLOR] = "ONE_MINUS_DST_COLOR";
+        BlendingMode[BlendingMode["SRC_ALPHA"] = gl.SRC_ALPHA] = "SRC_ALPHA";
+        BlendingMode[BlendingMode["ONE_MINUS_SRC_ALPHA"] = gl.ONE_MINUS_SRC_ALPHA] = "ONE_MINUS_SRC_ALPHA";
+        BlendingMode[BlendingMode["ONE_MINUS_DST_ALPHA"] = gl.ONE_MINUS_DST_ALPHA] = "ONE_MINUS_DST_ALPHA";
+        BlendingMode[BlendingMode["CONSTANT_COLOR"] = gl.CONSTANT_COLOR] = "CONSTANT_COLOR";
+        BlendingMode[BlendingMode["ONE_MINUS_CONSTANT_COLOR"] = gl.ONE_MINUS_CONSTANT_COLOR] = "ONE_MINUS_CONSTANT_COLOR";
+        BlendingMode[BlendingMode["CONSTANT_ALPHA"] = gl.CONSTANT_ALPHA] = "CONSTANT_ALPHA";
+        BlendingMode[BlendingMode["ONE_MINUS_CONSTANT_ALPHA"] = gl.ONE_MINUS_CONSTANT_ALPHA] = "ONE_MINUS_CONSTANT_ALPHA";
+        BlendingMode[BlendingMode["SRC_ALPHA_SATURATE"] = gl.SRC_ALPHA_SATURATE] = "SRC_ALPHA_SATURATE";
+    })(BlendingMode || (BlendingMode = {}));
+    exports.BlendingMode = BlendingMode;
+    var BlendingEquation;
+    (function (BlendingEquation) {
+        BlendingEquation[BlendingEquation["FUNC_ADD"] = gl.FUNC_ADD] = "FUNC_ADD";
+        BlendingEquation[BlendingEquation["FUNC_SUBTRACT"] = gl.FUNC_SUBTRACT] = "FUNC_SUBTRACT";
+        BlendingEquation[BlendingEquation["FUNC_REVERSE_SUBTRACT"] = gl.FUNC_REVERSE_SUBTRACT] = "FUNC_REVERSE_SUBTRACT";
+        BlendingEquation[BlendingEquation["MIN"] = gl.MIN] = "MIN";
+        BlendingEquation[BlendingEquation["MAX"] = gl.MAX] = "MAX";
+    })(BlendingEquation || (BlendingEquation = {}));
+    exports.BlendingEquation = BlendingEquation;
+    var BufferMaskBit;
+    (function (BufferMaskBit) {
+        BufferMaskBit[BufferMaskBit["DEPTH_BUFFER_BIT"] = gl.DEPTH_BUFFER_BIT] = "DEPTH_BUFFER_BIT";
+        BufferMaskBit[BufferMaskBit["STENCIL_BUFFER_BIT"] = gl.STENCIL_BUFFER_BIT] = "STENCIL_BUFFER_BIT";
+        BufferMaskBit[BufferMaskBit["COLOR_BUFFER_BIT"] = gl.COLOR_BUFFER_BIT] = "COLOR_BUFFER_BIT";
+    })(BufferMaskBit || (BufferMaskBit = {}));
+    exports.BufferMaskBit = BufferMaskBit;
+    var BufferMask;
+    (function (BufferMask) {
+        BufferMask[BufferMask["DEPTH"] = gl.DEPTH] = "DEPTH";
+        BufferMask[BufferMask["STENCIL"] = gl.STENCIL] = "STENCIL";
+        BufferMask[BufferMask["COLOR"] = gl.COLOR] = "COLOR";
+        BufferMask[BufferMask["DEPTH_STENCIL"] = gl.DEPTH_STENCIL] = "DEPTH_STENCIL";
+    })(BufferMask || (BufferMask = {}));
+    exports.BufferMask = BufferMask;
+    var BufferDataUsage;
+    (function (BufferDataUsage) {
+        BufferDataUsage[BufferDataUsage["STATIC_DRAW"] = gl.STATIC_DRAW] = "STATIC_DRAW";
+        BufferDataUsage[BufferDataUsage["DYNAMIC_DRAW"] = gl.DYNAMIC_DRAW] = "DYNAMIC_DRAW";
+        BufferDataUsage[BufferDataUsage["STREAM_DRAW"] = gl.STREAM_DRAW] = "STREAM_DRAW";
+        BufferDataUsage[BufferDataUsage["STATIC_READ"] = gl.STATIC_READ] = "STATIC_READ";
+        BufferDataUsage[BufferDataUsage["DYNAMIC_READ"] = gl.DYNAMIC_READ] = "DYNAMIC_READ";
+        BufferDataUsage[BufferDataUsage["STREAM_READ"] = gl.STREAM_READ] = "STREAM_READ";
+        BufferDataUsage[BufferDataUsage["STATIC_COPY"] = gl.STATIC_COPY] = "STATIC_COPY";
+        BufferDataUsage[BufferDataUsage["DYNAMIC_COPY"] = gl.DYNAMIC_COPY] = "DYNAMIC_COPY";
+        BufferDataUsage[BufferDataUsage["STREAM_COPY"] = gl.STREAM_COPY] = "STREAM_COPY";
+    })(BufferDataUsage || (BufferDataUsage = {}));
+    exports.BufferDataUsage = BufferDataUsage;
+    var BufferBindingPoint;
+    (function (BufferBindingPoint) {
+        BufferBindingPoint[BufferBindingPoint["ARRAY_BUFFER"] = gl.ARRAY_BUFFER] = "ARRAY_BUFFER";
+        BufferBindingPoint[BufferBindingPoint["ELEMENT_ARRAY_BUFFER"] = gl.ELEMENT_ARRAY_BUFFER] = "ELEMENT_ARRAY_BUFFER";
+        BufferBindingPoint[BufferBindingPoint["COPY_READ_BUFFER"] = gl.COPY_READ_BUFFER] = "COPY_READ_BUFFER";
+        BufferBindingPoint[BufferBindingPoint["COPY_WRITE_BUFFER"] = gl.COPY_WRITE_BUFFER] = "COPY_WRITE_BUFFER";
+        BufferBindingPoint[BufferBindingPoint["TRANSFORM_FEEDBACK_BUFFER"] = gl.TRANSFORM_FEEDBACK_BUFFER] = "TRANSFORM_FEEDBACK_BUFFER";
+        BufferBindingPoint[BufferBindingPoint["UNIFORM_BUFFER"] = gl.UNIFORM_BUFFER] = "UNIFORM_BUFFER";
+        BufferBindingPoint[BufferBindingPoint["PIXEL_PACK_BUFFER"] = gl.PIXEL_PACK_BUFFER] = "PIXEL_PACK_BUFFER";
+        BufferBindingPoint[BufferBindingPoint["PIXEL_UNPACK_BUFFER"] = gl.PIXEL_UNPACK_BUFFER] = "PIXEL_UNPACK_BUFFER";
+    })(BufferBindingPoint || (BufferBindingPoint = {}));
+    exports.BufferBindingPoint = BufferBindingPoint;
+    var BufferIndexType;
+    (function (BufferIndexType) {
+        BufferIndexType[BufferIndexType["UNSIGNED_BYTE"] = gl.UNSIGNED_BYTE] = "UNSIGNED_BYTE";
+        BufferIndexType[BufferIndexType["UNSIGNED_SHORT"] = gl.UNSIGNED_SHORT] = "UNSIGNED_SHORT";
+        BufferIndexType[BufferIndexType["UNSIGNED_INT"] = gl.UNSIGNED_INT] = "UNSIGNED_INT";
+    })(BufferIndexType || (BufferIndexType = {}));
+    exports.BufferIndexType = BufferIndexType;
+    var BufferInterpolation;
+    (function (BufferInterpolation) {
+        BufferInterpolation[BufferInterpolation["LINEAR"] = gl.LINEAR] = "LINEAR";
+        BufferInterpolation[BufferInterpolation["NEAREST"] = gl.NEAREST] = "NEAREST";
+    })(BufferInterpolation || (BufferInterpolation = {}));
+    exports.BufferInterpolation = BufferInterpolation;
+    var BufferTarget;
+    (function (BufferTarget) {
+        BufferTarget[BufferTarget["ARRAY_BUFFER"] = gl.ARRAY_BUFFER] = "ARRAY_BUFFER";
+        BufferTarget[BufferTarget["ELEMENT_ARRAY_BUFFER"] = gl.ELEMENT_ARRAY_BUFFER] = "ELEMENT_ARRAY_BUFFER";
+        BufferTarget[BufferTarget["COPY_READ_BUFFER"] = gl.COPY_READ_BUFFER] = "COPY_READ_BUFFER";
+        BufferTarget[BufferTarget["COPY_WRITE_BUFFER"] = gl.COPY_WRITE_BUFFER] = "COPY_WRITE_BUFFER";
+        BufferTarget[BufferTarget["TRANSFORM_FEEDBACK_BUFFER"] = gl.TRANSFORM_FEEDBACK_BUFFER] = "TRANSFORM_FEEDBACK_BUFFER";
+        BufferTarget[BufferTarget["UNIFORM_BUFFER"] = gl.UNIFORM_BUFFER] = "UNIFORM_BUFFER";
+        BufferTarget[BufferTarget["PIXEL_PACK_BUFFER"] = gl.PIXEL_PACK_BUFFER] = "PIXEL_PACK_BUFFER";
+        BufferTarget[BufferTarget["PIXEL_UNPACK_BUFFER"] = gl.PIXEL_UNPACK_BUFFER] = "PIXEL_UNPACK_BUFFER";
+    })(BufferTarget || (BufferTarget = {}));
+    exports.BufferTarget = BufferTarget;
+    var Capabilities;
+    (function (Capabilities) {
+        Capabilities[Capabilities["BLEND"] = gl.BLEND] = "BLEND";
+        Capabilities[Capabilities["CULL_FACE"] = gl.CULL_FACE] = "CULL_FACE";
+        Capabilities[Capabilities["DEPTH_TEST"] = gl.DEPTH_TEST] = "DEPTH_TEST";
+        Capabilities[Capabilities["DITHER"] = gl.DITHER] = "DITHER";
+        Capabilities[Capabilities["POLYGON_OFFSET_FILL"] = gl.POLYGON_OFFSET_FILL] = "POLYGON_OFFSET_FILL";
+        Capabilities[Capabilities["SAMPLE_ALPHA_TO_COVERAGE"] = gl.SAMPLE_ALPHA_TO_COVERAGE] = "SAMPLE_ALPHA_TO_COVERAGE";
+        Capabilities[Capabilities["SAMPLE_COVERAGE"] = gl.SAMPLE_COVERAGE] = "SAMPLE_COVERAGE";
+        Capabilities[Capabilities["SCISSOR_TEST"] = gl.SCISSOR_TEST] = "SCISSOR_TEST";
+        Capabilities[Capabilities["STENCIL_TEST"] = gl.STENCIL_TEST] = "STENCIL_TEST";
+        Capabilities[Capabilities["RASTERIZER_DISCARD"] = gl.RASTERIZER_DISCARD] = "RASTERIZER_DISCARD";
+    })(Capabilities || (Capabilities = {}));
+    exports.Capabilities = Capabilities;
+    var CullFaceMode;
+    (function (CullFaceMode) {
+        CullFaceMode[CullFaceMode["FRONT"] = gl.FRONT] = "FRONT";
+        CullFaceMode[CullFaceMode["BACK"] = gl.BACK] = "BACK";
+        CullFaceMode[CullFaceMode["FRONT_AND_BACK"] = gl.FRONT_AND_BACK] = "FRONT_AND_BACK";
+    })(CullFaceMode || (CullFaceMode = {}));
+    exports.CullFaceMode = CullFaceMode;
+    var DrawMode;
+    (function (DrawMode) {
+        DrawMode[DrawMode["POINTS"] = gl.POINTS] = "POINTS";
+        DrawMode[DrawMode["LINE_STRIP"] = gl.LINE_STRIP] = "LINE_STRIP";
+        DrawMode[DrawMode["LINE_LOOP"] = gl.LINE_LOOP] = "LINE_LOOP";
+        DrawMode[DrawMode["LINES"] = gl.LINES] = "LINES";
+        DrawMode[DrawMode["TRIANGLE_STRIP"] = gl.TRIANGLE_STRIP] = "TRIANGLE_STRIP";
+        DrawMode[DrawMode["TRIANGLE_FAN"] = gl.TRIANGLE_FAN] = "TRIANGLE_FAN";
+        DrawMode[DrawMode["TRIANGLES"] = gl.TRIANGLES] = "TRIANGLES";
+    })(DrawMode || (DrawMode = {}));
+    exports.DrawMode = DrawMode;
+    var DataType;
+    (function (DataType) {
+        DataType[DataType["BYTE"] = gl.BYTE] = "BYTE";
+        DataType[DataType["SHORT"] = gl.SHORT] = "SHORT";
+        DataType[DataType["UNSIGNED_BYTE"] = gl.UNSIGNED_BYTE] = "UNSIGNED_BYTE";
+        DataType[DataType["UNSIGNED_SHORT"] = gl.UNSIGNED_SHORT] = "UNSIGNED_SHORT";
+        DataType[DataType["FLOAT"] = gl.FLOAT] = "FLOAT";
+        DataType[DataType["HALF_FLOAT"] = gl.HALF_FLOAT] = "HALF_FLOAT";
+    })(DataType || (DataType = {}));
+    exports.DataType = DataType;
+    var Error;
+    (function (Error) {
+        Error[Error["NO_ERROR"] = gl.NO_ERROR] = "NO_ERROR";
+        Error[Error["INVALID_ENUM"] = gl.INVALID_ENUM] = "INVALID_ENUM";
+        Error[Error["INVALID_OPERATION"] = gl.INVALID_OPERATION] = "INVALID_OPERATION";
+        Error[Error["OUT_OF_MEMORY"] = gl.OUT_OF_MEMORY] = "OUT_OF_MEMORY";
+        Error[Error["CONTEXT_LOST_WEBGL"] = gl.CONTEXT_LOST_WEBGL] = "CONTEXT_LOST_WEBGL";
+    })(Error || (Error = {}));
+    exports.Error = Error;
+    var FramebufferAttachment;
+    (function (FramebufferAttachment) {
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT0"] = gl.COLOR_ATTACHMENT0] = "COLOR_ATTACHMENT0";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT1"] = gl.COLOR_ATTACHMENT1] = "COLOR_ATTACHMENT1";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT2"] = gl.COLOR_ATTACHMENT2] = "COLOR_ATTACHMENT2";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT3"] = gl.COLOR_ATTACHMENT3] = "COLOR_ATTACHMENT3";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT4"] = gl.COLOR_ATTACHMENT4] = "COLOR_ATTACHMENT4";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT5"] = gl.COLOR_ATTACHMENT5] = "COLOR_ATTACHMENT5";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT6"] = gl.COLOR_ATTACHMENT6] = "COLOR_ATTACHMENT6";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT7"] = gl.COLOR_ATTACHMENT7] = "COLOR_ATTACHMENT7";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT8"] = gl.COLOR_ATTACHMENT8] = "COLOR_ATTACHMENT8";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT9"] = gl.COLOR_ATTACHMENT9] = "COLOR_ATTACHMENT9";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT10"] = gl.COLOR_ATTACHMENT10] = "COLOR_ATTACHMENT10";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT11"] = gl.COLOR_ATTACHMENT11] = "COLOR_ATTACHMENT11";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT12"] = gl.COLOR_ATTACHMENT12] = "COLOR_ATTACHMENT12";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT13"] = gl.COLOR_ATTACHMENT13] = "COLOR_ATTACHMENT13";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT14"] = gl.COLOR_ATTACHMENT14] = "COLOR_ATTACHMENT14";
+        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT15"] = gl.COLOR_ATTACHMENT15] = "COLOR_ATTACHMENT15";
+        FramebufferAttachment[FramebufferAttachment["DEPTH_ATTACHMENT"] = gl.DEPTH_ATTACHMENT] = "DEPTH_ATTACHMENT";
+        FramebufferAttachment[FramebufferAttachment["STENCIL_ATTACHMENT"] = gl.STENCIL_ATTACHMENT] = "STENCIL_ATTACHMENT";
+        FramebufferAttachment[FramebufferAttachment["DEPTH_STENCIL_ATTACHMENT"] = gl.DEPTH_STENCIL_ATTACHMENT] = "DEPTH_STENCIL_ATTACHMENT";
+    })(FramebufferAttachment || (FramebufferAttachment = {}));
+    exports.FramebufferAttachment = FramebufferAttachment;
+    var FramebufferAttachmentParameter;
+    (function (FramebufferAttachmentParameter) {
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE"] = gl.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE] = "FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_OBJECT_NAME"] = gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME] = "FRAMEBUFFER_ATTACHMENT_OBJECT_NAME";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL"] = gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL] = "FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE"] = gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE] = "FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE] = "FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_BLUE_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_BLUE_SIZE] = "FRAMEBUFFER_ATTACHMENT_BLUE_SIZE";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING"] = gl.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING] = "FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE"] = gl.FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE] = "FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE] = "FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_GREEN_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_GREEN_SIZE] = "FRAMEBUFFER_ATTACHMENT_GREEN_SIZE";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_RED_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_RED_SIZE] = "FRAMEBUFFER_ATTACHMENT_RED_SIZE";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE] = "FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE";
+        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER"] = gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER] = "FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER";
+    })(FramebufferAttachmentParameter || (FramebufferAttachmentParameter = {}));
+    exports.FramebufferAttachmentParameter = FramebufferAttachmentParameter;
+    var FramebufferTarget;
+    (function (FramebufferTarget) {
+        FramebufferTarget[FramebufferTarget["FRAMEBUFFER"] = gl.FRAMEBUFFER] = "FRAMEBUFFER";
+        FramebufferTarget[FramebufferTarget["DRAW_FRAMEBUFFER"] = gl.DRAW_FRAMEBUFFER] = "DRAW_FRAMEBUFFER";
+        FramebufferTarget[FramebufferTarget["READ_FRAMEBUFFER"] = gl.READ_FRAMEBUFFER] = "READ_FRAMEBUFFER";
+    })(FramebufferTarget || (FramebufferTarget = {}));
+    exports.FramebufferTarget = FramebufferTarget;
+    var FramebufferTextureTarget;
+    (function (FramebufferTextureTarget) {
+        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_2D"] = gl.TEXTURE_2D] = "TEXTURE_2D";
+        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_POSITIVE_X"] = gl.TEXTURE_CUBE_MAP_POSITIVE_X] = "TEXTURE_CUBE_MAP_POSITIVE_X";
+        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_X"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_X] = "TEXTURE_CUBE_MAP_NEGATIVE_X";
+        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_POSITIVE_Y"] = gl.TEXTURE_CUBE_MAP_POSITIVE_Y] = "TEXTURE_CUBE_MAP_POSITIVE_Y";
+        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_Y"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_Y] = "TEXTURE_CUBE_MAP_NEGATIVE_Y";
+        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_POSITIVE_Z"] = gl.TEXTURE_CUBE_MAP_POSITIVE_Z] = "TEXTURE_CUBE_MAP_POSITIVE_Z";
+        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_Z"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_Z] = "TEXTURE_CUBE_MAP_NEGATIVE_Z";
+    })(FramebufferTextureTarget || (FramebufferTextureTarget = {}));
+    exports.FramebufferTextureTarget = FramebufferTextureTarget;
+    var FrontFace;
+    (function (FrontFace) {
+        FrontFace[FrontFace["CW"] = gl.CW] = "CW";
+        FrontFace[FrontFace["CCW"] = gl.CCW] = "CCW";
+    })(FrontFace || (FrontFace = {}));
+    exports.FrontFace = FrontFace;
+    var HintTarget;
+    (function (HintTarget) {
+        HintTarget[HintTarget["GENERATE_MIPMAP_HINT"] = gl.GENERATE_MIPMAP_HINT] = "GENERATE_MIPMAP_HINT";
+        HintTarget[HintTarget["FRAGMENT_SHADER_DERIVATIVE_HINT"] = gl.FRAGMENT_SHADER_DERIVATIVE_HINT] = "FRAGMENT_SHADER_DERIVATIVE_HINT";
+    })(HintTarget || (HintTarget = {}));
+    exports.HintTarget = HintTarget;
+    var HintMode;
+    (function (HintMode) {
+        HintMode[HintMode["FASTEST"] = gl.FASTEST] = "FASTEST";
+        HintMode[HintMode["NICEST"] = gl.NICEST] = "NICEST";
+        HintMode[HintMode["DONT_CARE"] = gl.DONT_CARE] = "DONT_CARE";
+    })(HintMode || (HintMode = {}));
+    exports.HintMode = HintMode;
+    var Parameter;
+    (function (Parameter) {
+        Parameter[Parameter["ACTIVE_TEXTURE"] = gl.ACTIVE_TEXTURE] = "ACTIVE_TEXTURE";
+        Parameter[Parameter["ALIASED_LINE_WIDTH_RANGE"] = gl.ALIASED_LINE_WIDTH_RANGE] = "ALIASED_LINE_WIDTH_RANGE";
+        Parameter[Parameter["ALIASED_POINT_SIZE_RANGE"] = gl.ALIASED_POINT_SIZE_RANGE] = "ALIASED_POINT_SIZE_RANGE";
+        Parameter[Parameter["ALPHA_BITS"] = gl.ALPHA_BITS] = "ALPHA_BITS";
+        Parameter[Parameter["ARRAY_BUFFER_BINDING"] = gl.ARRAY_BUFFER_BINDING] = "ARRAY_BUFFER_BINDING";
+        Parameter[Parameter["BLEND"] = gl.BLEND] = "BLEND";
+        Parameter[Parameter["BLEND_COLOR"] = gl.BLEND_COLOR] = "BLEND_COLOR";
+        Parameter[Parameter["BLEND_DST_ALPHA"] = gl.BLEND_DST_ALPHA] = "BLEND_DST_ALPHA";
+        Parameter[Parameter["BLEND_DST_RGB"] = gl.BLEND_DST_RGB] = "BLEND_DST_RGB";
+        Parameter[Parameter["BLEND_EQUATION"] = gl.BLEND_EQUATION] = "BLEND_EQUATION";
+        Parameter[Parameter["BLEND_EQUATION_ALPHA"] = gl.BLEND_EQUATION_ALPHA] = "BLEND_EQUATION_ALPHA";
+        Parameter[Parameter["BLEND_EQUATION_RGB"] = gl.BLEND_EQUATION_RGB] = "BLEND_EQUATION_RGB";
+        Parameter[Parameter["BLEND_SRC_ALPHA"] = gl.BLEND_SRC_ALPHA] = "BLEND_SRC_ALPHA";
+        Parameter[Parameter["BLEND_SRC_RGB"] = gl.BLEND_SRC_RGB] = "BLEND_SRC_RGB";
+        Parameter[Parameter["BLUE_BITS"] = gl.BLUE_BITS] = "BLUE_BITS";
+        Parameter[Parameter["COLOR_CLEAR_VALUE"] = gl.COLOR_CLEAR_VALUE] = "COLOR_CLEAR_VALUE";
+        Parameter[Parameter["COLOR_WRITEMASK"] = gl.COLOR_WRITEMASK] = "COLOR_WRITEMASK";
+        Parameter[Parameter["COMPRESSED_TEXTURE_FORMATS"] = gl.COMPRESSED_TEXTURE_FORMATS] = "COMPRESSED_TEXTURE_FORMATS";
+        Parameter[Parameter["CULL_FACE"] = gl.CULL_FACE] = "CULL_FACE";
+        Parameter[Parameter["CULL_FACE_MODE"] = gl.CULL_FACE_MODE] = "CULL_FACE_MODE";
+        Parameter[Parameter["CURRENT_PROGRAM"] = gl.CURRENT_PROGRAM] = "CURRENT_PROGRAM";
+        Parameter[Parameter["DEPTH_BITS"] = gl.DEPTH_BITS] = "DEPTH_BITS";
+        Parameter[Parameter["DEPTH_CLEAR_VALUE"] = gl.DEPTH_CLEAR_VALUE] = "DEPTH_CLEAR_VALUE";
+        Parameter[Parameter["DEPTH_FUNC"] = gl.DEPTH_FUNC] = "DEPTH_FUNC";
+        Parameter[Parameter["DEPTH_RANGE"] = gl.DEPTH_RANGE] = "DEPTH_RANGE";
+        Parameter[Parameter["DEPTH_TEST"] = gl.DEPTH_TEST] = "DEPTH_TEST";
+        Parameter[Parameter["DEPTH_WRITEMASK"] = gl.DEPTH_WRITEMASK] = "DEPTH_WRITEMASK";
+        Parameter[Parameter["DITHER"] = gl.DITHER] = "DITHER";
+        Parameter[Parameter["ELEMENT_ARRAY_BUFFER_BINDING"] = gl.ELEMENT_ARRAY_BUFFER_BINDING] = "ELEMENT_ARRAY_BUFFER_BINDING";
+        Parameter[Parameter["FRAMEBUFFER_BINDING"] = gl.FRAMEBUFFER_BINDING] = "FRAMEBUFFER_BINDING";
+        Parameter[Parameter["FRONT_FACE"] = gl.FRONT_FACE] = "FRONT_FACE";
+        Parameter[Parameter["GENERATE_MIPMAP_HINT"] = gl.GENERATE_MIPMAP_HINT] = "GENERATE_MIPMAP_HINT";
+        Parameter[Parameter["GREEN_BITS"] = gl.GREEN_BITS] = "GREEN_BITS";
+        Parameter[Parameter["IMPLEMENTATION_COLOR_READ_FORMAT"] = gl.IMPLEMENTATION_COLOR_READ_FORMAT] = "IMPLEMENTATION_COLOR_READ_FORMAT";
+        Parameter[Parameter["IMPLEMENTATION_COLOR_READ_TYPE"] = gl.IMPLEMENTATION_COLOR_READ_TYPE] = "IMPLEMENTATION_COLOR_READ_TYPE";
+        Parameter[Parameter["LINE_WIDTH"] = gl.LINE_WIDTH] = "LINE_WIDTH";
+        Parameter[Parameter["MAX_COMBINED_TEXTURE_IMAGE_UNITS"] = gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS] = "MAX_COMBINED_TEXTURE_IMAGE_UNITS";
+        Parameter[Parameter["MAX_CUBE_MAP_TEXTURE_SIZE"] = gl.MAX_CUBE_MAP_TEXTURE_SIZE] = "MAX_CUBE_MAP_TEXTURE_SIZE";
+        Parameter[Parameter["MAX_FRAGMENT_UNIFORM_VECTORS"] = gl.MAX_FRAGMENT_UNIFORM_VECTORS] = "MAX_FRAGMENT_UNIFORM_VECTORS";
+        Parameter[Parameter["MAX_RENDERBUFFER_SIZE"] = gl.MAX_RENDERBUFFER_SIZE] = "MAX_RENDERBUFFER_SIZE";
+        Parameter[Parameter["MAX_TEXTURE_IMAGE_UNITS"] = gl.MAX_TEXTURE_IMAGE_UNITS] = "MAX_TEXTURE_IMAGE_UNITS";
+        Parameter[Parameter["MAX_TEXTURE_SIZE"] = gl.MAX_TEXTURE_SIZE] = "MAX_TEXTURE_SIZE";
+        Parameter[Parameter["MAX_VARYING_VECTORS"] = gl.MAX_VARYING_VECTORS] = "MAX_VARYING_VECTORS";
+        Parameter[Parameter["MAX_VERTEX_ATTRIBS"] = gl.MAX_VERTEX_ATTRIBS] = "MAX_VERTEX_ATTRIBS";
+        Parameter[Parameter["MAX_VERTEX_UNIFORM_VECTORS"] = gl.MAX_VERTEX_UNIFORM_VECTORS] = "MAX_VERTEX_UNIFORM_VECTORS";
+        Parameter[Parameter["MAX_VIEWPORT_DIMS"] = gl.MAX_VIEWPORT_DIMS] = "MAX_VIEWPORT_DIMS";
+        Parameter[Parameter["PACK_ALIGNMENT"] = gl.PACK_ALIGNMENT] = "PACK_ALIGNMENT";
+        Parameter[Parameter["POLYGON_OFFSET_FACTOR"] = gl.POLYGON_OFFSET_FACTOR] = "POLYGON_OFFSET_FACTOR";
+        Parameter[Parameter["POLYGON_OFFSET_FILL"] = gl.POLYGON_OFFSET_FILL] = "POLYGON_OFFSET_FILL";
+        Parameter[Parameter["POLYGON_OFFSET_UNITS"] = gl.POLYGON_OFFSET_UNITS] = "POLYGON_OFFSET_UNITS";
+        Parameter[Parameter["RED_BITS"] = gl.RED_BITS] = "RED_BITS";
+        Parameter[Parameter["RENDERBUFFER_BINDING"] = gl.RENDERBUFFER_BINDING] = "RENDERBUFFER_BINDING";
+        Parameter[Parameter["RENDERER"] = gl.RENDERER] = "RENDERER";
+        Parameter[Parameter["SAMPLE_BUFFERS"] = gl.SAMPLE_BUFFERS] = "SAMPLE_BUFFERS";
+        Parameter[Parameter["SAMPLE_COVERAGE_INVERT"] = gl.SAMPLE_COVERAGE_INVERT] = "SAMPLE_COVERAGE_INVERT";
+        Parameter[Parameter["SAMPLE_COVERAGE_VALUE"] = gl.SAMPLE_COVERAGE_VALUE] = "SAMPLE_COVERAGE_VALUE";
+        Parameter[Parameter["SAMPLES"] = gl.SAMPLES] = "SAMPLES";
+        Parameter[Parameter["SCISSOR_BOX"] = gl.SCISSOR_BOX] = "SCISSOR_BOX";
+        Parameter[Parameter["SCISSOR_TEST"] = gl.SCISSOR_TEST] = "SCISSOR_TEST";
+        Parameter[Parameter["SHADING_LANGUAGE_VERSION"] = gl.SHADING_LANGUAGE_VERSION] = "SHADING_LANGUAGE_VERSION";
+        Parameter[Parameter["STENCIL_BACK_FAIL"] = gl.STENCIL_BACK_FAIL] = "STENCIL_BACK_FAIL";
+        Parameter[Parameter["STENCIL_BACK_FUNC"] = gl.STENCIL_BACK_FUNC] = "STENCIL_BACK_FUNC";
+        Parameter[Parameter["STENCIL_BACK_PASS_DEPTH_FAIL"] = gl.STENCIL_BACK_PASS_DEPTH_FAIL] = "STENCIL_BACK_PASS_DEPTH_FAIL";
+        Parameter[Parameter["STENCIL_BACK_PASS_DEPTH_PASS"] = gl.STENCIL_BACK_PASS_DEPTH_PASS] = "STENCIL_BACK_PASS_DEPTH_PASS";
+        Parameter[Parameter["STENCIL_BACK_REF"] = gl.STENCIL_BACK_REF] = "STENCIL_BACK_REF";
+        Parameter[Parameter["STENCIL_BACK_VALUE_MASK"] = gl.STENCIL_BACK_VALUE_MASK] = "STENCIL_BACK_VALUE_MASK";
+        Parameter[Parameter["STENCIL_BACK_WRITEMASK"] = gl.STENCIL_BACK_WRITEMASK] = "STENCIL_BACK_WRITEMASK";
+        Parameter[Parameter["STENCIL_BITS"] = gl.STENCIL_BITS] = "STENCIL_BITS";
+        Parameter[Parameter["STENCIL_CLEAR_VALUE"] = gl.STENCIL_CLEAR_VALUE] = "STENCIL_CLEAR_VALUE";
+        Parameter[Parameter["STENCIL_FAIL"] = gl.STENCIL_FAIL] = "STENCIL_FAIL";
+        Parameter[Parameter["STENCIL_FUNC"] = gl.STENCIL_FUNC] = "STENCIL_FUNC";
+        Parameter[Parameter["STENCIL_PASS_DEPTH_FAIL"] = gl.STENCIL_PASS_DEPTH_FAIL] = "STENCIL_PASS_DEPTH_FAIL";
+        Parameter[Parameter["STENCIL_PASS_DEPTH_PASS"] = gl.STENCIL_PASS_DEPTH_PASS] = "STENCIL_PASS_DEPTH_PASS";
+        Parameter[Parameter["STENCIL_REF"] = gl.STENCIL_REF] = "STENCIL_REF";
+        Parameter[Parameter["STENCIL_TEST"] = gl.STENCIL_TEST] = "STENCIL_TEST";
+        Parameter[Parameter["STENCIL_VALUE_MASK"] = gl.STENCIL_VALUE_MASK] = "STENCIL_VALUE_MASK";
+        Parameter[Parameter["STENCIL_WRITEMASK"] = gl.STENCIL_WRITEMASK] = "STENCIL_WRITEMASK";
+        Parameter[Parameter["SUBPIXEL_BITS"] = gl.SUBPIXEL_BITS] = "SUBPIXEL_BITS";
+        Parameter[Parameter["TEXTURE_BINDING_2D"] = gl.TEXTURE_BINDING_2D] = "TEXTURE_BINDING_2D";
+        Parameter[Parameter["TEXTURE_BINDING_CUBE_MAP"] = gl.TEXTURE_BINDING_CUBE_MAP] = "TEXTURE_BINDING_CUBE_MAP";
+        Parameter[Parameter["UNPACK_ALIGNMENT"] = gl.UNPACK_ALIGNMENT] = "UNPACK_ALIGNMENT";
+        Parameter[Parameter["UNPACK_COLORSPACE_CONVERSION_WEBGL"] = gl.UNPACK_COLORSPACE_CONVERSION_WEBGL] = "UNPACK_COLORSPACE_CONVERSION_WEBGL";
+        Parameter[Parameter["UNPACK_FLIP_Y_WEBGL"] = gl.UNPACK_FLIP_Y_WEBGL] = "UNPACK_FLIP_Y_WEBGL";
+        Parameter[Parameter["UNPACK_PREMULTIPLY_ALPHA_WEBGL"] = gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL] = "UNPACK_PREMULTIPLY_ALPHA_WEBGL";
+        Parameter[Parameter["VENDOR"] = gl.VENDOR] = "VENDOR";
+        Parameter[Parameter["VERSION"] = gl.VERSION] = "VERSION";
+        Parameter[Parameter["VIEWPORT"] = gl.VIEWPORT] = "VIEWPORT";
+        Parameter[Parameter["COPY_READ_BUFFER_BINDING"] = gl.COPY_READ_BUFFER_BINDING] = "COPY_READ_BUFFER_BINDING";
+        Parameter[Parameter["COPY_WRITE_BUFFER_BINDING"] = gl.COPY_WRITE_BUFFER_BINDING] = "COPY_WRITE_BUFFER_BINDING";
+        Parameter[Parameter["DRAW_FRAMEBUFFER_BINDING"] = gl.DRAW_FRAMEBUFFER_BINDING] = "DRAW_FRAMEBUFFER_BINDING";
+        Parameter[Parameter["FRAGMENT_SHADER_DERIVATIVE_HINT"] = gl.FRAGMENT_SHADER_DERIVATIVE_HINT] = "FRAGMENT_SHADER_DERIVATIVE_HINT";
+        Parameter[Parameter["MAX_3D_TEXTURE_SIZE"] = gl.MAX_3D_TEXTURE_SIZE] = "MAX_3D_TEXTURE_SIZE";
+        Parameter[Parameter["MAX_ARRAY_TEXTURE_LAYERS"] = gl.MAX_ARRAY_TEXTURE_LAYERS] = "MAX_ARRAY_TEXTURE_LAYERS";
+        Parameter[Parameter["MAX_CLIENT_WAIT_TIMEOUT_WEBGL"] = gl.MAX_CLIENT_WAIT_TIMEOUT_WEBGL] = "MAX_CLIENT_WAIT_TIMEOUT_WEBGL";
+        Parameter[Parameter["MAX_COLOR_ATTACHMENTS"] = gl.MAX_COLOR_ATTACHMENTS] = "MAX_COLOR_ATTACHMENTS";
+        Parameter[Parameter["MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS"] = gl.MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS] = "MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS";
+        Parameter[Parameter["MAX_COMBINED_UNIFORM_BLOCKS"] = gl.MAX_COMBINED_UNIFORM_BLOCKS] = "MAX_COMBINED_UNIFORM_BLOCKS";
+        Parameter[Parameter["MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS"] = gl.MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS] = "MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS";
+        Parameter[Parameter["MAX_DRAW_BUFFERS"] = gl.MAX_DRAW_BUFFERS] = "MAX_DRAW_BUFFERS";
+        Parameter[Parameter["MAX_ELEMENT_INDEX"] = gl.MAX_ELEMENT_INDEX] = "MAX_ELEMENT_INDEX";
+        Parameter[Parameter["MAX_ELEMENTS_INDICES"] = gl.MAX_ELEMENTS_INDICES] = "MAX_ELEMENTS_INDICES";
+        Parameter[Parameter["MAX_ELEMENTS_VERTICES"] = gl.MAX_ELEMENTS_VERTICES] = "MAX_ELEMENTS_VERTICES";
+        Parameter[Parameter["MAX_FRAGMENT_INPUT_COMPONENTS"] = gl.MAX_FRAGMENT_INPUT_COMPONENTS] = "MAX_FRAGMENT_INPUT_COMPONENTS";
+        Parameter[Parameter["MAX_FRAGMENT_UNIFORM_BLOCKS"] = gl.MAX_FRAGMENT_UNIFORM_BLOCKS] = "MAX_FRAGMENT_UNIFORM_BLOCKS";
+        Parameter[Parameter["MAX_FRAGMENT_UNIFORM_COMPONENTS"] = gl.MAX_FRAGMENT_UNIFORM_COMPONENTS] = "MAX_FRAGMENT_UNIFORM_COMPONENTS";
+        Parameter[Parameter["MAX_PROGRAM_TEXEL_OFFSET"] = gl.MAX_PROGRAM_TEXEL_OFFSET] = "MAX_PROGRAM_TEXEL_OFFSET";
+        Parameter[Parameter["MAX_SAMPLES"] = gl.MAX_SAMPLES] = "MAX_SAMPLES";
+        Parameter[Parameter["MAX_SERVER_WAIT_TIMEOUT"] = gl.MAX_SERVER_WAIT_TIMEOUT] = "MAX_SERVER_WAIT_TIMEOUT";
+        Parameter[Parameter["MAX_TEXTURE_LOD_BIAS"] = gl.MAX_TEXTURE_LOD_BIAS] = "MAX_TEXTURE_LOD_BIAS";
+        Parameter[Parameter["MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS"] = gl.MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS] = "MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS";
+        Parameter[Parameter["MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS"] = gl.MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS] = "MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS";
+        Parameter[Parameter["MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS"] = gl.MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS] = "MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS";
+        Parameter[Parameter["MAX_UNIFORM_BLOCK_SIZE"] = gl.MAX_UNIFORM_BLOCK_SIZE] = "MAX_UNIFORM_BLOCK_SIZE";
+        Parameter[Parameter["MAX_UNIFORM_BUFFER_BINDINGS"] = gl.MAX_UNIFORM_BUFFER_BINDINGS] = "MAX_UNIFORM_BUFFER_BINDINGS";
+        Parameter[Parameter["MAX_VARYING_COMPONENTS"] = gl.MAX_VARYING_COMPONENTS] = "MAX_VARYING_COMPONENTS";
+        Parameter[Parameter["MAX_VERTEX_OUTPUT_COMPONENTS"] = gl.MAX_VERTEX_OUTPUT_COMPONENTS] = "MAX_VERTEX_OUTPUT_COMPONENTS";
+        Parameter[Parameter["MAX_VERTEX_UNIFORM_BLOCKS"] = gl.MAX_VERTEX_UNIFORM_BLOCKS] = "MAX_VERTEX_UNIFORM_BLOCKS";
+        Parameter[Parameter["MAX_VERTEX_UNIFORM_COMPONENTS"] = gl.MAX_VERTEX_UNIFORM_COMPONENTS] = "MAX_VERTEX_UNIFORM_COMPONENTS";
+        Parameter[Parameter["MIN_PROGRAM_TEXEL_OFFSET"] = gl.MIN_PROGRAM_TEXEL_OFFSET] = "MIN_PROGRAM_TEXEL_OFFSET";
+        Parameter[Parameter["PACK_ROW_LENGTH"] = gl.PACK_ROW_LENGTH] = "PACK_ROW_LENGTH";
+        Parameter[Parameter["PACK_SKIP_PIXELS"] = gl.PACK_SKIP_PIXELS] = "PACK_SKIP_PIXELS";
+        Parameter[Parameter["PACK_SKIP_ROWS"] = gl.PACK_SKIP_ROWS] = "PACK_SKIP_ROWS";
+        Parameter[Parameter["PIXEL_PACK_BUFFER_BINDING"] = gl.PIXEL_PACK_BUFFER_BINDING] = "PIXEL_PACK_BUFFER_BINDING";
+        Parameter[Parameter["PIXEL_UNPACK_BUFFER_BINDING"] = gl.PIXEL_UNPACK_BUFFER_BINDING] = "PIXEL_UNPACK_BUFFER_BINDING";
+        Parameter[Parameter["RASTERIZER_DISCARD"] = gl.RASTERIZER_DISCARD] = "RASTERIZER_DISCARD";
+        Parameter[Parameter["READ_BUFFER"] = gl.READ_BUFFER] = "READ_BUFFER";
+        Parameter[Parameter["READ_FRAMEBUFFER_BINDING"] = gl.READ_FRAMEBUFFER_BINDING] = "READ_FRAMEBUFFER_BINDING";
+        Parameter[Parameter["SAMPLE_ALPHA_TO_COVERAGE"] = gl.SAMPLE_ALPHA_TO_COVERAGE] = "SAMPLE_ALPHA_TO_COVERAGE";
+        Parameter[Parameter["SAMPLE_COVERAGE"] = gl.SAMPLE_COVERAGE] = "SAMPLE_COVERAGE";
+        Parameter[Parameter["SAMPLER_BINDING"] = gl.SAMPLER_BINDING] = "SAMPLER_BINDING";
+        Parameter[Parameter["TEXTURE_BINDING_2D_ARRAY"] = gl.TEXTURE_BINDING_2D_ARRAY] = "TEXTURE_BINDING_2D_ARRAY";
+        Parameter[Parameter["TEXTURE_BINDING_3D"] = gl.TEXTURE_BINDING_3D] = "TEXTURE_BINDING_3D";
+        Parameter[Parameter["TRANSFORM_FEEDBACK_ACTIVE"] = gl.TRANSFORM_FEEDBACK_ACTIVE] = "TRANSFORM_FEEDBACK_ACTIVE";
+        Parameter[Parameter["TRANSFORM_FEEDBACK_BINDING"] = gl.TRANSFORM_FEEDBACK_BINDING] = "TRANSFORM_FEEDBACK_BINDING";
+        Parameter[Parameter["TRANSFORM_FEEDBACK_BUFFER_BINDING"] = gl.TRANSFORM_FEEDBACK_BUFFER_BINDING] = "TRANSFORM_FEEDBACK_BUFFER_BINDING";
+        Parameter[Parameter["TRANSFORM_FEEDBACK_PAUSED"] = gl.TRANSFORM_FEEDBACK_PAUSED] = "TRANSFORM_FEEDBACK_PAUSED";
+        Parameter[Parameter["UNIFORM_BUFFER_BINDING"] = gl.UNIFORM_BUFFER_BINDING] = "UNIFORM_BUFFER_BINDING";
+        Parameter[Parameter["UNIFORM_BUFFER_OFFSET_ALIGNMENT"] = gl.UNIFORM_BUFFER_OFFSET_ALIGNMENT] = "UNIFORM_BUFFER_OFFSET_ALIGNMENT";
+        Parameter[Parameter["UNPACK_IMAGE_HEIGHT"] = gl.UNPACK_IMAGE_HEIGHT] = "UNPACK_IMAGE_HEIGHT";
+        Parameter[Parameter["UNPACK_ROW_LENGTH"] = gl.UNPACK_ROW_LENGTH] = "UNPACK_ROW_LENGTH";
+        Parameter[Parameter["UNPACK_SKIP_IMAGES"] = gl.UNPACK_SKIP_IMAGES] = "UNPACK_SKIP_IMAGES";
+        Parameter[Parameter["UNPACK_SKIP_PIXELS"] = gl.UNPACK_SKIP_PIXELS] = "UNPACK_SKIP_PIXELS";
+        Parameter[Parameter["UNPACK_SKIP_ROWS"] = gl.UNPACK_SKIP_ROWS] = "UNPACK_SKIP_ROWS";
+        Parameter[Parameter["VERTEX_ARRAY_BINDING"] = gl.VERTEX_ARRAY_BINDING] = "VERTEX_ARRAY_BINDING";
+    })(Parameter || (Parameter = {}));
+    exports.Parameter = Parameter;
+    var PixelFormat;
+    (function (PixelFormat) {
+        PixelFormat[PixelFormat["ALPHA"] = gl.ALPHA] = "ALPHA";
+        PixelFormat[PixelFormat["LUMINANCE"] = gl.LUMINANCE] = "LUMINANCE";
+        PixelFormat[PixelFormat["LUMINANCE_ALPHA"] = gl.LUMINANCE_ALPHA] = "LUMINANCE_ALPHA";
+        PixelFormat[PixelFormat["RGB"] = gl.RGB] = "RGB";
+        PixelFormat[PixelFormat["RGBA"] = gl.RGBA] = "RGBA";
+        PixelFormat[PixelFormat["RGBA4"] = gl.RGBA4] = "RGBA4";
+        PixelFormat[PixelFormat["RGB565"] = gl.RGB565] = "RGB565";
+        PixelFormat[PixelFormat["RGB5_A1"] = gl.RGB5_A1] = "RGB5_A1";
+        PixelFormat[PixelFormat["DEPTH_COMPONENT"] = gl.DEPTH_COMPONENT] = "DEPTH_COMPONENT";
+        PixelFormat[PixelFormat["DEPTH_STENCIL"] = gl.DEPTH_STENCIL] = "DEPTH_STENCIL";
+        PixelFormat[PixelFormat["STENCIL_INDEX8"] = gl.STENCIL_INDEX8] = "STENCIL_INDEX8";
+        PixelFormat[PixelFormat["R8"] = gl.R8] = "R8";
+        PixelFormat[PixelFormat["R8UI"] = gl.R8UI] = "R8UI";
+        PixelFormat[PixelFormat["R8I"] = gl.R8I] = "R8I";
+        PixelFormat[PixelFormat["R16UI"] = gl.R16UI] = "R16UI";
+        PixelFormat[PixelFormat["R16I"] = gl.R16I] = "R16I";
+        PixelFormat[PixelFormat["R32UI"] = gl.R32UI] = "R32UI";
+        PixelFormat[PixelFormat["R32I"] = gl.R32I] = "R32I";
+        PixelFormat[PixelFormat["RG8"] = gl.RG8] = "RG8";
+        PixelFormat[PixelFormat["RG8UI"] = gl.RG8UI] = "RG8UI";
+        PixelFormat[PixelFormat["RG8I"] = gl.RG8I] = "RG8I";
+        PixelFormat[PixelFormat["RG16UI"] = gl.RG16UI] = "RG16UI";
+        PixelFormat[PixelFormat["RG16I"] = gl.RG16I] = "RG16I";
+        PixelFormat[PixelFormat["RG32UI"] = gl.RG32UI] = "RG32UI";
+        PixelFormat[PixelFormat["RG32I"] = gl.RG32I] = "RG32I";
+        PixelFormat[PixelFormat["RGB8"] = gl.RGB8] = "RGB8";
+        PixelFormat[PixelFormat["RGBA8"] = gl.RGBA8] = "RGBA8";
+        PixelFormat[PixelFormat["SRGB8_ALPHA8"] = gl.SRGB8_ALPHA8] = "SRGB8_ALPHA8";
+        PixelFormat[PixelFormat["RGB10_A2"] = gl.RGB10_A2] = "RGB10_A2";
+        PixelFormat[PixelFormat["RGBA8UI"] = gl.RGBA8UI] = "RGBA8UI";
+        PixelFormat[PixelFormat["RGBA8I"] = gl.RGBA8I] = "RGBA8I";
+        PixelFormat[PixelFormat["RGB10_A2UI"] = gl.RGB10_A2UI] = "RGB10_A2UI";
+        PixelFormat[PixelFormat["RGBA16UI"] = gl.RGBA16UI] = "RGBA16UI";
+        PixelFormat[PixelFormat["RGBA16I"] = gl.RGBA16I] = "RGBA16I";
+        PixelFormat[PixelFormat["RGBA32I"] = gl.RGBA32I] = "RGBA32I";
+        PixelFormat[PixelFormat["RGBA32UI"] = gl.RGBA32UI] = "RGBA32UI";
+        PixelFormat[PixelFormat["DEPTH_COMPONENT24"] = gl.DEPTH_COMPONENT24] = "DEPTH_COMPONENT24";
+        PixelFormat[PixelFormat["DEPTH_COMPONENT32F"] = gl.DEPTH_COMPONENT32F] = "DEPTH_COMPONENT32F";
+        PixelFormat[PixelFormat["DEPTH24_STENCIL8"] = gl.DEPTH24_STENCIL8] = "DEPTH24_STENCIL8";
+        PixelFormat[PixelFormat["DEPTH32F_STENCIL8"] = gl.DEPTH32F_STENCIL8] = "DEPTH32F_STENCIL8";
+    })(PixelFormat || (PixelFormat = {}));
+    exports.PixelFormat = PixelFormat;
+    var PixelStorageMode;
+    (function (PixelStorageMode) {
+        PixelStorageMode[PixelStorageMode["UNPACK_FLIP_Y_WEBGL"] = gl.UNPACK_FLIP_Y_WEBGL] = "UNPACK_FLIP_Y_WEBGL";
+        PixelStorageMode[PixelStorageMode["UNPACK_PREMULTIPLY_ALPHA_WEBGL"] = gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL] = "UNPACK_PREMULTIPLY_ALPHA_WEBGL";
+        PixelStorageMode[PixelStorageMode["UNPACK_COLORSPACE_CONVERSION_WEBGL"] = gl.UNPACK_COLORSPACE_CONVERSION_WEBGL] = "UNPACK_COLORSPACE_CONVERSION_WEBGL";
+    })(PixelStorageMode || (PixelStorageMode = {}));
+    exports.PixelStorageMode = PixelStorageMode;
+    var PixelType;
+    (function (PixelType) {
+        PixelType[PixelType["BYTE"] = gl.BYTE] = "BYTE";
+        PixelType[PixelType["FLOAT"] = gl.FLOAT] = "FLOAT";
+        PixelType[PixelType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = gl.FLOAT_32_UNSIGNED_INT_24_8_REV] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
+        PixelType[PixelType["HALF_FLOAT"] = gl.HALF_FLOAT] = "HALF_FLOAT";
+        PixelType[PixelType["INT"] = gl.INT] = "INT";
+        PixelType[PixelType["SHORT"] = gl.SHORT] = "SHORT";
+        PixelType[PixelType["UNSIGNED_BYTE"] = gl.UNSIGNED_BYTE] = "UNSIGNED_BYTE";
+        PixelType[PixelType["UNSIGNED_INT"] = gl.UNSIGNED_INT] = "UNSIGNED_INT";
+        PixelType[PixelType["UNSIGNED_INT_2_10_10_10_REV"] = gl.UNSIGNED_INT_2_10_10_10_REV] = "UNSIGNED_INT_2_10_10_10_REV";
+        PixelType[PixelType["UNSIGNED_INT_10F_11F_11F_REV"] = gl.UNSIGNED_INT_10F_11F_11F_REV] = "UNSIGNED_INT_10F_11F_11F_REV";
+        PixelType[PixelType["UNSIGNED_INT_5_9_9_9_REV"] = gl.UNSIGNED_INT_5_9_9_9_REV] = "UNSIGNED_INT_5_9_9_9_REV";
+        PixelType[PixelType["UNSIGNED_INT_24_8"] = gl.UNSIGNED_INT_24_8] = "UNSIGNED_INT_24_8";
+        PixelType[PixelType["UNSIGNED_SHORT"] = gl.UNSIGNED_SHORT] = "UNSIGNED_SHORT";
+        PixelType[PixelType["UNSIGNED_SHORT_5_6_5"] = gl.UNSIGNED_SHORT_5_6_5] = "UNSIGNED_SHORT_5_6_5";
+        PixelType[PixelType["UNSIGNED_SHORT_4_4_4_4"] = gl.UNSIGNED_SHORT_4_4_4_4] = "UNSIGNED_SHORT_4_4_4_4";
+        PixelType[PixelType["UNSIGNED_SHORT_5_5_5_1"] = gl.UNSIGNED_SHORT_5_5_5_1] = "UNSIGNED_SHORT_5_5_5_1";
+    })(PixelType || (PixelType = {}));
+    exports.PixelType = PixelType;
+    var RenderbufferTarget;
+    (function (RenderbufferTarget) {
+        RenderbufferTarget[RenderbufferTarget["RENDERBUFFER"] = gl.RENDERBUFFER] = "RENDERBUFFER";
+    })(RenderbufferTarget || (RenderbufferTarget = {}));
+    exports.RenderbufferTarget = RenderbufferTarget;
+    var Shader;
+    (function (Shader) {
+        Shader[Shader["FRAGMENT_SHADER"] = gl.FRAGMENT_SHADER] = "FRAGMENT_SHADER";
+        Shader[Shader["VERTEX_SHADER"] = gl.VERTEX_SHADER] = "VERTEX_SHADER";
+        Shader[Shader["COMPILE_STATUS"] = gl.COMPILE_STATUS] = "COMPILE_STATUS";
+        Shader[Shader["DELETE_STATUS"] = gl.DELETE_STATUS] = "DELETE_STATUS";
+        Shader[Shader["LINK_STATUS"] = gl.LINK_STATUS] = "LINK_STATUS";
+        Shader[Shader["VALIDATE_STATUS"] = gl.VALIDATE_STATUS] = "VALIDATE_STATUS";
+        Shader[Shader["ATTACHED_SHADERS"] = gl.ATTACHED_SHADERS] = "ATTACHED_SHADERS";
+        Shader[Shader["ACTIVE_ATTRIBUTES"] = gl.ACTIVE_ATTRIBUTES] = "ACTIVE_ATTRIBUTES";
+        Shader[Shader["ACTIVE_UNIFORMS"] = gl.ACTIVE_UNIFORMS] = "ACTIVE_UNIFORMS";
+        Shader[Shader["MAX_VERTEX_ATTRIBS"] = gl.MAX_VERTEX_ATTRIBS] = "MAX_VERTEX_ATTRIBS";
+        Shader[Shader["MAX_VERTEX_UNIFORM_VECTORS"] = gl.MAX_VERTEX_UNIFORM_VECTORS] = "MAX_VERTEX_UNIFORM_VECTORS";
+        Shader[Shader["MAX_VARYING_VECTORS"] = gl.MAX_VARYING_VECTORS] = "MAX_VARYING_VECTORS";
+        Shader[Shader["MAX_COMBINED_TEXTURE_IMAGE_UNITS"] = gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS] = "MAX_COMBINED_TEXTURE_IMAGE_UNITS";
+        Shader[Shader["MAX_VERTEX_TEXTURE_IMAGE_UNITS"] = gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS] = "MAX_VERTEX_TEXTURE_IMAGE_UNITS";
+        Shader[Shader["MAX_TEXTURE_IMAGE_UNITS"] = gl.MAX_TEXTURE_IMAGE_UNITS] = "MAX_TEXTURE_IMAGE_UNITS";
+        Shader[Shader["MAX_FRAGMENT_UNIFORM_VECTORS"] = gl.MAX_FRAGMENT_UNIFORM_VECTORS] = "MAX_FRAGMENT_UNIFORM_VECTORS";
+        Shader[Shader["SHADER_TYPE"] = gl.SHADER_TYPE] = "SHADER_TYPE";
+        Shader[Shader["SHADING_LANGUAGE_VERSION"] = gl.SHADING_LANGUAGE_VERSION] = "SHADING_LANGUAGE_VERSION";
+        Shader[Shader["CURRENT_PROGRAM"] = gl.CURRENT_PROGRAM] = "CURRENT_PROGRAM";
+    })(Shader || (Shader = {}));
+    exports.Shader = Shader;
+    var ShaderType;
+    (function (ShaderType) {
+        ShaderType[ShaderType["FRAGMENT_SHADER"] = gl.FRAGMENT_SHADER] = "FRAGMENT_SHADER";
+        ShaderType[ShaderType["VERTEX_SHADER"] = gl.VERTEX_SHADER] = "VERTEX_SHADER";
+    })(ShaderType || (ShaderType = {}));
+    exports.ShaderType = ShaderType;
+    var ShaderPrecision;
+    (function (ShaderPrecision) {
+        ShaderPrecision[ShaderPrecision["LOW_FLOAT"] = gl.LOW_FLOAT] = "LOW_FLOAT";
+        ShaderPrecision[ShaderPrecision["MEDIUM_FLOAT"] = gl.MEDIUM_FLOAT] = "MEDIUM_FLOAT";
+        ShaderPrecision[ShaderPrecision["HIGH_FLOAT"] = gl.HIGH_FLOAT] = "HIGH_FLOAT";
+        ShaderPrecision[ShaderPrecision["LOW_INT"] = gl.LOW_INT] = "LOW_INT";
+        ShaderPrecision[ShaderPrecision["MEDIUM_INT"] = gl.MEDIUM_INT] = "MEDIUM_INT";
+        ShaderPrecision[ShaderPrecision["HIGH_INT"] = gl.HIGH_INT] = "HIGH_INT";
+    })(ShaderPrecision || (ShaderPrecision = {}));
+    exports.ShaderPrecision = ShaderPrecision;
+    var StencilAction;
+    (function (StencilAction) {
+        StencilAction[StencilAction["KEEP"] = gl.KEEP] = "KEEP";
+        StencilAction[StencilAction["REPLACE"] = gl.REPLACE] = "REPLACE";
+        StencilAction[StencilAction["INCR"] = gl.INCR] = "INCR";
+        StencilAction[StencilAction["DECR"] = gl.DECR] = "DECR";
+        StencilAction[StencilAction["INVERT"] = gl.INVERT] = "INVERT";
+        StencilAction[StencilAction["INCR_WRAP"] = gl.INCR_WRAP] = "INCR_WRAP";
+        StencilAction[StencilAction["DECR_WRAP"] = gl.DECR_WRAP] = "DECR_WRAP";
+    })(StencilAction || (StencilAction = {}));
+    exports.StencilAction = StencilAction;
+    var TestFunction;
+    (function (TestFunction) {
+        TestFunction[TestFunction["NEVER"] = gl.NEVER] = "NEVER";
+        TestFunction[TestFunction["LESS"] = gl.LESS] = "LESS";
+        TestFunction[TestFunction["EQUAL"] = gl.EQUAL] = "EQUAL";
+        TestFunction[TestFunction["LEQUAL"] = gl.LEQUAL] = "LEQUAL";
+        TestFunction[TestFunction["GREATER"] = gl.GREATER] = "GREATER";
+        TestFunction[TestFunction["NOTEQUAL"] = gl.NOTEQUAL] = "NOTEQUAL";
+        TestFunction[TestFunction["GEQUAL"] = gl.GEQUAL] = "GEQUAL";
+        TestFunction[TestFunction["ALWAYS"] = gl.ALWAYS] = "ALWAYS";
+    })(TestFunction || (TestFunction = {}));
+    exports.TestFunction = TestFunction;
+    var TextureUnits;
+    (function (TextureUnits) {
+        TextureUnits[TextureUnits["TEXTURE"] = gl.TEXTURE] = "TEXTURE";
+        TextureUnits[TextureUnits["TEXTURE0"] = gl.TEXTURE0] = "TEXTURE0";
+    })(TextureUnits || (TextureUnits = {}));
+    exports.TextureUnits = TextureUnits;
+    var TextureParameter;
+    (function (TextureParameter) {
+        TextureParameter[TextureParameter["TEXTURE_MAG_FILTER"] = gl.TEXTURE_MAG_FILTER] = "TEXTURE_MAG_FILTER";
+        TextureParameter[TextureParameter["TEXTURE_MIN_FILTER"] = gl.TEXTURE_MIN_FILTER] = "TEXTURE_MIN_FILTER";
+        TextureParameter[TextureParameter["TEXTURE_WRAP_S"] = gl.TEXTURE_WRAP_S] = "TEXTURE_WRAP_S";
+        TextureParameter[TextureParameter["TEXTURE_WRAP_T"] = gl.TEXTURE_WRAP_T] = "TEXTURE_WRAP_T";
+        TextureParameter[TextureParameter["TEXTURE_BASE_LEVEL"] = gl.TEXTURE_BASE_LEVEL] = "TEXTURE_BASE_LEVEL";
+        TextureParameter[TextureParameter["TEXTURE_MAX_LEVEL"] = gl.TEXTURE_MAX_LEVEL] = "TEXTURE_MAX_LEVEL";
+        TextureParameter[TextureParameter["TEXTURE_MAX_LOD"] = gl.TEXTURE_MAX_LOD] = "TEXTURE_MAX_LOD";
+        TextureParameter[TextureParameter["TEXTURE_MIN_LOD"] = gl.TEXTURE_MIN_LOD] = "TEXTURE_MIN_LOD";
+        TextureParameter[TextureParameter["TEXTURE_WRAP_R"] = gl.TEXTURE_WRAP_R] = "TEXTURE_WRAP_R";
+    })(TextureParameter || (TextureParameter = {}));
+    exports.TextureParameter = TextureParameter;
+    var TextureTarget;
+    (function (TextureTarget) {
+        TextureTarget[TextureTarget["TEXTURE_2D"] = gl.TEXTURE_2D] = "TEXTURE_2D";
+        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP"] = gl.TEXTURE_CUBE_MAP] = "TEXTURE_CUBE_MAP";
+        TextureTarget[TextureTarget["TEXTURE_3D"] = gl.TEXTURE_3D] = "TEXTURE_3D";
+        TextureTarget[TextureTarget["TEXTURE_2D_ARRAY"] = gl.TEXTURE_2D_ARRAY] = "TEXTURE_2D_ARRAY";
+        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_POSITIVE_X"] = gl.TEXTURE_CUBE_MAP_POSITIVE_X] = "TEXTURE_CUBE_MAP_POSITIVE_X";
+        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_X"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_X] = "TEXTURE_CUBE_MAP_NEGATIVE_X";
+        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_POSITIVE_Y"] = gl.TEXTURE_CUBE_MAP_POSITIVE_Y] = "TEXTURE_CUBE_MAP_POSITIVE_Y";
+        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_Y"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_Y] = "TEXTURE_CUBE_MAP_NEGATIVE_Y";
+        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_POSITIVE_Z"] = gl.TEXTURE_CUBE_MAP_POSITIVE_Z] = "TEXTURE_CUBE_MAP_POSITIVE_Z";
+        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_Z"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_Z] = "TEXTURE_CUBE_MAP_NEGATIVE_Z";
+    })(TextureTarget || (TextureTarget = {}));
+    exports.TextureTarget = TextureTarget;
+    var TextureMagFilter;
+    (function (TextureMagFilter) {
+        TextureMagFilter[TextureMagFilter["LINEAR"] = gl.LINEAR] = "LINEAR";
+        TextureMagFilter[TextureMagFilter["NEAREST"] = gl.NEAREST] = "NEAREST";
+    })(TextureMagFilter || (TextureMagFilter = {}));
+    exports.TextureMagFilter = TextureMagFilter;
+    var TextureMinFilter;
+    (function (TextureMinFilter) {
+        TextureMinFilter[TextureMinFilter["LINEAR"] = gl.LINEAR] = "LINEAR";
+        TextureMinFilter[TextureMinFilter["NEAREST"] = gl.NEAREST] = "NEAREST";
+        TextureMinFilter[TextureMinFilter["NEAREST_MIPMAP_NEAREST"] = gl.NEAREST_MIPMAP_NEAREST] = "NEAREST_MIPMAP_NEAREST";
+        TextureMinFilter[TextureMinFilter["LINEAR_MIPMAP_NEAREST"] = gl.LINEAR_MIPMAP_NEAREST] = "LINEAR_MIPMAP_NEAREST";
+        TextureMinFilter[TextureMinFilter["NEAREST_MIPMAP_LINEAR"] = gl.NEAREST_MIPMAP_LINEAR] = "NEAREST_MIPMAP_LINEAR";
+        TextureMinFilter[TextureMinFilter["LINEAR_MIPMAP_LINEAR"] = gl.LINEAR_MIPMAP_LINEAR] = "LINEAR_MIPMAP_LINEAR";
+    })(TextureMinFilter || (TextureMinFilter = {}));
+    exports.TextureMinFilter = TextureMinFilter;
+    var TextureWrapMode;
+    (function (TextureWrapMode) {
+        TextureWrapMode[TextureWrapMode["REPEAT"] = gl.REPEAT] = "REPEAT";
+        TextureWrapMode[TextureWrapMode["CLAMP_TO_EDGE"] = gl.CLAMP_TO_EDGE] = "CLAMP_TO_EDGE";
+        TextureWrapMode[TextureWrapMode["MIRRORED_REPEAT"] = gl.MIRRORED_REPEAT] = "MIRRORED_REPEAT";
+    })(TextureWrapMode || (TextureWrapMode = {}));
+    exports.TextureWrapMode = TextureWrapMode;
+    var UniformQuery;
+    (function (UniformQuery) {
+        UniformQuery[UniformQuery["UNIFORM_TYPE"] = gl.UNIFORM_TYPE] = "UNIFORM_TYPE";
+        UniformQuery[UniformQuery["UNIFORM_SIZE"] = gl.UNIFORM_SIZE] = "UNIFORM_SIZE";
+        UniformQuery[UniformQuery["UNIFORM_BLOCK_INDEX"] = gl.UNIFORM_BLOCK_INDEX] = "UNIFORM_BLOCK_INDEX";
+        UniformQuery[UniformQuery["UNIFORM_OFFSET"] = gl.UNIFORM_OFFSET] = "UNIFORM_OFFSET";
+        UniformQuery[UniformQuery["UNIFORM_ARRAY_STRIDE"] = gl.UNIFORM_ARRAY_STRIDE] = "UNIFORM_ARRAY_STRIDE";
+        UniformQuery[UniformQuery["UNIFORM_MATRIX_STRIDE"] = gl.UNIFORM_MATRIX_STRIDE] = "UNIFORM_MATRIX_STRIDE";
+        UniformQuery[UniformQuery["UNIFORM_IS_ROW_MAJOR"] = gl.UNIFORM_IS_ROW_MAJOR] = "UNIFORM_IS_ROW_MAJOR";
+    })(UniformQuery || (UniformQuery = {}));
+    exports.UniformQuery = UniformQuery;
+    var UniformType;
+    (function (UniformType) {
+        UniformType[UniformType["BOOL"] = gl.BOOL] = "BOOL";
+        UniformType[UniformType["BOOL_VEC2"] = gl.BOOL_VEC2] = "BOOL_VEC2";
+        UniformType[UniformType["BOOL_VEC3"] = gl.BOOL_VEC3] = "BOOL_VEC3";
+        UniformType[UniformType["BOOL_VEC4"] = gl.BOOL_VEC4] = "BOOL_VEC4";
+        UniformType[UniformType["INT"] = gl.INT] = "INT";
+        UniformType[UniformType["INT_VEC2"] = gl.INT_VEC2] = "INT_VEC2";
+        UniformType[UniformType["INT_VEC3"] = gl.INT_VEC3] = "INT_VEC3";
+        UniformType[UniformType["INT_VEC4"] = gl.INT_VEC4] = "INT_VEC4";
+        UniformType[UniformType["INT_SAMPLER_2D"] = gl.INT_SAMPLER_2D] = "INT_SAMPLER_2D";
+        UniformType[UniformType["INT_SAMPLER_3D"] = gl.INT_SAMPLER_3D] = "INT_SAMPLER_3D";
+        UniformType[UniformType["INT_SAMPLER_CUBE"] = gl.INT_SAMPLER_CUBE] = "INT_SAMPLER_CUBE";
+        UniformType[UniformType["INT_SAMPLER_2D_ARRAY"] = gl.INT_SAMPLER_2D_ARRAY] = "INT_SAMPLER_2D_ARRAY";
+        UniformType[UniformType["UNSIGNED_INT_SAMPLER_2D"] = gl.UNSIGNED_INT_SAMPLER_2D] = "UNSIGNED_INT_SAMPLER_2D";
+        UniformType[UniformType["UNSIGNED_INT_SAMPLER_3D"] = gl.UNSIGNED_INT_SAMPLER_3D] = "UNSIGNED_INT_SAMPLER_3D";
+        UniformType[UniformType["UNSIGNED_INT_SAMPLER_CUBE"] = gl.UNSIGNED_INT_SAMPLER_CUBE] = "UNSIGNED_INT_SAMPLER_CUBE";
+        UniformType[UniformType["UNSIGNED_INT_SAMPLER_2D_ARRAY"] = gl.UNSIGNED_INT_SAMPLER_2D_ARRAY] = "UNSIGNED_INT_SAMPLER_2D_ARRAY";
+        UniformType[UniformType["UNSIGNED_INT"] = gl.UNSIGNED_INT] = "UNSIGNED_INT";
+        UniformType[UniformType["UNSIGNED_INT_VEC2"] = gl.UNSIGNED_INT_VEC2] = "UNSIGNED_INT_VEC2";
+        UniformType[UniformType["UNSIGNED_INT_VEC3"] = gl.UNSIGNED_INT_VEC3] = "UNSIGNED_INT_VEC3";
+        UniformType[UniformType["UNSIGNED_INT_VEC4"] = gl.UNSIGNED_INT_VEC4] = "UNSIGNED_INT_VEC4";
+        UniformType[UniformType["FLOAT"] = gl.FLOAT] = "FLOAT";
+        UniformType[UniformType["FLOAT_VEC2"] = gl.FLOAT_VEC2] = "FLOAT_VEC2";
+        UniformType[UniformType["FLOAT_VEC3"] = gl.FLOAT_VEC3] = "FLOAT_VEC3";
+        UniformType[UniformType["FLOAT_VEC4"] = gl.FLOAT_VEC4] = "FLOAT_VEC4";
+        UniformType[UniformType["FLOAT_MAT2"] = gl.FLOAT_MAT2] = "FLOAT_MAT2";
+        UniformType[UniformType["FLOAT_MAT3"] = gl.FLOAT_MAT3] = "FLOAT_MAT3";
+        UniformType[UniformType["FLOAT_MAT4"] = gl.FLOAT_MAT4] = "FLOAT_MAT4";
+        UniformType[UniformType["FLOAT_MAT2x3"] = gl.FLOAT_MAT2x3] = "FLOAT_MAT2x3";
+        UniformType[UniformType["FLOAT_MAT2x4"] = gl.FLOAT_MAT2x4] = "FLOAT_MAT2x4";
+        UniformType[UniformType["FLOAT_MAT3x2"] = gl.FLOAT_MAT3x2] = "FLOAT_MAT3x2";
+        UniformType[UniformType["FLOAT_MAT3x4"] = gl.FLOAT_MAT3x4] = "FLOAT_MAT3x4";
+        UniformType[UniformType["FLOAT_MAT4x2"] = gl.FLOAT_MAT4x2] = "FLOAT_MAT4x2";
+        UniformType[UniformType["FLOAT_MAT4x3"] = gl.FLOAT_MAT4x3] = "FLOAT_MAT4x3";
+        UniformType[UniformType["SAMPLER_2D"] = gl.SAMPLER_2D] = "SAMPLER_2D";
+        UniformType[UniformType["SAMPLER_3D"] = gl.SAMPLER_3D] = "SAMPLER_3D";
+        UniformType[UniformType["SAMPLER_CUBE"] = gl.SAMPLER_CUBE] = "SAMPLER_CUBE";
+        UniformType[UniformType["SAMPLER_2D_SHADOW"] = gl.SAMPLER_2D_SHADOW] = "SAMPLER_2D_SHADOW";
+        UniformType[UniformType["SAMPLER_2D_ARRAY"] = gl.SAMPLER_2D_ARRAY] = "SAMPLER_2D_ARRAY";
+        UniformType[UniformType["SAMPLER_2D_ARRAY_SHADOW"] = gl.SAMPLER_2D_ARRAY_SHADOW] = "SAMPLER_2D_ARRAY_SHADOW";
+        UniformType[UniformType["SAMPLER_CUBE_SHADOW"] = gl.SAMPLER_CUBE_SHADOW] = "SAMPLER_CUBE_SHADOW";
+    })(UniformType || (UniformType = {}));
+    exports.UniformType = UniformType;
+    var VertexAttribute;
+    (function (VertexAttribute) {
+        VertexAttribute[VertexAttribute["CURRENT_VERTEX_ATTRIB"] = gl.CURRENT_VERTEX_ATTRIB] = "CURRENT_VERTEX_ATTRIB";
+        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_ENABLED"] = gl.VERTEX_ATTRIB_ARRAY_ENABLED] = "VERTEX_ATTRIB_ARRAY_ENABLED";
+        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_SIZE"] = gl.VERTEX_ATTRIB_ARRAY_SIZE] = "VERTEX_ATTRIB_ARRAY_SIZE";
+        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_STRIDE"] = gl.VERTEX_ATTRIB_ARRAY_STRIDE] = "VERTEX_ATTRIB_ARRAY_STRIDE";
+        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_TYPE"] = gl.VERTEX_ATTRIB_ARRAY_TYPE] = "VERTEX_ATTRIB_ARRAY_TYPE";
+        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_NORMALIZED"] = gl.VERTEX_ATTRIB_ARRAY_NORMALIZED] = "VERTEX_ATTRIB_ARRAY_NORMALIZED";
+        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_POINTER"] = gl.VERTEX_ATTRIB_ARRAY_POINTER] = "VERTEX_ATTRIB_ARRAY_POINTER";
+        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_BUFFER_BINDING"] = gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING] = "VERTEX_ATTRIB_ARRAY_BUFFER_BINDING";
+    })(VertexAttribute || (VertexAttribute = {}));
+    exports.VertexAttribute = VertexAttribute;
+});
+define("engine/editor/models/ListModel", ["require", "exports", "engine/libs/patterns/messaging/events/EventDispatcher"], function (require, exports, EventDispatcher_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.BaseListModel = exports.BaseModel = void 0;
+    class BaseModel extends EventDispatcher_2.EventDispatcher {
+        constructor(data) {
+            super();
+            this._data = data;
+        }
+        getProperty(key) {
+            return this._data[key];
+        }
+        setProperty(key, value) {
+            this._data[key] = value;
+            this.dispatchEvent(new EventDispatcher_2.Event("datachange", { type: "property", properties: key }));
+        }
+        setProperties(data) {
+            let keys = Object.keys(data);
+            keys.forEach((key) => {
+                this._data[key] = data[key];
+            });
+            this.dispatchEvent(new EventDispatcher_2.Event("datachange", { type: "properties", properties: keys }));
+        }
+    }
+    exports.BaseModel = BaseModel;
+    class BaseListModel extends BaseModel {
+        constructor(data, items) {
+            super(data);
+            this._items = items;
+        }
+        get items() {
+            return this._items;
+        }
+        insertItem(index, data) {
+            if (index >= 0 && index < this._items.length) {
+                this._items.splice(index, 0, data);
+                this.dispatchEvent(new EventDispatcher_2.Event("datachange", { type: "insert", model: this, index: index }));
+            }
+        }
+        removeItem(index) {
+            if (index >= 0 && index < this._items.length) {
+                this._items.splice(index, 1);
+                this.dispatchEvent(new EventDispatcher_2.Event("datachange", { type: "remove", model: this, index: index }));
+            }
+        }
+    }
+    exports.BaseListModel = BaseListModel;
+});
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/models/ListModel", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, ListModel_1, Snippets_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.mockup = void 0;
@@ -3820,16 +4564,6 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
         const extractButton = document.querySelector("button#extract-button");
         const transformButton = document.querySelector("button#transform-button");
         const exportButton = document.querySelector("button#export-button");
-        let kik = HTMLElement_22.HTMLElementConstructor("span", { props: { textContent: "kik" } });
-        let kek = HTMLElement_22.HTMLElementConstructor("span", { props: { textContent: "kek" } });
-        let comment = document.createComment("Hey");
-        let frag1 = document.createDocumentFragment();
-        let frag2 = document.createDocumentFragment();
-        frag1.appendChild(comment);
-        frag1.appendChild(kik);
-        frag2.appendChild(kek);
-        frag1.appendChild(frag2);
-        document.body.appendChild(frag1);
         /*if (extractForm) {
             const jsonData = new JSONFormData(extractForm);
             console.log(jsonData.getData());
@@ -3947,6 +4681,44 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
             type: "df",
             name: "df"
         };
+        class Directive {
+        }
+        class _ForEachDirective extends Directive {
+            constructor(model, callback) {
+                super();
+                this.model = model;
+                this.callback = callback;
+            }
+            execute(location) {
+                this.model.addEventListener("datachange", (event) => {
+                    switch (event.data.type) {
+                    }
+                });
+            }
+        }
+        function template(parts, ...expr) {
+            const parser = new DOMParser();
+            const html = parser.parseFromString(parts.join("<!--0-->"), "text/html");
+            Snippets_7.forAllHierarchyNodes(html.body, (child, parent) => {
+                if (child.nodeType === Node.COMMENT_NODE && child.nodeValue) {
+                    let index = parseInt(child.nodeValue);
+                    if (expr[index] instanceof Directive) {
+                        console.log("previous");
+                        console.log(child.previousSibling);
+                        console.log("parent");
+                        console.log(parent);
+                    }
+                }
+            });
+            console.log(html.body.innerHTML);
+            return 1;
+        }
+        const forEach = function (model, callback) {
+            return new _ForEachDirective(model, callback);
+        };
+        const items = new ListModel_1.BaseListModel({}, [{ lol: 1 }]);
+        template `<div> ${forEach(items, () => { })} </div>`;
+        let div = document.createElement("div");
         const dropzone = document.querySelector("e-dropzone#columns");
         if (dropzone) {
             dropzone.addEventListener("datachange", () => {
@@ -3975,11 +4747,11 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
     }
     exports.mockup = mockup;
 });
-define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "samples/scenes/Mockup"], function (require, exports, HTMLElement_23, Mockup_1) {
+define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLElement", "samples/scenes/Mockup"], function (require, exports, HTMLElement_22, Mockup_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.sandbox = void 0;
-    class DataClassMixin extends HTMLElement_23.BaseAttributeMutationMixin {
+    class DataClassMixin extends HTMLElement_22.BaseAttributeMutationMixin {
         constructor(attributeValue) {
             super("data-class", "listitem", attributeValue);
         }
@@ -4006,13 +4778,13 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             super("input-dropzone");
             this.datatransferEventListener = ((event) => {
                 let target = event.target;
-                if (HTMLElement_23.isTagElement("e-dropzone", target)) {
+                if (HTMLElement_22.isTagElement("e-dropzone", target)) {
                     this.handlePostdatatransferInputNaming(target);
                 }
             });
         }
         attach(element) {
-            if (HTMLElement_23.isTagElement("e-dropzone", element)) {
+            if (HTMLElement_22.isTagElement("e-dropzone", element)) {
                 this.handlePostdatatransferInputNaming(element);
             }
             element.addEventListener("datachange", this.datatransferEventListener);
@@ -4043,7 +4815,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             super("toggler-select");
             this.changeEventListener = (event) => {
                 let target = event.target;
-                if (HTMLElement_23.isTagElement("select", target)) {
+                if (HTMLElement_22.isTagElement("select", target)) {
                     this.handlePostchangeToggle(target);
                 }
             };
@@ -4073,7 +4845,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             super("duplicater-input");
             this.changeEventListener = (event) => {
                 let target = event.target;
-                if (HTMLElement_23.isTagElement("input", target)) {
+                if (HTMLElement_22.isTagElement("input", target)) {
                     this.handlePostchangeDuplicate(target);
                 }
             };
@@ -4117,7 +4889,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             super("enabler-input");
             this.changeEventListener = (event) => {
                 let target = event.target;
-                if (HTMLElement_23.isTagElement("input", target)) {
+                if (HTMLElement_22.isTagElement("input", target)) {
                     this.handlePostchangeDuplicate(target);
                 }
             };
@@ -4161,7 +4933,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             super("autosized-input");
             this.changeEventListener = (event) => {
                 let target = event.target;
-                if (HTMLElement_23.isTagElement("input", target)) {
+                if (HTMLElement_22.isTagElement("input", target)) {
                     this.handlePostchangeDuplicate(target);
                 }
             };
@@ -4184,7 +4956,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
         new DuplicaterInputDataClassMixin(),
         new AutosizedDataClassMixin()
     ];
-    const mainObserver = new MutationObserver(HTMLElement_23.createMutationObserverCallback(attributeMutationMixins));
+    const mainObserver = new MutationObserver(HTMLElement_22.createMutationObserverCallback(attributeMutationMixins));
     mainObserver.observe(document.body, {
         childList: true,
         subtree: true,
@@ -6974,7 +7746,7 @@ define("engine/libs/patterns/pools/StackPool", ["require", "exports", "engine/li
     const StackPool = StackPoolBase;
     exports.StackPool = StackPool;
 });
-define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_6, StackPool_1, MathError_6) {
+define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_8, StackPool_1, MathError_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuaternionPool = exports.QuaternionBase = exports.QuaternionInjector = exports.Quaternion = void 0;
@@ -7089,7 +7861,7 @@ define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports"
             if (den < Number.EPSILON) {
                 return out.setZeros();
             }
-            const scale = Snippets_6.qSqrt(den);
+            const scale = Snippets_8.qSqrt(den);
             out.setValues([this._x * scale, this._y * scale, this._z * scale]);
             return out;
         }
@@ -8157,687 +8929,6 @@ define("engine/core/rendering/shaders/Shader", ["require", "exports", "engine/co
     })();
     const Shader = DefaultShader;
     exports.Shader = Shader;
-});
-define("engine/utils/Snippets", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.safeQuerySelector = exports.buildArrayFromIndexedArrays = exports.hasFunctionMember = exports.isOfPrototype = exports.hasMemberOfPrototype = exports.crashIfNull = exports.isNotNull = void 0;
-    function isNotNull(obj) {
-        return !(obj === null);
-    }
-    exports.isNotNull = isNotNull;
-    function crashIfNull(obj) {
-        if (isNotNull(obj)) {
-            return obj;
-        }
-        throw new TypeError(`Argument is null.`);
-    }
-    exports.crashIfNull = crashIfNull;
-    function hasMemberOfPrototype(obj, key, ctor) {
-        return !!obj && (obj[key]).constructor.prototype === ctor.prototype;
-    }
-    exports.hasMemberOfPrototype = hasMemberOfPrototype;
-    function isOfPrototype(obj, ctor) {
-        return obj.constructor.prototype === ctor.prototype;
-    }
-    exports.isOfPrototype = isOfPrototype;
-    function hasFunctionMember(obj, key) {
-        return (typeof obj[key] === 'function');
-    }
-    exports.hasFunctionMember = hasFunctionMember;
-    function buildArrayFromIndexedArrays(arrays, indexes) {
-        const len = indexes.length;
-        const array = [];
-        let i = -1;
-        while (++i < len) {
-            array.push(...arrays[indexes[i]]);
-        }
-        return array;
-    }
-    exports.buildArrayFromIndexedArrays = buildArrayFromIndexedArrays;
-    function safeQuerySelector(parent, query) {
-        const element = parent.querySelector(query);
-        if (isNotNull(element)) {
-            return element;
-        }
-        throw new Error(`Query '${query}' returned no result.`);
-    }
-    exports.safeQuerySelector = safeQuerySelector;
-});
-define("engine/core/rendering/webgl/WebGLConstants", ["require", "exports", "engine/utils/Snippets"], function (require, exports, Snippets_7) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.VertexAttribute = exports.UniformType = exports.UniformQuery = exports.TextureWrapMode = exports.TextureMinFilter = exports.TextureMagFilter = exports.TextureTarget = exports.TextureParameter = exports.TextureUnits = exports.TestFunction = exports.StencilAction = exports.ShaderPrecision = exports.ShaderType = exports.Shader = exports.RenderbufferTarget = exports.PixelType = exports.PixelStorageMode = exports.PixelFormat = exports.Parameter = exports.HintMode = exports.HintTarget = exports.FrontFace = exports.FramebufferTextureTarget = exports.FramebufferTarget = exports.FramebufferAttachmentParameter = exports.FramebufferAttachment = exports.Error = exports.DataType = exports.DrawMode = exports.CullFaceMode = exports.Capabilities = exports.BufferTarget = exports.BufferInterpolation = exports.BufferIndexType = exports.BufferBindingPoint = exports.BufferMaskBit = exports.BufferMask = exports.BufferDataUsage = exports.BlendingEquation = exports.BlendingMode = void 0;
-    const gl = Snippets_7.crashIfNull(document.createElement('canvas').getContext('webgl2'));
-    var BlendingMode;
-    (function (BlendingMode) {
-        BlendingMode[BlendingMode["ZERO"] = gl.ZERO] = "ZERO";
-        BlendingMode[BlendingMode["ONE"] = gl.ONE] = "ONE";
-        BlendingMode[BlendingMode["SRC_COLOR"] = gl.SRC_COLOR] = "SRC_COLOR";
-        BlendingMode[BlendingMode["ONE_MINUS_SRC_COLOR"] = gl.ONE_MINUS_SRC_COLOR] = "ONE_MINUS_SRC_COLOR";
-        BlendingMode[BlendingMode["DST_COLOR"] = gl.DST_COLOR] = "DST_COLOR";
-        BlendingMode[BlendingMode["ONE_MINUS_DST_COLOR"] = gl.ONE_MINUS_DST_COLOR] = "ONE_MINUS_DST_COLOR";
-        BlendingMode[BlendingMode["SRC_ALPHA"] = gl.SRC_ALPHA] = "SRC_ALPHA";
-        BlendingMode[BlendingMode["ONE_MINUS_SRC_ALPHA"] = gl.ONE_MINUS_SRC_ALPHA] = "ONE_MINUS_SRC_ALPHA";
-        BlendingMode[BlendingMode["ONE_MINUS_DST_ALPHA"] = gl.ONE_MINUS_DST_ALPHA] = "ONE_MINUS_DST_ALPHA";
-        BlendingMode[BlendingMode["CONSTANT_COLOR"] = gl.CONSTANT_COLOR] = "CONSTANT_COLOR";
-        BlendingMode[BlendingMode["ONE_MINUS_CONSTANT_COLOR"] = gl.ONE_MINUS_CONSTANT_COLOR] = "ONE_MINUS_CONSTANT_COLOR";
-        BlendingMode[BlendingMode["CONSTANT_ALPHA"] = gl.CONSTANT_ALPHA] = "CONSTANT_ALPHA";
-        BlendingMode[BlendingMode["ONE_MINUS_CONSTANT_ALPHA"] = gl.ONE_MINUS_CONSTANT_ALPHA] = "ONE_MINUS_CONSTANT_ALPHA";
-        BlendingMode[BlendingMode["SRC_ALPHA_SATURATE"] = gl.SRC_ALPHA_SATURATE] = "SRC_ALPHA_SATURATE";
-    })(BlendingMode || (BlendingMode = {}));
-    exports.BlendingMode = BlendingMode;
-    var BlendingEquation;
-    (function (BlendingEquation) {
-        BlendingEquation[BlendingEquation["FUNC_ADD"] = gl.FUNC_ADD] = "FUNC_ADD";
-        BlendingEquation[BlendingEquation["FUNC_SUBTRACT"] = gl.FUNC_SUBTRACT] = "FUNC_SUBTRACT";
-        BlendingEquation[BlendingEquation["FUNC_REVERSE_SUBTRACT"] = gl.FUNC_REVERSE_SUBTRACT] = "FUNC_REVERSE_SUBTRACT";
-        BlendingEquation[BlendingEquation["MIN"] = gl.MIN] = "MIN";
-        BlendingEquation[BlendingEquation["MAX"] = gl.MAX] = "MAX";
-    })(BlendingEquation || (BlendingEquation = {}));
-    exports.BlendingEquation = BlendingEquation;
-    var BufferMaskBit;
-    (function (BufferMaskBit) {
-        BufferMaskBit[BufferMaskBit["DEPTH_BUFFER_BIT"] = gl.DEPTH_BUFFER_BIT] = "DEPTH_BUFFER_BIT";
-        BufferMaskBit[BufferMaskBit["STENCIL_BUFFER_BIT"] = gl.STENCIL_BUFFER_BIT] = "STENCIL_BUFFER_BIT";
-        BufferMaskBit[BufferMaskBit["COLOR_BUFFER_BIT"] = gl.COLOR_BUFFER_BIT] = "COLOR_BUFFER_BIT";
-    })(BufferMaskBit || (BufferMaskBit = {}));
-    exports.BufferMaskBit = BufferMaskBit;
-    var BufferMask;
-    (function (BufferMask) {
-        BufferMask[BufferMask["DEPTH"] = gl.DEPTH] = "DEPTH";
-        BufferMask[BufferMask["STENCIL"] = gl.STENCIL] = "STENCIL";
-        BufferMask[BufferMask["COLOR"] = gl.COLOR] = "COLOR";
-        BufferMask[BufferMask["DEPTH_STENCIL"] = gl.DEPTH_STENCIL] = "DEPTH_STENCIL";
-    })(BufferMask || (BufferMask = {}));
-    exports.BufferMask = BufferMask;
-    var BufferDataUsage;
-    (function (BufferDataUsage) {
-        BufferDataUsage[BufferDataUsage["STATIC_DRAW"] = gl.STATIC_DRAW] = "STATIC_DRAW";
-        BufferDataUsage[BufferDataUsage["DYNAMIC_DRAW"] = gl.DYNAMIC_DRAW] = "DYNAMIC_DRAW";
-        BufferDataUsage[BufferDataUsage["STREAM_DRAW"] = gl.STREAM_DRAW] = "STREAM_DRAW";
-        BufferDataUsage[BufferDataUsage["STATIC_READ"] = gl.STATIC_READ] = "STATIC_READ";
-        BufferDataUsage[BufferDataUsage["DYNAMIC_READ"] = gl.DYNAMIC_READ] = "DYNAMIC_READ";
-        BufferDataUsage[BufferDataUsage["STREAM_READ"] = gl.STREAM_READ] = "STREAM_READ";
-        BufferDataUsage[BufferDataUsage["STATIC_COPY"] = gl.STATIC_COPY] = "STATIC_COPY";
-        BufferDataUsage[BufferDataUsage["DYNAMIC_COPY"] = gl.DYNAMIC_COPY] = "DYNAMIC_COPY";
-        BufferDataUsage[BufferDataUsage["STREAM_COPY"] = gl.STREAM_COPY] = "STREAM_COPY";
-    })(BufferDataUsage || (BufferDataUsage = {}));
-    exports.BufferDataUsage = BufferDataUsage;
-    var BufferBindingPoint;
-    (function (BufferBindingPoint) {
-        BufferBindingPoint[BufferBindingPoint["ARRAY_BUFFER"] = gl.ARRAY_BUFFER] = "ARRAY_BUFFER";
-        BufferBindingPoint[BufferBindingPoint["ELEMENT_ARRAY_BUFFER"] = gl.ELEMENT_ARRAY_BUFFER] = "ELEMENT_ARRAY_BUFFER";
-        BufferBindingPoint[BufferBindingPoint["COPY_READ_BUFFER"] = gl.COPY_READ_BUFFER] = "COPY_READ_BUFFER";
-        BufferBindingPoint[BufferBindingPoint["COPY_WRITE_BUFFER"] = gl.COPY_WRITE_BUFFER] = "COPY_WRITE_BUFFER";
-        BufferBindingPoint[BufferBindingPoint["TRANSFORM_FEEDBACK_BUFFER"] = gl.TRANSFORM_FEEDBACK_BUFFER] = "TRANSFORM_FEEDBACK_BUFFER";
-        BufferBindingPoint[BufferBindingPoint["UNIFORM_BUFFER"] = gl.UNIFORM_BUFFER] = "UNIFORM_BUFFER";
-        BufferBindingPoint[BufferBindingPoint["PIXEL_PACK_BUFFER"] = gl.PIXEL_PACK_BUFFER] = "PIXEL_PACK_BUFFER";
-        BufferBindingPoint[BufferBindingPoint["PIXEL_UNPACK_BUFFER"] = gl.PIXEL_UNPACK_BUFFER] = "PIXEL_UNPACK_BUFFER";
-    })(BufferBindingPoint || (BufferBindingPoint = {}));
-    exports.BufferBindingPoint = BufferBindingPoint;
-    var BufferIndexType;
-    (function (BufferIndexType) {
-        BufferIndexType[BufferIndexType["UNSIGNED_BYTE"] = gl.UNSIGNED_BYTE] = "UNSIGNED_BYTE";
-        BufferIndexType[BufferIndexType["UNSIGNED_SHORT"] = gl.UNSIGNED_SHORT] = "UNSIGNED_SHORT";
-        BufferIndexType[BufferIndexType["UNSIGNED_INT"] = gl.UNSIGNED_INT] = "UNSIGNED_INT";
-    })(BufferIndexType || (BufferIndexType = {}));
-    exports.BufferIndexType = BufferIndexType;
-    var BufferInterpolation;
-    (function (BufferInterpolation) {
-        BufferInterpolation[BufferInterpolation["LINEAR"] = gl.LINEAR] = "LINEAR";
-        BufferInterpolation[BufferInterpolation["NEAREST"] = gl.NEAREST] = "NEAREST";
-    })(BufferInterpolation || (BufferInterpolation = {}));
-    exports.BufferInterpolation = BufferInterpolation;
-    var BufferTarget;
-    (function (BufferTarget) {
-        BufferTarget[BufferTarget["ARRAY_BUFFER"] = gl.ARRAY_BUFFER] = "ARRAY_BUFFER";
-        BufferTarget[BufferTarget["ELEMENT_ARRAY_BUFFER"] = gl.ELEMENT_ARRAY_BUFFER] = "ELEMENT_ARRAY_BUFFER";
-        BufferTarget[BufferTarget["COPY_READ_BUFFER"] = gl.COPY_READ_BUFFER] = "COPY_READ_BUFFER";
-        BufferTarget[BufferTarget["COPY_WRITE_BUFFER"] = gl.COPY_WRITE_BUFFER] = "COPY_WRITE_BUFFER";
-        BufferTarget[BufferTarget["TRANSFORM_FEEDBACK_BUFFER"] = gl.TRANSFORM_FEEDBACK_BUFFER] = "TRANSFORM_FEEDBACK_BUFFER";
-        BufferTarget[BufferTarget["UNIFORM_BUFFER"] = gl.UNIFORM_BUFFER] = "UNIFORM_BUFFER";
-        BufferTarget[BufferTarget["PIXEL_PACK_BUFFER"] = gl.PIXEL_PACK_BUFFER] = "PIXEL_PACK_BUFFER";
-        BufferTarget[BufferTarget["PIXEL_UNPACK_BUFFER"] = gl.PIXEL_UNPACK_BUFFER] = "PIXEL_UNPACK_BUFFER";
-    })(BufferTarget || (BufferTarget = {}));
-    exports.BufferTarget = BufferTarget;
-    var Capabilities;
-    (function (Capabilities) {
-        Capabilities[Capabilities["BLEND"] = gl.BLEND] = "BLEND";
-        Capabilities[Capabilities["CULL_FACE"] = gl.CULL_FACE] = "CULL_FACE";
-        Capabilities[Capabilities["DEPTH_TEST"] = gl.DEPTH_TEST] = "DEPTH_TEST";
-        Capabilities[Capabilities["DITHER"] = gl.DITHER] = "DITHER";
-        Capabilities[Capabilities["POLYGON_OFFSET_FILL"] = gl.POLYGON_OFFSET_FILL] = "POLYGON_OFFSET_FILL";
-        Capabilities[Capabilities["SAMPLE_ALPHA_TO_COVERAGE"] = gl.SAMPLE_ALPHA_TO_COVERAGE] = "SAMPLE_ALPHA_TO_COVERAGE";
-        Capabilities[Capabilities["SAMPLE_COVERAGE"] = gl.SAMPLE_COVERAGE] = "SAMPLE_COVERAGE";
-        Capabilities[Capabilities["SCISSOR_TEST"] = gl.SCISSOR_TEST] = "SCISSOR_TEST";
-        Capabilities[Capabilities["STENCIL_TEST"] = gl.STENCIL_TEST] = "STENCIL_TEST";
-        Capabilities[Capabilities["RASTERIZER_DISCARD"] = gl.RASTERIZER_DISCARD] = "RASTERIZER_DISCARD";
-    })(Capabilities || (Capabilities = {}));
-    exports.Capabilities = Capabilities;
-    var CullFaceMode;
-    (function (CullFaceMode) {
-        CullFaceMode[CullFaceMode["FRONT"] = gl.FRONT] = "FRONT";
-        CullFaceMode[CullFaceMode["BACK"] = gl.BACK] = "BACK";
-        CullFaceMode[CullFaceMode["FRONT_AND_BACK"] = gl.FRONT_AND_BACK] = "FRONT_AND_BACK";
-    })(CullFaceMode || (CullFaceMode = {}));
-    exports.CullFaceMode = CullFaceMode;
-    var DrawMode;
-    (function (DrawMode) {
-        DrawMode[DrawMode["POINTS"] = gl.POINTS] = "POINTS";
-        DrawMode[DrawMode["LINE_STRIP"] = gl.LINE_STRIP] = "LINE_STRIP";
-        DrawMode[DrawMode["LINE_LOOP"] = gl.LINE_LOOP] = "LINE_LOOP";
-        DrawMode[DrawMode["LINES"] = gl.LINES] = "LINES";
-        DrawMode[DrawMode["TRIANGLE_STRIP"] = gl.TRIANGLE_STRIP] = "TRIANGLE_STRIP";
-        DrawMode[DrawMode["TRIANGLE_FAN"] = gl.TRIANGLE_FAN] = "TRIANGLE_FAN";
-        DrawMode[DrawMode["TRIANGLES"] = gl.TRIANGLES] = "TRIANGLES";
-    })(DrawMode || (DrawMode = {}));
-    exports.DrawMode = DrawMode;
-    var DataType;
-    (function (DataType) {
-        DataType[DataType["BYTE"] = gl.BYTE] = "BYTE";
-        DataType[DataType["SHORT"] = gl.SHORT] = "SHORT";
-        DataType[DataType["UNSIGNED_BYTE"] = gl.UNSIGNED_BYTE] = "UNSIGNED_BYTE";
-        DataType[DataType["UNSIGNED_SHORT"] = gl.UNSIGNED_SHORT] = "UNSIGNED_SHORT";
-        DataType[DataType["FLOAT"] = gl.FLOAT] = "FLOAT";
-        DataType[DataType["HALF_FLOAT"] = gl.HALF_FLOAT] = "HALF_FLOAT";
-    })(DataType || (DataType = {}));
-    exports.DataType = DataType;
-    var Error;
-    (function (Error) {
-        Error[Error["NO_ERROR"] = gl.NO_ERROR] = "NO_ERROR";
-        Error[Error["INVALID_ENUM"] = gl.INVALID_ENUM] = "INVALID_ENUM";
-        Error[Error["INVALID_OPERATION"] = gl.INVALID_OPERATION] = "INVALID_OPERATION";
-        Error[Error["OUT_OF_MEMORY"] = gl.OUT_OF_MEMORY] = "OUT_OF_MEMORY";
-        Error[Error["CONTEXT_LOST_WEBGL"] = gl.CONTEXT_LOST_WEBGL] = "CONTEXT_LOST_WEBGL";
-    })(Error || (Error = {}));
-    exports.Error = Error;
-    var FramebufferAttachment;
-    (function (FramebufferAttachment) {
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT0"] = gl.COLOR_ATTACHMENT0] = "COLOR_ATTACHMENT0";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT1"] = gl.COLOR_ATTACHMENT1] = "COLOR_ATTACHMENT1";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT2"] = gl.COLOR_ATTACHMENT2] = "COLOR_ATTACHMENT2";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT3"] = gl.COLOR_ATTACHMENT3] = "COLOR_ATTACHMENT3";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT4"] = gl.COLOR_ATTACHMENT4] = "COLOR_ATTACHMENT4";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT5"] = gl.COLOR_ATTACHMENT5] = "COLOR_ATTACHMENT5";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT6"] = gl.COLOR_ATTACHMENT6] = "COLOR_ATTACHMENT6";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT7"] = gl.COLOR_ATTACHMENT7] = "COLOR_ATTACHMENT7";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT8"] = gl.COLOR_ATTACHMENT8] = "COLOR_ATTACHMENT8";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT9"] = gl.COLOR_ATTACHMENT9] = "COLOR_ATTACHMENT9";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT10"] = gl.COLOR_ATTACHMENT10] = "COLOR_ATTACHMENT10";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT11"] = gl.COLOR_ATTACHMENT11] = "COLOR_ATTACHMENT11";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT12"] = gl.COLOR_ATTACHMENT12] = "COLOR_ATTACHMENT12";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT13"] = gl.COLOR_ATTACHMENT13] = "COLOR_ATTACHMENT13";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT14"] = gl.COLOR_ATTACHMENT14] = "COLOR_ATTACHMENT14";
-        FramebufferAttachment[FramebufferAttachment["COLOR_ATTACHMENT15"] = gl.COLOR_ATTACHMENT15] = "COLOR_ATTACHMENT15";
-        FramebufferAttachment[FramebufferAttachment["DEPTH_ATTACHMENT"] = gl.DEPTH_ATTACHMENT] = "DEPTH_ATTACHMENT";
-        FramebufferAttachment[FramebufferAttachment["STENCIL_ATTACHMENT"] = gl.STENCIL_ATTACHMENT] = "STENCIL_ATTACHMENT";
-        FramebufferAttachment[FramebufferAttachment["DEPTH_STENCIL_ATTACHMENT"] = gl.DEPTH_STENCIL_ATTACHMENT] = "DEPTH_STENCIL_ATTACHMENT";
-    })(FramebufferAttachment || (FramebufferAttachment = {}));
-    exports.FramebufferAttachment = FramebufferAttachment;
-    var FramebufferAttachmentParameter;
-    (function (FramebufferAttachmentParameter) {
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE"] = gl.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE] = "FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_OBJECT_NAME"] = gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME] = "FRAMEBUFFER_ATTACHMENT_OBJECT_NAME";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL"] = gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL] = "FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE"] = gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE] = "FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE] = "FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_BLUE_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_BLUE_SIZE] = "FRAMEBUFFER_ATTACHMENT_BLUE_SIZE";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING"] = gl.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING] = "FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE"] = gl.FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE] = "FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE] = "FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_GREEN_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_GREEN_SIZE] = "FRAMEBUFFER_ATTACHMENT_GREEN_SIZE";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_RED_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_RED_SIZE] = "FRAMEBUFFER_ATTACHMENT_RED_SIZE";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE"] = gl.FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE] = "FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE";
-        FramebufferAttachmentParameter[FramebufferAttachmentParameter["FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER"] = gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER] = "FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER";
-    })(FramebufferAttachmentParameter || (FramebufferAttachmentParameter = {}));
-    exports.FramebufferAttachmentParameter = FramebufferAttachmentParameter;
-    var FramebufferTarget;
-    (function (FramebufferTarget) {
-        FramebufferTarget[FramebufferTarget["FRAMEBUFFER"] = gl.FRAMEBUFFER] = "FRAMEBUFFER";
-        FramebufferTarget[FramebufferTarget["DRAW_FRAMEBUFFER"] = gl.DRAW_FRAMEBUFFER] = "DRAW_FRAMEBUFFER";
-        FramebufferTarget[FramebufferTarget["READ_FRAMEBUFFER"] = gl.READ_FRAMEBUFFER] = "READ_FRAMEBUFFER";
-    })(FramebufferTarget || (FramebufferTarget = {}));
-    exports.FramebufferTarget = FramebufferTarget;
-    var FramebufferTextureTarget;
-    (function (FramebufferTextureTarget) {
-        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_2D"] = gl.TEXTURE_2D] = "TEXTURE_2D";
-        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_POSITIVE_X"] = gl.TEXTURE_CUBE_MAP_POSITIVE_X] = "TEXTURE_CUBE_MAP_POSITIVE_X";
-        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_X"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_X] = "TEXTURE_CUBE_MAP_NEGATIVE_X";
-        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_POSITIVE_Y"] = gl.TEXTURE_CUBE_MAP_POSITIVE_Y] = "TEXTURE_CUBE_MAP_POSITIVE_Y";
-        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_Y"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_Y] = "TEXTURE_CUBE_MAP_NEGATIVE_Y";
-        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_POSITIVE_Z"] = gl.TEXTURE_CUBE_MAP_POSITIVE_Z] = "TEXTURE_CUBE_MAP_POSITIVE_Z";
-        FramebufferTextureTarget[FramebufferTextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_Z"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_Z] = "TEXTURE_CUBE_MAP_NEGATIVE_Z";
-    })(FramebufferTextureTarget || (FramebufferTextureTarget = {}));
-    exports.FramebufferTextureTarget = FramebufferTextureTarget;
-    var FrontFace;
-    (function (FrontFace) {
-        FrontFace[FrontFace["CW"] = gl.CW] = "CW";
-        FrontFace[FrontFace["CCW"] = gl.CCW] = "CCW";
-    })(FrontFace || (FrontFace = {}));
-    exports.FrontFace = FrontFace;
-    var HintTarget;
-    (function (HintTarget) {
-        HintTarget[HintTarget["GENERATE_MIPMAP_HINT"] = gl.GENERATE_MIPMAP_HINT] = "GENERATE_MIPMAP_HINT";
-        HintTarget[HintTarget["FRAGMENT_SHADER_DERIVATIVE_HINT"] = gl.FRAGMENT_SHADER_DERIVATIVE_HINT] = "FRAGMENT_SHADER_DERIVATIVE_HINT";
-    })(HintTarget || (HintTarget = {}));
-    exports.HintTarget = HintTarget;
-    var HintMode;
-    (function (HintMode) {
-        HintMode[HintMode["FASTEST"] = gl.FASTEST] = "FASTEST";
-        HintMode[HintMode["NICEST"] = gl.NICEST] = "NICEST";
-        HintMode[HintMode["DONT_CARE"] = gl.DONT_CARE] = "DONT_CARE";
-    })(HintMode || (HintMode = {}));
-    exports.HintMode = HintMode;
-    var Parameter;
-    (function (Parameter) {
-        Parameter[Parameter["ACTIVE_TEXTURE"] = gl.ACTIVE_TEXTURE] = "ACTIVE_TEXTURE";
-        Parameter[Parameter["ALIASED_LINE_WIDTH_RANGE"] = gl.ALIASED_LINE_WIDTH_RANGE] = "ALIASED_LINE_WIDTH_RANGE";
-        Parameter[Parameter["ALIASED_POINT_SIZE_RANGE"] = gl.ALIASED_POINT_SIZE_RANGE] = "ALIASED_POINT_SIZE_RANGE";
-        Parameter[Parameter["ALPHA_BITS"] = gl.ALPHA_BITS] = "ALPHA_BITS";
-        Parameter[Parameter["ARRAY_BUFFER_BINDING"] = gl.ARRAY_BUFFER_BINDING] = "ARRAY_BUFFER_BINDING";
-        Parameter[Parameter["BLEND"] = gl.BLEND] = "BLEND";
-        Parameter[Parameter["BLEND_COLOR"] = gl.BLEND_COLOR] = "BLEND_COLOR";
-        Parameter[Parameter["BLEND_DST_ALPHA"] = gl.BLEND_DST_ALPHA] = "BLEND_DST_ALPHA";
-        Parameter[Parameter["BLEND_DST_RGB"] = gl.BLEND_DST_RGB] = "BLEND_DST_RGB";
-        Parameter[Parameter["BLEND_EQUATION"] = gl.BLEND_EQUATION] = "BLEND_EQUATION";
-        Parameter[Parameter["BLEND_EQUATION_ALPHA"] = gl.BLEND_EQUATION_ALPHA] = "BLEND_EQUATION_ALPHA";
-        Parameter[Parameter["BLEND_EQUATION_RGB"] = gl.BLEND_EQUATION_RGB] = "BLEND_EQUATION_RGB";
-        Parameter[Parameter["BLEND_SRC_ALPHA"] = gl.BLEND_SRC_ALPHA] = "BLEND_SRC_ALPHA";
-        Parameter[Parameter["BLEND_SRC_RGB"] = gl.BLEND_SRC_RGB] = "BLEND_SRC_RGB";
-        Parameter[Parameter["BLUE_BITS"] = gl.BLUE_BITS] = "BLUE_BITS";
-        Parameter[Parameter["COLOR_CLEAR_VALUE"] = gl.COLOR_CLEAR_VALUE] = "COLOR_CLEAR_VALUE";
-        Parameter[Parameter["COLOR_WRITEMASK"] = gl.COLOR_WRITEMASK] = "COLOR_WRITEMASK";
-        Parameter[Parameter["COMPRESSED_TEXTURE_FORMATS"] = gl.COMPRESSED_TEXTURE_FORMATS] = "COMPRESSED_TEXTURE_FORMATS";
-        Parameter[Parameter["CULL_FACE"] = gl.CULL_FACE] = "CULL_FACE";
-        Parameter[Parameter["CULL_FACE_MODE"] = gl.CULL_FACE_MODE] = "CULL_FACE_MODE";
-        Parameter[Parameter["CURRENT_PROGRAM"] = gl.CURRENT_PROGRAM] = "CURRENT_PROGRAM";
-        Parameter[Parameter["DEPTH_BITS"] = gl.DEPTH_BITS] = "DEPTH_BITS";
-        Parameter[Parameter["DEPTH_CLEAR_VALUE"] = gl.DEPTH_CLEAR_VALUE] = "DEPTH_CLEAR_VALUE";
-        Parameter[Parameter["DEPTH_FUNC"] = gl.DEPTH_FUNC] = "DEPTH_FUNC";
-        Parameter[Parameter["DEPTH_RANGE"] = gl.DEPTH_RANGE] = "DEPTH_RANGE";
-        Parameter[Parameter["DEPTH_TEST"] = gl.DEPTH_TEST] = "DEPTH_TEST";
-        Parameter[Parameter["DEPTH_WRITEMASK"] = gl.DEPTH_WRITEMASK] = "DEPTH_WRITEMASK";
-        Parameter[Parameter["DITHER"] = gl.DITHER] = "DITHER";
-        Parameter[Parameter["ELEMENT_ARRAY_BUFFER_BINDING"] = gl.ELEMENT_ARRAY_BUFFER_BINDING] = "ELEMENT_ARRAY_BUFFER_BINDING";
-        Parameter[Parameter["FRAMEBUFFER_BINDING"] = gl.FRAMEBUFFER_BINDING] = "FRAMEBUFFER_BINDING";
-        Parameter[Parameter["FRONT_FACE"] = gl.FRONT_FACE] = "FRONT_FACE";
-        Parameter[Parameter["GENERATE_MIPMAP_HINT"] = gl.GENERATE_MIPMAP_HINT] = "GENERATE_MIPMAP_HINT";
-        Parameter[Parameter["GREEN_BITS"] = gl.GREEN_BITS] = "GREEN_BITS";
-        Parameter[Parameter["IMPLEMENTATION_COLOR_READ_FORMAT"] = gl.IMPLEMENTATION_COLOR_READ_FORMAT] = "IMPLEMENTATION_COLOR_READ_FORMAT";
-        Parameter[Parameter["IMPLEMENTATION_COLOR_READ_TYPE"] = gl.IMPLEMENTATION_COLOR_READ_TYPE] = "IMPLEMENTATION_COLOR_READ_TYPE";
-        Parameter[Parameter["LINE_WIDTH"] = gl.LINE_WIDTH] = "LINE_WIDTH";
-        Parameter[Parameter["MAX_COMBINED_TEXTURE_IMAGE_UNITS"] = gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS] = "MAX_COMBINED_TEXTURE_IMAGE_UNITS";
-        Parameter[Parameter["MAX_CUBE_MAP_TEXTURE_SIZE"] = gl.MAX_CUBE_MAP_TEXTURE_SIZE] = "MAX_CUBE_MAP_TEXTURE_SIZE";
-        Parameter[Parameter["MAX_FRAGMENT_UNIFORM_VECTORS"] = gl.MAX_FRAGMENT_UNIFORM_VECTORS] = "MAX_FRAGMENT_UNIFORM_VECTORS";
-        Parameter[Parameter["MAX_RENDERBUFFER_SIZE"] = gl.MAX_RENDERBUFFER_SIZE] = "MAX_RENDERBUFFER_SIZE";
-        Parameter[Parameter["MAX_TEXTURE_IMAGE_UNITS"] = gl.MAX_TEXTURE_IMAGE_UNITS] = "MAX_TEXTURE_IMAGE_UNITS";
-        Parameter[Parameter["MAX_TEXTURE_SIZE"] = gl.MAX_TEXTURE_SIZE] = "MAX_TEXTURE_SIZE";
-        Parameter[Parameter["MAX_VARYING_VECTORS"] = gl.MAX_VARYING_VECTORS] = "MAX_VARYING_VECTORS";
-        Parameter[Parameter["MAX_VERTEX_ATTRIBS"] = gl.MAX_VERTEX_ATTRIBS] = "MAX_VERTEX_ATTRIBS";
-        Parameter[Parameter["MAX_VERTEX_UNIFORM_VECTORS"] = gl.MAX_VERTEX_UNIFORM_VECTORS] = "MAX_VERTEX_UNIFORM_VECTORS";
-        Parameter[Parameter["MAX_VIEWPORT_DIMS"] = gl.MAX_VIEWPORT_DIMS] = "MAX_VIEWPORT_DIMS";
-        Parameter[Parameter["PACK_ALIGNMENT"] = gl.PACK_ALIGNMENT] = "PACK_ALIGNMENT";
-        Parameter[Parameter["POLYGON_OFFSET_FACTOR"] = gl.POLYGON_OFFSET_FACTOR] = "POLYGON_OFFSET_FACTOR";
-        Parameter[Parameter["POLYGON_OFFSET_FILL"] = gl.POLYGON_OFFSET_FILL] = "POLYGON_OFFSET_FILL";
-        Parameter[Parameter["POLYGON_OFFSET_UNITS"] = gl.POLYGON_OFFSET_UNITS] = "POLYGON_OFFSET_UNITS";
-        Parameter[Parameter["RED_BITS"] = gl.RED_BITS] = "RED_BITS";
-        Parameter[Parameter["RENDERBUFFER_BINDING"] = gl.RENDERBUFFER_BINDING] = "RENDERBUFFER_BINDING";
-        Parameter[Parameter["RENDERER"] = gl.RENDERER] = "RENDERER";
-        Parameter[Parameter["SAMPLE_BUFFERS"] = gl.SAMPLE_BUFFERS] = "SAMPLE_BUFFERS";
-        Parameter[Parameter["SAMPLE_COVERAGE_INVERT"] = gl.SAMPLE_COVERAGE_INVERT] = "SAMPLE_COVERAGE_INVERT";
-        Parameter[Parameter["SAMPLE_COVERAGE_VALUE"] = gl.SAMPLE_COVERAGE_VALUE] = "SAMPLE_COVERAGE_VALUE";
-        Parameter[Parameter["SAMPLES"] = gl.SAMPLES] = "SAMPLES";
-        Parameter[Parameter["SCISSOR_BOX"] = gl.SCISSOR_BOX] = "SCISSOR_BOX";
-        Parameter[Parameter["SCISSOR_TEST"] = gl.SCISSOR_TEST] = "SCISSOR_TEST";
-        Parameter[Parameter["SHADING_LANGUAGE_VERSION"] = gl.SHADING_LANGUAGE_VERSION] = "SHADING_LANGUAGE_VERSION";
-        Parameter[Parameter["STENCIL_BACK_FAIL"] = gl.STENCIL_BACK_FAIL] = "STENCIL_BACK_FAIL";
-        Parameter[Parameter["STENCIL_BACK_FUNC"] = gl.STENCIL_BACK_FUNC] = "STENCIL_BACK_FUNC";
-        Parameter[Parameter["STENCIL_BACK_PASS_DEPTH_FAIL"] = gl.STENCIL_BACK_PASS_DEPTH_FAIL] = "STENCIL_BACK_PASS_DEPTH_FAIL";
-        Parameter[Parameter["STENCIL_BACK_PASS_DEPTH_PASS"] = gl.STENCIL_BACK_PASS_DEPTH_PASS] = "STENCIL_BACK_PASS_DEPTH_PASS";
-        Parameter[Parameter["STENCIL_BACK_REF"] = gl.STENCIL_BACK_REF] = "STENCIL_BACK_REF";
-        Parameter[Parameter["STENCIL_BACK_VALUE_MASK"] = gl.STENCIL_BACK_VALUE_MASK] = "STENCIL_BACK_VALUE_MASK";
-        Parameter[Parameter["STENCIL_BACK_WRITEMASK"] = gl.STENCIL_BACK_WRITEMASK] = "STENCIL_BACK_WRITEMASK";
-        Parameter[Parameter["STENCIL_BITS"] = gl.STENCIL_BITS] = "STENCIL_BITS";
-        Parameter[Parameter["STENCIL_CLEAR_VALUE"] = gl.STENCIL_CLEAR_VALUE] = "STENCIL_CLEAR_VALUE";
-        Parameter[Parameter["STENCIL_FAIL"] = gl.STENCIL_FAIL] = "STENCIL_FAIL";
-        Parameter[Parameter["STENCIL_FUNC"] = gl.STENCIL_FUNC] = "STENCIL_FUNC";
-        Parameter[Parameter["STENCIL_PASS_DEPTH_FAIL"] = gl.STENCIL_PASS_DEPTH_FAIL] = "STENCIL_PASS_DEPTH_FAIL";
-        Parameter[Parameter["STENCIL_PASS_DEPTH_PASS"] = gl.STENCIL_PASS_DEPTH_PASS] = "STENCIL_PASS_DEPTH_PASS";
-        Parameter[Parameter["STENCIL_REF"] = gl.STENCIL_REF] = "STENCIL_REF";
-        Parameter[Parameter["STENCIL_TEST"] = gl.STENCIL_TEST] = "STENCIL_TEST";
-        Parameter[Parameter["STENCIL_VALUE_MASK"] = gl.STENCIL_VALUE_MASK] = "STENCIL_VALUE_MASK";
-        Parameter[Parameter["STENCIL_WRITEMASK"] = gl.STENCIL_WRITEMASK] = "STENCIL_WRITEMASK";
-        Parameter[Parameter["SUBPIXEL_BITS"] = gl.SUBPIXEL_BITS] = "SUBPIXEL_BITS";
-        Parameter[Parameter["TEXTURE_BINDING_2D"] = gl.TEXTURE_BINDING_2D] = "TEXTURE_BINDING_2D";
-        Parameter[Parameter["TEXTURE_BINDING_CUBE_MAP"] = gl.TEXTURE_BINDING_CUBE_MAP] = "TEXTURE_BINDING_CUBE_MAP";
-        Parameter[Parameter["UNPACK_ALIGNMENT"] = gl.UNPACK_ALIGNMENT] = "UNPACK_ALIGNMENT";
-        Parameter[Parameter["UNPACK_COLORSPACE_CONVERSION_WEBGL"] = gl.UNPACK_COLORSPACE_CONVERSION_WEBGL] = "UNPACK_COLORSPACE_CONVERSION_WEBGL";
-        Parameter[Parameter["UNPACK_FLIP_Y_WEBGL"] = gl.UNPACK_FLIP_Y_WEBGL] = "UNPACK_FLIP_Y_WEBGL";
-        Parameter[Parameter["UNPACK_PREMULTIPLY_ALPHA_WEBGL"] = gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL] = "UNPACK_PREMULTIPLY_ALPHA_WEBGL";
-        Parameter[Parameter["VENDOR"] = gl.VENDOR] = "VENDOR";
-        Parameter[Parameter["VERSION"] = gl.VERSION] = "VERSION";
-        Parameter[Parameter["VIEWPORT"] = gl.VIEWPORT] = "VIEWPORT";
-        Parameter[Parameter["COPY_READ_BUFFER_BINDING"] = gl.COPY_READ_BUFFER_BINDING] = "COPY_READ_BUFFER_BINDING";
-        Parameter[Parameter["COPY_WRITE_BUFFER_BINDING"] = gl.COPY_WRITE_BUFFER_BINDING] = "COPY_WRITE_BUFFER_BINDING";
-        Parameter[Parameter["DRAW_FRAMEBUFFER_BINDING"] = gl.DRAW_FRAMEBUFFER_BINDING] = "DRAW_FRAMEBUFFER_BINDING";
-        Parameter[Parameter["FRAGMENT_SHADER_DERIVATIVE_HINT"] = gl.FRAGMENT_SHADER_DERIVATIVE_HINT] = "FRAGMENT_SHADER_DERIVATIVE_HINT";
-        Parameter[Parameter["MAX_3D_TEXTURE_SIZE"] = gl.MAX_3D_TEXTURE_SIZE] = "MAX_3D_TEXTURE_SIZE";
-        Parameter[Parameter["MAX_ARRAY_TEXTURE_LAYERS"] = gl.MAX_ARRAY_TEXTURE_LAYERS] = "MAX_ARRAY_TEXTURE_LAYERS";
-        Parameter[Parameter["MAX_CLIENT_WAIT_TIMEOUT_WEBGL"] = gl.MAX_CLIENT_WAIT_TIMEOUT_WEBGL] = "MAX_CLIENT_WAIT_TIMEOUT_WEBGL";
-        Parameter[Parameter["MAX_COLOR_ATTACHMENTS"] = gl.MAX_COLOR_ATTACHMENTS] = "MAX_COLOR_ATTACHMENTS";
-        Parameter[Parameter["MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS"] = gl.MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS] = "MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS";
-        Parameter[Parameter["MAX_COMBINED_UNIFORM_BLOCKS"] = gl.MAX_COMBINED_UNIFORM_BLOCKS] = "MAX_COMBINED_UNIFORM_BLOCKS";
-        Parameter[Parameter["MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS"] = gl.MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS] = "MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS";
-        Parameter[Parameter["MAX_DRAW_BUFFERS"] = gl.MAX_DRAW_BUFFERS] = "MAX_DRAW_BUFFERS";
-        Parameter[Parameter["MAX_ELEMENT_INDEX"] = gl.MAX_ELEMENT_INDEX] = "MAX_ELEMENT_INDEX";
-        Parameter[Parameter["MAX_ELEMENTS_INDICES"] = gl.MAX_ELEMENTS_INDICES] = "MAX_ELEMENTS_INDICES";
-        Parameter[Parameter["MAX_ELEMENTS_VERTICES"] = gl.MAX_ELEMENTS_VERTICES] = "MAX_ELEMENTS_VERTICES";
-        Parameter[Parameter["MAX_FRAGMENT_INPUT_COMPONENTS"] = gl.MAX_FRAGMENT_INPUT_COMPONENTS] = "MAX_FRAGMENT_INPUT_COMPONENTS";
-        Parameter[Parameter["MAX_FRAGMENT_UNIFORM_BLOCKS"] = gl.MAX_FRAGMENT_UNIFORM_BLOCKS] = "MAX_FRAGMENT_UNIFORM_BLOCKS";
-        Parameter[Parameter["MAX_FRAGMENT_UNIFORM_COMPONENTS"] = gl.MAX_FRAGMENT_UNIFORM_COMPONENTS] = "MAX_FRAGMENT_UNIFORM_COMPONENTS";
-        Parameter[Parameter["MAX_PROGRAM_TEXEL_OFFSET"] = gl.MAX_PROGRAM_TEXEL_OFFSET] = "MAX_PROGRAM_TEXEL_OFFSET";
-        Parameter[Parameter["MAX_SAMPLES"] = gl.MAX_SAMPLES] = "MAX_SAMPLES";
-        Parameter[Parameter["MAX_SERVER_WAIT_TIMEOUT"] = gl.MAX_SERVER_WAIT_TIMEOUT] = "MAX_SERVER_WAIT_TIMEOUT";
-        Parameter[Parameter["MAX_TEXTURE_LOD_BIAS"] = gl.MAX_TEXTURE_LOD_BIAS] = "MAX_TEXTURE_LOD_BIAS";
-        Parameter[Parameter["MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS"] = gl.MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS] = "MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS";
-        Parameter[Parameter["MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS"] = gl.MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS] = "MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS";
-        Parameter[Parameter["MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS"] = gl.MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS] = "MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS";
-        Parameter[Parameter["MAX_UNIFORM_BLOCK_SIZE"] = gl.MAX_UNIFORM_BLOCK_SIZE] = "MAX_UNIFORM_BLOCK_SIZE";
-        Parameter[Parameter["MAX_UNIFORM_BUFFER_BINDINGS"] = gl.MAX_UNIFORM_BUFFER_BINDINGS] = "MAX_UNIFORM_BUFFER_BINDINGS";
-        Parameter[Parameter["MAX_VARYING_COMPONENTS"] = gl.MAX_VARYING_COMPONENTS] = "MAX_VARYING_COMPONENTS";
-        Parameter[Parameter["MAX_VERTEX_OUTPUT_COMPONENTS"] = gl.MAX_VERTEX_OUTPUT_COMPONENTS] = "MAX_VERTEX_OUTPUT_COMPONENTS";
-        Parameter[Parameter["MAX_VERTEX_UNIFORM_BLOCKS"] = gl.MAX_VERTEX_UNIFORM_BLOCKS] = "MAX_VERTEX_UNIFORM_BLOCKS";
-        Parameter[Parameter["MAX_VERTEX_UNIFORM_COMPONENTS"] = gl.MAX_VERTEX_UNIFORM_COMPONENTS] = "MAX_VERTEX_UNIFORM_COMPONENTS";
-        Parameter[Parameter["MIN_PROGRAM_TEXEL_OFFSET"] = gl.MIN_PROGRAM_TEXEL_OFFSET] = "MIN_PROGRAM_TEXEL_OFFSET";
-        Parameter[Parameter["PACK_ROW_LENGTH"] = gl.PACK_ROW_LENGTH] = "PACK_ROW_LENGTH";
-        Parameter[Parameter["PACK_SKIP_PIXELS"] = gl.PACK_SKIP_PIXELS] = "PACK_SKIP_PIXELS";
-        Parameter[Parameter["PACK_SKIP_ROWS"] = gl.PACK_SKIP_ROWS] = "PACK_SKIP_ROWS";
-        Parameter[Parameter["PIXEL_PACK_BUFFER_BINDING"] = gl.PIXEL_PACK_BUFFER_BINDING] = "PIXEL_PACK_BUFFER_BINDING";
-        Parameter[Parameter["PIXEL_UNPACK_BUFFER_BINDING"] = gl.PIXEL_UNPACK_BUFFER_BINDING] = "PIXEL_UNPACK_BUFFER_BINDING";
-        Parameter[Parameter["RASTERIZER_DISCARD"] = gl.RASTERIZER_DISCARD] = "RASTERIZER_DISCARD";
-        Parameter[Parameter["READ_BUFFER"] = gl.READ_BUFFER] = "READ_BUFFER";
-        Parameter[Parameter["READ_FRAMEBUFFER_BINDING"] = gl.READ_FRAMEBUFFER_BINDING] = "READ_FRAMEBUFFER_BINDING";
-        Parameter[Parameter["SAMPLE_ALPHA_TO_COVERAGE"] = gl.SAMPLE_ALPHA_TO_COVERAGE] = "SAMPLE_ALPHA_TO_COVERAGE";
-        Parameter[Parameter["SAMPLE_COVERAGE"] = gl.SAMPLE_COVERAGE] = "SAMPLE_COVERAGE";
-        Parameter[Parameter["SAMPLER_BINDING"] = gl.SAMPLER_BINDING] = "SAMPLER_BINDING";
-        Parameter[Parameter["TEXTURE_BINDING_2D_ARRAY"] = gl.TEXTURE_BINDING_2D_ARRAY] = "TEXTURE_BINDING_2D_ARRAY";
-        Parameter[Parameter["TEXTURE_BINDING_3D"] = gl.TEXTURE_BINDING_3D] = "TEXTURE_BINDING_3D";
-        Parameter[Parameter["TRANSFORM_FEEDBACK_ACTIVE"] = gl.TRANSFORM_FEEDBACK_ACTIVE] = "TRANSFORM_FEEDBACK_ACTIVE";
-        Parameter[Parameter["TRANSFORM_FEEDBACK_BINDING"] = gl.TRANSFORM_FEEDBACK_BINDING] = "TRANSFORM_FEEDBACK_BINDING";
-        Parameter[Parameter["TRANSFORM_FEEDBACK_BUFFER_BINDING"] = gl.TRANSFORM_FEEDBACK_BUFFER_BINDING] = "TRANSFORM_FEEDBACK_BUFFER_BINDING";
-        Parameter[Parameter["TRANSFORM_FEEDBACK_PAUSED"] = gl.TRANSFORM_FEEDBACK_PAUSED] = "TRANSFORM_FEEDBACK_PAUSED";
-        Parameter[Parameter["UNIFORM_BUFFER_BINDING"] = gl.UNIFORM_BUFFER_BINDING] = "UNIFORM_BUFFER_BINDING";
-        Parameter[Parameter["UNIFORM_BUFFER_OFFSET_ALIGNMENT"] = gl.UNIFORM_BUFFER_OFFSET_ALIGNMENT] = "UNIFORM_BUFFER_OFFSET_ALIGNMENT";
-        Parameter[Parameter["UNPACK_IMAGE_HEIGHT"] = gl.UNPACK_IMAGE_HEIGHT] = "UNPACK_IMAGE_HEIGHT";
-        Parameter[Parameter["UNPACK_ROW_LENGTH"] = gl.UNPACK_ROW_LENGTH] = "UNPACK_ROW_LENGTH";
-        Parameter[Parameter["UNPACK_SKIP_IMAGES"] = gl.UNPACK_SKIP_IMAGES] = "UNPACK_SKIP_IMAGES";
-        Parameter[Parameter["UNPACK_SKIP_PIXELS"] = gl.UNPACK_SKIP_PIXELS] = "UNPACK_SKIP_PIXELS";
-        Parameter[Parameter["UNPACK_SKIP_ROWS"] = gl.UNPACK_SKIP_ROWS] = "UNPACK_SKIP_ROWS";
-        Parameter[Parameter["VERTEX_ARRAY_BINDING"] = gl.VERTEX_ARRAY_BINDING] = "VERTEX_ARRAY_BINDING";
-    })(Parameter || (Parameter = {}));
-    exports.Parameter = Parameter;
-    var PixelFormat;
-    (function (PixelFormat) {
-        PixelFormat[PixelFormat["ALPHA"] = gl.ALPHA] = "ALPHA";
-        PixelFormat[PixelFormat["LUMINANCE"] = gl.LUMINANCE] = "LUMINANCE";
-        PixelFormat[PixelFormat["LUMINANCE_ALPHA"] = gl.LUMINANCE_ALPHA] = "LUMINANCE_ALPHA";
-        PixelFormat[PixelFormat["RGB"] = gl.RGB] = "RGB";
-        PixelFormat[PixelFormat["RGBA"] = gl.RGBA] = "RGBA";
-        PixelFormat[PixelFormat["RGBA4"] = gl.RGBA4] = "RGBA4";
-        PixelFormat[PixelFormat["RGB565"] = gl.RGB565] = "RGB565";
-        PixelFormat[PixelFormat["RGB5_A1"] = gl.RGB5_A1] = "RGB5_A1";
-        PixelFormat[PixelFormat["DEPTH_COMPONENT"] = gl.DEPTH_COMPONENT] = "DEPTH_COMPONENT";
-        PixelFormat[PixelFormat["DEPTH_STENCIL"] = gl.DEPTH_STENCIL] = "DEPTH_STENCIL";
-        PixelFormat[PixelFormat["STENCIL_INDEX8"] = gl.STENCIL_INDEX8] = "STENCIL_INDEX8";
-        PixelFormat[PixelFormat["R8"] = gl.R8] = "R8";
-        PixelFormat[PixelFormat["R8UI"] = gl.R8UI] = "R8UI";
-        PixelFormat[PixelFormat["R8I"] = gl.R8I] = "R8I";
-        PixelFormat[PixelFormat["R16UI"] = gl.R16UI] = "R16UI";
-        PixelFormat[PixelFormat["R16I"] = gl.R16I] = "R16I";
-        PixelFormat[PixelFormat["R32UI"] = gl.R32UI] = "R32UI";
-        PixelFormat[PixelFormat["R32I"] = gl.R32I] = "R32I";
-        PixelFormat[PixelFormat["RG8"] = gl.RG8] = "RG8";
-        PixelFormat[PixelFormat["RG8UI"] = gl.RG8UI] = "RG8UI";
-        PixelFormat[PixelFormat["RG8I"] = gl.RG8I] = "RG8I";
-        PixelFormat[PixelFormat["RG16UI"] = gl.RG16UI] = "RG16UI";
-        PixelFormat[PixelFormat["RG16I"] = gl.RG16I] = "RG16I";
-        PixelFormat[PixelFormat["RG32UI"] = gl.RG32UI] = "RG32UI";
-        PixelFormat[PixelFormat["RG32I"] = gl.RG32I] = "RG32I";
-        PixelFormat[PixelFormat["RGB8"] = gl.RGB8] = "RGB8";
-        PixelFormat[PixelFormat["RGBA8"] = gl.RGBA8] = "RGBA8";
-        PixelFormat[PixelFormat["SRGB8_ALPHA8"] = gl.SRGB8_ALPHA8] = "SRGB8_ALPHA8";
-        PixelFormat[PixelFormat["RGB10_A2"] = gl.RGB10_A2] = "RGB10_A2";
-        PixelFormat[PixelFormat["RGBA8UI"] = gl.RGBA8UI] = "RGBA8UI";
-        PixelFormat[PixelFormat["RGBA8I"] = gl.RGBA8I] = "RGBA8I";
-        PixelFormat[PixelFormat["RGB10_A2UI"] = gl.RGB10_A2UI] = "RGB10_A2UI";
-        PixelFormat[PixelFormat["RGBA16UI"] = gl.RGBA16UI] = "RGBA16UI";
-        PixelFormat[PixelFormat["RGBA16I"] = gl.RGBA16I] = "RGBA16I";
-        PixelFormat[PixelFormat["RGBA32I"] = gl.RGBA32I] = "RGBA32I";
-        PixelFormat[PixelFormat["RGBA32UI"] = gl.RGBA32UI] = "RGBA32UI";
-        PixelFormat[PixelFormat["DEPTH_COMPONENT24"] = gl.DEPTH_COMPONENT24] = "DEPTH_COMPONENT24";
-        PixelFormat[PixelFormat["DEPTH_COMPONENT32F"] = gl.DEPTH_COMPONENT32F] = "DEPTH_COMPONENT32F";
-        PixelFormat[PixelFormat["DEPTH24_STENCIL8"] = gl.DEPTH24_STENCIL8] = "DEPTH24_STENCIL8";
-        PixelFormat[PixelFormat["DEPTH32F_STENCIL8"] = gl.DEPTH32F_STENCIL8] = "DEPTH32F_STENCIL8";
-    })(PixelFormat || (PixelFormat = {}));
-    exports.PixelFormat = PixelFormat;
-    var PixelStorageMode;
-    (function (PixelStorageMode) {
-        PixelStorageMode[PixelStorageMode["UNPACK_FLIP_Y_WEBGL"] = gl.UNPACK_FLIP_Y_WEBGL] = "UNPACK_FLIP_Y_WEBGL";
-        PixelStorageMode[PixelStorageMode["UNPACK_PREMULTIPLY_ALPHA_WEBGL"] = gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL] = "UNPACK_PREMULTIPLY_ALPHA_WEBGL";
-        PixelStorageMode[PixelStorageMode["UNPACK_COLORSPACE_CONVERSION_WEBGL"] = gl.UNPACK_COLORSPACE_CONVERSION_WEBGL] = "UNPACK_COLORSPACE_CONVERSION_WEBGL";
-    })(PixelStorageMode || (PixelStorageMode = {}));
-    exports.PixelStorageMode = PixelStorageMode;
-    var PixelType;
-    (function (PixelType) {
-        PixelType[PixelType["BYTE"] = gl.BYTE] = "BYTE";
-        PixelType[PixelType["FLOAT"] = gl.FLOAT] = "FLOAT";
-        PixelType[PixelType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = gl.FLOAT_32_UNSIGNED_INT_24_8_REV] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
-        PixelType[PixelType["HALF_FLOAT"] = gl.HALF_FLOAT] = "HALF_FLOAT";
-        PixelType[PixelType["INT"] = gl.INT] = "INT";
-        PixelType[PixelType["SHORT"] = gl.SHORT] = "SHORT";
-        PixelType[PixelType["UNSIGNED_BYTE"] = gl.UNSIGNED_BYTE] = "UNSIGNED_BYTE";
-        PixelType[PixelType["UNSIGNED_INT"] = gl.UNSIGNED_INT] = "UNSIGNED_INT";
-        PixelType[PixelType["UNSIGNED_INT_2_10_10_10_REV"] = gl.UNSIGNED_INT_2_10_10_10_REV] = "UNSIGNED_INT_2_10_10_10_REV";
-        PixelType[PixelType["UNSIGNED_INT_10F_11F_11F_REV"] = gl.UNSIGNED_INT_10F_11F_11F_REV] = "UNSIGNED_INT_10F_11F_11F_REV";
-        PixelType[PixelType["UNSIGNED_INT_5_9_9_9_REV"] = gl.UNSIGNED_INT_5_9_9_9_REV] = "UNSIGNED_INT_5_9_9_9_REV";
-        PixelType[PixelType["UNSIGNED_INT_24_8"] = gl.UNSIGNED_INT_24_8] = "UNSIGNED_INT_24_8";
-        PixelType[PixelType["UNSIGNED_SHORT"] = gl.UNSIGNED_SHORT] = "UNSIGNED_SHORT";
-        PixelType[PixelType["UNSIGNED_SHORT_5_6_5"] = gl.UNSIGNED_SHORT_5_6_5] = "UNSIGNED_SHORT_5_6_5";
-        PixelType[PixelType["UNSIGNED_SHORT_4_4_4_4"] = gl.UNSIGNED_SHORT_4_4_4_4] = "UNSIGNED_SHORT_4_4_4_4";
-        PixelType[PixelType["UNSIGNED_SHORT_5_5_5_1"] = gl.UNSIGNED_SHORT_5_5_5_1] = "UNSIGNED_SHORT_5_5_5_1";
-    })(PixelType || (PixelType = {}));
-    exports.PixelType = PixelType;
-    var RenderbufferTarget;
-    (function (RenderbufferTarget) {
-        RenderbufferTarget[RenderbufferTarget["RENDERBUFFER"] = gl.RENDERBUFFER] = "RENDERBUFFER";
-    })(RenderbufferTarget || (RenderbufferTarget = {}));
-    exports.RenderbufferTarget = RenderbufferTarget;
-    var Shader;
-    (function (Shader) {
-        Shader[Shader["FRAGMENT_SHADER"] = gl.FRAGMENT_SHADER] = "FRAGMENT_SHADER";
-        Shader[Shader["VERTEX_SHADER"] = gl.VERTEX_SHADER] = "VERTEX_SHADER";
-        Shader[Shader["COMPILE_STATUS"] = gl.COMPILE_STATUS] = "COMPILE_STATUS";
-        Shader[Shader["DELETE_STATUS"] = gl.DELETE_STATUS] = "DELETE_STATUS";
-        Shader[Shader["LINK_STATUS"] = gl.LINK_STATUS] = "LINK_STATUS";
-        Shader[Shader["VALIDATE_STATUS"] = gl.VALIDATE_STATUS] = "VALIDATE_STATUS";
-        Shader[Shader["ATTACHED_SHADERS"] = gl.ATTACHED_SHADERS] = "ATTACHED_SHADERS";
-        Shader[Shader["ACTIVE_ATTRIBUTES"] = gl.ACTIVE_ATTRIBUTES] = "ACTIVE_ATTRIBUTES";
-        Shader[Shader["ACTIVE_UNIFORMS"] = gl.ACTIVE_UNIFORMS] = "ACTIVE_UNIFORMS";
-        Shader[Shader["MAX_VERTEX_ATTRIBS"] = gl.MAX_VERTEX_ATTRIBS] = "MAX_VERTEX_ATTRIBS";
-        Shader[Shader["MAX_VERTEX_UNIFORM_VECTORS"] = gl.MAX_VERTEX_UNIFORM_VECTORS] = "MAX_VERTEX_UNIFORM_VECTORS";
-        Shader[Shader["MAX_VARYING_VECTORS"] = gl.MAX_VARYING_VECTORS] = "MAX_VARYING_VECTORS";
-        Shader[Shader["MAX_COMBINED_TEXTURE_IMAGE_UNITS"] = gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS] = "MAX_COMBINED_TEXTURE_IMAGE_UNITS";
-        Shader[Shader["MAX_VERTEX_TEXTURE_IMAGE_UNITS"] = gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS] = "MAX_VERTEX_TEXTURE_IMAGE_UNITS";
-        Shader[Shader["MAX_TEXTURE_IMAGE_UNITS"] = gl.MAX_TEXTURE_IMAGE_UNITS] = "MAX_TEXTURE_IMAGE_UNITS";
-        Shader[Shader["MAX_FRAGMENT_UNIFORM_VECTORS"] = gl.MAX_FRAGMENT_UNIFORM_VECTORS] = "MAX_FRAGMENT_UNIFORM_VECTORS";
-        Shader[Shader["SHADER_TYPE"] = gl.SHADER_TYPE] = "SHADER_TYPE";
-        Shader[Shader["SHADING_LANGUAGE_VERSION"] = gl.SHADING_LANGUAGE_VERSION] = "SHADING_LANGUAGE_VERSION";
-        Shader[Shader["CURRENT_PROGRAM"] = gl.CURRENT_PROGRAM] = "CURRENT_PROGRAM";
-    })(Shader || (Shader = {}));
-    exports.Shader = Shader;
-    var ShaderType;
-    (function (ShaderType) {
-        ShaderType[ShaderType["FRAGMENT_SHADER"] = gl.FRAGMENT_SHADER] = "FRAGMENT_SHADER";
-        ShaderType[ShaderType["VERTEX_SHADER"] = gl.VERTEX_SHADER] = "VERTEX_SHADER";
-    })(ShaderType || (ShaderType = {}));
-    exports.ShaderType = ShaderType;
-    var ShaderPrecision;
-    (function (ShaderPrecision) {
-        ShaderPrecision[ShaderPrecision["LOW_FLOAT"] = gl.LOW_FLOAT] = "LOW_FLOAT";
-        ShaderPrecision[ShaderPrecision["MEDIUM_FLOAT"] = gl.MEDIUM_FLOAT] = "MEDIUM_FLOAT";
-        ShaderPrecision[ShaderPrecision["HIGH_FLOAT"] = gl.HIGH_FLOAT] = "HIGH_FLOAT";
-        ShaderPrecision[ShaderPrecision["LOW_INT"] = gl.LOW_INT] = "LOW_INT";
-        ShaderPrecision[ShaderPrecision["MEDIUM_INT"] = gl.MEDIUM_INT] = "MEDIUM_INT";
-        ShaderPrecision[ShaderPrecision["HIGH_INT"] = gl.HIGH_INT] = "HIGH_INT";
-    })(ShaderPrecision || (ShaderPrecision = {}));
-    exports.ShaderPrecision = ShaderPrecision;
-    var StencilAction;
-    (function (StencilAction) {
-        StencilAction[StencilAction["KEEP"] = gl.KEEP] = "KEEP";
-        StencilAction[StencilAction["REPLACE"] = gl.REPLACE] = "REPLACE";
-        StencilAction[StencilAction["INCR"] = gl.INCR] = "INCR";
-        StencilAction[StencilAction["DECR"] = gl.DECR] = "DECR";
-        StencilAction[StencilAction["INVERT"] = gl.INVERT] = "INVERT";
-        StencilAction[StencilAction["INCR_WRAP"] = gl.INCR_WRAP] = "INCR_WRAP";
-        StencilAction[StencilAction["DECR_WRAP"] = gl.DECR_WRAP] = "DECR_WRAP";
-    })(StencilAction || (StencilAction = {}));
-    exports.StencilAction = StencilAction;
-    var TestFunction;
-    (function (TestFunction) {
-        TestFunction[TestFunction["NEVER"] = gl.NEVER] = "NEVER";
-        TestFunction[TestFunction["LESS"] = gl.LESS] = "LESS";
-        TestFunction[TestFunction["EQUAL"] = gl.EQUAL] = "EQUAL";
-        TestFunction[TestFunction["LEQUAL"] = gl.LEQUAL] = "LEQUAL";
-        TestFunction[TestFunction["GREATER"] = gl.GREATER] = "GREATER";
-        TestFunction[TestFunction["NOTEQUAL"] = gl.NOTEQUAL] = "NOTEQUAL";
-        TestFunction[TestFunction["GEQUAL"] = gl.GEQUAL] = "GEQUAL";
-        TestFunction[TestFunction["ALWAYS"] = gl.ALWAYS] = "ALWAYS";
-    })(TestFunction || (TestFunction = {}));
-    exports.TestFunction = TestFunction;
-    var TextureUnits;
-    (function (TextureUnits) {
-        TextureUnits[TextureUnits["TEXTURE"] = gl.TEXTURE] = "TEXTURE";
-        TextureUnits[TextureUnits["TEXTURE0"] = gl.TEXTURE0] = "TEXTURE0";
-    })(TextureUnits || (TextureUnits = {}));
-    exports.TextureUnits = TextureUnits;
-    var TextureParameter;
-    (function (TextureParameter) {
-        TextureParameter[TextureParameter["TEXTURE_MAG_FILTER"] = gl.TEXTURE_MAG_FILTER] = "TEXTURE_MAG_FILTER";
-        TextureParameter[TextureParameter["TEXTURE_MIN_FILTER"] = gl.TEXTURE_MIN_FILTER] = "TEXTURE_MIN_FILTER";
-        TextureParameter[TextureParameter["TEXTURE_WRAP_S"] = gl.TEXTURE_WRAP_S] = "TEXTURE_WRAP_S";
-        TextureParameter[TextureParameter["TEXTURE_WRAP_T"] = gl.TEXTURE_WRAP_T] = "TEXTURE_WRAP_T";
-        TextureParameter[TextureParameter["TEXTURE_BASE_LEVEL"] = gl.TEXTURE_BASE_LEVEL] = "TEXTURE_BASE_LEVEL";
-        TextureParameter[TextureParameter["TEXTURE_MAX_LEVEL"] = gl.TEXTURE_MAX_LEVEL] = "TEXTURE_MAX_LEVEL";
-        TextureParameter[TextureParameter["TEXTURE_MAX_LOD"] = gl.TEXTURE_MAX_LOD] = "TEXTURE_MAX_LOD";
-        TextureParameter[TextureParameter["TEXTURE_MIN_LOD"] = gl.TEXTURE_MIN_LOD] = "TEXTURE_MIN_LOD";
-        TextureParameter[TextureParameter["TEXTURE_WRAP_R"] = gl.TEXTURE_WRAP_R] = "TEXTURE_WRAP_R";
-    })(TextureParameter || (TextureParameter = {}));
-    exports.TextureParameter = TextureParameter;
-    var TextureTarget;
-    (function (TextureTarget) {
-        TextureTarget[TextureTarget["TEXTURE_2D"] = gl.TEXTURE_2D] = "TEXTURE_2D";
-        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP"] = gl.TEXTURE_CUBE_MAP] = "TEXTURE_CUBE_MAP";
-        TextureTarget[TextureTarget["TEXTURE_3D"] = gl.TEXTURE_3D] = "TEXTURE_3D";
-        TextureTarget[TextureTarget["TEXTURE_2D_ARRAY"] = gl.TEXTURE_2D_ARRAY] = "TEXTURE_2D_ARRAY";
-        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_POSITIVE_X"] = gl.TEXTURE_CUBE_MAP_POSITIVE_X] = "TEXTURE_CUBE_MAP_POSITIVE_X";
-        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_X"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_X] = "TEXTURE_CUBE_MAP_NEGATIVE_X";
-        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_POSITIVE_Y"] = gl.TEXTURE_CUBE_MAP_POSITIVE_Y] = "TEXTURE_CUBE_MAP_POSITIVE_Y";
-        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_Y"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_Y] = "TEXTURE_CUBE_MAP_NEGATIVE_Y";
-        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_POSITIVE_Z"] = gl.TEXTURE_CUBE_MAP_POSITIVE_Z] = "TEXTURE_CUBE_MAP_POSITIVE_Z";
-        TextureTarget[TextureTarget["TEXTURE_CUBE_MAP_NEGATIVE_Z"] = gl.TEXTURE_CUBE_MAP_NEGATIVE_Z] = "TEXTURE_CUBE_MAP_NEGATIVE_Z";
-    })(TextureTarget || (TextureTarget = {}));
-    exports.TextureTarget = TextureTarget;
-    var TextureMagFilter;
-    (function (TextureMagFilter) {
-        TextureMagFilter[TextureMagFilter["LINEAR"] = gl.LINEAR] = "LINEAR";
-        TextureMagFilter[TextureMagFilter["NEAREST"] = gl.NEAREST] = "NEAREST";
-    })(TextureMagFilter || (TextureMagFilter = {}));
-    exports.TextureMagFilter = TextureMagFilter;
-    var TextureMinFilter;
-    (function (TextureMinFilter) {
-        TextureMinFilter[TextureMinFilter["LINEAR"] = gl.LINEAR] = "LINEAR";
-        TextureMinFilter[TextureMinFilter["NEAREST"] = gl.NEAREST] = "NEAREST";
-        TextureMinFilter[TextureMinFilter["NEAREST_MIPMAP_NEAREST"] = gl.NEAREST_MIPMAP_NEAREST] = "NEAREST_MIPMAP_NEAREST";
-        TextureMinFilter[TextureMinFilter["LINEAR_MIPMAP_NEAREST"] = gl.LINEAR_MIPMAP_NEAREST] = "LINEAR_MIPMAP_NEAREST";
-        TextureMinFilter[TextureMinFilter["NEAREST_MIPMAP_LINEAR"] = gl.NEAREST_MIPMAP_LINEAR] = "NEAREST_MIPMAP_LINEAR";
-        TextureMinFilter[TextureMinFilter["LINEAR_MIPMAP_LINEAR"] = gl.LINEAR_MIPMAP_LINEAR] = "LINEAR_MIPMAP_LINEAR";
-    })(TextureMinFilter || (TextureMinFilter = {}));
-    exports.TextureMinFilter = TextureMinFilter;
-    var TextureWrapMode;
-    (function (TextureWrapMode) {
-        TextureWrapMode[TextureWrapMode["REPEAT"] = gl.REPEAT] = "REPEAT";
-        TextureWrapMode[TextureWrapMode["CLAMP_TO_EDGE"] = gl.CLAMP_TO_EDGE] = "CLAMP_TO_EDGE";
-        TextureWrapMode[TextureWrapMode["MIRRORED_REPEAT"] = gl.MIRRORED_REPEAT] = "MIRRORED_REPEAT";
-    })(TextureWrapMode || (TextureWrapMode = {}));
-    exports.TextureWrapMode = TextureWrapMode;
-    var UniformQuery;
-    (function (UniformQuery) {
-        UniformQuery[UniformQuery["UNIFORM_TYPE"] = gl.UNIFORM_TYPE] = "UNIFORM_TYPE";
-        UniformQuery[UniformQuery["UNIFORM_SIZE"] = gl.UNIFORM_SIZE] = "UNIFORM_SIZE";
-        UniformQuery[UniformQuery["UNIFORM_BLOCK_INDEX"] = gl.UNIFORM_BLOCK_INDEX] = "UNIFORM_BLOCK_INDEX";
-        UniformQuery[UniformQuery["UNIFORM_OFFSET"] = gl.UNIFORM_OFFSET] = "UNIFORM_OFFSET";
-        UniformQuery[UniformQuery["UNIFORM_ARRAY_STRIDE"] = gl.UNIFORM_ARRAY_STRIDE] = "UNIFORM_ARRAY_STRIDE";
-        UniformQuery[UniformQuery["UNIFORM_MATRIX_STRIDE"] = gl.UNIFORM_MATRIX_STRIDE] = "UNIFORM_MATRIX_STRIDE";
-        UniformQuery[UniformQuery["UNIFORM_IS_ROW_MAJOR"] = gl.UNIFORM_IS_ROW_MAJOR] = "UNIFORM_IS_ROW_MAJOR";
-    })(UniformQuery || (UniformQuery = {}));
-    exports.UniformQuery = UniformQuery;
-    var UniformType;
-    (function (UniformType) {
-        UniformType[UniformType["BOOL"] = gl.BOOL] = "BOOL";
-        UniformType[UniformType["BOOL_VEC2"] = gl.BOOL_VEC2] = "BOOL_VEC2";
-        UniformType[UniformType["BOOL_VEC3"] = gl.BOOL_VEC3] = "BOOL_VEC3";
-        UniformType[UniformType["BOOL_VEC4"] = gl.BOOL_VEC4] = "BOOL_VEC4";
-        UniformType[UniformType["INT"] = gl.INT] = "INT";
-        UniformType[UniformType["INT_VEC2"] = gl.INT_VEC2] = "INT_VEC2";
-        UniformType[UniformType["INT_VEC3"] = gl.INT_VEC3] = "INT_VEC3";
-        UniformType[UniformType["INT_VEC4"] = gl.INT_VEC4] = "INT_VEC4";
-        UniformType[UniformType["INT_SAMPLER_2D"] = gl.INT_SAMPLER_2D] = "INT_SAMPLER_2D";
-        UniformType[UniformType["INT_SAMPLER_3D"] = gl.INT_SAMPLER_3D] = "INT_SAMPLER_3D";
-        UniformType[UniformType["INT_SAMPLER_CUBE"] = gl.INT_SAMPLER_CUBE] = "INT_SAMPLER_CUBE";
-        UniformType[UniformType["INT_SAMPLER_2D_ARRAY"] = gl.INT_SAMPLER_2D_ARRAY] = "INT_SAMPLER_2D_ARRAY";
-        UniformType[UniformType["UNSIGNED_INT_SAMPLER_2D"] = gl.UNSIGNED_INT_SAMPLER_2D] = "UNSIGNED_INT_SAMPLER_2D";
-        UniformType[UniformType["UNSIGNED_INT_SAMPLER_3D"] = gl.UNSIGNED_INT_SAMPLER_3D] = "UNSIGNED_INT_SAMPLER_3D";
-        UniformType[UniformType["UNSIGNED_INT_SAMPLER_CUBE"] = gl.UNSIGNED_INT_SAMPLER_CUBE] = "UNSIGNED_INT_SAMPLER_CUBE";
-        UniformType[UniformType["UNSIGNED_INT_SAMPLER_2D_ARRAY"] = gl.UNSIGNED_INT_SAMPLER_2D_ARRAY] = "UNSIGNED_INT_SAMPLER_2D_ARRAY";
-        UniformType[UniformType["UNSIGNED_INT"] = gl.UNSIGNED_INT] = "UNSIGNED_INT";
-        UniformType[UniformType["UNSIGNED_INT_VEC2"] = gl.UNSIGNED_INT_VEC2] = "UNSIGNED_INT_VEC2";
-        UniformType[UniformType["UNSIGNED_INT_VEC3"] = gl.UNSIGNED_INT_VEC3] = "UNSIGNED_INT_VEC3";
-        UniformType[UniformType["UNSIGNED_INT_VEC4"] = gl.UNSIGNED_INT_VEC4] = "UNSIGNED_INT_VEC4";
-        UniformType[UniformType["FLOAT"] = gl.FLOAT] = "FLOAT";
-        UniformType[UniformType["FLOAT_VEC2"] = gl.FLOAT_VEC2] = "FLOAT_VEC2";
-        UniformType[UniformType["FLOAT_VEC3"] = gl.FLOAT_VEC3] = "FLOAT_VEC3";
-        UniformType[UniformType["FLOAT_VEC4"] = gl.FLOAT_VEC4] = "FLOAT_VEC4";
-        UniformType[UniformType["FLOAT_MAT2"] = gl.FLOAT_MAT2] = "FLOAT_MAT2";
-        UniformType[UniformType["FLOAT_MAT3"] = gl.FLOAT_MAT3] = "FLOAT_MAT3";
-        UniformType[UniformType["FLOAT_MAT4"] = gl.FLOAT_MAT4] = "FLOAT_MAT4";
-        UniformType[UniformType["FLOAT_MAT2x3"] = gl.FLOAT_MAT2x3] = "FLOAT_MAT2x3";
-        UniformType[UniformType["FLOAT_MAT2x4"] = gl.FLOAT_MAT2x4] = "FLOAT_MAT2x4";
-        UniformType[UniformType["FLOAT_MAT3x2"] = gl.FLOAT_MAT3x2] = "FLOAT_MAT3x2";
-        UniformType[UniformType["FLOAT_MAT3x4"] = gl.FLOAT_MAT3x4] = "FLOAT_MAT3x4";
-        UniformType[UniformType["FLOAT_MAT4x2"] = gl.FLOAT_MAT4x2] = "FLOAT_MAT4x2";
-        UniformType[UniformType["FLOAT_MAT4x3"] = gl.FLOAT_MAT4x3] = "FLOAT_MAT4x3";
-        UniformType[UniformType["SAMPLER_2D"] = gl.SAMPLER_2D] = "SAMPLER_2D";
-        UniformType[UniformType["SAMPLER_3D"] = gl.SAMPLER_3D] = "SAMPLER_3D";
-        UniformType[UniformType["SAMPLER_CUBE"] = gl.SAMPLER_CUBE] = "SAMPLER_CUBE";
-        UniformType[UniformType["SAMPLER_2D_SHADOW"] = gl.SAMPLER_2D_SHADOW] = "SAMPLER_2D_SHADOW";
-        UniformType[UniformType["SAMPLER_2D_ARRAY"] = gl.SAMPLER_2D_ARRAY] = "SAMPLER_2D_ARRAY";
-        UniformType[UniformType["SAMPLER_2D_ARRAY_SHADOW"] = gl.SAMPLER_2D_ARRAY_SHADOW] = "SAMPLER_2D_ARRAY_SHADOW";
-        UniformType[UniformType["SAMPLER_CUBE_SHADOW"] = gl.SAMPLER_CUBE_SHADOW] = "SAMPLER_CUBE_SHADOW";
-    })(UniformType || (UniformType = {}));
-    exports.UniformType = UniformType;
-    var VertexAttribute;
-    (function (VertexAttribute) {
-        VertexAttribute[VertexAttribute["CURRENT_VERTEX_ATTRIB"] = gl.CURRENT_VERTEX_ATTRIB] = "CURRENT_VERTEX_ATTRIB";
-        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_ENABLED"] = gl.VERTEX_ATTRIB_ARRAY_ENABLED] = "VERTEX_ATTRIB_ARRAY_ENABLED";
-        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_SIZE"] = gl.VERTEX_ATTRIB_ARRAY_SIZE] = "VERTEX_ATTRIB_ARRAY_SIZE";
-        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_STRIDE"] = gl.VERTEX_ATTRIB_ARRAY_STRIDE] = "VERTEX_ATTRIB_ARRAY_STRIDE";
-        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_TYPE"] = gl.VERTEX_ATTRIB_ARRAY_TYPE] = "VERTEX_ATTRIB_ARRAY_TYPE";
-        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_NORMALIZED"] = gl.VERTEX_ATTRIB_ARRAY_NORMALIZED] = "VERTEX_ATTRIB_ARRAY_NORMALIZED";
-        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_POINTER"] = gl.VERTEX_ATTRIB_ARRAY_POINTER] = "VERTEX_ATTRIB_ARRAY_POINTER";
-        VertexAttribute[VertexAttribute["VERTEX_ATTRIB_ARRAY_BUFFER_BINDING"] = gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING] = "VERTEX_ATTRIB_ARRAY_BUFFER_BINDING";
-    })(VertexAttribute || (VertexAttribute = {}));
-    exports.VertexAttribute = VertexAttribute;
 });
 define("engine/core/rendering/webgl/WebGLBufferUtilities", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -10079,7 +10170,7 @@ define("engine/libs/maths/geometry/primitives/Triangle", ["require", "exports", 
     const TrianglePool = new StackPool_3.StackPool(TriangleBase);
     exports.TrianglePool = TrianglePool;
 });
-define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_8) {
+define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TriangleListBase = exports.TriangleList = void 0;
@@ -10129,8 +10220,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             return indexOf;
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
-            const idxTo = Snippets_8.clamp(options.idxTo, 0, this.count);
-            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, this.count);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -10148,8 +10239,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             tri.point3.readFromArray(this._array, indices[2]);
         }
         forIndexedPoints(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_8.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -10172,7 +10263,7 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
     const TriangleList = TriangleListBase;
     exports.TriangleList = TriangleList;
 });
-define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_9) {
+define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_10) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3ListBase = exports.Vector3List = void 0;
@@ -10192,8 +10283,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_9.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_10.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_10.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -10206,8 +10297,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
             Vector3Pools_3.Vector3Pool.release(1);
         }
         forEachFromIndices(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_9.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_10.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_10.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -10369,7 +10460,7 @@ define("engine/libs/maths/extensions/pools/Vector2Pools", ["require", "exports",
     const Vector2Pool = new StackPool_6.StackPool(Vector2_2.Vector2Base);
     exports.Vector2Pool = Vector2Pool;
 });
-define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_10) {
+define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_11) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector2ListBase = exports.Vector2List = void 0;
@@ -10389,8 +10480,8 @@ define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_10.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_10.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_11.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_11.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             Vector2Pools_1.Vector2Pool.acquireTemp(1, (vector) => {
                 while (idxObj < count) {
@@ -11446,7 +11537,7 @@ define("engine/core/rendering/scenes/geometries/PhongGeometry", ["require", "exp
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });
-define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_11) {
+define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_12) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuadGeometry = void 0;
@@ -11526,10 +11617,10 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         [0, 1],
         [1, 1]
     ];
-    const quadVertices = Snippets_11.buildArrayFromIndexedArrays(quadVerticesSet, [
+    const quadVertices = Snippets_12.buildArrayFromIndexedArrays(quadVerticesSet, [
         0, 2, 3, 1,
     ]);
-    const quadUVS = Snippets_11.buildArrayFromIndexedArrays(quadUVsSet, [
+    const quadUVS = Snippets_12.buildArrayFromIndexedArrays(quadUVsSet, [
         0, 2, 3, 1,
     ]);
     const quadIndices = [
@@ -11537,7 +11628,7 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         0, 2, 3,
     ];
 });
-define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_2, Snippets_12) {
+define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_2, Snippets_13) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SphereGeometry = void 0;
@@ -11617,10 +11708,10 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
         [0, 1],
         [1, 1]
     ];
-    const sphereVertices = Snippets_12.buildArrayFromIndexedArrays(sphereVerticesSet, [
+    const sphereVertices = Snippets_13.buildArrayFromIndexedArrays(sphereVerticesSet, [
         0, 2, 3, 1,
     ]);
-    const sphereUVS = Snippets_12.buildArrayFromIndexedArrays(sphereUVsSet, [
+    const sphereUVS = Snippets_13.buildArrayFromIndexedArrays(sphereUVsSet, [
         0, 2, 3, 1,
     ]);
     const sphereIndices = [
@@ -11628,7 +11719,7 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
         0, 2, 3,
     ];
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_13) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_14) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CubeGeometry = void 0;
@@ -11725,7 +11816,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [+1, -1, +1],
         [+1, -1, -1],
     ];
-    const cubeVertices = Snippets_13.buildArrayFromIndexedArrays(cubeVerticesSet, [
+    const cubeVertices = Snippets_14.buildArrayFromIndexedArrays(cubeVerticesSet, [
         0, 2, 3, 1,
         0, 4, 5, 2,
         2, 5, 6, 3,
@@ -11739,7 +11830,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [0, 1],
         [1, 1],
     ];
-    const cubeUVS = Snippets_13.buildArrayFromIndexedArrays(cubeUVsSet, [
+    const cubeUVS = Snippets_14.buildArrayFromIndexedArrays(cubeUVsSet, [
         0, 1, 3, 2,
         0, 1, 3, 2,
         0, 1, 3, 2,
@@ -11789,7 +11880,7 @@ define("engine/libs/maths/geometry/GeometryConstants", ["require", "exports"], f
     const GOLDEN_RATIO = 1.6180;
     exports.GOLDEN_RATIO = GOLDEN_RATIO;
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_4, GeometryConstants_1, Snippets_14) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_4, GeometryConstants_1, Snippets_15) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IcosahedronGeometry = void 0;
@@ -11856,7 +11947,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const icosahedronVertices = Snippets_14.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
+    const icosahedronVertices = Snippets_15.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
         0, 1, 2,
         0, 2, 3,
         0, 3, 4,
@@ -11878,7 +11969,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         9, 11, 10,
         10, 11, 6,
     ]);
-    const icosahedronUVS = Snippets_14.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
+    const icosahedronUVS = Snippets_15.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
         1, 2, 0,
         1, 2, 0,
         1, 2, 0,
@@ -11923,7 +12014,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         57, 58, 59,
     ];
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_15) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_16) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TetrahedronGeometry = void 0;
@@ -11968,13 +12059,13 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const tetrahedronVertices = Snippets_15.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
+    const tetrahedronVertices = Snippets_16.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
         0, 1, 2,
         1, 0, 3,
         1, 3, 2,
         2, 3, 0,
     ]);
-    const tetrahedronUVS = Snippets_15.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
+    const tetrahedronUVS = Snippets_16.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
         1, 2, 0,
         1, 3, 0,
         2, 3, 0,
@@ -13768,7 +13859,7 @@ let html = function(parts: TemplateStringsArray, ...expr: any[]) {
     return parsedHTML;
   }
 */ 
-define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
+define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_23) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.setFormState = exports.getFormState = void 0;
@@ -13777,7 +13868,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
         const elements = Array.from(form.elements);
         let state = {};
         elements.forEach((element) => {
-            if (HTMLElement_24.isTagElement("input", element)) {
+            if (HTMLElement_23.isTagElement("input", element)) {
                 if (element.type === "radio") {
                     if (!(element.name in state)) {
                         state[element.name] = {
@@ -13810,12 +13901,12 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
                     };
                 }
             }
-            else if (HTMLElement_24.isTagElement("select", element)) {
+            else if (HTMLElement_23.isTagElement("select", element)) {
                 state[element.name] = {
                     value: element.value,
                 };
             }
-            else if (HTMLElement_24.isTagElement("textarea", element)) {
+            else if (HTMLElement_23.isTagElement("textarea", element)) {
                 state[element.name] = {
                     value: element.value,
                 };
@@ -13832,14 +13923,14 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
             if ("type" in elemState) {
                 if (elemState.type === "checkbox") {
                     let element = elements.find((elem) => elem.name === name);
-                    if (element && HTMLElement_24.isTagElement("input", element)) {
+                    if (element && HTMLElement_23.isTagElement("input", element)) {
                         element.checked = elemState.checked;
                     }
                 }
                 else if (elemState.type === "radio") {
                     elemState.nodes.forEach((radioNode) => {
                         let element = elements.find((elem) => elem.name === name && elem.value === radioNode.value);
-                        if (element && HTMLElement_24.isTagElement("input", element)) {
+                        if (element && HTMLElement_23.isTagElement("input", element)) {
                             element.checked = radioNode.checked;
                         }
                     });
@@ -13847,7 +13938,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
             }
             else {
                 let element = elements.find((elem) => elem.name === name);
-                if (element && (HTMLElement_24.isTagElement("input", element) || HTMLElement_24.isTagElement("select", element) || HTMLElement_24.isTagElement("textarea", element))) {
+                if (element && (HTMLElement_23.isTagElement("input", element) || HTMLElement_23.isTagElement("select", element) || HTMLElement_23.isTagElement("textarea", element))) {
                     element.value = elemState.value;
                 }
             }
@@ -13855,7 +13946,7 @@ define("engine/editor/elements/forms/Snippets", ["require", "exports", "engine/e
     };
     exports.setFormState = setFormState;
 });
-define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_25) {
+define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_24) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.NumberInputElement = void 0;
@@ -13893,13 +13984,13 @@ define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "ex
             }
         };
         NumberInputElement = __decorate([
-            HTMLElement_25.RegisterCustomHTMLElement({
+            HTMLElement_24.RegisterCustomHTMLElement({
                 name: 'number-input',
                 options: {
                     extends: 'input'
                 }
             }),
-            HTMLElement_25.GenerateAttributeAccessors([
+            HTMLElement_24.GenerateAttributeAccessors([
                 { name: 'cache' }
             ])
         ], NumberInputElement);
@@ -13907,7 +13998,7 @@ define("engine/editor/elements/lib/builtins/inputs/NumberInput", ["require", "ex
     })();
     exports.NumberInputElement = NumberInputElement;
 });
-define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_26) {
+define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_25) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isDropdownElement = exports.HTMLEDropdownElement = void 0;
@@ -13919,7 +14010,7 @@ define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "e
         let HTMLEDropdownElement = class HTMLEDropdownElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_26.bindShadowRoot(this, /*template*/ `
+                HTMLElement_25.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -13991,10 +14082,10 @@ define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "e
             }
         };
         HTMLEDropdownElement = __decorate([
-            HTMLElement_26.RegisterCustomHTMLElement({
+            HTMLElement_25.RegisterCustomHTMLElement({
                 name: 'e-dropdown'
             }),
-            HTMLElement_26.GenerateAttributeAccessors([
+            HTMLElement_25.GenerateAttributeAccessors([
                 { name: 'expanded', type: 'boolean' },
             ])
         ], HTMLEDropdownElement);
@@ -14002,7 +14093,7 @@ define("engine/editor/elements/lib/containers/dropdown/Dropdown", ["require", "e
     })();
     exports.HTMLEDropdownElement = HTMLEDropdownElement;
 });
-define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_27) {
+define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_26) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEMenuButtonElement = void 0;
@@ -14010,7 +14101,7 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
         let BaseHTMLEMenuButtonElement = class BaseHTMLEMenuButtonElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_27.bindShadowRoot(this, /*template*/ `
+                HTMLElement_26.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     position: relative;
@@ -14195,7 +14286,7 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
                 if (menuSlot) {
                     menuSlot.addEventListener("slotchange", () => {
                         const menuElem = menuSlot.assignedElements()[0];
-                        if (HTMLElement_27.isTagElement("e-menu", menuElem)) {
+                        if (HTMLElement_26.isTagElement("e-menu", menuElem)) {
                             this.childMenu = menuElem;
                         }
                     });
@@ -14203,11 +14294,11 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
             }
         };
         BaseHTMLEMenuButtonElement = __decorate([
-            HTMLElement_27.RegisterCustomHTMLElement({
+            HTMLElement_26.RegisterCustomHTMLElement({
                 name: "e-menubutton",
                 observedAttributes: ["icon", "label", "checked"]
             }),
-            HTMLElement_27.GenerateAttributeAccessors([
+            HTMLElement_26.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
                 { name: "active", type: "boolean" },
                 { name: "label", type: "string" },
@@ -14220,7 +14311,7 @@ define("engine/editor/elements/lib/containers/menus/MenuButton", ["require", "ex
     })();
     exports.BaseHTMLEMenuButtonElement = BaseHTMLEMenuButtonElement;
 });
-define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_28) {
+define("engine/editor/elements/lib/containers/panels/Panel", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_27) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelElement = void 0;
@@ -14228,7 +14319,7 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
         let PanelElement = class PanelElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_28.bindShadowRoot(this, /*template*/ `
+                HTMLElement_27.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -14304,11 +14395,11 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
             }
         };
         PanelElement = __decorate([
-            HTMLElement_28.RegisterCustomHTMLElement({
+            HTMLElement_27.RegisterCustomHTMLElement({
                 name: 'e-panel',
                 observedAttributes: ['state']
             }),
-            HTMLElement_28.GenerateAttributeAccessors([
+            HTMLElement_27.GenerateAttributeAccessors([
                 { name: 'label', type: 'string' },
                 { name: 'state', type: 'string' },
             ])
@@ -14317,7 +14408,7 @@ define("engine/editor/elements/lib/containers/panels/Panel", ["require", "export
     })();
     exports.PanelElement = PanelElement;
 });
-define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_29) {
+define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_28) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PanelGroupElement = void 0;
@@ -14325,7 +14416,7 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
         let PanelGroupElement = class PanelGroupElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_29.bindShadowRoot(this, /*template*/ `
+                HTMLElement_28.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -14386,10 +14477,10 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
         };
         PanelGroupElement.observedAttributes = ['state'];
         PanelGroupElement = __decorate([
-            HTMLElement_29.RegisterCustomHTMLElement({
+            HTMLElement_28.RegisterCustomHTMLElement({
                 name: 'e-panel-group'
             }),
-            HTMLElement_29.GenerateAttributeAccessors([
+            HTMLElement_28.GenerateAttributeAccessors([
                 { name: 'label', type: 'string' },
                 { name: 'state', type: 'string' },
             ])
@@ -14398,7 +14489,7 @@ define("engine/editor/elements/lib/containers/panels/PanelGroup", ["require", "e
     })();
     exports.PanelGroupElement = PanelGroupElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_30) {
+define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_29) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuBarElement = exports.HTMLEMenuBarElement = void 0;
@@ -14410,11 +14501,11 @@ define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exp
         let HTMLEMenuBarElement = class HTMLEMenuBarElement extends HTMLElement {
         };
         HTMLEMenuBarElement = __decorate([
-            HTMLElement_30.RegisterCustomHTMLElement({
+            HTMLElement_29.RegisterCustomHTMLElement({
                 name: "e-menubar",
                 observedAttributes: ["active"]
             }),
-            HTMLElement_30.GenerateAttributeAccessors([
+            HTMLElement_29.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
                 { name: "active", type: "boolean" },
             ])
@@ -14423,7 +14514,7 @@ define("engine/editor/elements/lib/containers/toolbar/Toolbar", ["require", "exp
     })();
     exports.HTMLEMenuBarElement = HTMLEMenuBarElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_31) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_30) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isHTMLEMenuItemElement = exports.HTMLEMenuItemElement = void 0;
@@ -14435,11 +14526,11 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
         let HTMLEMenuItemElement = class HTMLEMenuItemElement extends HTMLElement {
         };
         HTMLEMenuItemElement = __decorate([
-            HTMLElement_31.RegisterCustomHTMLElement({
+            HTMLElement_30.RegisterCustomHTMLElement({
                 name: "e-menuitem",
                 observedAttributes: ["icon", "label", "checked"]
             }),
-            HTMLElement_31.GenerateAttributeAccessors([
+            HTMLElement_30.GenerateAttributeAccessors([
                 { name: "name", type: "string" },
                 { name: "label", type: "string" },
                 { name: "icon", type: "string" },
@@ -14453,7 +14544,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItem", ["require", 
     })();
     exports.HTMLEMenuItemElement = HTMLEMenuItemElement;
 });
-define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
+define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_31) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLEMenuItemGroupElement = exports.isHTMLEMenuItemGroupElement = void 0;
@@ -14465,11 +14556,11 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
         let HTMLEMenuItemGroupElement = class HTMLEMenuItemGroupElement extends HTMLElement {
         };
         HTMLEMenuItemGroupElement = __decorate([
-            HTMLElement_32.RegisterCustomHTMLElement({
+            HTMLElement_31.RegisterCustomHTMLElement({
                 name: "e-menuitemgroup",
                 observedAttributes: ["label", "active"]
             }),
-            HTMLElement_32.GenerateAttributeAccessors([
+            HTMLElement_31.GenerateAttributeAccessors([
                 { name: "active", type: "boolean" },
                 { name: "label", type: "string" },
                 { name: "type", type: "string" },
@@ -14482,7 +14573,7 @@ define("engine/editor/elements/lib/containers/toolbar/ToolbarItemGroup", ["requi
     })();
     exports.HTMLEMenuItemGroupElement = HTMLEMenuItemGroupElement;
 });
-define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_33) {
+define("engine/editor/elements/lib/containers/windows/Window", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_32) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.WindowElement = void 0;
@@ -14490,7 +14581,7 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
         let WindowElement = class WindowElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_33.bindShadowRoot(this, /*template*/ `
+                HTMLElement_32.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/default.css"/>
             <style>
                 :host {
@@ -14567,10 +14658,10 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
             }
         };
         WindowElement = __decorate([
-            HTMLElement_33.RegisterCustomHTMLElement({
+            HTMLElement_32.RegisterCustomHTMLElement({
                 name: 'e-window'
             }),
-            HTMLElement_33.GenerateAttributeAccessors([
+            HTMLElement_32.GenerateAttributeAccessors([
                 { name: 'title', type: 'string' },
                 { name: 'tooltip', type: 'string' },
                 { name: 'toggled', type: 'boolean' }
@@ -14580,7 +14671,7 @@ define("engine/editor/elements/lib/containers/windows/Window", ["require", "expo
     })();
     exports.WindowElement = WindowElement;
 });
-define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3"], function (require, exports, HTMLElement_34, Vector3_7) {
+define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/libs/maths/algebra/vectors/Vector3"], function (require, exports, HTMLElement_33, Vector3_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3InputElement = void 0;
@@ -14588,7 +14679,7 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
         let Vector3InputElement = class Vector3InputElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_34.bindShadowRoot(this, /*template*/ `
+                HTMLElement_33.bindShadowRoot(this, /*template*/ `
             <link rel="stylesheet" href="css/theme.css"/>
             <style>
                 :host {
@@ -14645,10 +14736,10 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
             }
         };
         Vector3InputElement = __decorate([
-            HTMLElement_34.RegisterCustomHTMLElement({
+            HTMLElement_33.RegisterCustomHTMLElement({
                 name: 'e-vector3-input'
             }),
-            HTMLElement_34.GenerateAttributeAccessors([
+            HTMLElement_33.GenerateAttributeAccessors([
                 { name: 'label' },
                 { name: 'tooltip' }
             ])
@@ -14657,7 +14748,7 @@ define("engine/editor/elements/lib/math/Vector3Input", ["require", "exports", "e
     })();
     exports.Vector3InputElement = Vector3InputElement;
 });
-define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_35) {
+define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_34) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PaletteElement = void 0;
@@ -14665,7 +14756,7 @@ define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine
         let PaletteElement = class PaletteElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_35.bindShadowRoot(this, /*template*/ `
+                HTMLElement_34.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: block;
@@ -14694,16 +14785,16 @@ define("engine/editor/elements/lib/misc/Palette", ["require", "exports", "engine
             }
         };
         PaletteElement = __decorate([
-            HTMLElement_35.RegisterCustomHTMLElement({
+            HTMLElement_34.RegisterCustomHTMLElement({
                 name: 'e-palette'
             }),
-            HTMLElement_35.GenerateAttributeAccessors([{ name: 'colors', type: 'json' }])
+            HTMLElement_34.GenerateAttributeAccessors([{ name: 'colors', type: 'json' }])
         ], PaletteElement);
         return PaletteElement;
     })();
     exports.PaletteElement = PaletteElement;
 });
-define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_36) {
+define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_35) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLELoaderElement = void 0;
@@ -14711,7 +14802,7 @@ define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine
         let BaseHTMLELoaderElement = class BaseHTMLELoaderElement extends HTMLElement {
             constructor() {
                 super();
-                HTMLElement_36.bindShadowRoot(this, /*template*/ `
+                HTMLElement_35.bindShadowRoot(this, /*template*/ `
             <style>
                 :host {
                     display: inline-block;
@@ -14813,10 +14904,10 @@ define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine
             }
         };
         BaseHTMLELoaderElement = __decorate([
-            HTMLElement_36.RegisterCustomHTMLElement({
+            HTMLElement_35.RegisterCustomHTMLElement({
                 name: "e-loader"
             }),
-            HTMLElement_36.GenerateAttributeAccessors([
+            HTMLElement_35.GenerateAttributeAccessors([
                 { name: "type", type: "string" }
             ])
         ], BaseHTMLELoaderElement);
@@ -14824,7 +14915,7 @@ define("engine/editor/elements/lib/utils/Loader", ["require", "exports", "engine
     })();
     exports.BaseHTMLELoaderElement = BaseHTMLELoaderElement;
 });
-define("engine/editor/models/AbstractModel", ["require", "exports", "engine/libs/patterns/messaging/events/EventDispatcher"], function (require, exports, EventDispatcher_2) {
+define("engine/editor/models/AbstractModel", ["require", "exports", "engine/libs/patterns/messaging/events/EventDispatcher"], function (require, exports, EventDispatcher_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AbstractModel = exports.ModelModifiedEvent = void 0;
@@ -14837,7 +14928,7 @@ define("engine/editor/models/AbstractModel", ["require", "exports", "engine/libs
         }
     }
     exports.ModelModifiedEvent = ModelModifiedEvent;
-    class AbstractModel extends EventDispatcher_2.EventDispatcher {
+    class AbstractModel extends EventDispatcher_3.EventDispatcher {
         constructor(data) {
             super();
             this._data = data;
@@ -14895,50 +14986,6 @@ define("engine/editor/models/AbstractModel", ["require", "exports", "engine/libs
     }
     exports.AbstractModel = AbstractModel;
 });
-define("engine/editor/models/ListModel", ["require", "exports", "engine/libs/patterns/messaging/events/EventDispatcher"], function (require, exports, EventDispatcher_3) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    class BaseItemModel extends EventDispatcher_3.EventDispatcher {
-        constructor(data) {
-            super();
-            this._data = data;
-        }
-        setProperties(data) {
-            let keys = Object.keys(data);
-            keys.forEach((key) => {
-                this._data[key] = data[key];
-            });
-            this.dispatchEvent(new EventDispatcher_3.Event("datachange", { type: "update", model: this, properties: keys }));
-        }
-    }
-    class BaseListModel extends BaseItemModel {
-        constructor(data, items) {
-            super(data);
-            this._items = items;
-        }
-        get items() {
-            return this._items;
-        }
-        getItem(index) {
-            if (index >= 0 && index < this._items.length) {
-                return this._items[index];
-            }
-            return null;
-        }
-        insertItem(index, data) {
-            if (index >= 0 && index < this._items.length) {
-                this._items.splice(index, 0, data);
-                this.dispatchEvent(new EventDispatcher_3.Event("datachange", { type: "insert", model: this, index: index }));
-            }
-        }
-        removeItem(index) {
-            if (index >= 0 && index < this._items.length) {
-                this._items.splice(index, 1);
-                this.dispatchEvent(new EventDispatcher_3.Event("datachange", { type: "remove", model: this, index: index }));
-            }
-        }
-    }
-});
 // can be retrieved by row and column
 define("engine/editor/models/TreeModel", ["require", "exports", "engine/editor/models/AbstractModel"], function (require, exports, AbstractModel_1) {
     "use strict";
@@ -14981,7 +15028,7 @@ define("engine/editor/models/TreeModel", ["require", "exports", "engine/editor/m
     }
     exports.TreeModel = TreeModel;
 });
-define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_16) {
+define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_17) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StructuredFormData = void 0;
@@ -14996,7 +15043,7 @@ define("engine/editor/objects/StructuredFormData", ["require", "exports", "engin
             keys.forEach((key) => {
                 let value = formData.get(key);
                 if (value) {
-                    Snippets_16.setPropertyFromPath(structuredData, key, JSON.parse(value.toString()));
+                    Snippets_17.setPropertyFromPath(structuredData, key, JSON.parse(value.toString()));
                 }
             });
             return structuredData;
@@ -15004,18 +15051,18 @@ define("engine/editor/objects/StructuredFormData", ["require", "exports", "engin
     }
     exports.StructuredFormData = StructuredFormData;
 });
-define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_37) {
+define("engine/editor/templates/other/DraggableInputTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_36) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLDraggableInputTemplate = void 0;
     const HTMLDraggableInputTemplate = (desc) => {
-        return HTMLElement_37.HTMLElementConstructor("e-draggable", {
+        return HTMLElement_36.HTMLElementConstructor("e-draggable", {
             props: {
                 id: desc.id,
                 className: desc.className
             },
             children: [
-                HTMLElement_37.HTMLElementConstructor("input", {
+                HTMLElement_36.HTMLElementConstructor("input", {
                     props: {
                         name: desc.name,
                         hidden: true
@@ -15029,20 +15076,20 @@ define("engine/editor/templates/other/DraggableInputTemplate", ["require", "expo
     };
     exports.HTMLDraggableInputTemplate = HTMLDraggableInputTemplate;
 });
-define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_38) {
+define("engine/editor/templates/table/TableTemplate", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_37) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTMLTableTemplate = void 0;
     const HTMLTableTemplate = (desc) => {
-        const thead = HTMLElement_38.HTMLElementConstructor("thead", {
+        const thead = HTMLElement_37.HTMLElementConstructor("thead", {
             children: [
-                HTMLElement_38.HTMLElementConstructor("tr", {
+                HTMLElement_37.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
                     },
                     children: desc.headerCells.map((cell) => {
-                        return HTMLElement_38.HTMLElementConstructor("th", {
+                        return HTMLElement_37.HTMLElementConstructor("th", {
                             props: {
                                 scope: "col"
                             },
@@ -15054,9 +15101,9 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 })
             ]
         });
-        const tbody = HTMLElement_38.HTMLElementConstructor("tbody", {
+        const tbody = HTMLElement_37.HTMLElementConstructor("tbody", {
             children: desc.bodyCells.map((row) => {
-                return HTMLElement_38.HTMLElementConstructor("tr", {
+                return HTMLElement_37.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
@@ -15066,13 +15113,13 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             switch (cell.type) {
                                 case "data":
                                 default:
-                                    return HTMLElement_38.HTMLElementConstructor("td", {
+                                    return HTMLElement_37.HTMLElementConstructor("td", {
                                         children: [
                                             cell.content
                                         ]
                                     });
                                 case "header":
-                                    return HTMLElement_38.HTMLElementConstructor("th", {
+                                    return HTMLElement_37.HTMLElementConstructor("th", {
                                         props: {
                                             scope: "row"
                                         },
@@ -15083,7 +15130,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             }
                         }
                         else {
-                            return HTMLElement_38.HTMLElementConstructor("td", {
+                            return HTMLElement_37.HTMLElementConstructor("td", {
                                 children: [
                                     cell
                                 ]
@@ -15093,9 +15140,9 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 });
             })
         });
-        const tfoot = HTMLElement_38.HTMLElementConstructor("tfoot", {
+        const tfoot = HTMLElement_37.HTMLElementConstructor("tfoot", {
             children: [
-                HTMLElement_38.HTMLElementConstructor("tr", {
+                HTMLElement_37.HTMLElementConstructor("tr", {
                     props: {
                         id: desc.id,
                         className: desc.className,
@@ -15105,13 +15152,13 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             switch (cell.type) {
                                 case "data":
                                 default:
-                                    return HTMLElement_38.HTMLElementConstructor("td", {
+                                    return HTMLElement_37.HTMLElementConstructor("td", {
                                         children: [
                                             cell.content
                                         ]
                                     });
                                 case "header":
-                                    return HTMLElement_38.HTMLElementConstructor("th", {
+                                    return HTMLElement_37.HTMLElementConstructor("th", {
                                         props: {
                                             scope: "row"
                                         },
@@ -15122,7 +15169,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                             }
                         }
                         else {
-                            return HTMLElement_38.HTMLElementConstructor("td", {
+                            return HTMLElement_37.HTMLElementConstructor("td", {
                                 children: [
                                     cell
                                 ]
@@ -15132,7 +15179,7 @@ define("engine/editor/templates/table/TableTemplate", ["require", "exports", "en
                 })
             ]
         });
-        const table = HTMLElement_38.HTMLElementConstructor("table", {
+        const table = HTMLElement_37.HTMLElementConstructor("table", {
             props: {
                 id: desc.id,
                 className: desc.className,
@@ -15175,7 +15222,7 @@ class FieldsetView extends HTMLElement {
         }
     }
 }
-define("engine/editor/views/MenuBarView", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_39) {
+define("engine/editor/views/MenuBarView", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_38) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     ;
@@ -15189,7 +15236,7 @@ define("engine/editor/views/MenuBarView", ["require", "exports", "engine/editor/
             // parent.items.length
             constructor() {
                 super();
-                HTMLElement_39.bindShadowRoot(this, /*template*/ `<e-menubar></e-menubar>`);
+                HTMLElement_38.bindShadowRoot(this, /*template*/ `<e-menubar></e-menubar>`);
                 this._model = null;
                 this._element = this.shadowRoot.querySelector("e-menubar");
             }
@@ -15235,7 +15282,7 @@ define("engine/editor/views/MenuBarView", ["require", "exports", "engine/editor/
             }
         };
         HTMLMenuBarView = __decorate([
-            HTMLElement_39.RegisterCustomHTMLElement({
+            HTMLElement_38.RegisterCustomHTMLElement({
                 name: "v-menubar"
             })
         ], HTMLMenuBarView);
@@ -16329,7 +16376,7 @@ if (!Object.entries) {
         return resArray;
     };
 }
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_4, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_7, Vector2_3, Vector3_11, Snippets_17, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_1, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_40, Loader_1) {
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_4, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_7, Vector2_3, Vector3_11, Snippets_18, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_1, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_39, Loader_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.launchScene = exports.start = void 0;
@@ -16519,7 +16566,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
   </div>`;
     async function start() {
         document.addEventListener("contextmenu", (event) => {
-            let menu = HTMLElement_40.HTMLElementConstructor("e-menu", { children: [HTMLElement_40.HTMLElementConstructor("e-menuitem", { attr: { label: "Say my name!" } })] });
+            let menu = HTMLElement_39.HTMLElementConstructor("e-menu", { children: [HTMLElement_39.HTMLElementConstructor("e-menuitem", { attr: { label: "Say my name!" } })] });
             menu.style.position = "absolute";
             menu.style.top = `${event.clientY}px`;
             menu.style.left = `${event.clientX}px`;
@@ -16943,7 +16990,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                     //console.log(`cameraToTarget ${cameraToTarget.x.toFixed(4)} ${cameraToTarget.y.toFixed(4)} ${cameraToTarget.z.toFixed(4)}`);
                     let theta = Math.acos(cameraToTarget.z / radius);
                     let phi = Math.atan2(cameraToTarget.y, cameraToTarget.x);
-                    theta = Snippets_17.clamp(theta - deltaTheta, 0, Math.PI);
+                    theta = Snippets_18.clamp(theta - deltaTheta, 0, Math.PI);
                     phi -= deltaPhi;
                     //console.log(`theta ${theta.toFixed(4)} phi ${phi.toFixed(4)}`);
                     // Turn back into Cartesian coordinates
