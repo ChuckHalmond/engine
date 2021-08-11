@@ -6,9 +6,9 @@ export { GenerateAttributeAccessors };
 export { createTemplate };
 export { bindShadowRoot };
 export { HTMLElementDescription };
+export { setHTMLElementProperties };
+export { setHTMLElementAttributes };
 export { HTMLElementConstructor };
-export { setElementAttributes };
-export { setElementProperties };
 export { AttributeMutationMixin };
 export { AttributeType };
 export { areAttributesMatching };
@@ -274,89 +274,39 @@ function bindShadowRoot(element: HTMLElement, templateContent?: string): ShadowR
     return root;
 }
 
-function setElementProperties<E extends Element>(
-    element: E,
-    props: Partial<Pick<E, keyof E>>
-): E {
-
-    const elementProps = element as {[prop: string]: any};
-    for (const prop in props) {
-        if (typeof elementProps[prop] === typeof props[prop] || typeof elementProps[prop] === "undefined" || elementProps[prop] === null) {
-            elementProps[prop] = props[prop];
-        }
-    }
-
-    return element;
-}
-
-function setElementAttributes<E extends Element>(
-    element: E,
-    attr: {
-        [name: string]: number | string | boolean | undefined;
-    },
-): E {
-
-    const keys = Object.keys(attr);
-    keys.forEach((key) => {
-        const val = attr[key];
-        if (val) {
-            element.setAttribute(key, val.toString());
-        }
-    });
-
-    return element;
-}
-
-type HTMLElementDescription<K extends string = any> = (K extends keyof HTMLElementTagNameMap ? {
+type HTMLElementDescription<K extends keyof HTMLElementTagNameMap> = {
     tagName: K,
     desc?: {
         options?: ElementCreationOptions,
         props?: Partial<Pick<HTMLElementTagNameMap[K], keyof HTMLElementTagNameMap[K]>>,
-        attr?: {[attrName: string]: number | string | boolean | undefined},
+        attr?: {[attrName: string]: number | string | boolean},
         children?: (HTMLElementDescription<keyof HTMLElementTagNameMap> | Node | string)[]
     }
-} : {
-    tagName: string,
-    desc?: {
-        options?: ElementCreationOptions,
-        props?: Partial<Pick<HTMLElement, keyof HTMLElement>>,
-        attr?: {[attrName: string]: number | string | boolean | undefined},
-        children?: (HTMLElementDescription<keyof HTMLElementTagNameMap> | Node | string)[]
-    }
-});
+};
+
+type _IfEquals<X, Y, A = X, B = never> =
+  (<T>() => T extends X ? 1 : 2) extends
+  (<T>() => T extends Y ? 1 : 2) ? A : B;
+
+type WritableKeys<T> = {
+    [P in keyof T]-?: _IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, P>
+}[keyof T];
 
 function HTMLElementConstructor<K extends keyof HTMLElementTagNameMap>(
     tagName: K,
     desc?: {
         options?: ElementCreationOptions,
-        props?: Partial<Pick<HTMLElementTagNameMap[K], keyof HTMLElementTagNameMap[K]>>,
-        attr?: {[attrName: string]: number | string | boolean | undefined},
-        children?: (HTMLElementDescription | Node | string)[]
-    }): HTMLElementTagNameMap[K];
-function HTMLElementConstructor<T extends HTMLElement>(
-    tagName: string,
-    desc?: {
-        options?: ElementCreationOptions,
-        props?: Partial<Pick<T, keyof T>>,
-        attr?: {[attrName: string]: number | string | boolean | undefined},
-        children?: (HTMLElementDescription | Node | string)[]
-    }): T;
-function HTMLElementConstructor(
-    tagName: string,
-    desc?: {
-        options?: ElementCreationOptions,
-        props?: Partial<Pick<HTMLElement, keyof HTMLElement>>,
-        attr?: {[attrName: string]: number | string | boolean | undefined},
-        children?: (HTMLElementDescription | Node | string)[]
-    }): HTMLElement {
-    
+        props?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
+        attr?: {[attrName: string]: number | string | boolean},
+        children?: (HTMLElementDescription<any> | Node | string)[]
+    }): HTMLElementTagNameMap[K] {
     const element = document.createElement(tagName, desc?.options);
     if (desc) {
         if (desc.props) {
-            setElementProperties(element, desc.props);
+            setHTMLElementProperties(element, desc.props);
         }
         if (desc.attr) {
-            setElementAttributes(element, desc.attr);
+            setHTMLElementAttributes(element, desc.attr);
         }
         if (desc.children && Array.isArray(desc.children)) {
             desc.children.forEach((child) => {
@@ -377,6 +327,34 @@ function HTMLElementConstructor(
                     }
                 }
             })
+        }
+    }
+    return element;
+};
+
+function setHTMLElementProperties<K extends keyof HTMLElementTagNameMap>(
+        element: HTMLElementTagNameMap[K],
+        props?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>
+    ): HTMLElementTagNameMap[K] {
+    for (const prop in props) {
+        element[prop] = props[prop]!;
+    }
+    return element;
+};
+
+function setHTMLElementAttributes<K extends keyof HTMLElementTagNameMap>(
+        element: HTMLElementTagNameMap[K],
+        attr?: {[attrName: string]: number | string | boolean}
+    ): HTMLElementTagNameMap[K] {
+    for (const key in attr) {
+        const val = attr[key];
+        if (typeof val === "boolean") {
+            if (val) {
+                element.setAttribute(key, "");
+            }
+        }
+        else {
+            element.setAttribute(key, val.toString());
         }
     }
     return element;

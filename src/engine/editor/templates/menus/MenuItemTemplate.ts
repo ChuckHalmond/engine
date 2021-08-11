@@ -1,5 +1,5 @@
 import { HotKey, Key, KeyModifier } from "engine/core/input/Input";
-import { HTMLElementConstructor, setElementAttributes } from "engine/editor/elements/HTMLElement";
+import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { HTMLEMenuTemplate, HTMLEMenuTemplateDescription } from "./MenuTemplate";
 
@@ -31,15 +31,9 @@ const HTMLEMenuItemTemplate: HTMLEMenuItemTemplate = (desc: HTMLEMenuItemTemplat
     let slotted: (Node | string)[] = [];
 
     if (desc.menu) {
-        slotted.push(
-            setElementAttributes(
-                HTMLEMenuTemplate(
-                    desc.menu
-                ), {
-                    slot: "menu"
-                }
-            )
-        );
+        let menu = HTMLEMenuTemplate(desc.menu);
+        menu.slot = "menu";
+        slotted.push(menu);
     }
 
     const menuItem = HTMLElementConstructor(

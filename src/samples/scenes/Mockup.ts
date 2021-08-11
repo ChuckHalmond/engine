@@ -18,6 +18,7 @@ import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 
 import { HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { StructuredFormData } from "engine/editor/elements/forms/StructuredFormData";
+import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
 
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
@@ -268,6 +269,17 @@ export async function mockup() {
     const extractButton = document.querySelector<HTMLButtonElement>("button#extract-button");
     const transformButton = document.querySelector<HTMLButtonElement>("button#transform-button");
     const exportButton = document.querySelector<HTMLButtonElement>("button#export-button");
+
+    let kik = HTMLElementConstructor("span", {props: {textContent: "kik"}});
+    let kek = HTMLElementConstructor("span", {props: {textContent: "kek"}});
+    let comment = document.createComment("Hey");
+    let frag1 = document.createDocumentFragment();
+    let frag2 = document.createDocumentFragment();
+    frag1.appendChild(comment);
+    frag1.appendChild(kik);
+    frag2.appendChild(kek);
+    frag1.appendChild(frag2);
+    document.body.appendChild(frag1);
 
     /*if (extractForm) {
         const jsonData = new JSONFormData(extractForm);

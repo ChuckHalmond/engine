@@ -40,6 +40,7 @@ interface ItemModel<Data extends object> extends EventDispatcher {
 
 class BaseItemModel<Data extends object> extends EventDispatcher {
     private _data: Data;
+    private _parent: ListModel;
 
     constructor(data: Data) {
         super();
@@ -51,13 +52,12 @@ class BaseItemModel<Data extends object> extends EventDispatcher {
         keys.forEach((key) => {
             this._data[key] = data[key]!;
         });
-        this.dispatchEvent(new Event("datachange", {model: this, properties: keys}));
+        this.dispatchEvent(new Event("datachange", {type: "update", model: this, properties: keys}));
     }
 }
 
 interface ListModel<Item extends object = object, Data extends object = object> extends ItemModel<Data> {
     readonly items: ReadonlyArray<Item>;
-    updateItem(index: number, data: Partial<ItemModelData<Item>>): void;
     insertItem(index: number, item: Item): void;
     removeItem(index: number): void;
 }
@@ -79,20 +79,6 @@ class BaseListModel<Item extends object, Data extends object> extends BaseItemMo
             return this._items[index];
         }
         return null;
-    }
-
-    public itemsCount(): number {
-        return this._items.length;
-    }
-
-    public updateItem(index: number, data: Partial<Item>): void {
-        if (index >= 0 && index < this._items.length) {
-            let item = this._items[index];
-            for (let prop in data) {
-                item[prop] = data[prop]!;
-            }
-            this.dispatchEvent(new Event("datachange", {type: "update", model: this, index: index}));
-        }
     }
 
     public insertItem(index: number, data: Item): void {

@@ -73,10 +73,9 @@ class HTMLMenuBarView extends HTMLElement {
 
     public modelChanged(event: any) {
         switch (event.modification) {
-            case "insert":
+            case "add":
+                this._element.findItem((item) => item.parentMenu!.items.indexOf(item) == 1)
                 //this.getParentNode(event.index)?.insertAdjacentElement("beforebegin", HTMLElementConstructor("e-menuitem"));
-                break;
-            case "update":
                 break;
             case "remove":
                 break;
@@ -103,4 +102,9 @@ class HTMLMenuBarView extends HTMLElement {
             });
         }*/
     }
+}
+
+class PartialView {
+    model: Model;
+    element: Element;
 }
