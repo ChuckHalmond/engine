@@ -18,9 +18,9 @@ import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 
 import { HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { StructuredFormData } from "engine/editor/elements/forms/StructuredFormData";
-import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
+import { HTMLElementConstructor, ReactiveHTMLElement } from "engine/editor/elements/HTMLElement";
 import { TestFunction } from "engine/core/rendering/webgl/WebGLConstants";
-import { BaseListModel, ListModel, ModelDataChangeEvent } from "engine/editor/models/ListModel";
+import { BaseListModel, BaseModel, ListModel, Model, ModelData, ModelDataChangeEvent } from "engine/editor/models/ListModel";
 import { forAllHierarchyNodes } from "engine/editor/elements/Snippets";
 
 const body = /*template*/`
@@ -420,8 +420,8 @@ export async function mockup() {
         name: "df"
     };
 
-    interface ForEachDirective {
-        <I extends object>(model: ListModel<I>, callback: (item: I) => void): void;
+    interface ReactiveDirective {
+        <M extends Model<object>>(model: ListModel<M> | Model<M>, callback: (data: Partial<ModelData<M>>) => void): void;
     }
 
     interface DirectiveLocation {
@@ -433,11 +433,11 @@ export async function mockup() {
         public abstract execute(location: DirectiveLocation): any;
     }
 
-    class _ForEachDirective<I extends object> extends Directive {
-        model: ListModel<I>;
-        callback: (item: I) => void;
+    class BaseReactiveDirective<M extends Model<object>> extends Directive {
+        model: ListModel<M>;
+        callback: (item: M) => void;
 
-        constructor(model: ListModel<I>, callback: (item: I) => void) {
+        constructor(model: ListModel<M>, callback: (item: M) => void) {
             super();
             this.model = model;
             this.callback = callback;
@@ -446,13 +446,14 @@ export async function mockup() {
         public execute(location: DirectiveLocation): void {
             this.model.addEventListener("datachange", (event: ModelDataChangeEvent) => {
                 switch (event.data.type) {
-                    
+                    case "insert":
+                        this.callback(this.model.items[])
                 }
             });
         }
     }
 
-    function template(parts: TemplateStringsArray, ...expr: any[]): any {
+    function view(parts: TemplateStringsArray, ...expr: any[]): any {
         const parser = new DOMParser();
         const html = parser.parseFromString(parts.join("<!--0-->"), "text/html");
         forAllHierarchyNodes(html.body, (child, parent) => {
@@ -470,18 +471,35 @@ export async function mockup() {
         return 1;
     }
 
-    const forEach: ForEachDirective = function<I extends object>(model: ListModel<I>, callback: (item: I) => void) {
-        return new _ForEachDirective(model, callback);
+    const reactive = function<M extends Model<object>>(model: ListModel<M> | Model<M>, callback: (data: Partial<ModelData<M>>) => void) {
+        /*return new _ForEachDirective(model, callback);*/
     }
 
-    const for: ForDirective = function<I extends object>(model: Model<I>, callback: (item: I) => void) {
+    /*const for: ForDirective = function<I extends object>(model: Model<I>, callback: (item: I) => void) {
         return new _ForDirective(model, callback);
+    }*/
+
+    class MyItemModel extends BaseModel<{lol: number}> {
+        constructor(lol: number) {
+            super({lol});
+        }
     }
 
-    const items = new BaseListModel({}, [{lol: 1}])
-    template`<div> ${forEach(items, () => {})} </div>`;
-    let div = document.createElement("div");
-
+    const items = new BaseListModel<MyItemModel>([new MyItemModel(1)])
+    view/*html*/`<div>
+    ${reactive(items, (props: Partial<ModelData<MyItemModel>>) => ReactiveHTMLElement(
+        "div", {
+            properties: {
+                textContent: (typeof props.lol !== "undefined") ? props.lol.toString(): void 0
+            }
+        }, {
+            listeners: {
+                click: [(event: MouseEvent) => {
+                    alert();
+                }]
+            }
+        }))} </div>`;
+    
     const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#columns");
     if (dropzone) {
         dropzone.addEventListener("datachange", () => {

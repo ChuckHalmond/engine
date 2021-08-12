@@ -10,12 +10,23 @@ export { ModelData };
 interface ModelDataChangeEvent {
     type: "datachange";
     data: {
-        type: string;
+        type: "properties";
+    };
+}
+
+interface ListModelDataChangeEvent {
+    type: "datachange";
+    data: {
+        type: "insert" | "remove";
     };
 }
 
 interface ModelEvents {
     "datachange": ModelDataChangeEvent;
+}
+
+interface ListModelEvents {
+    "datachange": ListModelDataChangeEvent;
 }
 
 type ModelData<I> = I extends Model<infer Data> ? Data : never;
@@ -40,7 +51,7 @@ class BaseModel<Data extends object> extends EventDispatcher<ModelEvents> {
 
     public setProperty<K extends keyof Data>(key: K, value: Data[K]): void {
         this._data[key] = value;
-        this.dispatchEvent(new Event("datachange", {type: "property", properties: key}));
+        this.dispatchEvent(new Event("datachange", {type: "property", properties: [key]}));
     }
 
     public setProperties(data: Partial<Data>): void {
@@ -52,17 +63,17 @@ class BaseModel<Data extends object> extends EventDispatcher<ModelEvents> {
     }
 }
 
-interface ListModel<Item extends object = object, Data extends object = object> extends Model<Data> {
+interface ListModel<Item extends Model<object>> extends EventDispatcher<ListModelEvents> {
     readonly items: ReadonlyArray<Item>;
     insertItem(index: number, item: Item): void;
     removeItem(index: number): void;
 }
 
-class BaseListModel<Item extends object, Data extends object> extends BaseModel<Data> {
+class BaseListModel<Item extends Model<object>> extends EventDispatcher<ListModelEvents> {
     private _items: Item[];
 
-    constructor(data: Data, items: Item[]) {
-        super(data);
+    constructor(items: Item[]) {
+        super();
         this._items = items;
     }
 
@@ -70,17 +81,17 @@ class BaseListModel<Item extends object, Data extends object> extends BaseModel<
         return this._items;
     }
 
-    public insertItem(index: number, data: Item): void {
+    public insertItem(index: number, item: Item): void {
         if (index >= 0 && index < this._items.length) {
-            this._items.splice(index, 0, data);
-            this.dispatchEvent(new Event("datachange", {type: "insert", model: this, index: index}));
+            this._items.splice(index, 0, item);
+            this.dispatchEvent(new Event("datachange", {type: "insert", index: index}));
         }
     }
 
     public removeItem(index: number): void {
         if (index >= 0 && index < this._items.length) {
             this._items.splice(index, 1);
-            this.dispatchEvent(new Event("datachange", {type: "remove", model: this, index: index}));
+            this.dispatchEvent(new Event("datachange", {type: "remove", index: index}));
         }
     }
 }

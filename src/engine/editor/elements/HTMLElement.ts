@@ -9,6 +9,7 @@ export { HTMLElementDescription };
 export { setHTMLElementProperties };
 export { setHTMLElementAttributes };
 export { HTMLElementConstructor };
+export { ReactiveHTMLElement };
 export { AttributeMutationMixin };
 export { AttributeType };
 export { areAttributesMatching };
@@ -276,12 +277,7 @@ function bindShadowRoot(element: HTMLElement, templateContent?: string): ShadowR
 
 type HTMLElementDescription<K extends keyof HTMLElementTagNameMap> = {
     tagName: K,
-    desc?: {
-        options?: ElementCreationOptions,
-        props?: Partial<Pick<HTMLElementTagNameMap[K], keyof HTMLElementTagNameMap[K]>>,
-        attr?: {[attrName: string]: number | string | boolean},
-        children?: (HTMLElementDescription<keyof HTMLElementTagNameMap> | Node | string)[]
-    }
+    init?: HTMLElementInit<K>
 };
 
 type _IfEquals<X, Y, A = X, B = never> =
@@ -292,69 +288,133 @@ type WritableKeys<T> = {
     [P in keyof T]-?: _IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, P>
 }[keyof T];
 
+interface HTMLElementInit<K extends keyof HTMLElementTagNameMap> {
+    options?: ElementCreationOptions,
+    properties?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
+    attributes?: {[name: string]: number | string | boolean},
+    children?: (HTMLElementDescription<any> | Node | string)[],
+    listeners?: {
+        [K in keyof HTMLElementEventMap]?: [listener: (event: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions]
+    }
+}
+
+interface HTMLElementReact<K extends keyof HTMLElementTagNameMap> {
+    properties?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
+    attributes?: {[name: string]: number | string | boolean},
+}
+
 function HTMLElementConstructor<K extends keyof HTMLElementTagNameMap>(
-    tagName: K,
-    desc?: {
-        options?: ElementCreationOptions,
-        props?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
-        attr?: {[attrName: string]: number | string | boolean},
-        children?: (HTMLElementDescription<any> | Node | string)[]
-    }): HTMLElementTagNameMap[K] {
-    const element = document.createElement(tagName, desc?.options);
-    if (desc) {
-        if (desc.props) {
-            setHTMLElementProperties(element, desc.props);
+    tagName: K, init?: HTMLElementInit<K>
+    ): HTMLElementTagNameMap[K] {
+    const element = document.createElement(tagName, init?.options);
+    if (init) {
+        if (init.properties) {
+            setHTMLElementProperties(element, init.properties);
         }
-        if (desc.attr) {
-            setHTMLElementAttributes(element, desc.attr);
+        if (init.attributes) {
+            setHTMLElementAttributes(element, init.attributes);
         }
-        if (desc.children && Array.isArray(desc.children)) {
-            desc.children.forEach((child) => {
-                if (typeof child === "string" || child instanceof Node) {
-                    element.append(child);
-                }
-                else {
-                    if (child.desc) {
-                        element.append(
-                            HTMLElementConstructor(
-                                child.tagName, {
-                                    options: child.desc.options,
-                                    attr: child.desc.attr,
-                                    children: child.desc.children
-                                }
-                            )
-                        );
-                    }
-                }
-            })
+        if (init.children) {
+            setHTMLElementChildren(element, init.children);
+        }
+        if (init.listeners) {
+            setHTMLElementEventListeners(element, init.listeners);
         }
     }
     return element;
 };
 
+function ReactiveHTMLElement<K extends keyof HTMLElementTagNameMap>(
+    tagName: K,
+    react?: HTMLElementReact<K>,
+    init?: HTMLElementInit<K>,
+): (
+        element?: HTMLElementTagNameMap[K]
+    ) => HTMLElementTagNameMap[K] {
+        return (
+            element?: HTMLElementTagNameMap[K]
+        ) => {
+            if (!element) {
+                element = HTMLElementConstructor(tagName, init);
+            }
+            else {
+                if (react) {
+                    if (react.properties) {
+                        setHTMLElementProperties(element, react.properties);
+                    }
+                    if (react.attributes) {
+                        setHTMLElementAttributes(element, react.attributes);
+                    }
+                }
+            }
+            return element;
+        }
+};
+
+function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
+    element: HTMLElementTagNameMap[K],
+    listeners: {
+        [K in keyof HTMLElementEventMap]?: [listener: (event: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions]
+    }
+): HTMLElementTagNameMap[K] {
+    Object.entries(listeners).forEach((entry) => {
+        element.addEventListener(entry[0], entry[1][0] as EventListener, entry[1][1]);
+    });
+    return element;
+};
+
+function setHTMLElementChildren<K extends keyof HTMLElementTagNameMap>(
+    element: HTMLElementTagNameMap[K],
+    children: (HTMLElementDescription<any> | Node | string)[],
+): HTMLElementTagNameMap[K] {
+    element.innerHTML = "";
+    children.forEach((child) => {
+        if (typeof child === "string" || child instanceof Node) {
+            element.append(child);
+        }
+        else {
+            if (child.init) {
+                element.append(
+                    HTMLElementConstructor(
+                        child.tagName, {
+                            options: child.init.options,
+                            attributes: child.init.attributes,
+                            children: child.init.children
+                        }
+                    )
+                );
+            }
+        }
+    });
+    return element;
+};
+
 function setHTMLElementProperties<K extends keyof HTMLElementTagNameMap>(
         element: HTMLElementTagNameMap[K],
-        props?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>
+        properties?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>
     ): HTMLElementTagNameMap[K] {
-    for (const prop in props) {
-        element[prop] = props[prop]!;
+    for (const property in properties) {
+        let value = properties[property];
+        if (typeof value !== "undefined") {
+            element[property] = value!;
+        }
     }
     return element;
 };
 
 function setHTMLElementAttributes<K extends keyof HTMLElementTagNameMap>(
         element: HTMLElementTagNameMap[K],
-        attr?: {[attrName: string]: number | string | boolean}
+        attributes?: {[attrName: string]: number | string | boolean}
     ): HTMLElementTagNameMap[K] {
-    for (const key in attr) {
-        const val = attr[key];
-        if (typeof val === "boolean") {
-            if (val) {
+    for (const key in attributes) {
+        const value = attributes[key];
+        if (typeof value === "boolean") {
+            if (value) {
                 element.setAttribute(key, "");
             }
         }
         else {
-            element.setAttribute(key, val.toString());
+            element.setAttribute(key, value.toString());
         }
     }
     return element;
