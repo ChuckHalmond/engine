@@ -4332,7 +4332,7 @@ define("engine/editor/models/ListModel", ["require", "exports", "engine/libs/pat
     }
     exports.BaseListModel = BaseListModel;
 });
-define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/models/ListModel", "engine/editor/elements/Snippets", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, HTMLElement_22, ListModel_1, Snippets_7) {
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/HTMLElement", "engine/editor/models/ListModel", "engine/editor/elements/lib/containers/duplicable/Duplicable", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, HTMLElement_22, ListModel_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.mockup = void 0;
@@ -4437,7 +4437,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
                         <e-breadcrumbitem>Item 1</e-breadcrumbitem>
                     </e-breadcrumbtrail>-->
                     <form id="extract-form">
-                    <fieldset>
+                    <!--<fieldset>
                         <details open>
                             <summary>Statement
                                 <select class="doc-select" name="signature" data-class="toggler-select">
@@ -4451,7 +4451,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
                                 <input type="number" name="userid" required ondrop="event.preventDefault()/">
                                 <label for="user">Statement [0]</label>
                                 <input type="number" name="userid" required ondrop="event.preventDefault()/">
-                            </fieldset>
+                            </fieldset>-->
                             <fieldset name="loop" class="grid-fieldset margin-top" hidden>
                                 <label for="filepath">Filepath</label>
                                 <input name="filepath" type="file"/>
@@ -4461,10 +4461,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
                             <fieldset>
                                 <details open>
                                     <summary>
-                                        <select class="doc-select" name="signature" data-class="toggler-select">
-                                            <option value="extractor" selected>Extractor</option>
-                                            <option value="statement">Statement</option>
-                                        </select>
+                                        Extractor 
                                         <select class="doc-select" name="signature" data-class="toggler-select">
                                             <option value="netezza" selected>Netezza</option>
                                             <option value="csv">CSV</option>
@@ -4493,8 +4490,8 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
                                 last execution status: none<br/>
                                 <button id="extract-button" type="button">Extract</button>
                             </fieldset>
-                        </details>
-                    </fieldset>
+                        <!--</details>
+                    </fieldset>-->
                 </form>
                 </e-tabpanel>
                 <e-tabpanel id="transform-panel">
@@ -4696,11 +4693,12 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
         };
         class Directive {
         }
-        class BaseReactiveDirective extends Directive {
-            constructor(model, callback) {
+        class ReactiveListDirective extends Directive {
+            constructor(model, init, react) {
                 super();
                 this.model = model;
-                this.callback = callback;
+                this.init = init;
+                this.react = react;
             }
             execute(location) {
                 this.model.addEventListener("datachange", (event) => {
@@ -4709,11 +4707,23 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
                 });
             }
         }
-        function view(parts, ...expr) {
+        console.log(ReactiveListDirective.constructor.name);
+        function view(parts, ...slots) {
             const parser = new DOMParser();
-            const html = parser.parseFromString(parts.join("<!--0-->"), "text/html");
-            Snippets_7.forAllHierarchyNodes(html.body, (child, parent) => {
-                if (child.nodeType === Node.COMMENT_NODE && child.nodeValue) {
+            let src = parts.flatMap((part, index) => {
+                if (index < expressions.length) {
+                    if (expressions[index] instanceof Directive) {
+                        return [part, expressions[index].constructor.name];
+                    }
+                }
+                else {
+                    return part;
+                }
+            });
+            console.log(src);
+            /*const dom = parser.parseFromString(parts.join("\"\""), "text/html");
+            forAllHierarchyNodes(html.body, (child, parent) => {
+                if (child.nodeType === Node.COMMENT_NODE && child.nodeValue == "") {
                     let index = parseInt(child.nodeValue);
                     if (expr[index] instanceof Directive) {
                         console.log("previous");
@@ -4724,10 +4734,27 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
                 }
             });
             console.log(html.body.innerHTML);
-            return 1;
+            return 1;*/
         }
-        const reactiveList = function (model, init, react) {
-            /*return new _ForEachDirective(model, callback);*/
+        /*function bindReactiveShadowRoot(element: HTMLElement, reactiveTemplateResults: ReactiveTemplateResult) {
+            reactiveTemplateResults.parts.forEach((part) => {
+                if (part instanceof Directive) {
+                    forAllHierarchyNodes(html.body, (child, parent) => {
+                        if (child.nodeType === Node.COMMENT_NODE && child.nodeValue == "") {
+                            let index = parseInt(child.nodeValue);
+                            if (expr[index] instanceof Directive) {
+                                console.log("previous");
+                                console.log(child.previousSibling);
+                                console.log("parent");
+                                console.log(parent);
+                            }
+                        }
+                    });
+                }
+            });
+        }*/
+        const reactiveList = function (model, init) {
+            return new ReactiveListDirective(model, init.init, init.react);
         };
         /*const for: ForDirective = function<I extends object>(model: Model<I>, callback: (item: I) => void) {
             return new _ForDirective(model, callback);
@@ -4737,13 +4764,35 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
                 super({ lol });
             }
         }
+        class MyParentModel extends ListModel_1.BaseListModel {
+            constructor(items) {
+                super(items);
+            }
+        }
         const items = new ListModel_1.BaseListModel([new MyItemModel(1)]);
-        let listTemplate = reactiveList(items, (data) => {
-            return HTMLElement_22.HTMLElementConstructor("div", { props: { textContent: data.lol.toString() } });
-        }, (el, data) => {
-            (typeof data.lol !== "undefined") ? el.textContent = data.lol.toString() : void 0;
-        });
-        let myView = view /*html*/ `<div>${listTemplate}</div>`;
+        const parent = new ListModel_1.BaseModel(items);
+        function view(parts, ...expressions) {
+            return expressions[0];
+        }
+        let itemViewModel = {
+            init: (data) => {
+                let buttonSlot = HTMLElement_22.HTMLElementConstructor(/*html*/ "button", { props: { textContent: data.lol.toString() } });
+                // partial template
+                return partialview /*html*/ `<div>${slot("button", buttonSlot)}</div>`;
+            },
+            react: (slots, data) => {
+                (typeof data.lol !== "undefined") ? slots.get("button").textContent = data.lol.toString() : void 0;
+            }
+        };
+        let parentViewModel = {
+            init: (data) => {
+                return partialview /*html*/ `<div>${list(items, itemViewModel)}</div>`;
+            },
+            react: (slots, data) => {
+                (typeof data.lol !== "undefined") ? slots.get("button").textContent = data.lol.toString() : void 0;
+            }
+        };
+        let myView = view /*html*/ `<div>${item(parent, parentViewModel)}</div>`;
         console.log(myView);
         const dropzone = document.querySelector("e-dropzone#columns");
         if (dropzone) {
@@ -7772,7 +7821,7 @@ define("engine/libs/patterns/pools/StackPool", ["require", "exports", "engine/li
     const StackPool = StackPoolBase;
     exports.StackPool = StackPool;
 });
-define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_8, StackPool_1, MathError_6) {
+define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports", "engine/libs/patterns/injectors/Injector", "engine/libs/maths/Snippets", "engine/libs/patterns/pools/StackPool", "engine/libs/maths/MathError"], function (require, exports, Injector_6, Snippets_7, StackPool_1, MathError_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuaternionPool = exports.QuaternionBase = exports.QuaternionInjector = exports.Quaternion = void 0;
@@ -7887,7 +7936,7 @@ define("engine/libs/maths/algebra/quaternions/Quaternion", ["require", "exports"
             if (den < Number.EPSILON) {
                 return out.setZeros();
             }
-            const scale = Snippets_8.qSqrt(den);
+            const scale = Snippets_7.qSqrt(den);
             out.setValues([this._x * scale, this._y * scale, this._z * scale]);
             return out;
         }
@@ -10196,7 +10245,7 @@ define("engine/libs/maths/geometry/primitives/Triangle", ["require", "exports", 
     const TrianglePool = new StackPool_3.StackPool(TriangleBase);
     exports.TrianglePool = TrianglePool;
 });
-define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_9) {
+define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports", "engine/libs/maths/geometry/primitives/Triangle", "engine/libs/maths/Snippets"], function (require, exports, Triangle_1, Snippets_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TriangleListBase = exports.TriangleList = void 0;
@@ -10246,8 +10295,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             return indexOf;
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
-            const idxTo = Snippets_9.clamp(options.idxTo, 0, this.count);
-            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, this.count);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -10265,8 +10314,8 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
             tri.point3.readFromArray(this._array, indices[2]);
         }
         forIndexedPoints(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_9.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_8.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_8.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempTri = Triangle_1.TrianglePool.acquire();
             {
@@ -10289,7 +10338,7 @@ define("engine/libs/maths/extensions/lists/TriangleList", ["require", "exports",
     const TriangleList = TriangleListBase;
     exports.TriangleList = TriangleList;
 });
-define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_10) {
+define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector3Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector3Pools_3, Snippets_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector3ListBase = exports.Vector3List = void 0;
@@ -10309,8 +10358,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_10.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_10.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -10323,8 +10372,8 @@ define("engine/libs/maths/extensions/lists/Vector3List", ["require", "exports", 
             Vector3Pools_3.Vector3Pool.release(1);
         }
         forEachFromIndices(func, indices, options = { idxTo: indices.length / 3, idxFrom: 0 }) {
-            const idxTo = Snippets_10.clamp(options.idxTo, 0, indices.length / 3);
-            const idxFrom = Snippets_10.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_9.clamp(options.idxTo, 0, indices.length / 3);
+            const idxFrom = Snippets_9.clamp(options.idxFrom, 0, idxTo);
             let idxBuf = idxFrom * 3;
             const tempVec = Vector3Pools_3.Vector3Pool.acquire();
             {
@@ -10486,7 +10535,7 @@ define("engine/libs/maths/extensions/pools/Vector2Pools", ["require", "exports",
     const Vector2Pool = new StackPool_6.StackPool(Vector2_2.Vector2Base);
     exports.Vector2Pool = Vector2Pool;
 });
-define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_11) {
+define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", "engine/libs/maths/extensions/pools/Vector2Pools", "engine/libs/maths/Snippets"], function (require, exports, Vector2Pools_1, Snippets_10) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Vector2ListBase = exports.Vector2List = void 0;
@@ -10506,8 +10555,8 @@ define("engine/libs/maths/extensions/lists/Vector2List", ["require", "exports", 
         }
         forEach(func, options = { idxTo: this.count, idxFrom: 0 }) {
             const count = this.count;
-            const idxTo = Snippets_11.clamp(options.idxTo, 0, count);
-            const idxFrom = Snippets_11.clamp(options.idxFrom, 0, idxTo);
+            const idxTo = Snippets_10.clamp(options.idxTo, 0, count);
+            const idxFrom = Snippets_10.clamp(options.idxFrom, 0, idxTo);
             let idxObj = idxFrom;
             Vector2Pools_1.Vector2Pool.acquireTemp(1, (vector) => {
                 while (idxObj < count) {
@@ -11563,7 +11612,7 @@ define("engine/core/rendering/scenes/geometries/PhongGeometry", ["require", "exp
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });
-define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_12) {
+define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_1, Snippets_11) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.QuadGeometry = void 0;
@@ -11643,10 +11692,10 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         [0, 1],
         [1, 1]
     ];
-    const quadVertices = Snippets_12.buildArrayFromIndexedArrays(quadVerticesSet, [
+    const quadVertices = Snippets_11.buildArrayFromIndexedArrays(quadVerticesSet, [
         0, 2, 3, 1,
     ]);
-    const quadUVS = Snippets_12.buildArrayFromIndexedArrays(quadUVsSet, [
+    const quadUVS = Snippets_11.buildArrayFromIndexedArrays(quadUVsSet, [
         0, 2, 3, 1,
     ]);
     const quadIndices = [
@@ -11654,7 +11703,7 @@ define("engine/core/rendering/scenes/geometries/lib/QuadGeometry", ["require", "
         0, 2, 3,
     ];
 });
-define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_2, Snippets_13) {
+define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_2, Snippets_12) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SphereGeometry = void 0;
@@ -11734,10 +11783,10 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
         [0, 1],
         [1, 1]
     ];
-    const sphereVertices = Snippets_13.buildArrayFromIndexedArrays(sphereVerticesSet, [
+    const sphereVertices = Snippets_12.buildArrayFromIndexedArrays(sphereVerticesSet, [
         0, 2, 3, 1,
     ]);
-    const sphereUVS = Snippets_13.buildArrayFromIndexedArrays(sphereUVsSet, [
+    const sphereUVS = Snippets_12.buildArrayFromIndexedArrays(sphereUVsSet, [
         0, 2, 3, 1,
     ]);
     const sphereIndices = [
@@ -11745,7 +11794,7 @@ define("engine/core/rendering/scenes/geometries/lib/SphereGeometry", ["require",
         0, 2, 3,
     ];
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_14) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_3, Snippets_13) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CubeGeometry = void 0;
@@ -11842,7 +11891,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [+1, -1, +1],
         [+1, -1, -1],
     ];
-    const cubeVertices = Snippets_14.buildArrayFromIndexedArrays(cubeVerticesSet, [
+    const cubeVertices = Snippets_13.buildArrayFromIndexedArrays(cubeVerticesSet, [
         0, 2, 3, 1,
         0, 4, 5, 2,
         2, 5, 6, 3,
@@ -11856,7 +11905,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", ["
         [0, 1],
         [1, 1],
     ];
-    const cubeUVS = Snippets_14.buildArrayFromIndexedArrays(cubeUVsSet, [
+    const cubeUVS = Snippets_13.buildArrayFromIndexedArrays(cubeUVsSet, [
         0, 1, 3, 2,
         0, 1, 3, 2,
         0, 1, 3, 2,
@@ -11906,7 +11955,7 @@ define("engine/libs/maths/geometry/GeometryConstants", ["require", "exports"], f
     const GOLDEN_RATIO = 1.6180;
     exports.GOLDEN_RATIO = GOLDEN_RATIO;
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_4, GeometryConstants_1, Snippets_15) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/libs/maths/geometry/GeometryConstants", "engine/utils/Snippets"], function (require, exports, geometry_4, GeometryConstants_1, Snippets_14) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IcosahedronGeometry = void 0;
@@ -11973,7 +12022,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const icosahedronVertices = Snippets_15.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
+    const icosahedronVertices = Snippets_14.buildArrayFromIndexedArrays(icosahedronVerticesSet, [
         0, 1, 2,
         0, 2, 3,
         0, 3, 4,
@@ -11995,7 +12044,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         9, 11, 10,
         10, 11, 6,
     ]);
-    const icosahedronUVS = Snippets_15.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
+    const icosahedronUVS = Snippets_14.buildArrayFromIndexedArrays(IcosahedronUVsSet, [
         1, 2, 0,
         1, 2, 0,
         1, 2, 0,
@@ -12040,7 +12089,7 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeomet
         57, 58, 59,
     ];
 });
-define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_16) {
+define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeometry", ["require", "exports", "engine/core/rendering/scenes/geometries/Geometry", "engine/utils/Snippets"], function (require, exports, geometry_5, Snippets_15) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TetrahedronGeometry = void 0;
@@ -12085,13 +12134,13 @@ define("engine/core/rendering/scenes/geometries/lib/polyhedron/TetrahedronGeomet
         [0, 1],
         [1, 1],
     ];
-    const tetrahedronVertices = Snippets_16.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
+    const tetrahedronVertices = Snippets_15.buildArrayFromIndexedArrays(tetrahedronVerticesSet, [
         0, 1, 2,
         1, 0, 3,
         1, 3, 2,
         2, 3, 0,
     ]);
-    const tetrahedronUVS = Snippets_16.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
+    const tetrahedronUVS = Snippets_15.buildArrayFromIndexedArrays(tetrahedronUVsSet, [
         1, 2, 0,
         1, 3, 0,
         2, 3, 0,
@@ -15054,7 +15103,7 @@ define("engine/editor/models/TreeModel", ["require", "exports", "engine/editor/m
     }
     exports.TreeModel = TreeModel;
 });
-define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_17) {
+define("engine/editor/objects/StructuredFormData", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_16) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StructuredFormData = void 0;
@@ -15069,7 +15118,7 @@ define("engine/editor/objects/StructuredFormData", ["require", "exports", "engin
             keys.forEach((key) => {
                 let value = formData.get(key);
                 if (value) {
-                    Snippets_17.setPropertyFromPath(structuredData, key, JSON.parse(value.toString()));
+                    Snippets_16.setPropertyFromPath(structuredData, key, JSON.parse(value.toString()));
                 }
             });
             return structuredData;
@@ -16402,7 +16451,7 @@ if (!Object.entries) {
         return resArray;
     };
 }
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_4, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_7, Vector2_3, Vector3_11, Snippets_18, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_1, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_40, Loader_1) {
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_4, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_7, Vector2_3, Vector3_11, Snippets_17, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_1, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_40, Loader_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.launchScene = exports.start = void 0;
@@ -17016,7 +17065,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                     //console.log(`cameraToTarget ${cameraToTarget.x.toFixed(4)} ${cameraToTarget.y.toFixed(4)} ${cameraToTarget.z.toFixed(4)}`);
                     let theta = Math.acos(cameraToTarget.z / radius);
                     let phi = Math.atan2(cameraToTarget.y, cameraToTarget.x);
-                    theta = Snippets_18.clamp(theta - deltaTheta, 0, Math.PI);
+                    theta = Snippets_17.clamp(theta - deltaTheta, 0, Math.PI);
                     phi -= deltaPhi;
                     //console.log(`theta ${theta.toFixed(4)} phi ${phi.toFixed(4)}`);
                     // Turn back into Cartesian coordinates

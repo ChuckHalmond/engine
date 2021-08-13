@@ -18,7 +18,7 @@ import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 
 import { HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { StructuredFormData } from "engine/editor/elements/forms/StructuredFormData";
-import { HTMLElementConstructor, ReactiveHTMLElement } from "engine/editor/elements/HTMLElement";
+import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
 import { TestFunction } from "engine/core/rendering/webgl/WebGLConstants";
 import { BaseListModel, BaseModel, ListModel, Model, ModelData, ModelDataChangeEvent } from "engine/editor/models/ListModel";
 import { forAllHierarchyNodes } from "engine/editor/elements/Snippets";
@@ -124,7 +124,7 @@ const body = /*template*/`
                         <e-breadcrumbitem>Item 1</e-breadcrumbitem>
                     </e-breadcrumbtrail>-->
                     <form id="extract-form">
-                    <fieldset>
+                    <!--<fieldset>
                         <details open>
                             <summary>Statement
                                 <select class="doc-select" name="signature" data-class="toggler-select">
@@ -138,7 +138,7 @@ const body = /*template*/`
                                 <input type="number" name="userid" required ondrop="event.preventDefault()/">
                                 <label for="user">Statement [0]</label>
                                 <input type="number" name="userid" required ondrop="event.preventDefault()/">
-                            </fieldset>
+                            </fieldset>-->
                             <fieldset name="loop" class="grid-fieldset margin-top" hidden>
                                 <label for="filepath">Filepath</label>
                                 <input name="filepath" type="file"/>
@@ -148,10 +148,7 @@ const body = /*template*/`
                             <fieldset>
                                 <details open>
                                     <summary>
-                                        <select class="doc-select" name="signature" data-class="toggler-select">
-                                            <option value="extractor" selected>Extractor</option>
-                                            <option value="statement">Statement</option>
-                                        </select>
+                                        Extractor 
                                         <select class="doc-select" name="signature" data-class="toggler-select">
                                             <option value="netezza" selected>Netezza</option>
                                             <option value="csv">CSV</option>
@@ -180,8 +177,8 @@ const body = /*template*/`
                                 last execution status: none<br/>
                                 <button id="extract-button" type="button">Extract</button>
                             </fieldset>
-                        </details>
-                    </fieldset>
+                        <!--</details>
+                    </fieldset>-->
                 </form>
                 </e-tabpanel>
                 <e-tabpanel id="transform-panel">
@@ -433,14 +430,16 @@ export async function mockup() {
         public abstract execute(location: DirectiveLocation): any;
     }
 
-    class BaseReactiveDirective<M extends Model<object>> extends Directive {
-        model: ListModel<M>;
-        callback: (item: M) => void;
+    class ReactiveListDirective<M extends Model<object>, N extends Node> extends Directive {
+        model: ListModel<M> | Model<M>;
+        init: (data: ModelData<M>) => N;
+        react: (node: N, data: Partial<ModelData<M>>) => void
 
-        constructor(model: ListModel<M>, callback: (item: M) => void) {
+        constructor(model: ListModel<M> | Model<M>, init: (data: ModelData<M>) => N, react: (node: N, data: Partial<ModelData<M>>) => void) {
             super();
             this.model = model;
-            this.callback = callback;
+            this.init = init;
+            this.react = react;
         }
 
         public execute(location: DirectiveLocation): void {
@@ -452,11 +451,31 @@ export async function mockup() {
         }
     }
 
-    function view(parts: TemplateStringsArray, ...expr: any[]): any {
+    console.log(ReactiveListDirective.constructor.name);
+
+    interface ReactiveTemplateResult {
+        dom: Document;
+        directives: Directive[]
+    }
+
+    function view(parts: TemplateStringsArray, ...slots: any[]): void {
         const parser = new DOMParser();
-        const html = parser.parseFromString(parts.join("<!--0-->"), "text/html");
+        let src = parts.flatMap((part, index) => {
+            if (index < expressions.length) {
+                if (expressions[index] instanceof Directive) {
+                    return [part, expressions[index].constructor.name];
+                }
+            }
+            else {
+                return part;
+            }
+        });
+
+        console.log(src);
+
+        /*const dom = parser.parseFromString(parts.join("\"\""), "text/html");
         forAllHierarchyNodes(html.body, (child, parent) => {
-            if (child.nodeType === Node.COMMENT_NODE && child.nodeValue) {
+            if (child.nodeType === Node.COMMENT_NODE && child.nodeValue == "") {
                 let index = parseInt(child.nodeValue);
                 if (expr[index] instanceof Directive) {
                     console.log("previous");
@@ -467,11 +486,29 @@ export async function mockup() {
             }
         });
         console.log(html.body.innerHTML);
-        return 1;
+        return 1;*/
     }
 
-    const reactiveList = function<M extends Model<object>, N extends Node>(model: ListModel<M> | Model<M>, init: (data: ModelData<M>) => N, react: (node: N, data: Partial<ModelData<M>>) => void) {
-        /*return new _ForEachDirective(model, callback);*/
+    /*function bindReactiveShadowRoot(element: HTMLElement, reactiveTemplateResults: ReactiveTemplateResult) {
+        reactiveTemplateResults.parts.forEach((part) => {
+            if (part instanceof Directive) {
+                forAllHierarchyNodes(html.body, (child, parent) => {
+                    if (child.nodeType === Node.COMMENT_NODE && child.nodeValue == "") {
+                        let index = parseInt(child.nodeValue);
+                        if (expr[index] instanceof Directive) {
+                            console.log("previous");
+                            console.log(child.previousSibling);
+                            console.log("parent");
+                            console.log(parent);
+                        }
+                    }
+                });
+            }
+        });
+    }*/
+
+    const reactiveList = function<M extends Model<object>, N extends Node>(model: ListModel<M>, init: {init: (data: ModelData<M>) => N, react: (node: N, data: Partial<ModelData<M>>) => void}) {
+        return new ReactiveListDirective(model, init.init, init.react);
     }
 
     /*const for: ForDirective = function<I extends object>(model: Model<I>, callback: (item: I) => void) {
@@ -484,18 +521,44 @@ export async function mockup() {
         }
     }
 
-    const items = new BaseListModel<MyItemModel>([new MyItemModel(1)])
+    class MyParentModel extends BaseListModel<MyItemModel> {
+        constructor(items: MyItemModel[]) {
+            super(items);
+        }
+    }
 
-    let listTemplate = reactiveList(
-        items, 
-        (data: ModelData<MyItemModel>) => {
-            return HTMLElementConstructor("div", {props: {textContent: data.lol.toString()}});
+    const items = new BaseListModel<MyItemModel>([new MyItemModel(1)])
+    const parent = new BaseModel<MyParentModel>(items);
+
+    interface ViewSlot {
+
+    }
+
+    function view<T extends any>(parts: TemplateStringsArray, ...expressions: T[]): T {
+        return expressions[0];
+    }
+
+    let itemViewModel = {
+        init: (data: ModelData<MyItemModel>) => {
+            let buttonSlot = HTMLElementConstructor(/*html*/"button", {props: {textContent: data.lol.toString()}});
+            // partial template
+            return partialview/*html*/`<div>${slot("button", buttonSlot)}</div>`;
         },
-        (el: HTMLDivElement, data: Partial<ModelData<MyItemModel>>) => {
-            (typeof data.lol !== "undefined") ? el.textContent = data.lol.toString() : void 0;
-        });
-        
-    let myView = view/*html*/`<div>${listTemplate}</div>`;
+        react: (slots: PartialViewSlots, data: Partial<ModelData<MyItemModel>>) => {
+            (typeof data.lol !== "undefined") ? slots.get("button").textContent = data.lol.toString() : void 0;
+        }
+    };
+
+    let parentViewModel = {
+        init: (data: ModelData<MyParentModel>) => {
+            return partialview/*html*/`<div>${list(items, itemViewModel)}</div>`;
+        },
+        react: (slots: ViewSlots, data: Partial<ModelData<MyItemModel>>) => {
+            (typeof data.lol !== "undefined") ? slots.get("button").textContent = data.lol.toString() : void 0;
+        }
+    };
+    
+    let myView = view/*html*/`<div>${item(parent, parentViewModel)}</div>`;
     
     console.log(myView);
     const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#columns");
