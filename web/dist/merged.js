@@ -107,7 +107,7 @@ define("engine/editor/elements/Snippets", ["require", "exports"], function (requ
 define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/editor/elements/Snippets"], function (require, exports, Snippets_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.createMutationObserverCallback = exports.BaseAttributeMutationMixin = exports.areAttributesMatching = exports.ReactiveHTMLElement = exports.HTMLElementConstructor = exports.setHTMLElementAttributes = exports.setHTMLElementProperties = exports.bindShadowRoot = exports.createTemplate = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = exports.isTagElement = void 0;
+    exports.createMutationObserverCallback = exports.BaseAttributeMutationMixin = exports.areAttributesMatching = exports.HTMLElementConstructor = exports.setHTMLElementAttributes = exports.setHTMLElementProperties = exports.bindShadowRoot = exports.createTemplate = exports.GenerateAttributeAccessors = exports.RegisterCustomHTMLElement = exports.isTagElement = void 0;
     function isTagElement(tagName, obj) {
         return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && obj.tagName.toLowerCase() == tagName;
     }
@@ -209,11 +209,11 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
     function HTMLElementConstructor(tagName, init) {
         const element = document.createElement(tagName, init === null || init === void 0 ? void 0 : init.options);
         if (init) {
-            if (init.properties) {
-                setHTMLElementProperties(element, init.properties);
+            if (init.props) {
+                setHTMLElementProperties(element, init.props);
             }
-            if (init.attributes) {
-                setHTMLElementAttributes(element, init.attributes);
+            if (init.attrs) {
+                setHTMLElementAttributes(element, init.attrs);
             }
             if (init.children) {
                 setHTMLElementChildren(element, init.children);
@@ -226,32 +226,6 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
     }
     exports.HTMLElementConstructor = HTMLElementConstructor;
     ;
-    function ReactiveHTMLElement(tagName, react, init) {
-        return (element) => {
-            if (!element) {
-                element = HTMLElementConstructor(tagName, init);
-            }
-            else {
-                if (react) {
-                    if (react.properties) {
-                        setHTMLElementProperties(element, react.properties);
-                    }
-                    if (react.attributes) {
-                        setHTMLElementAttributes(element, react.attributes);
-                    }
-                    if (react.children) {
-                        setHTMLElementChildren(element, react.children);
-                    }
-                    if (react.listeners) {
-                        setHTMLElementEventListeners(element, react.listeners);
-                    }
-                }
-            }
-            return element;
-        };
-    }
-    exports.ReactiveHTMLElement = ReactiveHTMLElement;
-    ;
     function setHTMLElementEventListeners(element, listeners) {
         Object.entries(listeners).forEach((entry) => {
             element.addEventListener(entry[0], entry[1][0], entry[1][1]);
@@ -261,19 +235,13 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
     ;
     function setHTMLElementChildren(element, children) {
         element.innerHTML = "";
-        children.forEach((child) => {
-            if (typeof child === "string" || child instanceof Node) {
-                element.append(child);
-            }
-            else {
-                if (child.init) {
-                    element.append(HTMLElementConstructor(child.tagName, {
-                        options: child.init.options,
-                        attributes: child.init.attributes,
-                        children: child.init.children
-                    }));
-                }
-            }
+        Object.entries(children).forEach((entry) => {
+            element.append((entry[0] == "text") ? entry[1] :
+                HTMLElementConstructor(entry[0], entry[1] ? {
+                    options: entry[1].options,
+                    attrs: entry[1].attrs,
+                    children: entry[1].children
+                } : void 0));
         });
         return element;
     }
@@ -4737,8 +4705,6 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
             execute(location) {
                 this.model.addEventListener("datachange", (event) => {
                     switch (event.data.type) {
-                        case "insert":
-                            this.callback(this.model.items[]);
                     }
                 });
             }
@@ -4760,7 +4726,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
             console.log(html.body.innerHTML);
             return 1;
         }
-        const reactive = function (model, callback) {
+        const reactiveList = function (model, init, react) {
             /*return new _ForEachDirective(model, callback);*/
         };
         /*const for: ForDirective = function<I extends object>(model: Model<I>, callback: (item: I) => void) {
@@ -4772,17 +4738,13 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/H
             }
         }
         const items = new ListModel_1.BaseListModel([new MyItemModel(1)]);
-        view /*html*/ `<div>
-    ${reactive(items, (props) => HTMLElement_22.ReactiveHTMLElement("div", {
-            properties: {
-                textContent: (typeof props.lol !== "undefined") ? props.lol.toString() : void 0
-            },
-            listeners: {
-                click: [(event) => {
-                        alert();
-                    }]
-            }
-        }))} </div>`;
+        let listTemplate = reactiveList(items, (data) => {
+            return HTMLElement_22.HTMLElementConstructor("div", { props: { textContent: data.lol.toString() } });
+        }, (el, data) => {
+            (typeof data.lol !== "undefined") ? el.textContent = data.lol.toString() : void 0;
+        });
+        let myView = view /*html*/ `<div>${listTemplate}</div>`;
+        console.log(myView);
         const dropzone = document.querySelector("e-dropzone#columns");
         if (dropzone) {
             dropzone.addEventListener("datachange", () => {

@@ -9,7 +9,7 @@ export { HTMLElementDescription };
 export { setHTMLElementProperties };
 export { setHTMLElementAttributes };
 export { HTMLElementConstructor };
-export { ReactiveHTMLElement };
+/*export { ReactiveHTMLElement };*/
 export { AttributeMutationMixin };
 export { AttributeType };
 export { areAttributesMatching };
@@ -290,17 +290,14 @@ type WritableKeys<T> = {
 
 interface HTMLElementInit<K extends keyof HTMLElementTagNameMap> {
     options?: ElementCreationOptions,
-    properties?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
-    attributes?: {[name: string]: number | string | boolean},
-    children?: (HTMLElementDescription<any> | Node | string)[],
+    props?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
+    attrs?: {[name: string]: number | string | boolean},
+    children?: {
+        [ChildTagName in (keyof HTMLElementTagNameMap | "text")]?: ChildTagName extends keyof HTMLElementTagNameMap ? HTMLElementInit<ChildTagName> : string;
+    },
     listeners?: {
-        [K in keyof HTMLElementEventMap]?: [listener: (event: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions]
+        [ListenerEvent in keyof HTMLElementEventMap]?: [listener: (event: HTMLElementEventMap[ListenerEvent]) => any, options?: boolean | AddEventListenerOptions]
     }
-}
-
-interface HTMLElementReact<K extends keyof HTMLElementTagNameMap> {
-    properties?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
-    attributes?: {[name: string]: number | string | boolean},
 }
 
 function HTMLElementConstructor<K extends keyof HTMLElementTagNameMap>(
@@ -308,11 +305,11 @@ function HTMLElementConstructor<K extends keyof HTMLElementTagNameMap>(
     ): HTMLElementTagNameMap[K] {
     const element = document.createElement(tagName, init?.options);
     if (init) {
-        if (init.properties) {
-            setHTMLElementProperties(element, init.properties);
+        if (init.props) {
+            setHTMLElementProperties(element, init.props);
         }
-        if (init.attributes) {
-            setHTMLElementAttributes(element, init.attributes);
+        if (init.attrs) {
+            setHTMLElementAttributes(element, init.attrs);
         }
         if (init.children) {
             setHTMLElementChildren(element, init.children);
@@ -322,33 +319,6 @@ function HTMLElementConstructor<K extends keyof HTMLElementTagNameMap>(
         }
     }
     return element;
-};
-
-function ReactiveHTMLElement<K extends keyof HTMLElementTagNameMap>(
-    tagName: K,
-    react?: HTMLElementReact<K>,
-    init?: HTMLElementInit<K>,
-): (
-        element?: HTMLElementTagNameMap[K]
-    ) => HTMLElementTagNameMap[K] {
-        return (
-            element?: HTMLElementTagNameMap[K]
-        ) => {
-            if (!element) {
-                element = HTMLElementConstructor(tagName, init);
-            }
-            else {
-                if (react) {
-                    if (react.properties) {
-                        setHTMLElementProperties(element, react.properties);
-                    }
-                    if (react.attributes) {
-                        setHTMLElementAttributes(element, react.attributes);
-                    }
-                }
-            }
-            return element;
-        }
 };
 
 function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
@@ -365,26 +335,22 @@ function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
 
 function setHTMLElementChildren<K extends keyof HTMLElementTagNameMap>(
     element: HTMLElementTagNameMap[K],
-    children: (HTMLElementDescription<any> | Node | string)[],
+    children: {
+        [ChildTagName in (keyof HTMLElementTagNameMap | "text")]?: ChildTagName extends keyof HTMLElementTagNameMap ? HTMLElementInit<ChildTagName> : string;
+    }
 ): HTMLElementTagNameMap[K] {
     element.innerHTML = "";
-    children.forEach((child) => {
-        if (typeof child === "string" || child instanceof Node) {
-            element.append(child);
-        }
-        else {
-            if (child.init) {
-                element.append(
-                    HTMLElementConstructor(
-                        child.tagName, {
-                            options: child.init.options,
-                            attributes: child.init.attributes,
-                            children: child.init.children
-                        }
-                    )
-                );
-            }
-        }
+    Object.entries(children).forEach((entry) => {
+        element.append(
+            (entry[0] == "text") ? entry[1] as string : 
+            HTMLElementConstructor(
+                entry[0] as keyof HTMLElementTagNameMap, entry[1] ? {
+                    options: (entry[1] as any).options,
+                    attrs: (entry[1] as any).attrs,
+                    children: (entry[1] as any).children
+                } : void 0
+            )
+        );
     });
     return element;
 };

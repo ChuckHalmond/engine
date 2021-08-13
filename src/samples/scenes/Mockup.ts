@@ -446,8 +446,7 @@ export async function mockup() {
         public execute(location: DirectiveLocation): void {
             this.model.addEventListener("datachange", (event: ModelDataChangeEvent) => {
                 switch (event.data.type) {
-                    case "insert":
-                        this.callback(this.model.items[])
+                    
                 }
             });
         }
@@ -471,7 +470,7 @@ export async function mockup() {
         return 1;
     }
 
-    const reactive = function<M extends Model<object>>(model: ListModel<M> | Model<M>, callback: (data: Partial<ModelData<M>>) => void) {
+    const reactiveList = function<M extends Model<object>, N extends Node>(model: ListModel<M> | Model<M>, init: (data: ModelData<M>) => N, react: (node: N, data: Partial<ModelData<M>>) => void) {
         /*return new _ForEachDirective(model, callback);*/
     }
 
@@ -486,20 +485,19 @@ export async function mockup() {
     }
 
     const items = new BaseListModel<MyItemModel>([new MyItemModel(1)])
-    view/*html*/`<div>
-    ${reactive(items, (props: Partial<ModelData<MyItemModel>>) => ReactiveHTMLElement(
-        "div", {
-            properties: {
-                textContent: (typeof props.lol !== "undefined") ? props.lol.toString(): void 0
-            }
-        }, {
-            listeners: {
-                click: [(event: MouseEvent) => {
-                    alert();
-                }]
-            }
-        }))} </div>`;
+
+    let listTemplate = reactiveList(
+        items, 
+        (data: ModelData<MyItemModel>) => {
+            return HTMLElementConstructor("div", {props: {textContent: data.lol.toString()}});
+        },
+        (el: HTMLDivElement, data: Partial<ModelData<MyItemModel>>) => {
+            (typeof data.lol !== "undefined") ? el.textContent = data.lol.toString() : void 0;
+        });
+        
+    let myView = view/*html*/`<div>${listTemplate}</div>`;
     
+    console.log(myView);
     const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#columns");
     if (dropzone) {
         dropzone.addEventListener("datachange", () => {
