@@ -432,6 +432,7 @@ export async function mockup() {
 
     class ReactiveListDirective<M extends Model<object>, N extends Node> extends Directive {
         model: ListModel<M> | Model<M>;
+        list: Document[];
         init: (data: ModelData<M>) => N;
         react: (node: N, data: Partial<ModelData<M>>) => void
 
@@ -440,6 +441,7 @@ export async function mockup() {
             this.model = model;
             this.init = init;
             this.react = react;
+            this.list = [];
         }
 
         public execute(location: DirectiveLocation): void {
@@ -458,7 +460,7 @@ export async function mockup() {
         directives: Directive[]
     }
 
-    function view(parts: TemplateStringsArray, ...slots: any[]): void {
+    /*function view(parts: TemplateStringsArray, ...slots: any[]): void {
         const parser = new DOMParser();
         let src = parts.flatMap((part, index) => {
             if (index < expressions.length) {
@@ -473,23 +475,23 @@ export async function mockup() {
 
         console.log(src);
 
-        /*const dom = parser.parseFromString(parts.join("\"\""), "text/html");
-        forAllHierarchyNodes(html.body, (child, parent) => {
-            if (child.nodeType === Node.COMMENT_NODE && child.nodeValue == "") {
-                let index = parseInt(child.nodeValue);
-                if (expr[index] instanceof Directive) {
-                    console.log("previous");
-                    console.log(child.previousSibling);
-                    console.log("parent");
-                    console.log(parent);
-                }
-            }
-        });
-        console.log(html.body.innerHTML);
-        return 1;*/
+        // const dom = parser.parseFromString(parts.join("\"\""), "text/html");
+        // forAllHierarchyNodes(html.body, (child, parent) => {
+        //     if (child.nodeType === Node.COMMENT_NODE && child.nodeValue == "") {
+        //         let index = parseInt(child.nodeValue);
+        //         if (expr[index] instanceof Directive) {
+        //             console.log("previous");
+        //             console.log(child.previousSibling);
+        //             console.log("parent");
+        //             console.log(parent);
+        //         }
+        //     }
+        // });
+        // console.log(html.body.innerHTML);
+        // return 1;
     }
 
-    /*function bindReactiveShadowRoot(element: HTMLElement, reactiveTemplateResults: ReactiveTemplateResult) {
+    function bindReactiveShadowRoot(element: HTMLElement, reactiveTemplateResults: ReactiveTemplateResult) {
         reactiveTemplateResults.parts.forEach((part) => {
             if (part instanceof Directive) {
                 forAllHierarchyNodes(html.body, (child, parent) => {
@@ -534,10 +536,10 @@ export async function mockup() {
 
     }
 
-    function view<T extends any>(parts: TemplateStringsArray, ...expressions: T[]): T {
+    function view<T extends any>(parts: TemplateStringsArray, ...expressions: [T, ...T[]]): T {
         return expressions[0];
     }
-
+    
     let itemViewModel = {
         init: (data: ModelData<MyItemModel>) => {
             let buttonSlot = HTMLElementConstructor(/*html*/"button", {props: {textContent: data.lol.toString()}});
