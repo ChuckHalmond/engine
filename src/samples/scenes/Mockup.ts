@@ -16,12 +16,13 @@ import "engine/editor/elements/lib/utils/Import";
 import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem"
 import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 
-import { HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
+import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { StructuredFormData } from "engine/editor/elements/forms/StructuredFormData";
-import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
+import { HTMLElementConstructor, HTMLElementInit } from "engine/editor/elements/HTMLElement";
 import { TestFunction } from "engine/core/rendering/webgl/WebGLConstants";
-import { BaseListModel, BaseModel, ListModel, Model, ModelData, ModelDataChangeEvent } from "engine/editor/models/ListModel";
+import { BaseListModel, BaseModel, ListModel, Model, ModelData, ModelDataChangeEvent } from "engine/editor/models/Model";
 import { forAllHierarchyNodes } from "engine/editor/elements/Snippets";
+import { EventDispatcher } from "engine/libs/patterns/messaging/events/EventDispatcher";
 
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
@@ -417,49 +418,129 @@ export async function mockup() {
         name: "df"
     };
 
-    interface ReactiveDirective {
-        <M extends Model<object>>(model: ListModel<M> | Model<M>, callback: (data: Partial<ModelData<M>>) => void): void;
-    }
-
-    interface DirectiveLocation {
-        parentNode?: Node;
-        previousSibling?: Node;
-    }
-
     abstract class Directive {
-        public abstract execute(location: DirectiveLocation): any;
+        node: Node;
+        public abstract execute(): void;
     }
 
-    class ReactiveListDirective<M extends Model<object>, N extends Node> extends Directive {
-        model: ListModel<M> | Model<M>;
-        list: Document[];
-        init: (data: ModelData<M>) => N;
-        react: (node: N, data: Partial<ModelData<M>>) => void
+    interface ReactDirective<M extends Model> {
+        model: M;
+        react: (model: M, event?: ModelDataChangeEvent) => string | Node | TemplateResult;
+        result: Node;
+        execute(event?: ModelDataChangeEvent): void;
+        initialize(): void;
+        finalize(): void;
+    }
 
-        constructor(model: ListModel<M> | Model<M>, init: (data: ModelData<M>) => N, react: (node: N, data: Partial<ModelData<M>>) => void) {
-            super();
+    class BaseReactDirective<M extends Model> {
+        model: M;
+        react: (model: M, event?: ModelDataChangeEvent) => string | Node | TemplateResult;
+        result: Node;
+        private _callback: (event: ModelDataChangeEvent) => void;
+
+        constructor(model: M, react: (model: M, event?: ModelDataChangeEvent) => string | Node | TemplateResult) {
             this.model = model;
-            this.init = init;
             this.react = react;
-            this.list = [];
+            this.result = document.createTextNode("");
+            this._callback = (event: ModelDataChangeEvent) => {
+                this.execute(event);
+            };
         }
 
-        public execute(location: DirectiveLocation): void {
-            this.model.addEventListener("datachange", (event: ModelDataChangeEvent) => {
-                switch (event.data.type) {
-                    
+        public execute(event?: ModelDataChangeEvent): void {
+            let result: string | Node | TemplateResult = this.react(this.model, event);
+            let nodeResult = (typeof result === "string") ? document.createTextNode(result) : result;
+            if (typeof nodeResult === "object" && "directives" in nodeResult) {
+                (this.result as ChildNode).replaceWith(nodeResult.fragment);
+            }
+            else {
+                (this.result as ChildNode).replaceWith(nodeResult);
+            }
+            this.result = nodeResult as ChildNode;
+        }
+
+        public initialize(): void {
+            this.model.addEventListener("datachange", this._callback);
+        }
+
+        public finalize(): void {
+            this.model.removeEventListener("datachange", this._callback);
+        }
+    }
+
+    function react<M extends Model>(model: M, react: (model: M, event?: ModelDataChangeEvent) => string | Node | TemplateResult): ReactDirective<M> {
+        return new BaseReactDirective(model, react);
+    }
+
+    function template(parts: TemplateStringsArray, ...slots: (string | Node | Directive | TemplateResult)[]): TemplateResult {
+        let toParse = "";
+        let timestamp = new Date().getTime();
+        parts.forEach((part, index) => {
+            if (index < slots.length) {
+                toParse = `${toParse}${part}<div id="${timestamp}-${index}"></div>`;
+            }
+            else {
+                toParse = `${toParse}${part}`;
+            }
+        });
+        let fragment = HTMLElementConstructor("template", {props: {innerHTML: toParse}}).content;
+        let directives: Directive[] = [];
+        slots.forEach((slot, index) => {
+            let slotPlaceholder = fragment.getElementById(`${timestamp}-${index}`);
+            if (slotPlaceholder) {
+                if (slot instanceof Directive) {
+                    directives.push(slot);
+                    slot.execute();
+                    slotPlaceholder.replaceWith(slot.node);
                 }
-            });
+                else if (typeof slot === "object" && "directives" in slot) {
+                    slotPlaceholder.replaceWith(slot.fragment);
+                }
+                else {
+                    slotPlaceholder.replaceWith(slot);
+                }
+            }
+        });
+        return {
+            // TODO: return everything needed
+            fragment: fragment,
+            directives: directives
+        };
+    }
+
+    
+    interface TemplateResult {
+        fragment: DocumentFragment;
+        directives: Directive[];
+    }
+
+    interface Model extends EventDispatcher {
+
+    }
+    
+    class FieldModel extends BaseModel<{type: string, label: number}> {
+        constructor(type: string, label: number) {
+            super({type, label});
         }
     }
 
-    console.log(ReactiveListDirective.constructor.name);
-
-    interface ReactiveTemplateResult {
-        dom: Document;
-        directives: Directive[]
+    class FieldsetModel extends BaseListModel<FieldModel> {
+        constructor(fields: FieldModel[]) {
+            super(fields);
+        }
     }
 
+    
+    const onField = new FieldModel("str", 1);
+    const fieldset = new FieldsetModel([onField])
+
+
+    let fieldReactCallback = (model: FieldModel, event?: ModelDataChangeEvent) => {
+        return template`<div></div>`;
+    }
+
+    let frag = template/*html*/`<div>${react(onField, fieldReactCallback)}${HTMLElementConstructor("label", {props: {textContent: "Label"}, listeners: {click: [() => {alert();}]}})}</div>`;
+    
     /*function view(parts: TemplateStringsArray, ...slots: any[]): void {
         const parser = new DOMParser();
         let src = parts.flatMap((part, index) => {
@@ -475,71 +556,100 @@ export async function mockup() {
 
         console.log(src);
 
-        // const dom = parser.parseFromString(parts.join("\"\""), "text/html");
-        // forAllHierarchyNodes(html.body, (child, parent) => {
-        //     if (child.nodeType === Node.COMMENT_NODE && child.nodeValue == "") {
-        //         let index = parseInt(child.nodeValue);
-        //         if (expr[index] instanceof Directive) {
-        //             console.log("previous");
-        //             console.log(child.previousSibling);
-        //             console.log("parent");
-        //             console.log(parent);
-        //         }
-        //     }
-        // });
-        // console.log(html.body.innerHTML);
-        // return 1;
-    }
-
-    function bindReactiveShadowRoot(element: HTMLElement, reactiveTemplateResults: ReactiveTemplateResult) {
-        reactiveTemplateResults.parts.forEach((part) => {
-            if (part instanceof Directive) {
-                forAllHierarchyNodes(html.body, (child, parent) => {
-                    if (child.nodeType === Node.COMMENT_NODE && child.nodeValue == "") {
-                        let index = parseInt(child.nodeValue);
-                        if (expr[index] instanceof Directive) {
-                            console.log("previous");
-                            console.log(child.previousSibling);
-                            console.log("parent");
-                            console.log(parent);
-                        }
-                    }
-                });
+        const dom = parser.parseFromString(parts.join("\"\""), "text/html");
+        forAllHierarchyNodes(html.body, (child, parent) => {
+            if (child.nodeType === Node.COMMENT_NODE && child.nodeValue == "") {
+                let index = parseInt(child.nodeValue);
+                if (expr[index] instanceof Directive) {
+                    console.log("previous");
+                    console.log(child.previousSibling);
+                    console.log("parent");
+                    console.log(parent);
+                }
             }
         });
+        console.log(html.body.innerHTML);
+        return 1;
     }*/
 
-    const reactiveList = function<M extends Model<object>, N extends Node>(model: ListModel<M>, init: {init: (data: ModelData<M>) => N, react: (node: N, data: Partial<ModelData<M>>) => void}) {
-        return new ReactiveListDirective(model, init.init, init.react);
+
+    abstract class View<M extends Model<object>> {
+        model: M;
+        public abstract onModelChange<K extends keyof ModelData<M>>(key: K, oldValue: ModelData<M>[K], newValue: ModelData<M>[K]): void;
     }
 
-    /*const for: ForDirective = function<I extends object>(model: Model<I>, callback: (item: I) => void) {
-        return new _ForDirective(model, callback);
-    }*/
+    class MyModel extends Model {
+        @property()
+        item: string;
+    }
 
-    class MyItemModel extends BaseModel<{lol: number}> {
-        constructor(lol: number) {
-            super({lol});
+    class FieldView extends View<FieldModel> {
+        model: FieldModel;
+        template: HTMLTemplateElement;
+        
+        @slot()
+        items: HTMLElement[];
+
+        @slot()
+        label: HTMLElement;
+
+        constructor(model: FieldModel) {
+            super();
+            this.model = model;
+            this.template = template`
+                <div>
+                    <div>${slot(this.label)}</div>
+                    ${slotEach(this.items, (item) =>html`<div>${item}</div>`)}
+                </div>`;
+
+            this.label = HTMLElementConstructor("label");
+            this.items = [];
         }
-    }
 
-    class MyParentModel extends BaseListModel<MyItemModel> {
-        constructor(items: MyItemModel[]) {
-            super(items);
+        public connectedCallback() {
+
         }
+
+        public onModelDataChange<K extends keyof ModelData<FieldModel>>(key: K, type: ModelDataChangeType,
+            oldValue: ModelData<FieldModel>[K], newValue: ModelData<FieldModel>[K]): void {
+            switch (key) {
+                case "label":
+                    oldValue
+            }
+            this.items.push(
+
+            )
+        }
+
+        // _input replaceChild (dropzone template)
+
+        /*constructor(model: FieldModel) {
+            this.model = model;
+
+            this.labelTemplate = (model: FieldModel) => {
+                HTMLElementConstructor("button", {props: {textContent: model.lol.toString()}});
+            }
+
+            this._dom = partialview`<div>${list(this.model, this._listTemplate)}${choice(this.model, "type", {"input": this._inputTemplate})}</div>`;
+        }
+
+        public onModelChange(property: string, oldValue) {
+            this.button =  new PartialView(
+                model,
+                (model: PersonModel) => {
+                    `<button>`, {props: {textContent: model.name.toString()}}
+                },
+                (el: properties: (keyof ModelData<PersonModel>)[], model: PersonModel) => {
+                    (typeof data.lol !== "undefined") ? el.textContent = model.name : void 0;
+                }
+            });
+        }*/
     }
 
-    const items = new BaseListModel<MyItemModel>([new MyItemModel(1)])
-    const parent = new BaseModel<MyParentModel>(items);
+    // Class
+    // Directive
+    // TemplateFunction -> Class / Directives
 
-    interface ViewSlot {
-
-    }
-
-    function view<T extends any>(parts: TemplateStringsArray, ...expressions: [T, ...T[]]): T {
-        return expressions[0];
-    }
-    
     let itemViewModel = {
         init: (data: ModelData<MyItemModel>) => {
             let buttonSlot = HTMLElementConstructor(/*html*/"button", {props: {textContent: data.lol.toString()}});
@@ -560,7 +670,11 @@ export async function mockup() {
         }
     };
     
-    let myView = view/*html*/`<div>${item(parent, parentViewModel)}</div>`;
+    let myView = partialview/*html*/`<div>${item(parent, parentViewModel)}</div>`;
+
+    class MyView {
+
+    }
     
     console.log(myView);
     const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#columns");

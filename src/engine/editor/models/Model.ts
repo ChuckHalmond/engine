@@ -10,14 +10,16 @@ export { ModelData };
 interface ModelDataChangeEvent {
     type: "datachange";
     data: {
-        type: "properties";
+        property: string;
+        type: "property";
     };
 }
 
 interface ListModelDataChangeEvent {
     type: "datachange";
     data: {
-        type: "insert" | "remove";
+        index: number;
+        type: "insert" | "remove" | "clear";
     };
 }
 
@@ -32,9 +34,8 @@ interface ListModelEvents {
 type ModelData<I> = I extends Model<infer Data> ? Data : never;
 
 interface Model<Data extends object> extends EventDispatcher<ModelEvents> {
-    getProperty<K extends keyof Data>(key: K): Readonly<Data[K]>;
-    setProperty<K extends keyof Data>(key: K, value: Data[K]): void;
-    setProperties(data: Partial<Data>): void
+    get<K extends keyof Data>(key: K): Readonly<Data[K]>;
+    set<K extends keyof Data>(key: K, value: Data[K]): void;
 }
 
 class BaseModel<Data extends object> extends EventDispatcher<ModelEvents> {
@@ -45,31 +46,23 @@ class BaseModel<Data extends object> extends EventDispatcher<ModelEvents> {
         this._data = data;
     }
 
-    public getProperty<K extends keyof Data>(key: K): Readonly<Data[K]> {
+    public get<K extends keyof Data>(key: K): Readonly<Data[K]> {
         return this._data[key];
     }
 
-    public setProperty<K extends keyof Data>(key: K, value: Data[K]): void {
+    public set<K extends keyof Data>(key: K, value: Data[K]): void {
         this._data[key] = value;
-        this.dispatchEvent(new Event("datachange", {type: "property", properties: [key]}));
-    }
-
-    public setProperties(data: Partial<Data>): void {
-        let keys = Object.keys(data) as (keyof Data)[];
-        keys.forEach((key) => {
-            this._data[key] = data[key]!;
-        });
-        this.dispatchEvent(new Event("datachange", {type: "properties", properties: keys}));
+        this.dispatchEvent(new Event("datachange", {type: "property", property: key}));
     }
 }
 
-interface ListModel<Item extends Model<object>> extends EventDispatcher<ListModelEvents> {
+interface ListModel<Item> extends EventDispatcher<ListModelEvents> {
     readonly items: ReadonlyArray<Item>;
-    insertItem(index: number, item: Item): void;
-    removeItem(index: number): void;
+    insert(index: number, item: Item): void;
+    remove(index: number): void;
 }
 
-class BaseListModel<Item extends Model<object>> extends EventDispatcher<ListModelEvents> {
+class BaseListModel<Item> extends EventDispatcher<ListModelEvents> {
     private _items: Item[];
 
     constructor(items: Item[]) {
@@ -81,17 +74,22 @@ class BaseListModel<Item extends Model<object>> extends EventDispatcher<ListMode
         return this._items;
     }
 
-    public insertItem(index: number, item: Item): void {
+    public insert(index: number, item: Item): void {
         if (index >= 0 && index < this._items.length) {
             this._items.splice(index, 0, item);
             this.dispatchEvent(new Event("datachange", {type: "insert", index: index}));
         }
     }
 
-    public removeItem(index: number): void {
+    public remove(index: number): void {
         if (index >= 0 && index < this._items.length) {
             this._items.splice(index, 1);
             this.dispatchEvent(new Event("datachange", {type: "remove", index: index}));
         }
+    }
+
+    public clear(): void {
+        this._items.length = 0;
+        this.dispatchEvent(new Event("datachange", {type: "clear", index: 0}));
     }
 }

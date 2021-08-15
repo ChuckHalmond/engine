@@ -10,6 +10,7 @@ export { setHTMLElementProperties };
 export { setHTMLElementAttributes };
 export { HTMLElementConstructor };
 /*export { ReactiveHTMLElement };*/
+export { HTMLElementInit };
 export { AttributeMutationMixin };
 export { AttributeType };
 export { areAttributesMatching };
