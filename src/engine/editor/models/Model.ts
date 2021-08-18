@@ -23,7 +23,8 @@ interface ListModelChangeEvent {
     type: "listmodelchange";
     data: {
         index: number;
-        type: ListModelChangeType;
+        addedItems: any[];
+        removedItems: any[];
     };
 }
 
@@ -78,21 +79,22 @@ class BaseListModel<Item> extends EventDispatcher<ListModelEvents> implements Li
     }
 
     public insert(index: number, item: Item): void {
-        if (index >= 0 && index < this._items.length) {
+        if (index >= 0 && index <= this._items.length) {
             this._items.splice(index, 0, item);
-            this.dispatchEvent(new Event("listmodelchange", {type: "insert", index: index}));
+            this.dispatchEvent(new Event("listmodelchange", {addedItems: [item], removedItems: [], index: index}));
         }
     }
 
     public remove(index: number): void {
         if (index >= 0 && index < this._items.length) {
-            this._items.splice(index, 1);
-            this.dispatchEvent(new Event("listmodelchange", {type: "remove", index: index}));
+            let item = this._items.splice(index, 1)[0];
+            this.dispatchEvent(new Event("listmodelchange", {addedItems: [], removedItems: [item], index: index}));
         }
     }
 
     public clear(): void {
-        this._items.length = 0;
-        this.dispatchEvent(new Event("listmodelchange", {type: "clear", index: 0}));
+        let items = this._items;
+        this._items = [];
+        this.dispatchEvent(new Event("listmodelchange", {addedItems: [], removedItems: items, index: 0}));
     }
 }

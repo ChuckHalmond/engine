@@ -10,6 +10,7 @@ export { setHTMLElementProperties };
 export { setHTMLElementAttributes };
 export { HTMLElementConstructor };
 /*export { ReactiveHTMLElement };*/
+export { HTML };
 export { HTMLElementInit };
 export { AttributeMutationMixin };
 export { AttributeType };
@@ -293,9 +294,7 @@ interface HTMLElementInit<K extends keyof HTMLElementTagNameMap> {
     options?: ElementCreationOptions,
     props?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
     attrs?: {[name: string]: number | string | boolean},
-    children?: {
-        [ChildTagName in (keyof HTMLElementTagNameMap | "text")]?: ChildTagName extends keyof HTMLElementTagNameMap ? HTMLElementInit<ChildTagName> : string;
-    },
+    children?: (Node | string)[],
     listeners?: {
         [ListenerEvent in keyof HTMLElementEventMap]?: [listener: (event: HTMLElementEventMap[ListenerEvent]) => any, options?: boolean | AddEventListenerOptions]
     }
@@ -322,6 +321,35 @@ function HTMLElementConstructor<K extends keyof HTMLElementTagNameMap>(
     return element;
 };
 
+function HTML<K extends keyof HTMLElementTagNameMap>(
+    tag: Tag<K>, init?: HTMLElementInit<K>): HTMLElementTagNameMap[K] {
+        const tagName = tag.slice(1, tag.length - 1) as K;
+        const element = document.createElement(tagName, init?.options);
+        if (init) {
+            if (init.props) {
+                setHTMLElementProperties(element, init.props);
+            }
+            if (init.attrs) {
+                setHTMLElementAttributes(element, init.attrs);
+            }
+            if (init.children) {
+                setHTMLElementChildren(element, init.children);
+            }
+            if (init.listeners) {
+                setHTMLElementEventListeners(element, init.listeners);
+            }
+        }
+        return element;
+}
+
+function HTMLChildren(): (parent: ParentNode) => Node[] {
+    
+}
+
+function ReactiveHTMLChildren(): (parent: ParentNode) => Node[] {
+    
+}
+
 function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
     element: HTMLElementTagNameMap[K],
     listeners: {
@@ -336,23 +364,10 @@ function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
 
 function setHTMLElementChildren<K extends keyof HTMLElementTagNameMap>(
     element: HTMLElementTagNameMap[K],
-    children: {
-        [ChildTagName in (keyof HTMLElementTagNameMap | "text")]?: ChildTagName extends keyof HTMLElementTagNameMap ? HTMLElementInit<ChildTagName> : string;
-    }
+    children: (Node | string)[]
 ): HTMLElementTagNameMap[K] {
     element.innerHTML = "";
-    Object.entries(children).forEach((entry) => {
-        element.append(
-            (entry[0] == "text") ? entry[1] as string : 
-            HTMLElementConstructor(
-                entry[0] as keyof HTMLElementTagNameMap, entry[1] ? {
-                    options: (entry[1] as any).options,
-                    attrs: (entry[1] as any).attrs,
-                    children: (entry[1] as any).children
-                } : void 0
-            )
-        );
-    });
+    element.append(...children);
     return element;
 };
 

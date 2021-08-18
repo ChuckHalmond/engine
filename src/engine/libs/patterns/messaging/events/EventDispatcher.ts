@@ -76,27 +76,21 @@ class EventDispatcherBase<Events extends {[K in Extract<keyof Events, string>]: 
     public removeEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): number;
     public removeEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): number {
         let listeners = this._listeners.get(event);
-        let listener: EventListener<Events[K]> = {
-            handler: handler,
-            once: once
-        };
-
-        if (typeof listeners === "undefined") {
-            return -1;
-        }
-        const count = listeners.length;
-        const idx = listeners.indexOf(listener);
-        if (idx > -1) {
-            if (count > 1) {
-                listeners[idx] = listeners.pop()!;
-                return count - 1;
-            }
-            else {
-                this._listeners.delete(event.toString());
-                return 0;
+        if (typeof listeners !== "undefined") {
+            const count = listeners.length;
+            const idx = listeners.findIndex(listener => listener.handler === handler && listener.once === once);
+            if (idx > -1) {
+                if (count > 1) {
+                    listeners[idx] = listeners.pop()!;
+                    return count - 1;
+                }
+                else {
+                    this._listeners.delete(event.toString());
+                    return 0;
+                }
             }
         }
-        return count;
+        return -1;
     }
 
     public dispatchEvent<K extends string>(event: Event<K>): void;
