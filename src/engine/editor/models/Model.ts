@@ -37,8 +37,8 @@ interface ListModelEvents {
 }
 
 interface ObjectModel<Data extends object> extends EventDispatcher<ObjectModelChangeEvents> {
-    get<K extends keyof Data>(key: K): Readonly<Data[K]>;
-    set<K extends keyof Data>(key: K, value: Data[K]): void;
+    readonly data: Readonly<Data>;
+    setData<K extends keyof Data>(key: K, value: Data[K]): void;
 }
 
 class BaseObjectModel<Data extends object> extends EventDispatcher<ObjectModelChangeEvents> implements ObjectModel<Data> {
@@ -49,11 +49,12 @@ class BaseObjectModel<Data extends object> extends EventDispatcher<ObjectModelCh
         this._data = data;
     }
 
-    public get<K extends keyof Data>(key: K): Readonly<Data[K]> {
-        return this._data[key];
+    public get data(): Readonly<Data> {
+        return this._data;
     }
 
-    public set<K extends keyof Data>(key: K, value: Data[K]): void {
+
+    public setData<K extends keyof Data>(key: K, value: Data[K]): void {
         let oldValue = this._data[key];
         this._data[key] = value;
         this.dispatchEvent(new Event("objectmodelchange", {property: key, oldValue: oldValue, newValue: value}));
@@ -62,8 +63,9 @@ class BaseObjectModel<Data extends object> extends EventDispatcher<ObjectModelCh
 
 interface ListModel<Item> extends EventDispatcher<ListModelEvents> {
     readonly items: ReadonlyArray<Item>;
-    insert(index: number, item: Item): void;
-    remove(index: number): void;
+    insertItem(index: number, item: Item): void;
+    removeItem(index: number): void;
+    clearItems(): void;
 }
 
 class BaseListModel<Item> extends EventDispatcher<ListModelEvents> implements ListModel<Item> {
@@ -78,21 +80,21 @@ class BaseListModel<Item> extends EventDispatcher<ListModelEvents> implements Li
         return this._items;
     }
 
-    public insert(index: number, item: Item): void {
+    public insertItem(index: number, item: Item): void {
         if (index >= 0 && index <= this._items.length) {
             this._items.splice(index, 0, item);
             this.dispatchEvent(new Event("listmodelchange", {addedItems: [item], removedItems: [], index: index}));
         }
     }
 
-    public remove(index: number): void {
+    public removeItem(index: number): void {
         if (index >= 0 && index < this._items.length) {
             let item = this._items.splice(index, 1)[0];
             this.dispatchEvent(new Event("listmodelchange", {addedItems: [], removedItems: [item], index: index}));
         }
     }
 
-    public clear(): void {
+    public clearItems(): void {
         let items = this._items;
         this._items = [];
         this.dispatchEvent(new Event("listmodelchange", {addedItems: [], removedItems: items, index: 0}));

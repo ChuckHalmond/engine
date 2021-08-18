@@ -1,148 +1,147 @@
-import { HTML } from "engine/editor/elements/HTMLElement";
-import { BaseListModel, BaseObjectModel, ListModel, ListModelChangeEvent } from "engine/editor/models/Model";
-import { BaseListView, HTMLEViewElement, BaseObjectView, ListView, View } from "engine/editor/models/View";
-import { safeQuerySelector } from "engine/utils/Snippets";
+import { HTML, ReactiveChildren, ReactiveElement, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
+import { BaseListModel, BaseObjectModel, ListModel, ListModelChangeEvent, ObjectModel } from "engine/editor/models/Model";
 
 export { temp };
 
 function temp() {
-
-    HTML(/*html*/`<a>`, {
-        props: {textContent: "My anchor"},
-        children: [
-            HTML(/*html*/`<button>`, {
-                props: {textContent: "My anchor"},
-                children: []
-            })
-        ]
-    });
-
     interface FieldData {
-        type: string;
-        label: string;
+        name: string,
+        type: string,
+        label: string,
+        allows_expression: boolean,
+        optional: boolean,
+        type_constraint?: FieldTypeConstraintData;
+    }
+    
+    interface FieldTypeConstraintData {
+        constraint: "same_as";
+        other: string;
+    }
+    
+    interface FieldsetData {
+        signature: string,
+        box: string, 
+        doc: string,
+        label: string,
+        fields: FieldsetFieldsModel,
+        is_expression: boolean
+    }
+    
+    class FieldsetFieldsModel extends BaseListModel<FieldModel> {
+        constructor(items: FieldModel[]) {
+            super(items);
+        }
     }
     
     class FieldModel extends BaseObjectModel<FieldData> {
-        constructor(type: string, label: string) {
-            super({type, label});
-        }
-    }
-
-    class FieldsetModel extends BaseListModel<FieldModel> {
-        constructor(fields: FieldModel[]) {
-            super(fields);
-        }
-
-        public static fromData(data: FieldData[]) {
-            return new FieldsetModel(
-                data.map((fieldData) => new FieldModel(fieldData.type, fieldData.label))
-            );
+        constructor(data: FieldData) {
+            super(data);
         }
     }
     
-    const field1 = new FieldModel("type", "label");
-    const fieldset1 = new FieldsetModel([field1]);
-
-    (window as any)["field1"] = field1;
-    (window as any)["fieldset1"] = fieldset1;
-    (window as any)["FieldModel"] = FieldModel;
-    (window as any)["FieldsetModel"] = FieldsetModel;
-
-    function bindList<I extends object>(list: ListModel<I>, parent: Element, map: (item: I) => Element) {
-        list.addEventListener("listmodelchange", (event: ListModelChangeEvent) => {
-            if (event.data.removedItems.length) {
-                for (let i = 0; i < event.data.removedItems.length; i++) {
-                    parent!.children.item(event.data.index)!.remove();
-                }
-            }
-            if (event.data.addedItems.length) {
-                let addedElements = event.data.addedItems.map(item => map(item));
-                if (event.data.index >= list.items.length) {
-                    parent!.append(...addedElements);
-                }
-                else {
-                    parent!.children.item(event.data.index - event.data.removedItems.length)!.before(...addedElements);
-                }
-            }
-        })
+    class FieldsetModel extends BaseObjectModel<FieldsetData> {
+        constructor(data: FieldsetData) {
+            super(data);
+        }
     }
     
-    class FieldsetView extends BaseListView<HTMLFieldSetElement, FieldsetModel> {
-        fieldViews: FieldView[];
-
+    const fieldset = new FieldsetModel({
+        box: "Transformer",
+        signature: "replace_transformer",
+        is_expression: false,
+        label: "Replace",
+        doc: "Replace...",
+        fields: new FieldsetFieldsModel([
+            new FieldModel({
+                label: "Column",
+                name: "column", 
+                type: "", 
+                allows_expression: true,
+                type_constraint: {
+                    constraint: "same_as",
+                    other: "value"
+                },
+                optional: false
+            }),
+            new FieldModel({
+                label: "Value",
+                name: "value", 
+                type: "", 
+                type_constraint: {
+                    constraint: "same_as",
+                    other: "column"
+                },
+                allows_expression: true,
+                optional: false
+            })
+        ])
+    });
+    
+    @RegisterCustomHTMLElement({
+        name: "v-fieldset"
+    })
+    class FieldsetView extends HTMLElement {
+        model: FieldsetModel;
+    
         constructor(model: FieldsetModel) {
-            super(model);
-            
-            this.fieldViews = model.items.map(item => new FieldView(item));
-            
-            this.attachRoot(
+            super();
+            this.model = model;
+    
+            this.appendChild(
                 HTML(/*html*/`<fieldset>`, {
-                    children: this.fieldViews.map((view) => view.root!)
-                })
+                    children: ReactiveChildren(this.model.data.fields, (item) =>
+                        ReactiveElement(item,
+                            HTML(/*html*/`<div>`, {
+                                children: [
+                                    HTML(/*html*/`<label>`, {
+                                        props: {
+                                            textContent: item.data.label
+                                        }
+                                    }),
+                                    HTML(/*html*/`<e-dropzone>`, {
+                                        props: {
+                                            placeholder: item.data.type
+                                        }
+                                    })
+                                ]}
+                            ),
+                            this.onFieldDataChange
+                        )
+                    )
+                }),
+    
             );
+    
+            /*new MutationObserver((mutations: MutationRecord[], observer: MutationObserver) => {
+                let isReactiveElement = (node: Node) => {
+                    return node.nodeType === node.ELEMENT_NODE &&
+                        (node as Element).hasAttribute("data-reactive");
+                };
+                mutations.forEach((record: MutationRecord) => {
+                    let addedReactiveElements = Array.from(record.addedNodes).filter(isReactiveElement) as (Element & {
+                        _reactModel: ListModel<any> | ObjectModel<any>,
+                        _reactListener: EventListener
+                    })[];
+                    addedReactiveElements.forEach((reactiveElement) => {
+                        if ("_reactListener" in reactiveElement && "_reactModel" in reactiveElement) {
+                            reactiveElement._reactModel.addEventListener(event)
+                        }
+                    });
+                    let removedReactiveElements = Array.from(record.removedNodes).filter(isReactiveElement);
+                })
+            })*/
         }
-
-        public modelChangedCallback(index: number, addedItems: FieldModel[], removedItems: FieldModel[]): void {
-            if (removedItems.length) {
-                this.fieldViews.splice(index, removedItems.length).forEach((fieldView) => {
-                    fieldView.remove();
-                });
-            }
-
-            if (addedItems.length) {
-                let newFieldviews = addedItems.map(item => new FieldView(item));
-                if (index >= this.fieldViews.length) {
-                    this.fieldViews.push(...newFieldviews);
-                    this.root!.append(...newFieldviews.map(view => view.root!));
-                }
-                else {
-                    this.fieldViews.splice(index - removedItems.length, 0, ...newFieldviews);
-                    this.root!.children.item(index - removedItems.length)!.before(...newFieldviews.map(view => view.root!));
-                }
-            }
+    
+        public onFieldDataChange<K extends keyof FieldData>(label: HTMLSpanElement, property: K, oldValue: FieldData[K], newValue: FieldData[K]) {
+            /*switch (property) {
+                case "label":
+                    label.textContent = newValue;
+            }*/
         }
     }
+    
+    let fieldsetView = new FieldsetView(fieldset);
+    document.body.appendChild(fieldsetView);
 
-    class FieldView extends BaseObjectView<HTMLDivElement, FieldModel> {
-        label: HTMLLabelElement;
-
-        constructor(model: FieldModel) {
-            super(model);
-
-            this.attachRoot(
-                HTML(/*html*/`<div>`, {
-                    children: [
-                        HTML(/*html*/`<label>`, {
-                            props: {
-                                className: "label",
-                                textContent: this.model.get("label")
-                            }
-                        })
-                    ]
-                })
-            );
-
-            this.label = this.root!.querySelector(".label")!;
-        }
-
-        public modelChangedCallback<K extends keyof FieldData>(property: K, oldValue: FieldData[K], newValue: FieldData[K]): void {
-            if (property === "label") {
-                this.label.textContent = this.model.get("label");
-            }
-        }
-    }
-
-    let view = document.createElement("e-view");
-
-    let fieldsetView = new FieldsetView(fieldset1);
-
-    view.appendChild(fieldsetView.root!);
-
-    document.body.appendChild(view);
-
-    fieldset1.insert(0, new FieldModel("", "My label"));
-    fieldset1.insert(0, new FieldModel("", "My label 1"));
-    fieldset1.insert(0, new FieldModel("", "My label 2"));
-    fieldset1.insert(2, new FieldModel("", "My label 0"));
-    fieldset1.remove(2);
+    (window as any)["fieldset"] = fieldset;
 }

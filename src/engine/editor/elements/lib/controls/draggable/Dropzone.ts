@@ -13,6 +13,7 @@ interface HTMLEDropzoneElement extends HTMLElement {
     name: string;
     multiple: boolean;
     disabled: boolean;
+    placeholder: string;
     droptest: ((draggables: HTMLEDraggableElement[]) => void) | null;
     addDraggables(draggables: HTMLEDraggableElement[], position: number): void;
     removeDraggables(predicate: (draggable: HTMLEDraggableElement, index: number) => boolean): void;

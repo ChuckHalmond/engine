@@ -1,3 +1,4 @@
+import { ListModel, ListModelChangeEvent, ObjectModel, ObjectModelChangeEvent } from "../models/Model";
 import { forAllHierarchyElements } from "./Snippets";
 
 export { isTagElement };
@@ -10,6 +11,8 @@ export { setHTMLElementProperties };
 export { setHTMLElementAttributes };
 export { HTMLElementConstructor };
 /*export { ReactiveHTMLElement };*/
+export { ReactiveElement };
+export { ReactiveChildren };
 export { HTML };
 export { HTMLElementInit };
 export { AttributeMutationMixin };
@@ -321,8 +324,18 @@ function HTMLElementConstructor<K extends keyof HTMLElementTagNameMap>(
     return element;
 };
 
+interface HTMLInit<K extends keyof HTMLElementTagNameMap> {
+    options?: ElementCreationOptions,
+    props?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
+    attrs?: {[name: string]: number | string | boolean},
+    children?: (Node | string)[] | ReactiveChildrenResult,
+    listeners?: {
+        [ListenerEvent in keyof HTMLElementEventMap]?: [listener: (event: HTMLElementEventMap[ListenerEvent]) => any, options?: boolean | AddEventListenerOptions]
+    }
+}
+
 function HTML<K extends keyof HTMLElementTagNameMap>(
-    tag: Tag<K>, init?: HTMLElementInit<K>): HTMLElementTagNameMap[K] {
+    tag: Tag<K>, init?: HTMLInit<K>): HTMLElementTagNameMap[K] {
         const tagName = tag.slice(1, tag.length - 1) as K;
         const element = document.createElement(tagName, init?.options);
         if (init) {
@@ -333,7 +346,12 @@ function HTML<K extends keyof HTMLElementTagNameMap>(
                 setHTMLElementAttributes(element, init.attrs);
             }
             if (init.children) {
-                setHTMLElementChildren(element, init.children);
+                if (Array.isArray(init.children)) {
+                    setHTMLElementChildren(element, init.children);
+                }
+                else {
+                    setHTMLElementChildren(element, init.children(element));
+                }
             }
             if (init.listeners) {
                 setHTMLElementEventListeners(element, init.listeners);
@@ -342,12 +360,74 @@ function HTML<K extends keyof HTMLElementTagNameMap>(
         return element;
 }
 
-function HTMLChildren(): (parent: ParentNode) => Node[] {
-    
+interface ReactiveElementConstructor<Data extends object, N extends Node | string> {
+    (object: ObjectModel<Data>, element: N | string, react: <K extends keyof Data>(element: N, property: K, oldValue: Data[K], newValue: Data[K]) => void): string | Node;
 }
 
-function ReactiveHTMLChildren(): (parent: ParentNode) => Node[] {
-    
+interface ReactiveElement extends Element {
+    _reactModel?: ObjectModel<object>,
+    _reactEvent?: "objectmodelchange",
+    _reactListener?: (event: ObjectModelChangeEvent) => void;
+}
+
+interface ReactiveParentElement extends Element {
+    _reactModel?: ListModel<object>,
+    _reactEvent?: "listmodelchange",
+    _reactListener?: (event: ListModelChangeEvent) => void;
+}
+
+function ReactiveElement<Data extends object, N extends Node | string>
+    (object: ObjectModel<Data>, element: N, react: <K extends keyof Data>(element: N, property: K, oldValue: Data[K], newValue: Data[K]) => void): string | Node {
+        let listener = (event: ObjectModelChangeEvent) => {
+            react(element, event.data.property as keyof Data, event.data.oldValue, event.data.newValue);
+        };
+        /*Object.assign(
+            element, {
+                _reactModel: object,
+                _reactEvent: "objectmodelchange",
+                _reactListener: listener
+            }
+        );*/
+        object.addEventListener("objectmodelchange", listener);
+        return element;
+}
+
+interface ReactiveChildrenConstructor<Item extends object> {
+    (list: ListModel<Item>, map: (item: Item) => Node | string): ReactiveChildrenResult;
+}
+
+interface ReactiveChildrenResult {
+    (parent: ParentNode): (Node | string)[];
+}
+
+function ReactiveChildren<Item extends object>(list: ListModel<Item>, map: (item: Item) => Node | string): ReactiveChildrenResult {
+    return (parent: ParentNode) => {
+        let listener = (event: ListModelChangeEvent) => {
+            if (event.data.removedItems.length) {
+                for (let i = 0; i < event.data.removedItems.length; i++) {
+                    parent!.children.item(event.data.index)!.remove();
+                }
+            }
+            if (event.data.addedItems.length) {
+                let addedElements = event.data.addedItems.map(item => map(item));
+                if (event.data.index >= list.items.length) {
+                    parent!.append(...addedElements);
+                }
+                else {
+                    parent!.children.item(event.data.index - event.data.removedItems.length)!.before(...addedElements);
+                }
+            }
+        };
+        /*Object.assign(
+            parent, {
+                _reactModel: list,
+                _reactEvent: "listmodelchange",
+                _reactListener: listener
+            }
+        );*/
+        list.addEventListener("listmodelchange", listener);
+        return list.items.map(map);
+    }
 }
 
 function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
