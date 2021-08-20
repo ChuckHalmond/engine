@@ -1,5 +1,6 @@
-import { HTML, ReactiveChildren, ReactiveElement, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
-import { BaseListModel, BaseObjectModel, ListModel, ListModelChangeEvent, ObjectModel } from "engine/editor/models/Model";
+import { Fragment, HTML, isNode, isParentNode, isReactiveNode, isReactiveParentNode, isTagElement, ReactiveChildNodes, ReactiveNode, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
+import { forAllSubtreeNodes } from "engine/editor/elements/Snippets";
+import { BaseListModel, BaseObjectModel, ListModel } from "engine/editor/models/Model";
 
 export { temp };
 
@@ -23,16 +24,13 @@ function temp() {
         box: string, 
         doc: string,
         label: string,
-        fields: FieldsetFieldsModel,
         is_expression: boolean
     }
-    
-    class FieldsetFieldsModel extends BaseListModel<FieldModel> {
-        constructor(items: FieldModel[]) {
-            super(items);
-        }
+
+    interface FielsetFieldsData {
+        fields: FieldData[]
     }
-    
+
     class FieldModel extends BaseObjectModel<FieldData> {
         constructor(data: FieldData) {
             super(data);
@@ -40,8 +38,13 @@ function temp() {
     }
     
     class FieldsetModel extends BaseObjectModel<FieldsetData> {
-        constructor(data: FieldsetData) {
+        readonly fields: ListModel<FieldModel>;
+
+        constructor(data: FieldsetData & FielsetFieldsData) {
             super(data);
+            this.fields = new BaseListModel(
+                data.fields.map(field => new FieldModel(field))
+            );
         }
     }
     
@@ -51,8 +54,8 @@ function temp() {
         is_expression: false,
         label: "Replace",
         doc: "Replace...",
-        fields: new FieldsetFieldsModel([
-            new FieldModel({
+        fields: [
+            {
                 label: "Column",
                 name: "column", 
                 type: "", 
@@ -62,8 +65,8 @@ function temp() {
                     other: "value"
                 },
                 optional: false
-            }),
-            new FieldModel({
+            },
+            {
                 label: "Value",
                 name: "value", 
                 type: "", 
@@ -73,74 +76,163 @@ function temp() {
                 },
                 allows_expression: true,
                 optional: false
-            })
-        ])
+            }
+        ]
     });
+
+    abstract class HTMLEViewElement<M extends object> extends HTMLElement {
+        _model: M;
+        _observer: MutationObserver;
+
+        constructor(model: M) {
+            super();
+            this._model = model;
+
+            this._observer = new MutationObserver((mutations: MutationRecord[]) => {
+                mutations.forEach((record: MutationRecord) => {
+                    Array.from(record.removedNodes).map((node) => {
+                        this._removeReactiveListeners(node);
+                        if (isParentNode(node)) {
+                            forAllSubtreeNodes(node, (childNode) => {
+                                this._removeReactiveListeners(childNode);
+                            });
+                        }
+                    });
+                    Array.from(record.addedNodes).map((node) => {
+                        this._addReactiveListeners(node);
+                        if (isParentNode(node)) {
+                            forAllSubtreeNodes(node, (childNode) => {
+                                this._addReactiveListeners(childNode);
+                            });
+                        }
+                    });
+                });
+            });
+
+            let content = this.render();
+            if (isNode(content)) {
+                this.append(content);
+            }
+            else {
+                this.append(...content);
+            }
+
+            this._observer.observe(this, {
+                subtree: true,
+                childList: true
+            });
+
+            this._addReactiveListeners(this);
+        }
+
+        public get model(): M {
+            return this._model;
+        }
+
+        public setModel(model: M): void {
+            this._model = model;
+            this.innerHTML = "";
+            let content = this.render();
+            if (isNode(content)) {
+                this.append(content);
+            }
+            else {
+                this.append(...content);
+            }
+        }
+
+        public abstract render(): Node | (Node | string)[];
+
+        public connectedCallback(): void {
+            Array.from(this.childNodes).map((node) => {
+                this._addReactiveListeners(node);
+                if (isParentNode(node)) {
+                    forAllSubtreeNodes(node, (childNode) => {
+                        this._addReactiveListeners(childNode);
+                    });
+                }
+            });
+        }
+
+        public disconnectedCallback(): void {
+            Array.from(this.childNodes).map((node) => {
+                this._removeReactiveListeners(node);
+                if (isParentNode(node)) {
+                    forAllSubtreeNodes(node, (childNode) => {
+                        this._removeReactiveListeners(childNode);
+                    });
+                }
+            });
+        }
+
+        private _addReactiveListeners(node: Node): void {
+            if (isReactiveParentNode(node)) {
+                const { _reactModel, _reactEvent, _reactListener } = node._reactAttributes; 
+                _reactModel.addEventListener(_reactEvent, _reactListener);
+            }
+            else if (isReactiveNode(node)) {
+                const { _reactModel, _reactEvent, _reactListener } = node._reactAttributes; 
+                _reactModel.addEventListener(_reactEvent, _reactListener);
+            }
+        }
+
+        private _removeReactiveListeners(node: Node): void {
+            if (isReactiveParentNode(node)) {
+                const { _reactModel, _reactEvent, _reactListener } = node._reactAttributes; 
+                _reactModel.removeEventListener(_reactEvent, _reactListener);
+            }
+            else if (isReactiveNode(node)) {
+                const { _reactModel, _reactEvent, _reactListener } = node._reactAttributes; 
+                _reactModel.removeEventListener(_reactEvent, _reactListener);
+            }
+        }
+    }
     
     @RegisterCustomHTMLElement({
         name: "v-fieldset"
     })
-    class FieldsetView extends HTMLElement {
-        model: FieldsetModel;
-    
+    class FieldsetView extends HTMLEViewElement<FieldsetModel> {
+
         constructor(model: FieldsetModel) {
-            super();
-            this.model = model;
-    
-            this.appendChild(
-                HTML(/*html*/`<fieldset>`, {
-                    children: ReactiveChildren(this.model.data.fields, (item) =>
-                        ReactiveElement(item,
-                            HTML(/*html*/`<div>`, {
-                                children: [
-                                    HTML(/*html*/`<label>`, {
-                                        props: {
-                                            textContent: item.data.label
-                                        }
-                                    }),
-                                    HTML(/*html*/`<e-dropzone>`, {
-                                        props: {
-                                            placeholder: item.data.type
-                                        }
-                                    })
-                                ]}
-                            ),
-                            this.onFieldDataChange
-                        )
-                    )
+            super(model);
+        }
+
+        public render() {
+            return ReactiveChildNodes(this.model.fields, (item) => ReactiveNode(item,
+                HTML(/*html*/`<div>`, {
+                    props: {
+                        className: "field"
+                    },
+                    children: [
+                        HTML(/*html*/`<label>`, {
+                            props: {
+                                className: "label",
+                                textContent: item.data.label
+                            }
+                        }),
+                        HTML(/*html*/`<e-dropzone>`, {
+                            props: {
+                                className: "dropzone",
+                                placeholder: item.data.type
+                            }
+                        })
+                    ]
                 }),
-    
-            );
-    
-            /*new MutationObserver((mutations: MutationRecord[], observer: MutationObserver) => {
-                let isReactiveElement = (node: Node) => {
-                    return node.nodeType === node.ELEMENT_NODE &&
-                        (node as Element).hasAttribute("data-reactive");
-                };
-                mutations.forEach((record: MutationRecord) => {
-                    let addedReactiveElements = Array.from(record.addedNodes).filter(isReactiveElement) as (Element & {
-                        _reactModel: ListModel<any> | ObjectModel<any>,
-                        _reactListener: EventListener
-                    })[];
-                    addedReactiveElements.forEach((reactiveElement) => {
-                        if ("_reactListener" in reactiveElement && "_reactModel" in reactiveElement) {
-                            reactiveElement._reactModel.addEventListener(event)
-                        }
-                    });
-                    let removedReactiveElements = Array.from(record.removedNodes).filter(isReactiveElement);
-                })
-            })*/
+                this.fieldDataChangedCallback
+            ))(this);
         }
     
-        public onFieldDataChange<K extends keyof FieldData>(label: HTMLSpanElement, property: K, oldValue: FieldData[K], newValue: FieldData[K]) {
-            /*switch (property) {
+        public fieldDataChangedCallback<K extends keyof FieldData>(field: HTMLDivElement, property: keyof FieldData, oldValue: FieldData[K], newValue: FieldData[K]) {
+            switch (property) {
                 case "label":
-                    label.textContent = newValue;
-            }*/
+                    field.querySelector(".label")!.textContent = newValue as string;
+                    break;
+            }
         }
     }
-    
+
     let fieldsetView = new FieldsetView(fieldset);
+    
     document.body.appendChild(fieldsetView);
 
     (window as any)["fieldset"] = fieldset;

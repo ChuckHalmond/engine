@@ -53,7 +53,6 @@ class BaseObjectModel<Data extends object> extends EventDispatcher<ObjectModelCh
         return this._data;
     }
 
-
     public setData<K extends keyof Data>(key: K, value: Data[K]): void {
         let oldValue = this._data[key];
         this._data[key] = value;
@@ -70,7 +69,7 @@ interface ListModel<Item> extends EventDispatcher<ListModelEvents> {
 
 class BaseListModel<Item> extends EventDispatcher<ListModelEvents> implements ListModel<Item> {
     private _items: Item[];
-
+    
     constructor(items: Item[]) {
         super();
         this._items = items;

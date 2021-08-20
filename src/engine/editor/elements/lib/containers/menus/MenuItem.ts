@@ -1,6 +1,6 @@
 import { HotKey } from "engine/core/input/Input";
 import { editor } from "engine/editor/Editor";
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Menu";
 import { HTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
 import { HTMLEMenuItemGroupElement } from "./MenuItemGroup";
@@ -66,180 +66,182 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
     constructor() {
         super();
 
-        bindShadowRoot(this, /*template*/`
-            <style>
-                :host {
-                    position: relative;
-                    display: inline-block;
+        this.attachShadow({mode: "open"}).append(
+            Fragment(/*html*/`
+                <style>
+                    :host {
+                        position: relative;
+                        display: inline-block;
 
-                    user-select: none;
-                    white-space: nowrap;
+                        user-select: none;
+                        white-space: nowrap;
 
-                    padding: 2px 6px;
-                    cursor: pointer;
-                }
+                        padding: 2px 6px;
+                        cursor: pointer;
+                    }
 
-                :host(:focus) {
-                    outline: none;
-                }
+                    :host(:focus) {
+                        outline: none;
+                    }
 
-                :host(:focus-within) {
-                    color: black;
-                    background-color: lightgray;
-                }
+                    :host(:focus-within) {
+                        color: black;
+                        background-color: lightgray;
+                    }
 
-                :host([disabled]) {
-                    color: lightgray;
-                }
+                    :host([disabled]) {
+                        color: lightgray;
+                    }
 
-                :host([type="submenu"]) ::slotted([slot="menu"]),
-                :host([type="menu"]) ::slotted([slot="menu"]) {
-                    z-index: 1;
-                    position: absolute;
-                    color: initial;
-                }
+                    :host([type="submenu"]) ::slotted([slot="menu"]),
+                    :host([type="menu"]) ::slotted([slot="menu"]) {
+                        z-index: 1;
+                        position: absolute;
+                        color: initial;
+                    }
 
-                :host([type="menu"]) ::slotted([slot="menu"]) {
-                    top: 100%;
-                    left: 0;
-                }
+                    :host([type="menu"]) ::slotted([slot="menu"]) {
+                        top: 100%;
+                        left: 0;
+                    }
 
-                :host([type="submenu"]) ::slotted([slot="menu"]) {
-                    left: 100%;
-                    top: -6px;
-                }
-                
-                :host([type="submenu"]) ::slotted([slot="menu"][overflowing]) {
-                    right: 100%;
-                    left: auto;
-                }
-                
-                :host([type="menu"]) ::slotted([slot="menu"][overflowing]) {
-                    right: 0;
-                    left: auto;
-                }
+                    :host([type="submenu"]) ::slotted([slot="menu"]) {
+                        left: 100%;
+                        top: -6px;
+                    }
+                    
+                    :host([type="submenu"]) ::slotted([slot="menu"][overflowing]) {
+                        right: 100%;
+                        left: auto;
+                    }
+                    
+                    :host([type="menu"]) ::slotted([slot="menu"][overflowing]) {
+                        right: 0;
+                        left: auto;
+                    }
 
-                :host([type="menu"]) ::slotted([slot="menu"]:not([expanded])),
-                :host([type="submenu"]) ::slotted([slot="menu"]:not([expanded])) {
-                    opacity: 0;
-                    pointer-events: none !important;
-                }
+                    :host([type="menu"]) ::slotted([slot="menu"]:not([expanded])),
+                    :host([type="submenu"]) ::slotted([slot="menu"]:not([expanded])) {
+                        opacity: 0;
+                        pointer-events: none !important;
+                    }
 
-                [part~="li"] {
-                    display: flex;
-                    height: 100%;
-                    list-style-type: none;
-                }
+                    [part~="li"] {
+                        display: flex;
+                        height: 100%;
+                        list-style-type: none;
+                    }
 
-                [part~="content"] {
-                    font-size: 1em;
-                    flex: auto;
-                    display: flex;
-                }
+                    [part~="content"] {
+                        font-size: 1em;
+                        flex: auto;
+                        display: flex;
+                    }
 
-                [part~="icon"] {
-                    flex: none;
-                    display: none;
-                    width: 14px;
-                    height: 14px;
-                    margin-right: 2px;
-                }
+                    [part~="icon"] {
+                        flex: none;
+                        display: none;
+                        width: 14px;
+                        height: 14px;
+                        margin-right: 2px;
+                    }
 
-                [part~="state"] {
-                    flex: none;
-                    width: 16px;
-                    margin-right: 8px;
-                }
+                    [part~="state"] {
+                        flex: none;
+                        width: 16px;
+                        margin-right: 8px;
+                    }
 
-                [part~="input"] {
-                    flex: none;
-                    width: 14px;
-                    height: 14px;
-                    margin-right: 8px;
-                    pointer-events: none;
-                }
+                    [part~="input"] {
+                        flex: none;
+                        width: 14px;
+                        height: 14px;
+                        margin-right: 8px;
+                        pointer-events: none;
+                    }
 
-                [part~="label"] {
-                    flex: auto;
-                    text-align: left;
-                }
+                    [part~="label"] {
+                        flex: auto;
+                        text-align: left;
+                    }
 
-                [part~="hotkey"] {
-                    flex: none;
-                    text-align: right;
-                    margin-left: 16px;
-                }
+                    [part~="hotkey"] {
+                        flex: none;
+                        text-align: right;
+                        margin-left: 16px;
+                    }
 
-                [part~="hotkey"]:empty {
-                    display: none !important;
-                }
+                    [part~="hotkey"]:empty {
+                        display: none !important;
+                    }
 
-                [part~="arrow"] {
-                    flex: none;
-                    margin-left: 8px;
-                    color: inherit;
-                }
+                    [part~="arrow"] {
+                        flex: none;
+                        margin-left: 8px;
+                        color: inherit;
+                    }
 
-                [part~="visual"] {
-                    color: dimgray;
-                    font-size: 1.6em;
-                    line-height: 0.625;
-                }
+                    [part~="visual"] {
+                        color: dimgray;
+                        font-size: 1.6em;
+                        line-height: 0.625;
+                    }
 
-                [part~="visual"]::after {
-                    pointer-events: none;
-                }
+                    [part~="visual"]::after {
+                        pointer-events: none;
+                    }
 
-                :host(:not([type="checkbox"]):not([type="radio"])) [part~="input"] {
-                    display: none;
-                }
+                    :host(:not([type="checkbox"]):not([type="radio"])) [part~="input"] {
+                        display: none;
+                    }
 
-                :host(:not([icon])) [part~="icon"],
-                :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
-                    visibility: hidden;
-                }
+                    :host(:not([icon])) [part~="icon"],
+                    :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
+                        visibility: hidden;
+                    }
 
-                :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
-                    display: none;
-                }
-                
-                :host(:not([type="submenu"])) [part~="arrow"] {
-                    display: none !important;
-                }
-                
-                :host([type="checkbox"][checked]) [part~="state"]::after {
-                    content: "■";
-                }
+                    :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
+                        display: none;
+                    }
+                    
+                    :host(:not([type="submenu"])) [part~="arrow"] {
+                        display: none !important;
+                    }
+                    
+                    :host([type="checkbox"][checked]) [part~="state"]::after {
+                        content: "■";
+                    }
 
-                :host([type="checkbox"]:not([checked])) [part~="state"]::after {
-                    content: "□";
-                }
+                    :host([type="checkbox"]:not([checked])) [part~="state"]::after {
+                        content: "□";
+                    }
 
-                :host([type="radio"][checked]) [part~="state"]::after {
-                    content: "●";
-                }
+                    :host([type="radio"][checked]) [part~="state"]::after {
+                        content: "●";
+                    }
 
-                :host([type="radio"]:not([checked])) [part~="state"]::after {
-                    content: "○";
-                }
+                    :host([type="radio"]:not([checked])) [part~="state"]::after {
+                        content: "○";
+                    }
 
-                :host([type="submenu"]) [part~="arrow"]::after {
-                    content: "›";
-                }
-            </style>
-            <li part="li">
-                <span part="content">
-                    <span part="visual icon"></span>
-                    <!--<span part="visual state"></span>-->
-                    <input part="input" type="hidden" tabindex="-1"></input>
-                    <span part="label"></span>
-                    <span part="hotkey"></span>
-                    <span part="description"></span>
-                    <span part="visual arrow"></span>
-                </span>
-                <slot name="menu"></slot>
-            </li>
-        `);
+                    :host([type="submenu"]) [part~="arrow"]::after {
+                        content: "›";
+                    }
+                </style>
+                <li part="li">
+                    <span part="content">
+                        <span part="visual icon"></span>
+                        <!--<span part="visual state"></span>-->
+                        <input part="input" type="hidden" tabindex="-1"></input>
+                        <span part="label"></span>
+                        <span part="hotkey"></span>
+                        <span part="description"></span>
+                        <span part="visual arrow"></span>
+                    </span>
+                    <slot name="menu"></slot>
+                </li>
+            `)
+        );
         this.childMenu = null;
         this.parentMenu = null;
         this.group = null;

@@ -1,4 +1,4 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { pointIntersectsWithDOMRect } from "engine/editor/elements/Snippets";
 import { HTMLEMenuElement } from "./Menu";
@@ -60,61 +60,63 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
     constructor() {
         super();
 
-        bindShadowRoot(this, /*template*/`
-            <style>
-                :host {
-                    display: inline-block;
-                    position: relative;
-                    user-select: none;
-                }
+        this.attachShadow({mode: "open"}).append(
+            Fragment(/*html*/`
+                <style>
+                    :host {
+                        display: inline-block;
+                        position: relative;
+                        user-select: none;
+                    }
 
-                :host(:focus) {
-                    outline: none;
-                }
-                
-                :host(:not([label])) [part~="li"] {
-                    display: none;
-                }
+                    :host(:focus) {
+                        outline: none;
+                    }
+                    
+                    :host(:not([label])) [part~="li"] {
+                        display: none;
+                    }
 
-                [part~="label"] {
-                    position: relative;
-                    display: inline-block;
-                    width: 100%;
+                    [part~="label"] {
+                        position: relative;
+                        display: inline-block;
+                        width: 100%;
 
-                    user-select: none;
-                    white-space: nowrap;
+                        user-select: none;
+                        white-space: nowrap;
 
-                    padding: 2px 6px 6px 6px;
-                    font-weight: bold;
-                }
+                        padding: 2px 6px 6px 6px;
+                        font-weight: bold;
+                    }
 
-                [part~="li"] {
-                    display: flex;
-                    height: 100%;
-                    list-style-type: none;
-                }
+                    [part~="li"] {
+                        display: flex;
+                        height: 100%;
+                        list-style-type: none;
+                    }
 
-                [part~="separator"] {
-                    margin: 6px 0;
-                }
+                    [part~="separator"] {
+                        margin: 6px 0;
+                    }
 
-                :host(:first-child) [part~="separator"] {
-                    display: none;
-                }
-                
-                ::slotted(*) {
-                    display: block;
-                    width: 100%;
-                }
-            </style>
-            <div part="content">
-                <hr part="separator"/>
-                <li part="li">
-                    <span part="label"></span>
-                </li>
-                <slot></slot>
-            </div>
-        `);
+                    :host(:first-child) [part~="separator"] {
+                        display: none;
+                    }
+                    
+                    ::slotted(*) {
+                        display: block;
+                        width: 100%;
+                    }
+                </style>
+                <div part="content">
+                    <hr part="separator"/>
+                    <li part="li">
+                        <span part="label"></span>
+                    </li>
+                    <slot></slot>
+                </div>
+            `)
+        );
 
         this._activeIndex = -1;
         this.parentMenu = null;

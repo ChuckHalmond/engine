@@ -57,16 +57,16 @@ class EventDispatcherBase<Events extends {[K in Extract<keyof Events, string>]: 
     public addEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): (event: Events[K]) => void;
     public addEventListener<K extends Extract<keyof Events, string>>(event: K, handler: (event: Events[K]) => void, once?: boolean): (event: Events[K]) => void {
         let listeners = this._listeners.get(event.toString());
-        let listener: EventListener<any> = {
+        let newListener: EventListener<any> = {
             handler: handler,
             once: once
         };
         
         if (typeof listeners === "undefined") {
-            this._listeners.set(event.toString(), [listener]);
+            this._listeners.set(event.toString(), [newListener]);
         }
-        else {
-            listeners.push(listener);
+        else if (!listeners.find(listener => listener.handler === handler && listener.once === once)) {
+            listeners.push(newListener);
         }
 
         return handler;

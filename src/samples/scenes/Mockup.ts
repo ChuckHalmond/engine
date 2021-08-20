@@ -1,4 +1,3 @@
-import "engine/editor/elements/lib/containers/duplicable/Duplicable";
 import "engine/editor/elements/lib/containers/menus/Menu";
 import "engine/editor/elements/lib/containers/menus/MenuBar";
 import "engine/editor/elements/lib/containers/menus/MenuItem";
@@ -12,6 +11,8 @@ import "engine/editor/elements/lib/controls/draggable/Dragzone";
 import "engine/editor/elements/lib/controls/draggable/Dropzone";
 import "engine/editor/elements/lib/utils/Import";
 
+import "engine/editor/elements/lib/containers/treeview/TreeViewList";
+import "engine/editor/elements/lib/containers/treeview/TreeViewItem";
 
 import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem"
 import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
@@ -46,7 +47,18 @@ const body = /*template*/`
                     <summary>Flow</summary>
                     <details id="flow-details" class="indented" open>
                         <summary>Extraction</summary>
-                        <a href="#">Extractor[0]</a>[X]
+                        <e-treeviewlist>
+                            <e-treeviewitem label="TreeViewItem 1"></e-treeviewitem>
+                            <e-treeviewitem label="TreeViewItem 2"></e-treeviewitem>
+                            <e-treeviewitem label="TreeViewItem 3">
+                                <e-treeviewitem label="TreeViewItem 31">
+                                    <e-treeviewitem label="TreeViewItem 311"></e-treeviewitem>
+                                    <e-treeviewitem label="TreeViewItem 312"></e-treeviewitem>
+                                </e-treeviewitem>
+                                <e-treeviewitem label="TreeViewItem 32"></e-treeviewitem>
+                                <e-treeviewitem label="TreeViewItem 33"></e-treeviewitem>
+                            </e-treeviewitem>
+                        </e-treeviewlist>
                     </details>
                 </details>
                 <details id="datasets-details" open>

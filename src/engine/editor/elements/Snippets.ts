@@ -1,28 +1,30 @@
-export { forAllHierarchyElements };
-export { forAllHierarchyNodes };
+export { forAllSubtreeElements };
+export { forAllSubtreeNodes };
 export { getPropertyFromPath };
 export { setPropertyFromPath };
 export { pointIntersectsWithDOMRect };
 
-function forAllHierarchyElements(element: Element, func: (element: Element) => void) {
+function forAllSubtreeElements(element: Element, func: (element: Element) => void) {
   let index = 0;
   while (index < element.children.length) {
     let child = element.children.item(index);
     if (child) {
       func(element);
-      forAllHierarchyElements(child, func);
+      forAllSubtreeElements(child, func);
     }
     index++;
   }
 }
 
-function forAllHierarchyNodes(parent: Node, func: (childNode: ChildNode, parentNode: Node) => void) {
+function forAllSubtreeNodes(parent: Node & ParentNode, func: (childNode: Node & ChildNode, parentNode: Node & ParentNode) => void) {
   let index = 0;
   while (index < parent.childNodes.length) {
     let child = parent.childNodes.item(index);
     if (child) {
       func(child, parent);
-      forAllHierarchyNodes(child, func);
+      if (child.hasChildNodes()) {
+        forAllSubtreeNodes(child as unknown as Node & ParentNode, func);
+      }
     }
     index++;
   }

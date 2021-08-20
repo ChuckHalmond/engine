@@ -1,5 +1,5 @@
 import { ListModel, ListModelChangeEvent, ObjectModel, ObjectModelChangeEvent } from "../models/Model";
-import { forAllHierarchyElements } from "./Snippets";
+import { forAllSubtreeElements } from "./Snippets";
 
 export { isTagElement };
 export { RegisterCustomHTMLElement };
@@ -10,9 +10,13 @@ export { HTMLElementDescription };
 export { setHTMLElementProperties };
 export { setHTMLElementAttributes };
 export { HTMLElementConstructor };
-/*export { ReactiveHTMLElement };*/
-export { ReactiveElement };
-export { ReactiveChildren };
+export { isParentNode };
+export { isReactiveNode };
+export { isReactiveParentNode };
+export { ReactiveNode };
+export { ReactiveParentNode };
+export { ReactiveChildNodes };
+export { isElement };
 export { HTML };
 export { HTMLElementInit };
 export { AttributeMutationMixin };
@@ -20,6 +24,8 @@ export { AttributeType };
 export { areAttributesMatching };
 export { BaseAttributeMutationMixin };
 export { createMutationObserverCallback };
+export { isNode };
+export { Fragment };
 
 function isTagElement<K extends keyof HTMLElementTagNameMap>(tagName: K, obj: any): obj is HTMLElementTagNameMap[K] {
     return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() == tagName;
@@ -61,130 +67,7 @@ const RegisterCustomHTMLElement: RegisterCustomHTMLElementDecorator = function(a
         return elementCtor;
     }
 }
-/*
-interface CustomHTMLElementDecorator {
-    (args: {
-        name: string;
-        options?: ElementDefinitionOptions
-    }): <C extends CustomElementConstructor>(elementCtor: C) => C;
-}
 
-const CustomHTMLElement: CustomHTMLElementDecorator = function(args: {
-    name: string;
-    options?: ElementDefinitionOptions
-}) {
-    return <C extends CustomElementConstructor>(
-        elementCtor: C
-    ) => {
-
-        customElements.define(
-            args.name,
-            elementCtor,
-            args.options
-        );
-
-        return elementCtor;
-    }
-}
-
-class HTMLEELement extends HTMLElement {
-
-    constructor() {
-        super();
-        let prototype = (Object.getPrototypeOf(this) as typeof HTMLEELement);
-        this.attachShadow({mode: "open"});
-    }
-
-    connectedCallback() {
-        this.dispatchEvent(new CustomEvent("connected"));
-    }
-
-    disconnectedCallback() {
-        this.dispatchEvent(new CustomEvent("disconnected"));
-    }
-
-    update() {
-        this.shadowRoot!.innerHTML = this.render();
-    }
-
-    render(): Node {
-        return this.shadowRoot!;
-    }
-}
-
-interface PropertyDecorator {
-    (args?: {
-        hasChanged?: (oldValue: any, newValue: any) => boolean;
-        type?: "string" | "number" | "boolean" | "array" | "object";
-        reflect?: boolean;
-    }): <E extends HTMLEELement>(elementPrototype: E, propertyKey: string) => void;
-}
-
-const Property: PropertyDecorator = function(args?: {
-    hasChanged?: (oldValue: any, newValue: any) => boolean;
-    type?: "string" | "number" | "boolean" | "array" | "object";
-    reflect?: boolean;
-}) {
-    return <E extends HTMLEELement>(
-        elementPrototype: E, propertyKey: string
-    ) => {
-        if (args) {
-            Object.defineProperty(elementPrototype, propertyKey, {
-                set: function(this: E, value) {
-                    let propertyHasChanged = true;
-                    if (typeof args !== "undefined" && typeof args.hasChanged === "function") {
-                        propertyHasChanged = args.hasChanged((this as {[k: string]: any})[propertyKey], value)
-                    }
-                    else {
-                        propertyHasChanged = ((this as {[k: string]: any})[propertyKey] !== value);
-                    }
-                    (this as {[k: string]: any})[propertyKey] = value;
-                    if (args.reflect) {
-                        switch (args.type) {
-                            case "boolean":
-                                if (value) {
-                                    this.setAttribute(propertyKey, "");
-                                }
-                                else {
-                                    this.removeAttribute(propertyKey);
-                                }
-                                break;
-                            case "number":
-                            case "string":
-                                if (typeof value !== "undefined" && value !== null) {
-                                    this.setAttribute(propertyKey, value);
-                                }
-                                else {
-                                    this.removeAttribute(propertyKey);
-                                }
-                                break;
-                            case "object":
-                            case "array":
-                                if (typeof value !== "undefined" && value !== null) {
-                                    this.setAttribute(propertyKey, JSON.stringify(value));
-                                }
-                                else {
-                                    this.removeAttribute(propertyKey);
-                                }
-                                break;
-                        }
-                    }
-                    if (propertyHasChanged) {
-                        this.update();
-                    }
-                }
-            });
-        }
-    }
-}
-
-class temp extends HTMLEELement {
-    @Property()
-    myprop: string = "lol";
-}
-
-
-*/
 interface GenerateAttributeAccessorsDecorator {
     (attributes: {
         name: string,
@@ -238,6 +121,21 @@ const GenerateAttributeAccessors: GenerateAttributeAccessorsDecorator = function
                     });
                     break;
                 case "number":
+                    Object.defineProperty(elementCtor.prototype, name, {
+                        get: function(this: HTMLElement) {
+                            const val = this.getAttribute(name);
+                            return (val !== null) ? parseFloat(val) : val;
+                        },
+                        set: function(this: HTMLElement, value) {
+                            if (value) {
+                                this.setAttribute(name, value);
+                            }
+                            else {
+                                this.removeAttribute(name);
+                            }
+                        }
+                    });
+                    break;
                 case "string":
                 default:
                     Object.defineProperty(elementCtor.prototype, name, {
@@ -280,6 +178,12 @@ function bindShadowRoot(element: HTMLElement, templateContent?: string): ShadowR
     return root;
 }
 
+function Fragment(content: string): DocumentFragment {
+    let template = document.createElement("template");
+    template.innerHTML = content;
+    return template.content;
+}
+
 type HTMLElementDescription<K extends keyof HTMLElementTagNameMap> = {
     tagName: K,
     init?: HTMLElementInit<K>
@@ -299,7 +203,7 @@ interface HTMLElementInit<K extends keyof HTMLElementTagNameMap> {
     attrs?: {[name: string]: number | string | boolean},
     children?: (Node | string)[],
     listeners?: {
-        [ListenerEvent in keyof HTMLElementEventMap]?: [listener: (event: HTMLElementEventMap[ListenerEvent]) => any, options?: boolean | AddEventListenerOptions]
+        [ListenerEvent in keyof HTMLElementEventMap]?: [(event: HTMLElementEventMap[ListenerEvent]) => any, Partial<boolean | AddEventListenerOptions>]
     }
 }
 
@@ -328,14 +232,14 @@ interface HTMLInit<K extends keyof HTMLElementTagNameMap> {
     options?: ElementCreationOptions,
     props?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
     attrs?: {[name: string]: number | string | boolean},
-    children?: (Node | string)[] | ReactiveChildrenResult,
+    children?: Node[] | ReactiveChildNodesResult,
     listeners?: {
-        [ListenerEvent in keyof HTMLElementEventMap]?: [listener: (event: HTMLElementEventMap[ListenerEvent]) => any, options?: boolean | AddEventListenerOptions]
+        [ListenerEvent in keyof HTMLElementEventMap]?: [(event: HTMLElementEventMap[ListenerEvent]) => any, Partial<boolean | AddEventListenerOptions>]
     }
 }
 
 function HTML<K extends keyof HTMLElementTagNameMap>(
-    tag: Tag<K>, init?: HTMLInit<K>): HTMLElementTagNameMap[K] {
+    tag: HTMLElementTag<K>, init?: HTMLInit<K>): HTMLElementTagNameMap[K] {
         const tagName = tag.slice(1, tag.length - 1) as K;
         const element = document.createElement(tagName, init?.options);
         if (init) {
@@ -360,72 +264,90 @@ function HTML<K extends keyof HTMLElementTagNameMap>(
         return element;
 }
 
-interface ReactiveElementConstructor<Data extends object, N extends Node | string> {
-    (object: ObjectModel<Data>, element: N | string, react: <K extends keyof Data>(element: N, property: K, oldValue: Data[K], newValue: Data[K]) => void): string | Node;
+type ReactiveNode = Node & {
+    _reactAttributes: {
+        _reactModel: ObjectModel<object>,
+        _reactEvent: "objectmodelchange",
+        _reactListener: (event: ObjectModelChangeEvent) => void;
+    }
 }
 
-interface ReactiveElement extends Element {
-    _reactModel?: ObjectModel<object>,
-    _reactEvent?: "objectmodelchange",
-    _reactListener?: (event: ObjectModelChangeEvent) => void;
+function isNode(obj: any): obj is Node {
+    return obj instanceof Node;
 }
 
-interface ReactiveParentElement extends Element {
-    _reactModel?: ListModel<object>,
-    _reactEvent?: "listmodelchange",
-    _reactListener?: (event: ListModelChangeEvent) => void;
+function isParentNode(node: Node): node is Node & ParentNode {
+    return node.hasChildNodes();
 }
 
-function ReactiveElement<Data extends object, N extends Node | string>
-    (object: ObjectModel<Data>, element: N, react: <K extends keyof Data>(element: N, property: K, oldValue: Data[K], newValue: Data[K]) => void): string | Node {
-        let listener = (event: ObjectModelChangeEvent) => {
-            react(element, event.data.property as keyof Data, event.data.oldValue, event.data.newValue);
-        };
-        /*Object.assign(
-            element, {
-                _reactModel: object,
-                _reactEvent: "objectmodelchange",
-                _reactListener: listener
-            }
-        );*/
-        object.addEventListener("objectmodelchange", listener);
-        return element;
+function isElement(node: Node): node is Element {
+    return node.nodeType === node.ELEMENT_NODE;
 }
 
-interface ReactiveChildrenConstructor<Item extends object> {
-    (list: ListModel<Item>, map: (item: Item) => Node | string): ReactiveChildrenResult;
+function isReactiveNode(node: Node): node is ReactiveNode {
+    let testNode = node as ReactiveNode;
+    return (typeof testNode._reactAttributes !== "undefined") && testNode._reactAttributes._reactEvent === "objectmodelchange";
 }
 
-interface ReactiveChildrenResult {
-    (parent: ParentNode): (Node | string)[];
+type ReactiveParentNode = (Node & ParentNode) & {
+    _reactAttributes: {
+        _reactModel: ListModel<object>,
+        _reactEvent: "listmodelchange",
+        _reactListener: (event: ListModelChangeEvent) => void;
+    }
 }
 
-function ReactiveChildren<Item extends object>(list: ListModel<Item>, map: (item: Item) => Node | string): ReactiveChildrenResult {
-    return (parent: ParentNode) => {
-        let listener = (event: ListModelChangeEvent) => {
-            if (event.data.removedItems.length) {
-                for (let i = 0; i < event.data.removedItems.length; i++) {
-                    parent!.children.item(event.data.index)!.remove();
+function isReactiveParentNode(node: Node): node is ReactiveParentNode {
+    let testNode = node as ReactiveParentNode;
+    return (isParentNode(node) && typeof testNode._reactAttributes !== "undefined") && testNode._reactAttributes._reactEvent === "listmodelchange";
+}
+
+function ReactiveNode<Data extends object, N extends Node>
+    (object: ObjectModel<Data>, node: N, react: <K extends keyof Data>(node: N, property: K, oldValue: Data[K], newValue: Data[K]) => void): N {
+        Object.assign(
+            node, {
+                _reactAttributes: {
+                    _reactModel: object,
+                    _reactEvent: "objectmodelchange",
+                    _reactListener: (event: ObjectModelChangeEvent) => {
+                        react(node, event.data.property as keyof Data, event.data.oldValue, event.data.newValue);
+                    }
                 }
             }
-            if (event.data.addedItems.length) {
-                let addedElements = event.data.addedItems.map(item => map(item));
-                if (event.data.index >= list.items.length) {
-                    parent!.append(...addedElements);
-                }
-                else {
-                    parent!.children.item(event.data.index - event.data.removedItems.length)!.before(...addedElements);
-                }
-            }
-        };
-        /*Object.assign(
+        ) as ReactiveNode;
+        return node;
+}
+
+interface ReactiveChildNodesResult {
+    (parent: Node & ParentNode): (Node | string)[];
+}
+
+function ReactiveChildNodes<Item extends object>(list: ListModel<Item>, map: (item: Item) => Node | string): ReactiveChildNodesResult {
+    return (parent: Node & ParentNode) => {
+        Object.assign(
             parent, {
-                _reactModel: list,
-                _reactEvent: "listmodelchange",
-                _reactListener: listener
+                _reactAttributes: {
+                    _reactModel: list,
+                    _reactEvent: "listmodelchange",
+                    _reactListener: (event: ListModelChangeEvent) => {
+                        if (event.data.removedItems.length) {
+                            for (let i = 0; i < event.data.removedItems.length; i++) {
+                                parent!.children.item(event.data.index)!.remove();
+                            }
+                        }
+                        if (event.data.addedItems.length) {
+                            let addedElements = event.data.addedItems.map(item => map(item));
+                            if (event.data.index >= list.items.length) {
+                                parent!.append(...addedElements);
+                            }
+                            else {
+                                parent!.children.item(event.data.index - event.data.removedItems.length)!.before(...addedElements);
+                            }
+                        }
+                    }
+                }
             }
-        );*/
-        list.addEventListener("listmodelchange", listener);
+        ) as ReactiveParentNode;
         return list.items.map(map);
     }
 }
@@ -433,7 +355,7 @@ function ReactiveChildren<Item extends object>(list: ListModel<Item>, map: (item
 function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
     element: HTMLElementTagNameMap[K],
     listeners: {
-        [K in keyof HTMLElementEventMap]?: [listener: (event: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions]
+        [K in keyof HTMLElementEventMap]?: [(event: HTMLElementEventMap[K]) => any, Partial<boolean | AddEventListenerOptions>]
     }
 ): HTMLElementTagNameMap[K] {
     Object.entries(listeners).forEach((entry) => {
@@ -527,9 +449,8 @@ function createMutationObserverCallback(
     return (mutationsList: MutationRecord[]) =>  {
         mutationsList.forEach((mutation: MutationRecord) => {
             mutation.addedNodes.forEach((node: Node) => {
-                if (node.nodeType === node.ELEMENT_NODE) {
-                    let element = node as Element;
-                    forAllHierarchyElements(element, (childElement: Element) => {
+                if (isElement(node)) {
+                    forAllSubtreeElements(node, (childElement: Element) => {
                         [...childElement.attributes].forEach((attr) => {
                             let matchingMixins = mixins.filter(
                                 mixin => areAttributesMatching(
@@ -544,8 +465,8 @@ function createMutationObserverCallback(
                     });
                 }
             });
-            if (mutation.target.nodeType === Node.ELEMENT_NODE) {
-                let targetElement = mutation.target as Element;
+            if (isElement(mutation.target)) {
+                let targetElement = mutation.target;
                 let attrName = mutation.attributeName;
                 if (attrName) {
                     let relatedMixins = mixins.filter(mixin => mixin.attributeName === attrName);

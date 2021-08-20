@@ -1,4 +1,4 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 
 export { HTMLEMenuBarElement };
@@ -35,34 +35,36 @@ class BaseHTMLEMenuBarElement extends HTMLElement implements HTMLEMenuBarElement
     constructor() {
         super();
         
-        bindShadowRoot(this, /*template*/`
-            <style>
-                :host {
-                    display: flex;
-                    position: relative; 
-                    user-select: none;
-                }
+        this.attachShadow({mode: "open"}).append(
+            Fragment(/*html*/`
+                <style>
+                    :host {
+                        display: flex;
+                        position: relative; 
+                        user-select: none;
+                    }
+                    
+                    :host(:focus) {
+                        outline: 1px solid -webkit-focus-ring-color;
+                    }
 
-                :host(:focus) {
-                    outline: 1px solid -webkit-focus-ring-color;
-                }
+                    :host(:focus) ::slotted(:first-child),
+                    :host(:not(:focus-within)) ::slotted(:hover) {
+                        color: black;
+                        background-color: gainsboro;
+                    }
 
-                :host(:focus) ::slotted(:first-child),
-                :host(:not(:focus-within)) ::slotted(:hover) {
-                    color: black;
-                    background-color: gainsboro;
-                }
-
-                [part~="ul"] {
-                    display: block;
-                    list-style-type: none;
-                    padding: 0; margin: 0;
-                }
-            </style>
-            <ul part="ul">
-                <slot></slot>
-            </ul>
-        `);
+                    [part~="ul"] {
+                        display: block;
+                        list-style-type: none;
+                        padding: 0; margin: 0;
+                    }
+                </style>
+                <ul part="ul">
+                    <slot></slot>
+                </ul>
+            `)
+        );
 
         this.items = [];
         this._activeIndex = -1;
