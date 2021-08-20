@@ -11,10 +11,11 @@ interface HTMLEDropzoneElement extends HTMLElement {
     draggables: HTMLEDraggableElement[];
     dragovered: DropzoneDragoveredType | null;
     name: string;
+    type: string;
     multiple: boolean;
     disabled: boolean;
     placeholder: string;
-    droptest: ((draggables: HTMLEDraggableElement[]) => void) | null;
+    droptest: ((dropzone: HTMLEDropzoneElement, draggables: HTMLEDraggableElement[]) => void) | null;
     addDraggables(draggables: HTMLEDraggableElement[], position: number): void;
     removeDraggables(predicate: (draggable: HTMLEDraggableElement, index: number) => boolean): void;
 }
@@ -38,6 +39,7 @@ type DataChangeEvent = CustomEvent<{
     {name: "multiple", type: "boolean"},
     {name: "label", type: "string"},
     {name: "name", type: "string"},
+    {name: "type", type: "string"},
 ])
 class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneElement {
     
@@ -46,8 +48,9 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
     public multiple!: boolean;
     public disabled!: boolean;
     public name!: string;
+    public type!: string;
 
-    public droptest!: ((draggables: HTMLEDraggableElement[]) => boolean) | null;
+    public droptest!: ((dropzone: HTMLEDropzoneElement, draggables: HTMLEDraggableElement[]) => boolean) | null;
     public value: any;
 
     public draggables: HTMLEDraggableElement[];
@@ -321,7 +324,7 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
 
             let dataTransferSuccess = true;
             if (this.droptest) {
-                dataTransferSuccess = this.droptest(draggables);
+                dataTransferSuccess = this.droptest(this, draggables);
             }
             
             let newDraggables: HTMLEDraggableElement[] = [];

@@ -452,7 +452,12 @@ define("engine/editor/elements/HTMLElement", ["require", "exports", "engine/edit
     exports.ReactiveChildNodes = ReactiveChildNodes;
     function setHTMLElementEventListeners(element, listeners) {
         Object.entries(listeners).forEach((entry) => {
-            element.addEventListener(entry[0], entry[1][0], entry[1][1]);
+            if (Array.isArray(entry[1])) {
+                element.addEventListener(entry[0], entry[1][0], entry[1][1]);
+            }
+            else {
+                element.addEventListener(entry[0], entry[1]);
+            }
         });
         return element;
     }
@@ -1014,7 +1019,7 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
                 let firstDraggable = draggables[0];
                 let dataTransferSuccess = true;
                 if (this.droptest) {
-                    dataTransferSuccess = this.droptest(draggables);
+                    dataTransferSuccess = this.droptest(this, draggables);
                 }
                 let newDraggables = [];
                 let insertionPosition = -1;
@@ -1098,6 +1103,7 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
             { name: "multiple", type: "boolean" },
             { name: "label", type: "string" },
             { name: "name", type: "string" },
+            { name: "type", type: "string" },
         ])
     ], BaseHTMLEDropzoneElement);
     exports.BaseHTMLEDropzoneElement = BaseHTMLEDropzoneElement;
@@ -3968,10 +3974,10 @@ define("samples/scenes/temp", ["require", "exports", "engine/editor/elements/HTM
                 {
                     label: "Column",
                     name: "column",
-                    type: "",
+                    type: "any",
                     allows_expression: true,
                     type_constraint: {
-                        constraint: "same_as",
+                        name: "same_as",
                         other: "value"
                     },
                     optional: false
@@ -3979,9 +3985,9 @@ define("samples/scenes/temp", ["require", "exports", "engine/editor/elements/HTM
                 {
                     label: "Value",
                     name: "value",
-                    type: "",
+                    type: "any",
                     type_constraint: {
-                        constraint: "same_as",
+                        name: "same_as",
                         other: "column"
                     },
                     allows_expression: true,
@@ -4100,7 +4106,44 @@ define("samples/scenes/temp", ["require", "exports", "engine/editor/elements/HTM
                         HTMLElement_22.HTML(/*html*/ `<e-dropzone>`, {
                             props: {
                                 className: "dropzone",
-                                placeholder: item.data.type
+                                name: item.data.name,
+                                placeholder: item.data.type,
+                                type: item.data.type,
+                                droptest: (dropzone, draggables) => {
+                                    let accepts = draggables.every(draggable => dropzone.type === "any" || draggable.type === dropzone.type);
+                                    if (!accepts) {
+                                        alert(`Only ${dropzone.type} draggables are allowed.`);
+                                    }
+                                    return accepts;
+                                }
+                            },
+                            listeners: {
+                                datachange: (event) => {
+                                    let dropzone = event.target;
+                                    let constraint = item.data.type_constraint;
+                                    if (constraint) {
+                                        switch (constraint.name) {
+                                            case "same_as":
+                                                let otherDropzone = this.querySelector(`e-dropzone[name=${constraint.other}]`);
+                                                if (otherDropzone) {
+                                                    if (event.detail.action === "insert") {
+                                                        let draggable = event.detail.draggables[0];
+                                                        if (draggable) {
+                                                            dropzone.type = otherDropzone.type = draggable.type;
+                                                            dropzone.placeholder = otherDropzone.placeholder = draggable.type;
+                                                        }
+                                                    }
+                                                    else {
+                                                        if (otherDropzone.draggables.length === 0) {
+                                                            dropzone.type = otherDropzone.type = "any";
+                                                            dropzone.placeholder = otherDropzone.placeholder = "any";
+                                                        }
+                                                    }
+                                                }
+                                                break;
+                                        }
+                                    }
+                                }
                             }
                         })
                     ]

@@ -203,7 +203,7 @@ interface HTMLElementInit<K extends keyof HTMLElementTagNameMap> {
     attrs?: {[name: string]: number | string | boolean},
     children?: (Node | string)[],
     listeners?: {
-        [ListenerEvent in keyof HTMLElementEventMap]?: [(event: HTMLElementEventMap[ListenerEvent]) => any, Partial<boolean | AddEventListenerOptions>]
+        [ListenerEvent in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[ListenerEvent]) => any | [(event: HTMLElementEventMap[ListenerEvent]) => any, Partial<boolean | AddEventListenerOptions>]
     }
 }
 
@@ -234,7 +234,7 @@ interface HTMLInit<K extends keyof HTMLElementTagNameMap> {
     attrs?: {[name: string]: number | string | boolean},
     children?: Node[] | ReactiveChildNodesResult,
     listeners?: {
-        [ListenerEvent in keyof HTMLElementEventMap]?: [(event: HTMLElementEventMap[ListenerEvent]) => any, Partial<boolean | AddEventListenerOptions>]
+        [ListenerEvent in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[ListenerEvent]) => any | [(event: HTMLElementEventMap[ListenerEvent]) => any, Partial<boolean | AddEventListenerOptions>]
     }
 }
 
@@ -355,11 +355,16 @@ function ReactiveChildNodes<Item extends object>(list: ListModel<Item>, map: (it
 function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
     element: HTMLElementTagNameMap[K],
     listeners: {
-        [K in keyof HTMLElementEventMap]?: [(event: HTMLElementEventMap[K]) => any, Partial<boolean | AddEventListenerOptions>]
+        [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => any | [(event: HTMLElementEventMap[K]) => any, Partial<boolean | AddEventListenerOptions>]
     }
 ): HTMLElementTagNameMap[K] {
     Object.entries(listeners).forEach((entry) => {
-        element.addEventListener(entry[0], entry[1][0] as EventListener, entry[1][1]);
+        if (Array.isArray(entry[1])) {
+            element.addEventListener(entry[0], entry[1][0] as EventListener, entry[1][1]);
+        }
+        else {
+            element.addEventListener(entry[0], entry[1] as EventListener);
+        }
     });
     return element;
 };

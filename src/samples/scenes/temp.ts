@@ -1,4 +1,6 @@
 import { Fragment, HTML, isNode, isParentNode, isReactiveNode, isReactiveParentNode, isTagElement, ReactiveChildNodes, ReactiveNode, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
+import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { forAllSubtreeNodes } from "engine/editor/elements/Snippets";
 import { BaseListModel, BaseObjectModel, ListModel } from "engine/editor/models/Model";
 
@@ -15,7 +17,7 @@ function temp() {
     }
     
     interface FieldTypeConstraintData {
-        constraint: "same_as";
+        name: "same_as";
         other: string;
     }
     
@@ -58,10 +60,10 @@ function temp() {
             {
                 label: "Column",
                 name: "column", 
-                type: "", 
+                type: "any", 
                 allows_expression: true,
                 type_constraint: {
-                    constraint: "same_as",
+                    name: "same_as",
                     other: "value"
                 },
                 optional: false
@@ -69,9 +71,9 @@ function temp() {
             {
                 label: "Value",
                 name: "value", 
-                type: "", 
+                type: "any", 
                 type_constraint: {
-                    constraint: "same_as",
+                    name: "same_as",
                     other: "column"
                 },
                 allows_expression: true,
@@ -213,7 +215,44 @@ function temp() {
                         HTML(/*html*/`<e-dropzone>`, {
                             props: {
                                 className: "dropzone",
-                                placeholder: item.data.type
+                                name: item.data.name,
+                                placeholder: item.data.type,
+                                type: item.data.type,
+                                droptest: (dropzone: HTMLEDropzoneElement, draggables: HTMLEDraggableElement[]) => {
+                                    let accepts = draggables.every(draggable => dropzone.type === "any" || draggable.type === dropzone.type);
+                                    if (!accepts) {
+                                        alert(`Only ${dropzone.type} draggables are allowed.`);
+                                    }
+                                    return accepts;
+                                }
+                            },
+                            listeners: {
+                                datachange: (event: DataChangeEvent) => {
+                                    let dropzone = event.target as HTMLEDropzoneElement;
+                                    let constraint = item.data.type_constraint;
+                                    if (constraint) {
+                                        switch (constraint.name) {
+                                            case "same_as":
+                                                let otherDropzone = this.querySelector(`e-dropzone[name=${constraint.other}]`) as HTMLEDropzoneElement;
+                                                if (otherDropzone) {
+                                                    if (event.detail.action === "insert") {    
+                                                        let draggable = event.detail.draggables[0];
+                                                        if (draggable) {
+                                                            dropzone.type = otherDropzone.type = draggable.type;
+                                                            dropzone.placeholder = otherDropzone.placeholder = draggable.type;
+                                                        }
+                                                    }
+                                                    else {
+                                                        if (otherDropzone.draggables.length === 0) {
+                                                            dropzone.type = otherDropzone.type = "any";
+                                                            dropzone.placeholder = otherDropzone.placeholder = "any"; 
+                                                        }
+                                                    }
+                                                }
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                         })
                     ]
