@@ -3,17 +3,30 @@
     <head>
         <meta charset="utf-8"/>
         <title></title>
+        <link rel="manifest" href="app.webmanifest">
         <!--<link rel="stylesheet" href="/css/main.css"/>-->
         <!--<link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">-->
     </head>
     <body tabindex="0">
+        <script src="service-worker.js"></script>
         <script src="https://unpkg.com/marked@2.1.3/marked.min.js"></script>
         <script src="https://unpkg.com/requirejs@2.3.5/require.js"></script>
-        <script src="/dist/merged.js"></script>
+        <script src="dist/merged.js"></script>
         <script>
             require(["boot"], function (boot) {
                 boot.boot();
             });
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('service-worker.js').then(function(registration) {
+                    console.log('Service worker registration succeeded:', registration);
+                }, /*catch*/ function(error) {
+                    console.log('Service worker registration failed:', error);
+                });
+            }
+            else {
+                console.log('Service workers are not supported.');
+            }
         </script>
     </body>
 </html>
