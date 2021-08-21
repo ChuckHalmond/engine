@@ -24,16 +24,33 @@ import { temp } from "./temp";
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
     <div id="root" class="flex-rows">
-        <!--<header class="flex-cols flex-none padded">
+        <header class="flex-cols flex-none padded">
             <e-menubar tabindex="0">
-                <e-menuitem name="file-menu-item" type="menu" label="File" tabindex="-1" aria-label="File">
+                <e-menuitem name="file-menu" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
-                            <e-menuitem name="canvas-play-item" type="button" label="Import a config..."
-                                tabindex="-1" aria-label="Import a config..."></e-menuitem>
+                            <e-menuitem name="file-import-menu-button" type="button" label="Import…"
+                                tabindex="-1" aria-label="Import…"></e-menuitem>
+                            <e-menuitem name="file-export-menu-button" type="button" label="Export…"
+                            tabindex="-1" aria-label="Export…"></e-menuitem>
+                    </e-menu>
+                </e-menuitem>
+                <e-menuitem name="view-menu" type="menu" label="View" tabindex="-1" aria-label="View">
+                    <e-menu slot="menu" tabindex="-1">
+                        <e-menuitem name="view-boolean-menuitem" type="checkbox" label="Boolean"
+                        tabindex="-1" aria-label="Boolean"></e-menuitem>
+                        <e-menuitem name="view-layout-menuitem" type="submenu" label="Layout"
+                        tabindex="-1" aria-label="Layout">
+                            <e-menu slot="menu" name="view-layout-menu">
+                                <e-menuitemgroup>
+                                    <e-menuitem name="view-layout-standard-menuitem" type="radio" label="Standard"
+                                    tabindex="-1" aria-label="Standard" checked></e-menuitem>
+                                </e-menuitemgroup>
+                            </e-menu>
+                        </e-menuitem>
                     </e-menu>
                 </e-menuitem>
             </e-menubar>
-        </header>-->
+        </header>
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">
@@ -47,8 +64,8 @@ const body = /*template*/`
                     <summary>Flow</summary>
                     <details id="flow-details" class="indented" open>
                         <summary>Extraction</summary>
-                        <e-treeviewlist>
-                            <e-treeviewitem label="TreeViewItem 1"></e-treeviewitem>
+                        <e-treeviewlist tabindex="0">
+                            <e-treeviewitem id="treeviewitem" label="TreeViewItem 1"></e-treeviewitem>
                             <e-treeviewitem label="TreeViewItem 2"></e-treeviewitem>
                             <e-treeviewitem label="TreeViewItem 3">
                                 <e-treeviewitem label="TreeViewItem 31">
@@ -425,8 +442,6 @@ export async function mockup() {
         type: "df",
         name: "df"
     };
-
-    temp();
 
     const dropzone = document.querySelector<HTMLEDropzoneElement>("e-dropzone#columns");
     if (dropzone) {

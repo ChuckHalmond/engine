@@ -22,9 +22,6 @@ interface HTMLEMenuItemGroupElement extends HTMLElement {
     parentMenu: HTMLEMenuElement | null;
     items: HTMLEMenuItemElement[];
 
-    setData(data: HTMLEMenuItemGroupElementData): void;
-    getData(): HTMLEMenuItemGroupElementData;
-
     readonly activeIndex: number;
     readonly activeItem: HTMLEMenuItemElement | null;
     
@@ -191,20 +188,20 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
             }
         });
         
-        this.addEventListener("change", (event: Event) => {
+        this.addEventListener("e-changerequest", (event: Event) => {
             let target = event.target as any;
             if (isTagElement("e-menuitem", target)) {
                 let item = target;
-                if (item.type === "radio" && item.checked) {
-                    let newCheckedRadio = item;
+                if (item.type === "radio" && !item.checked) {
                     let checkedRadio = this.findItem(
                         (item: HTMLEMenuItemElement) => {
-                            return item.type === "radio" && item.checked && item !== newCheckedRadio
+                            return item.type === "radio" && item.checked
                         }
                     );
                     if (checkedRadio) {
                         checkedRadio.checked = false;
                     }
+                    item.checked = true;
                 }
             }
         });
@@ -248,18 +245,6 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
                     break;
             }
         });
-    }
-
-    public setData(data: HTMLEMenuItemGroupElementData): void {
-        this.name = data.name;
-        this.label = data.label;
-    }
-
-    public getData(): HTMLEMenuItemGroupElementData {
-        return {
-            name: this.name,
-            label: this.label
-        };
     }
 
     public attributeChangedCallback(name: string, oldValue: string, newValue: string): void {

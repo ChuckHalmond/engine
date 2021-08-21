@@ -2172,18 +2172,18 @@ define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", 
                     this.reset();
                 }
             });
-            this.addEventListener("change", (event) => {
+            this.addEventListener("e-changerequest", (event) => {
                 let target = event.target;
                 if (HTMLElement_7.isTagElement("e-menuitem", target)) {
                     let item = target;
-                    if (item.type === "radio" && item.checked) {
-                        let newCheckedRadio = item;
+                    if (item.type === "radio" && !item.checked) {
                         let checkedRadio = this.findItem((item) => {
-                            return item.type === "radio" && item.checked && item !== newCheckedRadio;
+                            return item.type === "radio" && item.checked;
                         });
                         if (checkedRadio) {
                             checkedRadio.checked = false;
                         }
+                        item.checked = true;
                     }
                 }
             });
@@ -2227,16 +2227,6 @@ define("engine/editor/elements/lib/containers/menus/MenuItemGroup", ["require", 
                         break;
                 }
             });
-        }
-        setData(data) {
-            this.name = data.name;
-            this.label = data.label;
-        }
-        getData() {
-            return {
-                name: this.name,
-                label: this.label
-            };
         }
         attributeChangedCallback(name, oldValue, newValue) {
             var _a;
@@ -2599,7 +2589,7 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
     var editor = new EditorBase();
     exports.editor = editor;
 });
-define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "exports", "engine/core/input/Input", "engine/editor/Editor", "engine/editor/elements/HTMLElement"], function (require, exports, Input_2, Editor_2, HTMLElement_12) {
+define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_12) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BaseHTMLEMenuItemElement = void 0;
@@ -2617,6 +2607,10 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
 
                         padding: 2px 6px;
                         cursor: pointer;
+                    }
+
+                    :host(:not([type="menu"])) {
+                        padding: initial 12px;
                     }
 
                     :host(:focus) {
@@ -2678,24 +2672,19 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                     }
 
                     [part~="icon"] {
-                        flex: none;
                         display: none;
-                        width: 14px;
-                        height: 14px;
-                        margin-right: 2px;
-                    }
-
-                    [part~="state"] {
                         flex: none;
                         width: 16px;
-                        margin-right: 8px;
+                        height: 16px;
+                        margin-right: 2px;
+                        pointer-events: none;
                     }
 
                     [part~="input"] {
                         flex: none;
-                        width: 14px;
-                        height: 14px;
-                        margin-right: 8px;
+                        width: 16px;
+                        height: 16px;
+                        margin: 2px 8px 0 2px;
                         pointer-events: none;
                     }
 
@@ -2720,47 +2709,20 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                         color: inherit;
                     }
 
-                    [part~="visual"] {
-                        color: dimgray;
-                        font-size: 1.6em;
-                        line-height: 0.625;
+                    :host([type="menu"]) [part~="icon"] {
+                        display: none;
                     }
 
-                    [part~="visual"]::after {
-                        pointer-events: none;
+                    :host(:not([type="menu"])) [part~="label"] {
+                        padding-right: 12px;
                     }
 
                     :host(:not([type="checkbox"]):not([type="radio"])) [part~="input"] {
-                        display: none;
-                    }
-
-                    :host(:not([icon])) [part~="icon"],
-                    :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
                         visibility: hidden;
-                    }
-
-                    :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
-                        display: none;
                     }
                     
                     :host(:not([type="submenu"])) [part~="arrow"] {
                         display: none !important;
-                    }
-                    
-                    :host([type="checkbox"][checked]) [part~="state"]::after {
-                        content: "■";
-                    }
-
-                    :host([type="checkbox"]:not([checked])) [part~="state"]::after {
-                        content: "□";
-                    }
-
-                    :host([type="radio"][checked]) [part~="state"]::after {
-                        content: "●";
-                    }
-
-                    :host([type="radio"]:not([checked])) [part~="state"]::after {
-                        content: "○";
                     }
 
                     :host([type="submenu"]) [part~="arrow"]::after {
@@ -2769,9 +2731,8 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                 </style>
                 <li part="li">
                     <span part="content">
-                        <span part="visual icon"></span>
-                        <!--<span part="visual state"></span>-->
-                        <input part="input" type="hidden" tabindex="-1"></input>
+                        <span part="icon"></span>
+                        <input part="input" type="button" tabindex="-1"></input>
                         <span part="label"></span>
                         <span part="hotkey"></span>
                         <span part="description"></span>
@@ -2785,27 +2746,20 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
             this.group = null;
             this.command = null;
             this._hotkey = null;
-            this._hotkeyExec = null;
         }
         get hotkey() {
             return this._hotkey;
         }
         set hotkey(hotkey) {
             var _a;
-            if (this._hotkey !== null && this._hotkeyExec !== null) {
-                Editor_2.editor.removeHotkeyExec(this._hotkey, this._hotkeyExec);
-            }
-            if (!this._hotkeyExec) {
-                this._hotkeyExec = () => {
-                    if (this.command) {
-                        Editor_2.editor.executeCommand(this.command, this.commandArgs);
-                    }
-                };
-            }
-            if (hotkey instanceof Input_2.HotKey) {
-                this._hotkey = hotkey;
-                Editor_2.editor.addHotkeyExec(this._hotkey, this._hotkeyExec);
-            }
+            this.dispatchEvent(new CustomEvent("hotkeychange", {
+                bubbles: true,
+                detail: {
+                    oldHotKey: this._hotkey,
+                    newHotKey: hotkey
+                }
+            }));
+            this._hotkey = hotkey;
             let hotkeyPart = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector("[part~=hotkey]");
             if (hotkeyPart) {
                 hotkeyPart.textContent = hotkey ? hotkey.toString() : "";
@@ -2824,11 +2778,6 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                         menuElem.parentItem = this;
                     }
                 });
-            }
-        }
-        disconnectedCallback() {
-            if (this._hotkey !== null && this._hotkeyExec !== null) {
-                Editor_2.editor.removeHotkeyExec(this._hotkey, this._hotkeyExec);
             }
         }
         attributeChangedCallback(name, oldValue, newValue) {
@@ -2856,20 +2805,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                             const inputPart = (_c = this.shadowRoot) === null || _c === void 0 ? void 0 : _c.querySelector("[part~=input]");
                             if (inputPart) {
                                 inputPart.checked = (newValue !== null);
-                            }
-                            switch (this.type) {
-                                case "checkbox":
-                                    this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
-                                    if (this.command) {
-                                        Editor_2.editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : { undo: true });
-                                    }
-                                    break;
-                                case "radio":
-                                    this.dispatchEvent(new CustomEvent("change", { bubbles: true }));
-                                    if (this.command) {
-                                        Editor_2.editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : { undo: true });
-                                    }
-                                    break;
+                                this.dispatchEvent(new CustomEvent("e-change", { bubbles: true }));
                             }
                         }
                         break;
@@ -2878,16 +2814,14 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                             const inputPart = (_d = this.shadowRoot) === null || _d === void 0 ? void 0 : _d.querySelector("[part~=input]");
                             if (inputPart) {
                                 switch (this.type) {
-                                    case "button":
-                                        inputPart.type = "button";
-                                    case "checkbox":
-                                        inputPart.type = "checkbox";
-                                        break;
                                     case "radio":
                                         inputPart.type = "radio";
                                         break;
-                                    default:
+                                    case "menu":
                                         inputPart.type = "hidden";
+                                        break;
+                                    default:
+                                        inputPart.type = "checkbox";
                                         break;
                                 }
                             }
@@ -2899,17 +2833,11 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
         trigger() {
             if (!this.disabled) {
                 switch (this.type) {
-                    case "button":
-                    default:
-                        if (this.command) {
-                            Editor_2.editor.executeCommand(this.command, this.commandArgs);
-                        }
-                        break;
                     case "checkbox":
                         this.checked = !this.checked;
                         break;
                     case "radio":
-                        this.checked = true;
+                        this.dispatchEvent(new CustomEvent("e-changerequest", { bubbles: true }));
                         break;
                     case "menu":
                         if (this.childMenu) {
@@ -2917,7 +2845,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                         }
                         break;
                 }
-                this.dispatchEvent(new CustomEvent("trigger", { bubbles: true }));
+                this.dispatchEvent(new CustomEvent("e-trigger", { bubbles: true }));
             }
         }
     };
@@ -3460,7 +3388,8 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewItem", ["require"
                         top: 0;
                         left: 0;
                         display: block;
-                        width: 100%;
+                        width: calc(100% - 2px);
+                        transform: translateX(1px);
                         height: 100%;
                         outline: 1px solid black;
                         pointer-events: none;
@@ -3530,8 +3459,7 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewItem", ["require"
                         position: absolute;
                         left: calc(var(--tree-indent) * var(--indent-width));
                         height: 100%;
-                        width: 1px; 
-                        border-left: 1px solid black;
+                        border-right: 1px solid dimgray;
                     }
                 </style>
                 <li part="li">
@@ -3637,6 +3565,7 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewItem", ["require"
         }
         trigger() {
             this.expanded = !this.expanded;
+            this.dispatchEvent(new CustomEvent("e-trigger", { bubbles: true }));
         }
     };
     BaseHTMLETreeViewItemElement = __decorate([
@@ -3674,7 +3603,7 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewList", ["require"
                         position: relative;
                         display: flex;
                         flex-direction: column;
-                        padding: 2px;
+                        padding: 0;
                         margin: 0;
                     }
                 </style>
@@ -3699,7 +3628,7 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewList", ["require"
                     this.items = items;
                     items.forEach((item) => {
                         item.parent = this;
-                        item.indent = 0;
+                        item.indent = 1;
                     });
                 });
             }
@@ -3735,11 +3664,17 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewList", ["require"
                         if (this.activeItem) {
                             this.activeItem.previousVisibleItem().focus();
                         }
+                        else if (this.items.length > 0) {
+                            this.items[0].focus();
+                        }
                         event.preventDefault();
                         break;
                     case "ArrowDown":
                         if (this.activeItem) {
                             this.activeItem.nextVisibleItem().focus();
+                        }
+                        else if (this.items.length > 0) {
+                            this.items[this.items.length - 1].focus();
                         }
                         event.preventDefault();
                         break;
@@ -3759,7 +3694,6 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewList", ["require"
                         if (this.activeItem) {
                             this.activeItem.trigger();
                         }
-                        event.preventDefault();
                         break;
                     case "Escape":
                         this.active = false;
@@ -3767,13 +3701,13 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewList", ["require"
                             this.activeItem.active = false;
                         }
                         this.focus();
-                        event.preventDefault();
                         break;
                 }
             });
             this.addEventListener("mousedown", (event) => {
-                if (HTMLElement_19.isTagElement("e-treeviewitem", event.target)) {
-                    event.target.trigger();
+                let target = event.target;
+                if (HTMLElement_19.isTagElement("e-treeviewitem", target)) {
+                    target.trigger();
                 }
             });
             this.addEventListener("focusin", (event) => {
@@ -4168,23 +4102,40 @@ define("samples/scenes/temp", ["require", "exports", "engine/editor/elements/HTM
     }
     exports.temp = temp;
 });
-define("samples/scenes/Mockup", ["require", "exports", "samples/scenes/temp", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/containers/treeview/TreeViewList", "engine/editor/elements/lib/containers/treeview/TreeViewItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports, temp_1) {
+define("samples/scenes/Mockup", ["require", "exports", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dragzone", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/lib/utils/Import", "engine/editor/elements/lib/containers/treeview/TreeViewList", "engine/editor/elements/lib/containers/treeview/TreeViewItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.mockup = void 0;
     const body = /*template*/ `
     <link rel="stylesheet" href="../css/mockup.css"/>
     <div id="root" class="flex-rows">
-        <!--<header class="flex-cols flex-none padded">
+        <header class="flex-cols flex-none padded">
             <e-menubar tabindex="0">
-                <e-menuitem name="file-menu-item" type="menu" label="File" tabindex="-1" aria-label="File">
+                <e-menuitem name="file-menu" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
-                            <e-menuitem name="canvas-play-item" type="button" label="Import a config..."
-                                tabindex="-1" aria-label="Import a config..."></e-menuitem>
+                            <e-menuitem name="file-import-menu-button" type="button" label="Import…"
+                                tabindex="-1" aria-label="Import…"></e-menuitem>
+                            <e-menuitem name="file-export-menu-button" type="button" label="Export…"
+                            tabindex="-1" aria-label="Export…"></e-menuitem>
+                    </e-menu>
+                </e-menuitem>
+                <e-menuitem name="view-menu" type="menu" label="View" tabindex="-1" aria-label="View">
+                    <e-menu slot="menu" tabindex="-1">
+                        <e-menuitem name="view-boolean-menuitem" type="checkbox" label="Boolean"
+                        tabindex="-1" aria-label="Boolean"></e-menuitem>
+                        <e-menuitem name="view-layout-menuitem" type="submenu" label="Layout"
+                        tabindex="-1" aria-label="Layout">
+                            <e-menu slot="menu" name="view-layout-menu">
+                                <e-menuitemgroup>
+                                    <e-menuitem name="view-layout-standard-menuitem" type="radio" label="Standard"
+                                    tabindex="-1" aria-label="Standard" checked></e-menuitem>
+                                </e-menuitemgroup>
+                            </e-menu>
+                        </e-menuitem>
                     </e-menu>
                 </e-menuitem>
             </e-menubar>
-        </header>-->
+        </header>
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">
@@ -4198,8 +4149,8 @@ define("samples/scenes/Mockup", ["require", "exports", "samples/scenes/temp", "e
                     <summary>Flow</summary>
                     <details id="flow-details" class="indented" open>
                         <summary>Extraction</summary>
-                        <e-treeviewlist>
-                            <e-treeviewitem label="TreeViewItem 1"></e-treeviewitem>
+                        <e-treeviewlist tabindex="0">
+                            <e-treeviewitem id="treeviewitem" label="TreeViewItem 1"></e-treeviewitem>
                             <e-treeviewitem label="TreeViewItem 2"></e-treeviewitem>
                             <e-treeviewitem label="TreeViewItem 3">
                                 <e-treeviewitem label="TreeViewItem 31">
@@ -4538,7 +4489,6 @@ define("samples/scenes/Mockup", ["require", "exports", "samples/scenes/temp", "e
             type: "df",
             name: "df"
         };
-        temp_1.temp();
         const dropzone = document.querySelector("e-dropzone#columns");
         if (dropzone) {
             dropzone.addEventListener("datachange", () => {
@@ -15455,9 +15405,6 @@ define("engine/editor/templates/other/DraggableInputTemplate", ["require", "expo
                     props: {
                         name: desc.name,
                         hidden: true
-                    },
-                    attr: {
-                        value: desc.value
                     }
                 })
             ]
@@ -16665,7 +16612,7 @@ if (!Object.entries) {
         return resArray;
     };
 }
-define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_4, Input_3, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_3, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_7, Vector2_3, Vector3_11, Snippets_18, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_1, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_40, Loader_1) {
+define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general/Transform", "engine/core/input/Input", "engine/core/rendering/scenes/cameras/PerspectiveCamera", "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry", "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry", "engine/core/rendering/scenes/geometries/lib/QuadGeometry", "engine/core/rendering/webgl/WebGLConstants", "engine/core/rendering/webgl/WebGLFramebufferUtilities", "engine/core/rendering/webgl/WebGLPacketUtilities", "engine/core/rendering/webgl/WebGLProgramUtilities", "engine/core/rendering/webgl/WebGLRenderbuffersUtilities", "engine/core/rendering/webgl/WebGLRendererUtilities", "engine/core/rendering/webgl/WebGLTextureUtilities", "engine/editor/Editor", "engine/editor/elements/lib/containers/menus/Menu", "engine/editor/elements/lib/containers/menus/MenuBar", "engine/editor/elements/lib/containers/menus/MenuItem", "engine/editor/elements/lib/containers/panels/Panel", "engine/editor/elements/lib/containers/panels/PanelGroup", "engine/editor/elements/lib/containers/tabs/Tab", "engine/editor/elements/lib/containers/tabs/TabList", "engine/editor/elements/lib/containers/tabs/TabPanel", "engine/editor/elements/lib/utils/Import", "engine/libs/graphics/colors/Color", "engine/libs/maths/algebra/matrices/Matrix4", "engine/libs/maths/algebra/vectors/Vector2", "engine/libs/maths/algebra/vectors/Vector3", "engine/libs/maths/Snippets", "engine/resources/Resources", "engine/editor/elements/lib/containers/status/StatusBar", "engine/editor/elements/lib/containers/dropdown/Dropdown", "engine/editor/elements/lib/containers/status/StatusItem", "engine/editor/elements/lib/containers/menus/MenuItemGroup", "engine/editor/elements/lib/containers/menus/MenuButton", "engine/editor/elements/lib/misc/Palette", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail", "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem", "engine/editor/elements/lib/controls/draggable/Draggable", "engine/editor/elements/lib/controls/draggable/Dropzone", "engine/editor/elements/HTMLElement", "engine/editor/elements/lib/utils/Loader"], function (require, exports, Transform_4, Input_2, PerspectiveCamera_1, CubeGeometry_1, IcosahedronGeometry_1, QuadGeometry_1, WebGLConstants_9, WebGLFramebufferUtilities_1, WebGLPacketUtilities_1, WebGLProgramUtilities_1, WebGLRenderbuffersUtilities_1, WebGLRendererUtilities_1, WebGLTextureUtilities_2, Editor_2, Menu_1, MenuBar_1, MenuItem_1, Panel_1, PanelGroup_1, Tab_1, TabList_1, TabPanel_2, Import_1, Color_1, Matrix4_7, Vector2_3, Vector3_11, Snippets_18, Resources_1, StatusBar_1, Dropdown_1, StatusItem_2, MenuItemGroup_1, MenuButton_1, Palette_1, BreadcrumbTrail_1, BreadcrumbItem_2, Draggable_1, Dropzone_1, HTMLElement_40, Loader_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.launchScene = exports.start = void 0;
@@ -16882,7 +16829,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                 }, { once: true });
             });
         })).then(function () {
-            Editor_3.editor.setup().then(() => {
+            Editor_2.editor.setup().then(() => {
                 launchScene();
             });
         });
@@ -16916,13 +16863,13 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
     
       document.querySelector('#play-panel')!.append(table);
     }*/
-    window["editor"] = Editor_3.editor;
+    window["editor"] = Editor_2.editor;
     async function launchScene() {
         var _a, _b, _c;
         let frameRequest;
         let render;
         let fps = 0;
-        Editor_3.editor.registerCommand("play-canvas", {
+        Editor_2.editor.registerCommand("play-canvas", {
             exec() {
                 cancelAnimationFrame(frameRequest);
                 frameRequest = requestAnimationFrame(render);
@@ -16930,35 +16877,35 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
             },
             context: 'default'
         });
-        Editor_3.editor.registerCommand("pause-canvas", {
+        Editor_2.editor.registerCommand("pause-canvas", {
             exec() {
                 cancelAnimationFrame(frameRequest);
                 canvas.focus();
             },
             context: 'default'
         });
-        const showFpsMenuItem = (_a = Editor_3.editor.menubar) === null || _a === void 0 ? void 0 : _a.findItem((item) => item.name === "show-fps-item");
+        const showFpsMenuItem = (_a = Editor_2.editor.menubar) === null || _a === void 0 ? void 0 : _a.findItem((item) => item.name === "show-fps-item");
         const canvasFPS = document.getElementById("canvas-fps");
         if (showFpsMenuItem) {
             showFpsMenuItem.command = "toggle-show-fps";
-            Editor_3.editor.addStateListener("show-fps", (showFps) => {
+            Editor_2.editor.addStateListener("show-fps", (showFps) => {
                 showFpsMenuItem.checked = showFps;
             });
         }
         if (canvasFPS) {
-            Editor_3.editor.registerCommand('toggle-show-fps', {
+            Editor_2.editor.registerCommand('toggle-show-fps', {
                 exec() {
-                    Editor_3.editor.setState("show-fps", true);
+                    Editor_2.editor.setState("show-fps", true);
                     canvasFPS.parentElement.classList.remove('hidden');
                 },
                 undo() {
-                    Editor_3.editor.setState("show-fps", false);
+                    Editor_2.editor.setState("show-fps", false);
                     canvasFPS.parentElement.classList.add('hidden');
                 },
                 context: 'default'
             });
         }
-        const showFpsStatusItem = (_b = Editor_3.editor.statusbar) === null || _b === void 0 ? void 0 : _b.findItem((item) => item.name === "show-fps-status");
+        const showFpsStatusItem = (_b = Editor_2.editor.statusbar) === null || _b === void 0 ? void 0 : _b.findItem((item) => item.name === "show-fps-status");
         if (showFpsStatusItem) {
             showFpsStatusItem.stateMap = (showFps) => {
                 return {
@@ -16966,14 +16913,14 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                 };
             };
             //showFpsStatusItem.update(editor.getState("show-fps"));
-            Editor_3.editor.addStateListener("show-fps", (showFps) => {
+            Editor_2.editor.addStateListener("show-fps", (showFps) => {
                 showFpsStatusItem.update(showFps);
             });
             showFpsStatusItem.command = "toggle-show-fps";
         }
-        Editor_3.editor.registerCommand('change-favorite-letter', {
+        Editor_2.editor.registerCommand('change-favorite-letter', {
             exec(value) {
-                Editor_3.editor.setState("favorite-letter", value);
+                Editor_2.editor.setState("favorite-letter", value);
             },
             undo(value) {
             },
@@ -16981,7 +16928,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
         });
         const radiosGroup = document.querySelector("e-menuitemgroup[name='favorite-letter']");
         if (radiosGroup) {
-            Editor_3.editor.addStateListener("favorite-letter", (favoriteLetter) => {
+            Editor_2.editor.addStateListener("favorite-letter", (favoriteLetter) => {
                 let radioToCheck = radiosGroup.items.find((item) => item.type === "radio" && item.value === favoriteLetter);
                 if (radioToCheck) {
                     radioToCheck.checked = true;
@@ -16992,7 +16939,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                 item.commandArgs = item.value;
             });
         }
-        const letterStatus = (_c = Editor_3.editor.statusbar) === null || _c === void 0 ? void 0 : _c.findItem((item) => item.name === "letter-status");
+        const letterStatus = (_c = Editor_2.editor.statusbar) === null || _c === void 0 ? void 0 : _c.findItem((item) => item.name === "letter-status");
         if (letterStatus) {
             letterStatus.stateMap = (letter) => {
                 return {
@@ -17000,11 +16947,11 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
                 };
             };
             //letterStatus.update(editor.getState("favorite-letter"));
-            Editor_3.editor.addStateListener("favorite-letter", (favoriteLetter) => {
+            Editor_2.editor.addStateListener("favorite-letter", (favoriteLetter) => {
                 letterStatus.update(favoriteLetter);
             });
         }
-        await Editor_3.editor.reloadState();
+        await Editor_2.editor.reloadState();
         /*const showFPSAction = (showFPS: boolean) => {
           if (showFPS) {
             canvasFPS.parentElement!.classList.remove('hidden');
@@ -17252,7 +17199,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
         let lastFrameTime = 0;
         let deltaTime = 0;
         let lastPos = new Vector2_3.Vector2();
-        await Input_3.Input.initialize(canvas);
+        await Input_2.Input.initialize(canvas);
         render = function (frameTime) {
             frameTime *= 0.001;
             deltaTime = frameTime - lastFrameTime;
@@ -17261,11 +17208,11 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
             canvasFPS.innerHTML = fps.toFixed(2);
             WebGLRendererUtilities_1.WebGLRendererUtilities.clearColor(gl, Color_1.Color.GREEN.valuesNormalized());
             WebGLRendererUtilities_1.WebGLRendererUtilities.clear(gl, WebGLConstants_9.BufferMaskBit.COLOR_BUFFER_BIT | WebGLConstants_9.BufferMaskBit.DEPTH_BUFFER_BIT);
-            if (Input_3.Input.getMouseButtonDown(Input_3.MouseButton.RIGHT)) {
-                lastPos.copy(Input_3.Input.getMouseButtonPosition());
+            if (Input_2.Input.getMouseButtonDown(Input_2.MouseButton.RIGHT)) {
+                lastPos.copy(Input_2.Input.getMouseButtonPosition());
             }
-            if (Input_3.Input.getMouseButton(Input_3.MouseButton.RIGHT)) {
-                const newPos = Input_3.Input.getMouseButtonPosition();
+            if (Input_2.Input.getMouseButton(Input_2.MouseButton.RIGHT)) {
+                const newPos = Input_2.Input.getMouseButtonPosition();
                 if (!newPos.equals(lastPos)) {
                     const cameraPos = new Vector3_11.Vector3().setValues([camera.getAt(12), camera.getAt(13), camera.getAt(14)]);
                     //console.log(`cameraPos ${cameraPos.x.toFixed(4)} ${cameraPos.y.toFixed(4)} ${cameraPos.z.toFixed(4)}`);
@@ -17344,7 +17291,7 @@ define("samples/scenes/SimpleScene", ["require", "exports", "engine/core/general
             WebGLProgramUtilities_1.WebGLProgramUtilties.useProgram(gl, texGlProg);
             WebGLRendererUtilities_1.WebGLRendererUtilities.depthFunc(gl, WebGLConstants_9.TestFunction.LEQUAL);
             WebGLPacketUtilities_1.WebGLPacketUtilities.drawPacket(gl, texPacketSetter);
-            Input_3.Input.clear();
+            Input_2.Input.clear();
             frameRequest = requestAnimationFrame(render);
         };
     }

@@ -86,7 +86,8 @@ class BaseHTMLETreeViewItemElement extends HTMLElement implements HTMLETreeViewI
                         top: 0;
                         left: 0;
                         display: block;
-                        width: 100%;
+                        width: calc(100% - 2px);
+                        transform: translateX(1px);
                         height: 100%;
                         outline: 1px solid black;
                         pointer-events: none;
@@ -156,8 +157,7 @@ class BaseHTMLETreeViewItemElement extends HTMLElement implements HTMLETreeViewI
                         position: absolute;
                         left: calc(var(--tree-indent) * var(--indent-width));
                         height: 100%;
-                        width: 1px; 
-                        border-left: 1px solid black;
+                        border-right: 1px solid dimgray;
                     }
                 </style>
                 <li part="li">
@@ -271,11 +271,18 @@ class BaseHTMLETreeViewItemElement extends HTMLElement implements HTMLETreeViewI
 
     public trigger(): void {
         this.expanded = !this.expanded;
+        this.dispatchEvent(new CustomEvent("e-trigger", {bubbles: true}));
     }
 }
 
 declare global {
     interface HTMLElementTagNameMap {
         "e-treeviewitem": HTMLETreeViewItemElement,
+    }
+}
+
+declare global {
+    interface HTMLElementEventMap {
+        "e-trigger": Event,
     }
 }

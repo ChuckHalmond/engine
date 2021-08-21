@@ -42,7 +42,7 @@ class BaseHTMLETreeViewListElement extends HTMLElement implements HTMLETreeViewL
                         position: relative;
                         display: flex;
                         flex-direction: column;
-                        padding: 2px;
+                        padding: 0;
                         margin: 0;
                     }
                 </style>
@@ -51,7 +51,6 @@ class BaseHTMLETreeViewListElement extends HTMLElement implements HTMLETreeViewL
                 </ul>
             `)
         );
-
         this.items = [];
         this._activeItem = null;
     }
@@ -71,7 +70,7 @@ class BaseHTMLETreeViewListElement extends HTMLElement implements HTMLETreeViewL
                 this.items = items;
                 items.forEach((item) => {
                     item.parent = this;
-                    item.indent = 0;
+                    item.indent = 1;
                 });
             });
         }
@@ -108,11 +107,17 @@ class BaseHTMLETreeViewListElement extends HTMLElement implements HTMLETreeViewL
                     if (this.activeItem) {
                         this.activeItem.previousVisibleItem().focus();
                     }
+                    else if (this.items.length > 0) {
+                        this.items[0].focus();
+                    }
                     event.preventDefault();
                     break;
                 case "ArrowDown":
                     if (this.activeItem) {
                         this.activeItem.nextVisibleItem().focus();
+                    }
+                    else if (this.items.length > 0) {
+                        this.items[this.items.length - 1].focus();
                     }
                     event.preventDefault();
                     break;
@@ -132,7 +137,6 @@ class BaseHTMLETreeViewListElement extends HTMLElement implements HTMLETreeViewL
                     if (this.activeItem) {
                         this.activeItem.trigger();
                     }
-                    event.preventDefault();
                     break;
                 case "Escape":
                     this.active = false;
@@ -140,14 +144,14 @@ class BaseHTMLETreeViewListElement extends HTMLElement implements HTMLETreeViewL
                         this.activeItem.active = false;
                     }
                     this.focus();
-                    event.preventDefault();
                     break;
             }
         });
 
         this.addEventListener("mousedown", (event: MouseEvent) => {
-            if (isTagElement("e-treeviewitem", event.target)) {
-                event.target.trigger();
+            let target = event.target as any;
+            if (isTagElement("e-treeviewitem", target)) {
+                target.trigger();
             }
         });
 

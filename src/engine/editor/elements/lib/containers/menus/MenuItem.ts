@@ -61,7 +61,6 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
     public commandArgs: any;
 
     private _hotkey: HotKey | null;
-    private _hotkeyExec: (() => void) | null;
 
     constructor() {
         super();
@@ -78,6 +77,10 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
 
                         padding: 2px 6px;
                         cursor: pointer;
+                    }
+
+                    :host(:not([type="menu"])) {
+                        padding: initial 12px;
                     }
 
                     :host(:focus) {
@@ -139,24 +142,19 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                     }
 
                     [part~="icon"] {
-                        flex: none;
                         display: none;
-                        width: 14px;
-                        height: 14px;
-                        margin-right: 2px;
-                    }
-
-                    [part~="state"] {
                         flex: none;
                         width: 16px;
-                        margin-right: 8px;
+                        height: 16px;
+                        margin-right: 2px;
+                        pointer-events: none;
                     }
 
                     [part~="input"] {
                         flex: none;
-                        width: 14px;
-                        height: 14px;
-                        margin-right: 8px;
+                        width: 16px;
+                        height: 16px;
+                        margin: 2px 8px 0 2px;
                         pointer-events: none;
                     }
 
@@ -181,47 +179,20 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                         color: inherit;
                     }
 
-                    [part~="visual"] {
-                        color: dimgray;
-                        font-size: 1.6em;
-                        line-height: 0.625;
+                    :host([type="menu"]) [part~="icon"] {
+                        display: none;
                     }
 
-                    [part~="visual"]::after {
-                        pointer-events: none;
+                    :host(:not([type="menu"])) [part~="label"] {
+                        padding-right: 12px;
                     }
 
                     :host(:not([type="checkbox"]):not([type="radio"])) [part~="input"] {
-                        display: none;
-                    }
-
-                    :host(:not([icon])) [part~="icon"],
-                    :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
                         visibility: hidden;
-                    }
-
-                    :host(:not([type="checkbox"]):not([type="radio"])) [part~="state"] {
-                        display: none;
                     }
                     
                     :host(:not([type="submenu"])) [part~="arrow"] {
                         display: none !important;
-                    }
-                    
-                    :host([type="checkbox"][checked]) [part~="state"]::after {
-                        content: "■";
-                    }
-
-                    :host([type="checkbox"]:not([checked])) [part~="state"]::after {
-                        content: "□";
-                    }
-
-                    :host([type="radio"][checked]) [part~="state"]::after {
-                        content: "●";
-                    }
-
-                    :host([type="radio"]:not([checked])) [part~="state"]::after {
-                        content: "○";
                     }
 
                     :host([type="submenu"]) [part~="arrow"]::after {
@@ -230,9 +201,8 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                 </style>
                 <li part="li">
                     <span part="content">
-                        <span part="visual icon"></span>
-                        <!--<span part="visual state"></span>-->
-                        <input part="input" type="hidden" tabindex="-1"></input>
+                        <span part="icon"></span>
+                        <input part="input" type="button" tabindex="-1"></input>
                         <span part="label"></span>
                         <span part="hotkey"></span>
                         <span part="description"></span>
@@ -247,7 +217,6 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
         this.group = null;
         this.command = null;
         this._hotkey = null;
-        this._hotkeyExec = null;
     }
 
     public get hotkey(): HotKey | null {
@@ -255,22 +224,18 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
     }
 
     public set hotkey(hotkey: HotKey | null) {
-        if (this._hotkey !== null && this._hotkeyExec !== null) {
-            editor.removeHotkeyExec(this._hotkey, this._hotkeyExec);
-        }
+        this.dispatchEvent(
+            new CustomEvent("hotkeychange", {
+                bubbles: true,
+                detail: {
+                    oldHotKey: this._hotkey,
+                    newHotKey: hotkey
 
-        if (!this._hotkeyExec) {
-            this._hotkeyExec = () => {
-                if (this.command) {
-                    editor.executeCommand(this.command, this.commandArgs);
                 }
-            };
-        }
-        
-        if (hotkey instanceof HotKey) {
-            this._hotkey = hotkey;
-            editor.addHotkeyExec(this._hotkey, this._hotkeyExec);
-        }
+            })
+        );
+
+        this._hotkey = hotkey;
 
         let hotkeyPart = this.shadowRoot?.querySelector("[part~=hotkey]");
         if (hotkeyPart) {
@@ -292,12 +257,6 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                     menuElem.parentItem = this;
                 }
             });
-        }
-    }
-
-    public disconnectedCallback(): void {
-        if (this._hotkey !== null && this._hotkeyExec !== null) {
-            editor.removeHotkeyExec(this._hotkey, this._hotkeyExec);
         }
     }
 
@@ -325,20 +284,7 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                         const inputPart = this.shadowRoot?.querySelector<HTMLInputElement>("[part~=input]");
                         if (inputPart) {
                             inputPart.checked = (newValue !== null);
-                        }
-                        switch (this.type) {
-                            case "checkbox":
-                                this.dispatchEvent(new CustomEvent("change", {bubbles: true}));
-                                if (this.command) {
-                                    editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : {undo: true});
-                                }
-                                break;
-                            case "radio":
-                                this.dispatchEvent(new CustomEvent("change", {bubbles: true}));
-                                if (this.command) {
-                                    editor.executeCommand(this.command, this.commandArgs, this.checked ? void 0 : {undo: true});
-                                }
-                                break;
+                            this.dispatchEvent(new CustomEvent("e-change", {bubbles: true}));
                         }
                     }
                     break;
@@ -347,16 +293,14 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                         const inputPart = this.shadowRoot?.querySelector<HTMLInputElement>("[part~=input]");
                         if (inputPart) {
                             switch (this.type) {
-                                case "button":
-                                    inputPart.type = "button";
-                                case "checkbox":
-                                    inputPart.type = "checkbox";
-                                    break;
                                 case "radio":
                                     inputPart.type = "radio";
                                     break;
-                                default:
+                                case "menu":
                                     inputPart.type = "hidden";
+                                    break;
+                                default:
+                                    inputPart.type = "checkbox";
                                     break;
                             }
                         }
@@ -369,17 +313,11 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
     public trigger(): void {
         if (!this.disabled) {
             switch (this.type) {
-                case "button":
-                default:
-                    if (this.command) {
-                        editor.executeCommand(this.command, this.commandArgs);
-                    }
-                    break;
                 case "checkbox":
                     this.checked = !this.checked;
                     break;
                 case "radio":
-                    this.checked = true;
+                    this.dispatchEvent(new CustomEvent("e-changerequest", {bubbles: true}));
                     break;
                 case "menu":
                     if (this.childMenu) {
@@ -387,7 +325,7 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
                     }
                     break;
             }
-            this.dispatchEvent(new CustomEvent("trigger", {bubbles: true}));
+            this.dispatchEvent(new CustomEvent("e-trigger", {bubbles: true}));
         }
     }
 }
@@ -395,5 +333,22 @@ class BaseHTMLEMenuItemElement extends HTMLElement implements HTMLEMenuItemEleme
 declare global {
     interface HTMLElementTagNameMap {
         "e-menuitem": HTMLEMenuItemElement,
+    }
+}
+
+type EHotKeyChangeEvent = CustomEvent<{
+    oldHotKey: HotKey | null;
+    newHotKey: HotKey | null;
+}>;
+
+declare global {
+    interface HTMLElementEventMap {
+        "hotkeychange": EHotKeyChangeEvent,
+    }
+}
+
+declare global {
+    interface HTMLElementEventMap {
+        "e-trigger": Event,
     }
 }
