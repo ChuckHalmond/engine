@@ -2212,7 +2212,7 @@ define("engine/editor/elements/lib/containers/menus/MenuItem", ["require", "expo
                     display: inline-block;
                     width: 18px;
                     height: 18px;
-                    transform: scale(1.2) translateY(-8%);
+                    transform: scale(1.2) translateY(-15%);
                 }
 
                 :host([type="menu"]) [part~="arrow"],
