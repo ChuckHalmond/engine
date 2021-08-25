@@ -10,6 +10,7 @@ import "engine/editor/elements/lib/containers/tabs/TabPanel";
 import "engine/editor/elements/lib/controls/draggable/Draggable";
 import "engine/editor/elements/lib/controls/draggable/Dragzone";
 import "engine/editor/elements/lib/controls/draggable/Dropzone";
+import "engine/editor/elements/lib/controls/draggable/DropzoneInput";
 import "engine/editor/elements/lib/utils/Import";
 
 import "engine/editor/elements/lib/containers/treeview/TreeViewList";
@@ -196,10 +197,10 @@ const body = /*template*/`
                                         <label for="as">As</label>
                                         <input type="text" name="as" value="as" required ondrop="event.preventDefault()"/>
                                         <label for="dropzone">Dropzone</label>
-                                        <e-dropzoneinput>
+                                        <!--<e-dropzoneinput>
                                             <e-dropzone slot="dropzone" type="type"></e-dropzone>
                                             <input slot="input" name="lol" required/>
-                                        </e-dropzoneinput>
+                                        </e-dropzoneinput>-->
                                     </fieldset>
                                     <!--<fieldset name="csv" class="grid-fieldset margin-top" hidden>
                                         <label for="filepath">Filepath</label>

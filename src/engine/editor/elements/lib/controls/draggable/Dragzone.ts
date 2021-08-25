@@ -18,6 +18,7 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
     public label!: string;
 
     public draggables: HTMLEDraggableElement[];
+    public selectedDraggables: HTMLEDraggableElement[];
 
     constructor() {
         super();
@@ -54,10 +55,26 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
             </div>
         `);
         this.draggables = [];
+        this.selectedDraggables = [];
     }
 
-    public get selectedDraggables(): HTMLEDraggableElement[] {
-        return this.draggables.filter(draggable => draggable.selected);
+    public selectDraggable(draggable: HTMLEDraggableElement): void {
+        draggable.selected = true;
+        this.selectedDraggables.push(draggable);
+    }
+
+    public unselectDraggable(draggable: HTMLEDraggableElement): void {
+        let index = this.selectedDraggables.indexOf(draggable);
+        if (index > -1) {
+            draggable.selected = false;
+            this.selectedDraggables.splice(index, 1);
+        }
+    }
+
+    public clearSelection(): void {
+        this.selectedDraggables.splice(0, this.selectedDraggables.length).forEach((draggable) => {
+            draggable.selected = false;
+        });
     }
     
     public connectedCallback() {
@@ -79,7 +96,7 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
         this.addEventListener("keydown", (event: KeyboardEvent) => {
             switch (event.key) {
                 case "Escape":
-                    this.selectedDraggables.forEach(draggable => draggable.selected = false);
+                    this.clearSelection();
                     this.focus();
                     break;
             }
@@ -111,9 +128,7 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
         this.addEventListener("focusout", (event: FocusEvent) => {
             let relatedTarget = event.relatedTarget as any;
             if (!this.contains(relatedTarget)) {
-                this.draggables.forEach((thisDraggable) => {
-                    thisDraggable.selected = false;
-                });
+                this.clearSelection();
             }
         });
         
@@ -122,26 +137,34 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
             if (event.button === 0) {
                 if (this.draggables.includes(target)) {
                     if (!event.shiftKey && !event.ctrlKey) {
-                        if (this.selectedDraggables.length == 0) {
-                            target.selected = true;
+                        if (!target.selected) {
+                            this.clearSelection();
+                            this.selectDraggable(target);
                         }
                     }
                     else if (event.ctrlKey) {
-                        target.selected = !target.selected;
+                        (!target.selected) ?
+                            this.selectDraggable(target) :
+                            this.unselectDraggable(target);
                     }
                     else if (event.shiftKey) {
-                        let startRangeIndex = Math.min(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
-                        let endRangeIndex = Math.max(this.draggables.indexOf(this.selectedDraggables[0]), this.draggables.indexOf(target));
+                        let startRangeIndex = Math.min(
+                            this.draggables.indexOf(this.selectedDraggables[0]),
+                            this.draggables.indexOf(target)
+                        );
+                        let endRangeIndex = Math.max(
+                            this.draggables.indexOf(this.selectedDraggables[0]),
+                            this.draggables.indexOf(target)
+                        );
                         this.draggables.forEach((thisDraggable, thisDraggableIndex) => {
-                            thisDraggable.selected = (thisDraggableIndex >= startRangeIndex && thisDraggableIndex <= endRangeIndex);
+                            (thisDraggableIndex >= startRangeIndex && thisDraggableIndex <= endRangeIndex) ? 
+                                this.selectDraggable(thisDraggable) :
+                                this.unselectDraggable(thisDraggable);
                         });
-                        target.selected = true;
                     }
                 }
                 else {
-                    this.draggables.forEach((thisDraggable) => {
-                        thisDraggable.selected = false;
-                    });
+                    this.clearSelection();
                 }
             }
         });
@@ -152,7 +175,9 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
                 if (this.draggables.includes(target)) {
                     if (!event.shiftKey && !event.ctrlKey) {
                         this.draggables.forEach((thisDraggable) => {
-                            thisDraggable.selected = (thisDraggable == target);
+                            if (thisDraggable !== target) {
+                                this.unselectDraggable(thisDraggable);
+                            }
                         });
                     }
                 }

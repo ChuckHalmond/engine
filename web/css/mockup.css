@@ -183,7 +183,8 @@ e-draggable > fieldset > * {
     pointer-events: auto;
 }
 
-e-draggable e-dropzone {
+e-draggable e-dropzone,
+e-draggable e-dropzoneinput {
     display: inline-block;
     border-radius: 4px;
 }
@@ -202,6 +203,7 @@ e-dragzone *:not(e-draggable) {
     pointer-events: none;
 }
 
+e-dropzoneinput e-draggable,
 e-dropzone e-draggable {
     cursor: pointer !important;
 }

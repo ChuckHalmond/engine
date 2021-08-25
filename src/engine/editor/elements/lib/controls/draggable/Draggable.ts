@@ -37,7 +37,7 @@ class HTMLEDraggableElementBase extends HTMLElement implements HTMLEDraggableEle
                 :host {
                     display: inline-block;
                     padding: 3px 4px;
-                    cursor: grab;
+                    cursor: pointer;
                     white-space: nowrap;
                     border-radius: 4px;
                     border: 1px solid black;
@@ -51,12 +51,9 @@ class HTMLEDraggableElementBase extends HTMLElement implements HTMLEDraggableEle
                 }
                 
                 :host([selected]) {
+                    cursor: grab;
                     font-weight: bold;
                     outline: 1px auto black;
-                }
-
-                :host(:active) {
-                    cursor: grabbing;
                 }
 
                 :host([dragovered]) {

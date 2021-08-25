@@ -88,7 +88,7 @@ function temp() {
         signature: "plus_operator",
         is_expression: false,
         label: "[left] + [right]",
-        doc: "PLus...",
+        doc: "Plus...",
         fields: [
             {
                 label: "Left",
@@ -116,48 +116,66 @@ function temp() {
     });
 
     const fieldFragment = (fieldset: HTMLElement, field: FieldModel) => Fragment(
-        HTML(/*html*/`<e-dropzone>`, {
+        HTML(/*html*/`<label>`, {
             props: {
-                className: "dropzone",
-                name: field.data.name,
-                placeholder: field.data.type, 
-                type: field.data.type,
-                droptest: (dropzone: HTMLEDropzoneElement, draggables: HTMLEDraggableElement[]) => {
-                    let accepts = draggables.every(draggable => dropzone.type === "any" || draggable.type === dropzone.type);
-                    if (!accepts) {
-                        alert(`Only ${dropzone.type} draggables are allowed.`);
-                    }
-                    return accepts;
-                }
-            },
-            listeners: {
-                datachange: (event: DataChangeEvent) => {
-                    let dropzone = event.target as HTMLEDropzoneElement;
-                    let constraint = field.data.type_constraint;
-                    if (constraint) {
-                        switch (constraint.name) {
-                            case "same_as":
-                                let otherDropzone = fieldset.querySelector(`e-dropzone[name=${constraint.other}]`) as HTMLEDropzoneElement;
-                                if (otherDropzone) {
-                                    if (event.detail.action === "insert") {    
-                                        let draggable = event.detail.draggables[0];
-                                        if (draggable) {
-                                            dropzone.type = otherDropzone.type = draggable.type;
-                                            dropzone.placeholder = otherDropzone.placeholder = draggable.type;
+                textContent: field.data.label
+            }
+        }),
+        dropzoneInputFragment(fieldset, field)
+    );
+
+    const dropzoneInputFragment = (fieldset: HTMLElement, field: FieldModel) => Fragment(
+        HTML(/*html*/`<e-dropzoneinput>`, {
+            children: [
+                HTML(/*html*/`<e-dropzone>`, {
+                    props: {
+                        slot: "dropzone",
+                        name: field.data.name,
+                        placeholder: field.data.type, 
+                        type: field.data.type,
+                        droptest: (dropzone: HTMLEDropzoneElement, draggables: HTMLEDraggableElement[]) => {
+                            let accepts = draggables.every(draggable => dropzone.type === "any" || draggable.type === dropzone.type);
+                            if (!accepts) {
+                                alert(`Only ${dropzone.type} draggables are allowed.`);
+                            }
+                            return accepts;
+                        }
+                    },
+                    listeners: {
+                        datachange: (event: DataChangeEvent) => {
+                            let dropzone = event.target as HTMLEDropzoneElement;
+                            let constraint = field.data.type_constraint;
+                            if (constraint) {
+                                switch (constraint.name) {
+                                    case "same_as":
+                                        let otherDropzone = fieldset.querySelector(`e-dropzone[name=${constraint.other}]`) as HTMLEDropzoneElement;
+                                        if (otherDropzone) {
+                                            if (event.detail.action === "insert") {    
+                                                let draggable = event.detail.draggables[0];
+                                                if (draggable) {
+                                                    dropzone.type = otherDropzone.type = draggable.type;
+                                                    dropzone.placeholder = otherDropzone.placeholder = draggable.type;
+                                                }
+                                            }
+                                            else {
+                                                if (otherDropzone.draggables.length === 0) {
+                                                    dropzone.type = otherDropzone.type = "any";
+                                                    dropzone.placeholder = otherDropzone.placeholder = "any"; 
+                                                }
+                                            }
                                         }
-                                    }
-                                    else {
-                                        if (otherDropzone.draggables.length === 0) {
-                                            dropzone.type = otherDropzone.type = "any";
-                                            dropzone.placeholder = otherDropzone.placeholder = "any"; 
-                                        }
-                                    }
+                                    break;
                                 }
-                            break;
+                            }
                         }
                     }
-                }
-            }
+                }),
+                HTML(/*html*/`<input>`, {
+                    props: {
+                        slot: "input"
+                    }
+                })
+            ]
         })
     );
     
@@ -190,98 +208,6 @@ function temp() {
         }
     }
 
-    interface HTMLEDropzoneInput extends HTMLElement {
-        dropzone: HTMLEDropzoneElement | null;
-        input: HTMLInputElement | null;
-        converter: ((dropzone: HTMLEDropzoneElement) => string) | null;
-    }
-
-    @RegisterCustomHTMLElement({
-        name: "e-dropzoneinput"
-    })
-    class HTMLEDropzoneInputElementBase extends HTMLElement implements HTMLEDropzoneInput {
-        dropzone: HTMLEDropzoneElement | null;
-        input: HTMLInputElement | null;
-
-        public converter: ((dropzone: HTMLEDropzoneElement) => string) | null;
-
-        constructor() {
-            super();
-        
-            bindShadowRoot(this, /*html*/`
-                <style>
-                    :host {
-                        display: block;
-                    }
-
-                    [part~="container"] {
-                        position: relative;
-                        display: flex;
-                        flex-direction: row;
-                    }
-                    
-                    ::slotted(e-dropzone) {
-                        flex: auto;
-                    }
-    
-                    ::slotted(input) {
-                        position: absolute;
-                        flex: none;
-                        width: 100%;
-                        height: 100%;
-                        left: 0;
-                        top: 0;
-                        opacity: 0;
-                        pointer-events: none;
-                    }
-                </style>
-                <div part="container">
-                    <slot name="input"></slot>
-                    <slot name="dropzone"></slot>
-                </div>
-                `
-            );
-            this.dropzone = null;
-            this.input = null;
-            this.converter = (dropzone) => dropzone.type;
-        }
-
-        public connectedCallback() {
-            this.tabIndex = this.tabIndex;
-
-            this.addEventListener("datachange", (event: DataChangeEvent) => {
-                let target = event.target;
-                if (target == this.dropzone && this.dropzone && this.input && this.converter) {
-                    this.input.value = this.converter(this.dropzone);
-                }
-            });
-    
-            const dropzoneSlot = this.shadowRoot?.querySelector<HTMLSlotElement>("slot[name='dropzone']");
-            if (dropzoneSlot) {
-                dropzoneSlot.addEventListener("slotchange", () => {
-                    const dropzone = dropzoneSlot.assignedElements().filter(
-                        elem => isTagElement("e-dropzone", elem)
-                    ) as HTMLEDropzoneElement[];
-                    if (dropzone.length > 0) {
-                        this.dropzone = dropzone[0];
-                    }
-                });
-            }
-
-            const inputSlot = this.shadowRoot?.querySelector<HTMLSlotElement>("slot[name='input']");
-            if (inputSlot) {
-                inputSlot.addEventListener("slotchange", () => {
-                    const input = inputSlot.assignedElements().filter(
-                        elem => isTagElement("input", elem)
-                    ) as HTMLInputElement[];
-                    if (input.length > 0) {
-                        this.input = input[0];
-                    }
-                });
-            }
-        }
-    }
-
     @RegisterCustomHTMLElement({
         name: "v-draggablefieldset"
     })
@@ -299,7 +225,7 @@ function temp() {
                 children: HTMLStringTemplate(this.model.data.label, this.model.fields.items.reduce(
                     (obj: any, item: FieldModel) => ({
                         ...obj,
-                        [item.data.name]: fieldFragment(this, item)
+                        [item.data.name]: dropzoneInputFragment(this, item)
                     }), {}
                 )).childNodes
             });
