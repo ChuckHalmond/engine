@@ -1,11 +1,11 @@
 import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors } from "engine/editor/elements/HTMLElement";
-import { HTMLEBreadcrumbTrailElement } from "./BreadcrumbTrail";
 
-export { isHTMLEBreadcrumbItemElement };
 export { HTMLEBreadcrumbItemElement };
+export { HTMLEBreadcrumbItemElementBase };
 
-function isHTMLEBreadcrumbItemElement(obj: any): obj is HTMLEBreadcrumbItemElement {
-    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-breadcrumbitem";
+interface HTMLEBreadcrumbItemElement extends HTMLElement {
+    label: string;
+    active: boolean;
 }
 
 @RegisterCustomHTMLElement({
@@ -16,7 +16,7 @@ function isHTMLEBreadcrumbItemElement(obj: any): obj is HTMLEBreadcrumbItemEleme
     {name: "label", type: "string"},
     {name: "active", type: "boolean"}
 ])
-class HTMLEBreadcrumbItemElement extends HTMLElement {
+class HTMLEBreadcrumbItemElementBase extends HTMLElement implements HTMLEBreadcrumbItemElement {
     
     public label!: string;
     public active!: boolean;
@@ -35,9 +35,19 @@ class HTMLEBreadcrumbItemElement extends HTMLElement {
                     font-weight: bold;
                 }
 
-                :host(:not([active]))::after {
-                    content: ">";
+                :host([active]) [part~="li"]::after {
+                    display: none;
+                }
+
+                [part~="li"]::after {
+                    content: "";
                     display: inline-block;
+                    width: 18px;
+                    height: 18px;
+                    background-color: dimgray;
+                    transform: scale(1.2) translateY(4%);
+                    -webkit-mask-image: url("../assets/editor/icons/chevron_right_black_18dp.svg");
+                    mask-image: url("../assets/editor/icons/chevron_right_black_18dp.svg");
                 }
 
                 :host([hidden]) {
@@ -45,7 +55,7 @@ class HTMLEBreadcrumbItemElement extends HTMLElement {
                 }
 
                 [part~="li"] {
-                    display: inline-block;
+                    display: flex;
                     list-style-type: none;
                 }
             </style>
@@ -72,5 +82,11 @@ class HTMLEBreadcrumbItemElement extends HTMLElement {
                     break;
             }
         }
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-breadcrumbitem": HTMLEBreadcrumbItemElement,
     }
 }

@@ -1,4 +1,5 @@
 import "engine/editor/elements/lib/containers/menus/Menu";
+import "engine/editor/elements/lib/containers/menus/MenuButton";
 import "engine/editor/elements/lib/containers/menus/MenuBar";
 import "engine/editor/elements/lib/containers/menus/MenuItem";
 import "engine/editor/elements/lib/containers/menus/MenuItemGroup";
@@ -19,6 +20,9 @@ import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 
 import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { temp } from "./temp";
+import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
+import { HotKey, Key, KeyModifier } from "engine/core/input/Input";
+import { editor } from "engine/editor/Editor";
 
 
 const body = /*template*/`
@@ -28,16 +32,16 @@ const body = /*template*/`
             <e-menubar tabindex="0">
                 <e-menuitem name="file-menu" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
-                            <e-menuitem name="file-import-menu-button" type="button" label="Import…"
-                                tabindex="-1" aria-label="Import…"></e-menuitem>
-                            <e-menuitem name="file-export-menu-button" type="button" label="Export…"
-                            tabindex="-1" aria-label="Export…"></e-menuitem>
+                            <e-menuitem id="file-import-menu-button" name="file-import-menu-button" type="button" label="Import file"
+                                tabindex="-1" aria-label="Import file"></e-menuitem>
+                            <e-menuitem id="file-export-menu-button" name="file-export-menu-button" type="button" label="Export file"
+                            tabindex="-1" aria-label="Export file"></e-menuitem>
                     </e-menu>
                 </e-menuitem>
                 <e-menuitem name="view-menu" type="menu" label="View" tabindex="-1" aria-label="View">
                     <e-menu slot="menu" tabindex="-1">
-                        <e-menuitem name="view-boolean-menuitem" type="checkbox" label="Boolean"
-                        tabindex="-1" aria-label="Boolean"></e-menuitem>
+                        <e-menuitem name="view-boolean-menuitem" type="checkbox" label="Advanced User"
+                        tabindex="-1" aria-label="Advanced User"></e-menuitem>
                         <e-menuitem name="view-layout-menuitem" type="submenu" label="Layout"
                         tabindex="-1" aria-label="Layout">
                             <e-menu slot="menu" name="view-layout-menu">
@@ -54,9 +58,9 @@ const body = /*template*/`
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">
-                    <e-tab name="extract" controls="extract-panel" title="Extract" active></e-tab>
-                    <e-tab name="transform" controls="transform-panel" title="Transform"></e-tab>
-                    <e-tab name="export" controls="export-panel" title="Export"></e-tab>
+                    <e-tab name="extract" controls="extract-panel" title="Extract" active tabindex="-1"></e-tab>
+                    <e-tab name="transform" controls="transform-panel" title="Transform" tabindex="-1"></e-tab>
+                    <e-tab name="export" controls="export-panel" title="Export" tabindex="-1"></e-tab>
                 </e-tablist>
             </div>
             <div id="data-col" class="col flex-none padded borded">
@@ -64,16 +68,16 @@ const body = /*template*/`
                     <summary>Flow</summary>
                     <details id="flow-details" class="indented" open>
                         <summary>Extraction</summary>
-                        <e-treeviewlist tabindex="0">
-                            <e-treeviewitem id="treeviewitem" label="TreeViewItem 1"></e-treeviewitem>
-                            <e-treeviewitem label="TreeViewItem 2"></e-treeviewitem>
-                            <e-treeviewitem label="TreeViewItem 3">
-                                <e-treeviewitem label="TreeViewItem 31">
-                                    <e-treeviewitem label="TreeViewItem 311"></e-treeviewitem>
-                                    <e-treeviewitem label="TreeViewItem 312"></e-treeviewitem>
+                        <e-treeviewlist tabindex="-1">
+                            <e-treeviewitem id="treeviewitem" label="TreeViewItem 1" tabindex="-1"></e-treeviewitem>
+                            <e-treeviewitem label="TreeViewItem 2" tabindex="-1"></e-treeviewitem>
+                            <e-treeviewitem label="TreeViewItem 3" tabindex="-1">
+                                <e-treeviewitem label="TreeViewItem 31" tabindex="-1">
+                                    <e-treeviewitem label="TreeViewItem 311" tabindex="-1"></e-treeviewitem>
+                                    <e-treeviewitem label="TreeViewItem 312" tabindex="-1"></e-treeviewitem>
                                 </e-treeviewitem>
-                                <e-treeviewitem label="TreeViewItem 32"></e-treeviewitem>
-                                <e-treeviewitem label="TreeViewItem 33"></e-treeviewitem>
+                                <e-treeviewitem label="TreeViewItem 32" tabindex="-1"></e-treeviewitem>
+                                <e-treeviewitem label="TreeViewItem 33" tabindex="-1"></e-treeviewitem>
                             </e-treeviewitem>
                         </e-treeviewlist>
                     </details>
@@ -145,10 +149,10 @@ const body = /*template*/`
             </div>
             <div id="panels-col" class="col flex-auto padded-horizontal">
                 <e-tabpanel id="extract-panel">
-                    <!--<e-breadcrumbtrail class="padded borded margin-bottom">
+                    <e-breadcrumbtrail class="margin-bottom">
                         <e-breadcrumbitem>Item 0</e-breadcrumbitem>
                         <e-breadcrumbitem>Item 1</e-breadcrumbitem>
-                    </e-breadcrumbtrail>-->
+                    </e-breadcrumbtrail>
                     <form id="extract-form">
                     <!--<fieldset>
                         <details open>
@@ -165,12 +169,12 @@ const body = /*template*/`
                                 <label for="user">Statement [0]</label>
                                 <input type="number" name="userid" required ondrop="event.preventDefault()/">
                             </fieldset>-->
-                            <fieldset name="loop" class="grid-fieldset margin-top" hidden>
+                            <!--<fieldset name="loop" class="grid-fieldset margin-top" hidden>
                                 <label for="filepath">Filepath</label>
                                 <input name="filepath" type="file"/>
                                 <label for="as">As</label>
                                 <input type="text" name="as" required ondrop="event.preventDefault()"/>
-                            </fieldset>
+                            </fieldset>-->
                             <fieldset>
                                 <details open>
                                     <summary>
@@ -182,26 +186,31 @@ const body = /*template*/`
                                     </summary>
                                     <fieldset name="netezza" class="grid-fieldset margin-top" hidden>
                                         <label for="user">User</label>
-                                        <input type="text" name="userid" required ondrop="event.preventDefault()/">
+                                        <input type="text" name="userid" required value="user" ondrop="event.preventDefault()"/>
                                         <label for="password">Password</label>
-                                        <input type="password" name="password" required ondrop="event.preventDefault()"/>
+                                        <input type="password" name="password" value="password" required ondrop="event.preventDefault()"/>
                                         <label for="database">Database</label>
-                                        <input type="text" name="database" required ondrop="event.preventDefault()"/>
+                                        <input type="text" name="database" value="database" required ondrop="event.preventDefault()"/>
                                         <label for="query">Query</label>
-                                        <textarea name="query"></textarea>
+                                        <textarea name="query" required>Query</textarea>
                                         <label for="as">As</label>
-                                        <input type="text" name="as" required ondrop="event.preventDefault()"/>
+                                        <input type="text" name="as" value="as" required ondrop="event.preventDefault()"/>
+                                        <label for="dropzone">Dropzone</label>
+                                        <e-dropzoneinput>
+                                            <e-dropzone slot="dropzone" type="type"></e-dropzone>
+                                            <input slot="input" name="lol" required/>
+                                        </e-dropzoneinput>
                                     </fieldset>
-                                    <fieldset name="csv" class="grid-fieldset margin-top" hidden>
+                                    <!--<fieldset name="csv" class="grid-fieldset margin-top" hidden>
                                         <label for="filepath">Filepath</label>
                                         <input name="filepath" type="file"/>
                                         <label for="as">As</label>
                                         <input type="text" name="as" required ondrop="event.preventDefault()"/>
-                                    </fieldset>
+                                    </fieldset>-->
                                 </details>
                                 last execution: never<br/>
                                 last execution status: none<br/>
-                                <button id="extract-button" type="button">Extract</button>
+                                <button id="extract-button" type="submit">Extract</button>
                             </fieldset>
                         <!--</details>
                     </fieldset>-->
@@ -282,9 +291,38 @@ declare global {
  }
 
 export async function mockup() {
+
     const bodyTemplate = document.createElement("template");
     bodyTemplate.innerHTML = body;
     document.body.appendChild(bodyTemplate.content);
+
+    editor.registerCommand("import", {
+        exec(): void {
+          alert("Import");
+        },
+        context: 'default'
+    });
+
+    editor.registerCommand("export", {
+        exec(): void {
+          alert("Export");
+        },
+        context: 'default'
+    });
+
+    editor.setup();
+    
+    let importMenuItem = document.getElementById("file-import-menu-button") as HTMLEMenuItemElement;
+    if (importMenuItem) {
+        importMenuItem.command = "import";
+        importMenuItem.hotkey = new HotKey(Key.I, KeyModifier.Control, KeyModifier.Alt);
+    }
+
+    let exportMenuItem = document.getElementById("file-export-menu-button") as HTMLEMenuItemElement;
+    if (exportMenuItem) {
+        exportMenuItem.command = "export";
+        exportMenuItem.hotkey = new HotKey(Key.J, KeyModifier.Control, KeyModifier.Alt);
+    }
 
     const extractForm = document.querySelector<HTMLFormElement>("form#extract-form")
     
@@ -414,7 +452,7 @@ export async function mockup() {
     }
 
     if (extractButton) {
-        extractButton.addEventListener("click", () => {
+        /*extractButton.addEventListener("click", () => {
             if (transformTab) {
                 transformTab.active = true;
                 generateDataset("D1", [
@@ -424,7 +462,7 @@ export async function mockup() {
                     "A", "G", "H", "I", "J"
                 ]);
             }
-        });
+        });*/
     }
 
     if (transformButton) {

@@ -1,10 +1,10 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, bindShadowRoot } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { pointIntersectsWithDOMRect } from "engine/editor/elements/Snippets";
 import { HTMLEMenuItemGroupElement } from "./MenuItemGroup";
 
 export { HTMLEMenuElement };
-export { BaseHTMLEMenuElement };
+export { HTMLEMenuElementBase };
 
 interface HTMLEMenuElement extends HTMLElement {
     name: string;
@@ -29,7 +29,7 @@ interface HTMLEMenuElement extends HTMLElement {
     {name: "expanded", type: "boolean"},
     {name: "overflowing", type: "boolean"}
 ])
-class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
+class HTMLEMenuElementBase extends HTMLElement implements HTMLEMenuElement {
 
     public name!: string;
     public expanded!: boolean;
@@ -43,47 +43,41 @@ class BaseHTMLEMenuElement extends HTMLElement implements HTMLEMenuElement {
     constructor() {
         super();
 
-        this.attachShadow({mode: "open"}).append(
-            Fragment(/*html*/`
-                <style>
-                    :host {
-                        display: block;
-                        position: relative;
-                        user-select: none;
+        bindShadowRoot(this, /*template*/`
+            <style>
+                :host {
+                    display: block;
+                    position: relative;
+                    user-select: none;
 
-                        padding: 6px 0;
-                        background-color: white;
-                        cursor: initial;
+                    padding: 6px 0;
+                    background-color: white;
+                    cursor: initial;
 
-                        -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
-                        -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
-                        box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
-                    }
-                    
-                    :host(:focus) {
-                        outline: none;
-                    }
+                    -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+                    -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+                    box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.75);
+                }
+                
+                :host(:focus) {
+                    outline: none;
+                }
 
-                    [part~="ul"] {
-                        display: block;
-                        list-style-type: none;
-                        padding: 0; margin: 0;
-                    }
+                [part~="ul"] {
+                    display: flex;
+                    flex-direction: column;
+                    list-style-type: none;
+                    padding: 0; margin: 0;
+                }
 
-                    ::slotted(*) {
-                        display: block;
-                        width: 100%;
-                    }
-
-                    ::slotted(hr) {
-                        margin: 6px 0;
-                    }
-                </style>
-                <ul part="ul">
-                    <slot></slot>
-                </ul>
-            `)
-        );
+                ::slotted(hr) {
+                    margin: 6px 0;
+                }
+            </style>
+            <ul part="ul">
+                <slot></slot>
+            </ul>
+        `);
 
         this.parentItem = null;
         this.items = [];

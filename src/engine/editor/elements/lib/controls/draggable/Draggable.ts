@@ -1,7 +1,7 @@
 import { RegisterCustomHTMLElement, bindShadowRoot, GenerateAttributeAccessors } from "engine/editor/elements/HTMLElement";
 
 export { HTMLEDraggableElement };
-export { BaseHTMLEDraggableElement };
+export { HTMLEDraggableElementBase };
 
 interface HTMLEDraggableElement extends HTMLElement {
     selected: boolean;
@@ -20,7 +20,7 @@ interface HTMLEDraggableElement extends HTMLElement {
     {name: "disabled", type: "boolean"},
     {name: "type", type: "string"},
 ])
-class BaseHTMLEDraggableElement extends HTMLElement implements HTMLEDraggableElement {
+class HTMLEDraggableElementBase extends HTMLElement implements HTMLEDraggableElement {
     
     public selected!: boolean;
     public dragovered!: boolean;

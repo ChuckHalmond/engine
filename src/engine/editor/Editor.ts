@@ -2,7 +2,9 @@ import { HotKey } from "engine/core/input/Input";
 import { Command, isUndoCommand } from "engine/libs/patterns/commands/Command";
 import { EventDispatcher } from "engine/libs/patterns/messaging/events/EventDispatcher";
 import { ResourceFetcher } from "engine/resources/ResourceFetcher";
+import { isTagElement } from "./elements/HTMLElement";
 import { HTMLEMenuBarElement } from "./elements/lib/containers/menus/MenuBar";
+import { EHotKeyChangeEvent } from "./elements/lib/containers/menus/MenuItem";
 import { HTMLEStatusBarElement } from "./elements/lib/containers/status/StatusBar";
 import { getPropertyFromPath, setPropertyFromPath } from "./elements/Snippets";
 import { HTMLEMenubarTemplate, HTMLEMenubarTemplateDescription } from "./templates/menus/MenubarTemplate";
@@ -130,6 +132,27 @@ class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
                     });
                 }
             });
+        });
+
+        document.body.addEventListener("e-hotkeychange", (event: EHotKeyChangeEvent) => {
+            let target = event.target as any;
+            if (isTagElement("e-menuitem", target)) {
+                if (event.detail.oldHotKey) {
+                    this.removeHotkeyExec(event.detail.oldHotKey, target.trigger.bind(target));
+                }
+                if (event.detail.newHotKey) {
+                    this.addHotkeyExec(event.detail.newHotKey, target.trigger.bind(target));
+                }
+            }
+        });
+
+        document.body.addEventListener("e-trigger", (event: Event) => {
+            let target = event.target as any;
+            if (isTagElement("e-menuitem", target)) {
+                if (target.command) {
+                    this.executeCommand(target.command, target.commandArgs)
+                }
+            }
         });
 
         return Promise.all([

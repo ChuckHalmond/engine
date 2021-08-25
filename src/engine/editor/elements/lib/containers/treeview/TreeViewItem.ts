@@ -1,8 +1,8 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment, bindShadowRoot } from "engine/editor/elements/HTMLElement";
 import { HTMLETreeViewListElement } from "./TreeViewList";
 
 export { HTMLETreeViewItemElement };
-export { BaseHTMLETreeViewItemElement };
+export { HTMLETreeViewItemElementBase };
 
 interface HTMLETreeViewItemElement extends HTMLElement {
     name: string;
@@ -35,7 +35,7 @@ interface HTMLETreeViewItemElement extends HTMLElement {
     {name: "active", type: "boolean"},
     {name: "expanded", type: "boolean"}
 ])
-class BaseHTMLETreeViewItemElement extends HTMLElement implements HTMLETreeViewItemElement {
+class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewItemElement {
 
     public name!: string;
     public label!: string;
@@ -51,128 +51,108 @@ class BaseHTMLETreeViewItemElement extends HTMLElement implements HTMLETreeViewI
     constructor() {
         super();
 
-        this.attachShadow({mode: "open"}).append(
-            Fragment(/*html*/`
-                <style>
-                    :host {
-                        position: relative;
-                        display: inline-block;
+        bindShadowRoot(this, /*template*/`
+            <style>
+                :host {
+                    display: inline-block;
 
-                        user-select: none;
-                        white-space: nowrap;
+                    user-select: none;
+                    white-space: nowrap;
 
-                        padding: 0;
-                        cursor: pointer;
+                    padding: 0;
+                    cursor: pointer;
 
-                        --indent-width: 8px;
-                    }
+                    --indent-width: 8px;
+                }
+                
+                :host([active]) [part~="content"],
+                [part~="content"]:hover {
+                    background-color: gainsboro;
+                }
 
-                    :host(:focus) {
-                        outline: none;
-                    }
+                :host(:not([expanded])) [part~="container"] {
+                    display: none;
+                }
 
-                    [part~="content"]:hover {
-                        background-color: gainsboro;
-                    }
+                [part~="li"] {
+                    display: block;
+                    height: 100%;
+                    list-style-type: none;
+                }
 
-                    :host([active]) [part~="content"] {
-                        background-color: gainsboro;
-                    }
+                [part~="content"] {
+                    font-size: 1em;
+                    display: flex;
+                    padding-left: calc(var(--tree-indent) * var(--indent-width));
+                }
 
-                    :host([active]) [part~="content"]::after {
-                        z-index: 1;
-                        content: "";
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        display: block;
-                        width: calc(100% - 2px);
-                        transform: translateX(1px);
-                        height: 100%;
-                        outline: 1px solid black;
-                        pointer-events: none;
-                    }
+                [part~="label"] {
+                    display: block;
+                    width: 100%;
 
-                    :host(:not([expanded])) [part~="container"] {
-                        display: none;
-                    }
+                    overflow: hidden;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                }
 
-                    [part~="li"] {
-                        display: block;
-                        height: 100%;
-                        list-style-type: none;
-                    }
+                :host(:empty) [part~="expand_arrow"] {
+                    visibility: hidden;
+                }
 
-                    [part~="content"] {
-                        position: relative;
-                        font-size: 1em;
-                        display: flex;
-                        padding-left: calc(var(--tree-indent) * var(--indent-width));
-                    }
+                :host(:empty) [part~="container"] {
+                    display: none;
+                }
 
-                    [part~="label"] {
-                        display: block;
-                        width: 100%;
+                [part~="expand_arrow"] {
+                    position: relative;
+                    width: 18px;
+                    height: 18px;
+                    padding-right: 8px;
+                }
 
-                        overflow: hidden;
-                        white-space: nowrap;
-                        text-overflow: ellipsis;
-                    }
+                [part~="expand_arrow"]::after {
+                    content: "";
+                    display: inline-block;
+                    width: 18px;
+                    height: 18px;
+                    position: absolute;
+                    background-color: dimgray;
+                    transform: scale(1.2) translateY(4%);
+                }
 
-                    :host(:empty) [part~="expand_arrow"] {
-                        visibility: hidden;
-                    }
+                :host(:not([expanded])) [part~="expand_arrow"]::after {
+                    -webkit-mask-image: url("../assets/editor/icons/chevron_right_black_18dp.svg");
+                    mask-image: url("../assets/editor/icons/chevron_right_black_18dp.svg");
+                }
 
-                    :host(:empty) [part~="container"] {
-                        display: none;
-                    }
+                :host([expanded]) [part~="expand_arrow"]::after {
+                    -webkit-mask-image: url("../assets/editor/icons/expand_more_black_18dp.svg");
+                    mask-image: url("../assets/editor/icons/expand_more_black_18dp.svg");
+                }
 
-                    [part~="expand_arrow"] {
-                        color: dimgray;
-                        padding-right: 4px;
-                    }
+                [part~="state"] {
+                    flex: none;
+                }
 
-                    :host(:not([expanded])) [part~="expand_arrow"]::after {
-                        content: "►";
-                    }
-
-                    :host([expanded]) [part~="expand_arrow"]::after {
-                        content: "▼";
-                    }
-
-                    [part~="state"] {
-                        flex: none;
-                    }
-
-                    [part~="container"] {
-                        position: relative;
-                        display: flex;
-                        flex-direction: column;
-                        padding: 0;
-                        margin: 0;
-                    }
-
-                    [part~="container"]::after {
-                        content: "";
-                        position: absolute;
-                        left: calc(var(--tree-indent) * var(--indent-width));
-                        height: 100%;
-                        border-right: 1px solid dimgray;
-                    }
-                </style>
-                <li part="li">
-                    <span part="content">
-                        <span part="expand_arrow"></span>
-                        <span part="icon"></span>
-                        <span part="label"></span>
-                        <span part="state"></span>
-                    </span>
-                    <ul part="container">
-                        <slot></slot>
-                    </ul>
-                </li>
-            `)
-        );
+                [part~="container"] {
+                    display: flex;
+                    flex-direction: column;
+                    padding: 0;
+                    margin: 0;
+                }
+            </style>
+            <li part="li">
+                <span part="content">
+                    <span part="expand_arrow"></span>
+                    <span part="icon"></span>
+                    <span part="label"></span>
+                    <span part="state"></span>
+                </span>
+                <ul part="container">
+                    <slot></slot>
+                </ul>
+            </li>
+        `);
         this.items = [];
         this.parent = null;
         this.indent = 0;

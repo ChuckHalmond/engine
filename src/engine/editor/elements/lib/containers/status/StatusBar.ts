@@ -1,11 +1,11 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { HTMLEStatusItemElement, isHTMLEStatusItemElement } from "./StatusItem";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEStatusItemElement } from "./StatusItem";
 
 export { HTMLEStatusBarElement };
-export { isHTMLEStatusBarElement };
+export { HTMLEStatusBarElementBase };
 
-function isHTMLEStatusBarElement(elem: Element): elem is HTMLEStatusBarElement {
-    return elem.tagName.toLowerCase() === "e-statusbar";
+interface HTMLEStatusBarElement  extends HTMLElement {
+    items: HTMLEStatusItemElement[];
 }
 
 @RegisterCustomHTMLElement({
@@ -15,7 +15,7 @@ function isHTMLEStatusBarElement(elem: Element): elem is HTMLEStatusBarElement {
     {name: "name", type: "string"},
     {name: "active", type: "boolean"},
 ])
-class HTMLEStatusBarElement extends HTMLElement {
+class HTMLEStatusBarElementBase extends HTMLElement implements HTMLEStatusBarElement {
 
     public name!: string;
     public active!: boolean;
@@ -68,12 +68,9 @@ class HTMLEStatusBarElement extends HTMLElement {
         const slot = this.shadowRoot?.querySelector("slot");
         if (slot) {
             slot.addEventListener("slotchange", (event: Event) => {
-                const items = (event.target as HTMLSlotElement).assignedElements();
-                items.forEach((item) => {
-                    if (isHTMLEStatusItemElement(item)) {
-                        this.items.push(item);
-                    }
-                });
+                const items = (event.target as HTMLSlotElement).assignedElements()
+                    .filter(item => isTagElement("e-statusitem", item)) as HTMLEStatusItemElement[];
+                this.items = items;
             }, {once: true});
         }
     }
@@ -130,5 +127,11 @@ class HTMLEStatusBarElement extends HTMLElement {
         if (item) {
             this._selectedItemIndex = -1;
         }
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-statusbar": HTMLEStatusBarElement,
     }
 }

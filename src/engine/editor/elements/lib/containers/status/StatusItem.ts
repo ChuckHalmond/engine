@@ -2,13 +2,13 @@ import { editor } from "engine/editor/Editor";
 import { RegisterCustomHTMLElement, GenerateAttributeAccessors, bindShadowRoot } from "engine/editor/elements/HTMLElement";
 
 export { HTMLEStatusItemElement };
-export { isHTMLEStatusItemElement };
+export { HTMLEStatusItemElementBase };
+
+interface HTMLEStatusItemElement extends HTMLElement {
+
+}
 
 type EStatusElementType = "button" | "widget";
-
-function isHTMLEStatusItemElement(elem: Element): elem is HTMLEStatusItemElement {
-    return elem.tagName.toLowerCase() === "e-statusitem";
-}
 
 @RegisterCustomHTMLElement({
     name: "e-statusitem",
@@ -18,7 +18,7 @@ function isHTMLEStatusItemElement(elem: Element): elem is HTMLEStatusItemElement
     {name: "icon", type: "string"},
     {name: "type", type: "string"},
 ])
-class HTMLEStatusItemElement extends HTMLElement {
+class HTMLEStatusItemElementBase extends HTMLElement implements HTMLEStatusItemElement {
 
     public name!: string;
     public type!: EStatusElementType;
@@ -99,5 +99,11 @@ class HTMLEStatusItemElement extends HTMLElement {
             this.activate();
             event.stopPropagation();
         });
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-statusitem": HTMLEStatusItemElement,
     }
 }

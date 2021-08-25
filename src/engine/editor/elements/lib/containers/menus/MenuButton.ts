@@ -1,8 +1,8 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, bindShadowRoot } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuElement } from "./Menu";
 
 export { HTMLEMenuButtonElement };
-export { BaseHTMLEMenuButtonElement };
+export { HTMLEMenuButtonElementBase };
 
 interface HTMLEMenuButtonElement extends HTMLElement {
     name: string;
@@ -23,10 +23,9 @@ interface HTMLEMenuButtonElement extends HTMLElement {
     {name: "active", type: "boolean"},
     {name: "label", type: "string"},
     {name: "icon", type: "string"},
-    {name: "type", type: "string"},
     {name: "disabled", type: "boolean"},
 ])
-class BaseHTMLEMenuButtonElement extends HTMLElement implements HTMLEMenuButtonElement {
+class HTMLEMenuButtonElementBase extends HTMLElement implements HTMLEMenuButtonElement {
 
     public name!: string;
     public label!: string;
@@ -39,125 +38,102 @@ class BaseHTMLEMenuButtonElement extends HTMLElement implements HTMLEMenuButtonE
     constructor() {
         super();
 
-        this.attachShadow({mode: "open"}).append(
-            Fragment(/*html*/`
-                <style>
-                    :host {
-                        position: relative;
-                        display: inline-block;
+        bindShadowRoot(this, /*template*/`
+            <style>
+                :host {
+                    position: relative;
+                    display: inline-block;
 
-                        user-select: none;
-                        white-space: nowrap;
+                    user-select: none;
+                    white-space: nowrap;
 
-                        padding: 3px 6px;
-                        background-color: white;
+                    padding: 2px 6px;
+                    cursor: pointer;
+                }
 
-                        cursor: pointer;
-                    }
+                :host(:hover) {
+                    color: black;
+                    background-color: gainsboro;
+                }
 
-                    :host(:focus) {
-                        outline: 1px solid -webkit-focus-ring-color;
-                    }
+                /*:host(:focus) {
+                    outline: none;
+                }*/
 
-                    :host(:hover),
-                    :host(:focus-within) {
-                        color: white;
-                        background-color: rgb(92, 92, 92);
-                    }
+                :host(:focus-within) {
+                    color: black;
+                    background-color: lightgray;
+                }
 
-                    :host([disabled]) {
-                        color: rgb(180, 180, 180);
-                    }
+                :host([disabled]) {
+                    color: lightgray;
+                }
 
-                    :host(:hover) [part~="visual"],
-                    :host(:focus) [part~="visual"],
-                    :host(:focus-within) [part~="visual"] {
-                        color: inherit;
-                    }
+                :host ::slotted([slot="menu"]) {
+                    z-index: 1;
+                    position: absolute;
+                    color: initial;
+                }
 
-                    :host(:focus) ::slotted([slot="menu"]),
-                    :host(:focus-within) ::slotted([slot="menu"]) {
-                        color: initial;
-                    }
+                :host ::slotted([slot="menu"]) {
+                    top: 100%;
+                    left: 0;
+                }
+                
+                :host ::slotted([slot="menu"][overflowing]) {
+                    right: 0;
+                    left: auto;
+                }
 
-                    :host(:focus[disabled]),
-                    :host(:focus-within[disabled]) {
-                        background-color: rgb(220, 220, 220);
-                    }
+                :host ::slotted([slot="menu"]:not([expanded])) {
+                    opacity: 0;
+                    pointer-events: none !important;
+                }
 
-                    :host ::slotted([slot="menu"]) {
-                        z-index: 1;
-                        position: absolute;
-                        
-                        top: 100%;
-                        left: 0;
-                    }
+                [part~="li"] {
+                    display: flex;
+                    height: 100%;
+                    list-style-type: none;
+                }
 
-                    :host ::slotted([slot="menu"]:not(:focus-within)) {
-                        max-width: 0;
-                        max-height: 0;
-                        padding: 0;
-                        overflow: clip;
-                    }
+                [part~="content"] {
+                    font-size: 1em;
+                    flex: auto;
+                    display: flex;
+                }
 
-                    [part~="li"] {
-                        display: flex;
-                        height: 100%;
-                        list-style-type: none;
-                    }
+                [part~="icon"] {
+                    display: none;
+                    flex: none;
+                    width: 16px;
+                    height: 16px;
+                    margin-right: 2px;
+                    pointer-events: none;
+                }
 
-                    [part~="content"] {
-                        font-size: 1em;
-                        flex: auto;
-                        display: flex;
-                    }
+                [part~="input"] {
+                    display: inline-block;
+                    flex: none;
+                    width: 16px;
+                    height: 16px;
+                    margin: auto;
+                    pointer-events: none;
+                }
 
-                    [part~="icon"] {
-                        flex: none;
-                        display: none;
-                        width: 16px;
-                        margin-right: 2px;
-                    }
-
-                    [part~="label"] {
-                        flex: auto;
-                        text-align: left;
-                    }
-
-                    [part~="arrow"] {
-                        flex: none;
-                        margin-left: 8px;
-                        transform: rotate(90deg);
-                    }
-
-                    [part~="visual"] {
-                        color: rgb(92, 92, 92);
-                        font-size: 1.6em;
-                        line-height: 0.625;
-                    }
-
-                    [part~="visual"]::after {
-                        pointer-events: none;
-                    }
-
-                    :host(:not([icon])) [part~="icon"] {
-                        visibility: hidden;
-                    }
-
-                    :host [part~="arrow"]::after {
-                        content: "»";
-                    }
-                </style>
-                <li part="li">
-                    <span part="content">
-                        <span part="visual icon"></span>
-                        <span part="label"></span>
-                        <span part="visual arrow"></span>
-                    </span>
-                    <slot name="menu" part="menu"></slot>
-                </li>
-            `)
-        );
+                [part~="label"] {
+                    flex: auto;
+                    text-align: left;
+                }
+            </style>
+            <li part="li">
+                <span part="content">
+                    <span part="icon"></span>
+                    <span part="label"></span>
+                    <span part="description"></span>
+                </span>
+                <slot name="menu"></slot>
+            </li>
+        `);
         this.childMenu = null;
 
         this.addEventListener("keydown", (event: KeyboardEvent) => {

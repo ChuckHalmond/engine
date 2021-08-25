@@ -2,7 +2,7 @@ import { RegisterCustomHTMLElement, bindShadowRoot, isTagElement } from "engine/
 import { HTMLEDraggableElement } from "./Draggable";
 
 export { HTMLEDragzoneElement };
-export { BaseHTMLEDragzoneElement };
+export { HTMLEDragzoneElementBase };
 
 interface HTMLEDragzoneElement extends HTMLElement {
     draggables: HTMLEDraggableElement[];
@@ -13,7 +13,7 @@ interface HTMLEDragzoneElement extends HTMLElement {
 @RegisterCustomHTMLElement({
     name: "e-dragzone"
 })
-class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneElement {
+class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneElement {
 
     public label!: string;
 
@@ -26,10 +26,6 @@ class BaseHTMLEDragzoneElement extends HTMLElement implements HTMLEDragzoneEleme
             <style>
                 :host {
                     display: block;
-                }
-
-                :host(:focus) {
-                    outline: 1px auto black;
                 }
 
                 :host([disabled]) {

@@ -1,16 +1,10 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment, bindShadowRoot } from "engine/editor/elements/HTMLElement";
 import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { pointIntersectsWithDOMRect } from "engine/editor/elements/Snippets";
 import { HTMLEMenuElement } from "./Menu";
 
-export { HTMLEMenuItemGroupElementData };
 export { HTMLEMenuItemGroupElement };
-export { BaseHTMLEMenuItemGroupElement };
-
-interface HTMLEMenuItemGroupElementData {
-    name: string;
-    label: string;
-}
+export { HTMLEMenuItemGroupElementBase };
 
 interface HTMLEMenuItemGroupElement extends HTMLElement {
     name: string;
@@ -42,7 +36,7 @@ interface HTMLEMenuItemGroupElement extends HTMLElement {
     {name: "rows", type: "number"},
     {name: "cells", type: "number"},
 ])
-class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItemGroupElement {
+class HTMLEMenuItemGroupElementBase extends HTMLElement implements HTMLEMenuItemGroupElement {
     public name!: string;
     public label!: string;
     public type!: "list" | "grid";
@@ -57,63 +51,52 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
     constructor() {
         super();
 
-        this.attachShadow({mode: "open"}).append(
-            Fragment(/*html*/`
-                <style>
-                    :host {
-                        display: inline-block;
-                        position: relative;
-                        user-select: none;
-                    }
+        bindShadowRoot(this, /*template*/`
+            <style>
+                :host {
+                    display: inline-block;
+                    position: relative;
+                    user-select: none;
+                }
 
-                    :host(:focus) {
-                        outline: none;
-                    }
-                    
-                    :host(:not([label])) [part~="li"] {
-                        display: none;
-                    }
+                :host(:focus) {
+                    outline: none;
+                }
+                
+                :host(:not([label])) [part~="li"] {
+                    display: none;
+                }
 
-                    [part~="label"] {
-                        position: relative;
-                        display: inline-block;
-                        width: 100%;
+                [part~="label"] {
+                    position: relative;
+                    display: inline-block;
+                    width: 100%;
 
-                        user-select: none;
-                        white-space: nowrap;
+                    user-select: none;
+                    white-space: nowrap;
 
-                        padding: 2px 6px 6px 6px;
-                        font-weight: bold;
-                    }
+                    padding: 2px 6px 6px 6px;
+                    font-weight: bold;
+                }
 
-                    [part~="li"] {
-                        display: flex;
-                        height: 100%;
-                        list-style-type: none;
-                    }
+                [part~="li"] {
+                    list-style-type: none;
+                }
 
-                    [part~="separator"] {
-                        margin: 6px 0;
-                    }
+                [part~="separator"] {
+                    margin: 6px 0;
+                }
 
-                    :host(:first-child) [part~="separator"] {
-                        display: none;
-                    }
-                    
-                    ::slotted(*) {
-                        display: block;
-                        width: 100%;
-                    }
-                </style>
-                <div part="content">
-                    <hr part="separator"/>
-                    <li part="li">
-                        <span part="label"></span>
-                    </li>
-                    <slot></slot>
-                </div>
-            `)
-        );
+                :host(:first-child) [part~="separator"] {
+                    display: none;
+                }
+            </style>
+            <hr part="separator"/>
+            <li part="li">
+                <span part="label"></span>
+            </li>
+            <slot></slot>
+        `);
 
         this._activeIndex = -1;
         this.parentMenu = null;
@@ -188,7 +171,7 @@ class BaseHTMLEMenuItemGroupElement extends HTMLElement implements HTMLEMenuItem
             }
         });
         
-        this.addEventListener("e-changerequest", (event: Event) => {
+        this.addEventListener("e-radiochangerequest", (event: Event) => {
             let target = event.target as any;
             if (isTagElement("e-menuitem", target)) {
                 let item = target;

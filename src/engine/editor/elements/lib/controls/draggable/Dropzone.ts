@@ -4,7 +4,7 @@ import { HTMLEDragzoneElement } from "./Dragzone";
 
 export { DataChangeEvent };
 export { HTMLEDropzoneElement };
-export { BaseHTMLEDropzoneElement };
+export { HTMLEDropzoneElementBase };
 
 interface HTMLEDropzoneElement extends HTMLElement {
     selectedDraggables: HTMLEDraggableElement[]
@@ -37,14 +37,16 @@ type DataChangeEvent = CustomEvent<{
     {name: "placeholder", type: "string"},
     {name: "disabled", type: "boolean"},
     {name: "multiple", type: "boolean"},
+    {name: "input", type: "string"},
     {name: "label", type: "string"},
     {name: "name", type: "string"},
     {name: "type", type: "string"},
 ])
-class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneElement {
+class HTMLEDropzoneElementBase extends HTMLElement implements HTMLEDropzoneElement {
     
     public dragovered!: DropzoneDragoveredType | null;
     public placeholder!: string;
+    public input!: string;
     public multiple!: boolean;
     public disabled!: boolean;
     public name!: string;
@@ -63,11 +65,6 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
                 :host {
                     display: block;
                     border: 1px dashed gray;
-                    cursor: pointer;
-                }
-
-                :host(:focus) {
-                    outline: 1px auto black;
                 }
 
                 :host([disabled]) {
@@ -110,6 +107,7 @@ class BaseHTMLEDropzoneElement extends HTMLElement implements HTMLEDropzoneEleme
                     display: inline-block;
                     color: grey;
                     pointer-events: none;
+                    user-select: none;
                 }
             </style>
             <div part="container">

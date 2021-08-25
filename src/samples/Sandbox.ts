@@ -1,6 +1,7 @@
 import { AttributeMutationMixin, BaseAttributeMutationMixin, createMutationObserverCallback, isTagElement } from "engine/editor/elements/HTMLElement";
 import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { mockup } from "./scenes/Mockup";
+import { temp } from "./scenes/temp";
 
 abstract class DataClassMixin extends BaseAttributeMutationMixin {
   constructor(attributeValue: string) {
@@ -269,6 +270,8 @@ export async function sandbox(): Promise<void> {
 
   await mockup();
   //await start();
+
+  temp();
 
   /*editor.registerCommand("test", {
     exec: () => {

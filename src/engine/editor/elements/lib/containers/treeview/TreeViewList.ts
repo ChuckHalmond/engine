@@ -1,8 +1,8 @@
-import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, Fragment } from "engine/editor/elements/HTMLElement";
+import { RegisterCustomHTMLElement, GenerateAttributeAccessors, isTagElement, bindShadowRoot } from "engine/editor/elements/HTMLElement";
 import { HTMLETreeViewItemElement } from "./TreeViewItem";
 
 export { HTMLETreeViewListElement };
-export { BaseHTMLETreeViewListElement };
+export { HTMLETreeViewListElementBase };
 
 interface HTMLETreeViewListElement extends HTMLElement {
     name: string;
@@ -17,7 +17,7 @@ interface HTMLETreeViewListElement extends HTMLElement {
     {name: "active", type: "boolean"},
     {name: "name", type: "string"}
 ])
-class BaseHTMLETreeViewListElement extends HTMLElement implements HTMLETreeViewListElement {
+class HTMLETreeViewListElementBase extends HTMLElement implements HTMLETreeViewListElement {
 
     public active!: boolean;
     public name!: string;
@@ -29,28 +29,24 @@ class BaseHTMLETreeViewListElement extends HTMLElement implements HTMLETreeViewL
     constructor() {
         super();
         
-        this.attachShadow({mode: "open"}).append(
-            Fragment(/*html*/`
-                <style>
-                    :host {
-                        display: block;
-                        position: relative;
-                        user-select: none;
-                    }
+        bindShadowRoot(this, /*template*/`
+            <style>
+                :host {
+                    display: block;
+                    user-select: none;
+                }
 
-                    [part~="container"] {
-                        position: relative;
-                        display: flex;
-                        flex-direction: column;
-                        padding: 0;
-                        margin: 0;
-                    }
-                </style>
-                <ul part="container">
-                    <slot></slot>
-                </ul>
-            `)
-        );
+                [part~="container"] {
+                    display: flex;
+                    flex-direction: column;
+                    padding: 0;
+                    margin: 0;
+                }
+            </style>
+            <ul part="container">
+                <slot></slot>
+            </ul>
+        `);
         this.items = [];
         this._activeItem = null;
     }

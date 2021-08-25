@@ -1,17 +1,18 @@
-import { RegisterCustomHTMLElement, bindShadowRoot } from "engine/editor/elements/HTMLElement";
-import { HTMLEBreadcrumbItemElement, isHTMLEBreadcrumbItemElement } from "./BreadcrumbItem";
+import { RegisterCustomHTMLElement, bindShadowRoot, isTagElement } from "engine/editor/elements/HTMLElement";
+import { HTMLEBreadcrumbItemElement } from "./BreadcrumbItem";
 
-export { isHTMLEBreadcrumbTrailElement };
 export { HTMLEBreadcrumbTrailElement };
+export { HTMLEBreadcrumbTrailElementBase };
 
-function isHTMLEBreadcrumbTrailElement(obj: any): obj is HTMLEBreadcrumbTrailElement {
-    return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() === "e-breadcrumbtrail";
+interface HTMLEBreadcrumbTrailElement extends HTMLElement {
+    items: HTMLEBreadcrumbItemElement[];
+    activateItem(item: HTMLEBreadcrumbItemElement): void;
 }
 
 @RegisterCustomHTMLElement({
     name: "e-breadcrumbtrail"
 })
-class HTMLEBreadcrumbTrailElement extends HTMLElement {
+class HTMLEBreadcrumbTrailElementBase extends HTMLElement implements HTMLEBreadcrumbTrailElement {
 
     public items: HTMLEBreadcrumbItemElement[];
 
@@ -25,7 +26,8 @@ class HTMLEBreadcrumbTrailElement extends HTMLElement {
                 }
                 
                 [part~="ul"] {
-                    display: block;
+                    display: flex;
+                    flex-direction: row;
                     list-style-type: none;
                     padding: 0; margin: 0;
                 }
@@ -38,7 +40,7 @@ class HTMLEBreadcrumbTrailElement extends HTMLElement {
         this.items = [];
     }
 
-    public activateItem(item: HTMLEBreadcrumbItemElement) {
+    public activateItem(item: HTMLEBreadcrumbItemElement): void {
         let itemIndex = this.items.indexOf(item);
         if (itemIndex > -1) {
             this.items.forEach((item, index) => {
@@ -56,7 +58,7 @@ class HTMLEBreadcrumbTrailElement extends HTMLElement {
         const slot = this.shadowRoot?.querySelector("slot");
         if (slot) {
             slot.addEventListener("slotchange", () => {
-                const items = slot.assignedElements().filter(isHTMLEBreadcrumbItemElement) as HTMLEBreadcrumbItemElement[];
+                const items = slot.assignedElements().filter(item => isTagElement("e-breadcrumbitem", item)) as HTMLEBreadcrumbItemElement[];
                 this.items = items;
                 items.forEach((item, index) => {
                     item.active = (index === items.length - 1);
@@ -66,9 +68,15 @@ class HTMLEBreadcrumbTrailElement extends HTMLElement {
 
         this.addEventListener("mousedown", (event: MouseEvent) => {
             let target = event.target as any;
-            if (isHTMLEBreadcrumbItemElement(target)) {
+            if (isTagElement("e-breadcrumbitem", target)) {
                 this.activateItem(target);
             }
         });
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "e-breadcrumbtrail": HTMLEBreadcrumbTrailElement,
     }
 }

@@ -8,11 +8,30 @@ export { Input };
 
 enum Key {
     A = 'a',
-    Z = "z",
-    Q = "q",
-    S = "s",
+    B = 'b',
+    C = "c",
     D = "d",
+    E = "e",
+    F = "f",
+    G = "g",
+    H = "h",
+    I = "i",
+    J = "j",
+    K = "k",
+    L = "l",
+    M = "m",
+    O = "o",
+    P = "p",
+    Q = "q",
+    R = "r",
+    S = "s",
+    T = "t",
+    U = "u",
     V = "v",
+    W = "w",
+    X = "x",
+    Y = "y",
+    Z = "z",
     ENTER = "Enter",
     BACKSPACE = "Backspace",
     ARROW_DOWN = "ArrowDown",
@@ -26,6 +45,15 @@ enum KeyModifier {
     Alt = "Alt",
     Control = "Control",
     Shift = "Shift",
+}
+
+function displayKeyModifier(mode: KeyModifier): string {
+    switch (mode) {
+        case KeyModifier.Control:
+            return "Ctrl";
+        default:
+            return mode;
+    }
 }
 
 enum MouseButton {
@@ -80,7 +108,7 @@ class HotKey {
     }
 
     public toString(): string {
-        return `${this.mod1 ? `${this.mod1} + ` : ''}${this.mod2 ? `${this.mod2} + ` : ''}${(this.key.length === 1) ? this.key.toUpperCase() : this.key}`;
+        return `${this.mod1 ? `${displayKeyModifier(this.mod1)}+` : ''}${this.mod2 ? `${displayKeyModifier(this.mod2)}+` : ''}${(this.key.length === 1) ? this.key.toUpperCase() : this.key}`;
     }
 
     /*public static fromString(str: string): HotKey | null {

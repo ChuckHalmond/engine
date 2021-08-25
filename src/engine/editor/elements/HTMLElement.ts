@@ -1,4 +1,4 @@
-import { ListModel, ListModelChangeEvent, ObjectModel, ObjectModelChangeEvent } from "../models/Model";
+import { ListModel, ListModelChangeEvent, ObjectModel, ObjectModelChangeEvent } from "../model/Model";
 import { forAllSubtreeElements } from "./Snippets";
 
 export { isTagElement };
@@ -25,7 +25,9 @@ export { areAttributesMatching };
 export { BaseAttributeMutationMixin };
 export { createMutationObserverCallback };
 export { isNode };
+export { HTMLFragment };
 export { Fragment };
+export { HTMLStringTemplate };
 
 function isTagElement<K extends keyof HTMLElementTagNameMap>(tagName: K, obj: any): obj is HTMLElementTagNameMap[K] {
     return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() == tagName;
@@ -37,6 +39,48 @@ interface RegisterCustomHTMLElementDecorator {
         observedAttributes?: string[],
         options?: ElementDefinitionOptions
     }): <C extends CustomElementConstructor>(elementCtor: C) => C;
+}
+
+function HTMLStringTemplate(template: string, items: {[key: string]: Node | string}): DocumentFragment {
+    const regexp = /\[(.*?)\]/gm;
+    const itemsKeys = Object.keys(items);
+    let result: RegExpExecArray  | null;
+    let resultNodes: (Node | string)[] = [];
+    let lastResultIndex = 0;
+    while ((result = regexp.exec(template)) !== null) {
+        if (result.index >= lastResultIndex) {
+            resultNodes.push(template.substring(lastResultIndex, result.index));
+        }
+        if (itemsKeys.indexOf(result[1]) > -1) {
+            resultNodes.push(items[result[1]]);
+        }
+        lastResultIndex = result.index + result[0].length;
+    }
+    let fragment = new DocumentFragment();
+    fragment.append(...resultNodes, template.substring(lastResultIndex, template.length));
+    return fragment;
+}
+
+function fragment(parts: TemplateStringsArray, ...slots: (Node | string)[]): DocumentFragment {
+    let timestamp = new Date().getTime();
+    let html = parts.reduce((html, part, index) => {
+        return `${html}${part}${(index < slots.length) ? `<div id="${timestamp}-${index}"></div>` : ""}`;
+    }, "");
+    let parser = new DOMParser();
+    let fragment = new DocumentFragment();
+    fragment.append(...parser.parseFromString(html, "text/html").body.children);
+    slots.forEach((slot, index) => {
+        let placeholder = fragment.getElementById(`${timestamp}-${index}`);
+        if (placeholder) {
+            if (slot instanceof Node) {
+                placeholder.replaceWith(slot);
+            }
+            else {
+                placeholder.replaceWith(document.createTextNode(slot));
+            }
+        }
+    });
+    return fragment;
 }
 
 const RegisterCustomHTMLElement: RegisterCustomHTMLElementDecorator = function(args: {
@@ -178,10 +222,16 @@ function bindShadowRoot(element: HTMLElement, templateContent?: string): ShadowR
     return root;
 }
 
-function Fragment(content: string): DocumentFragment {
+function HTMLFragment(content: string): DocumentFragment {
     let template = document.createElement("template");
     template.innerHTML = content;
     return template.content;
+}
+
+function Fragment(...nodes: (Node | string)[]): DocumentFragment {
+    let fragment = new DocumentFragment();
+    fragment.append(...nodes);
+    return fragment;
 }
 
 type HTMLElementDescription<K extends keyof HTMLElementTagNameMap> = {
@@ -232,7 +282,7 @@ interface HTMLInit<K extends keyof HTMLElementTagNameMap> {
     options?: ElementCreationOptions,
     props?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>,
     attrs?: {[name: string]: number | string | boolean},
-    children?: Node[] | ReactiveChildNodesResult,
+    children?: Node[] | NodeList | ReactiveChildNodes,
     listeners?: {
         [ListenerEvent in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[ListenerEvent]) => any | [(event: HTMLElementEventMap[ListenerEvent]) => any, Partial<boolean | AddEventListenerOptions>]
     }
@@ -250,11 +300,11 @@ function HTML<K extends keyof HTMLElementTagNameMap>(
                 setHTMLElementAttributes(element, init.attrs);
             }
             if (init.children) {
-                if (Array.isArray(init.children)) {
-                    setHTMLElementChildren(element, init.children);
+                if (typeof init.children === "function") {
+                    setHTMLElementChildren(element, init.children(element));
                 }
                 else {
-                    setHTMLElementChildren(element, init.children(element));
+                    setHTMLElementChildren(element, init.children);
                 }
             }
             if (init.listeners) {
@@ -318,11 +368,11 @@ function ReactiveNode<Data extends object, N extends Node>
         return node;
 }
 
-interface ReactiveChildNodesResult {
-    (parent: Node & ParentNode): (Node | string)[];
+interface ReactiveChildNodes {
+    (parent: Node & ParentNode): (Node | string)[]
 }
 
-function ReactiveChildNodes<Item extends object>(list: ListModel<Item>, map: (item: Item) => Node | string): ReactiveChildNodesResult {
+function ReactiveChildNodes<Item extends object>(list: ListModel<Item>, map: (item: Item) => Node | string): ReactiveChildNodes {
     return (parent: Node & ParentNode) => {
         Object.assign(
             parent, {
@@ -371,7 +421,7 @@ function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
 
 function setHTMLElementChildren<K extends keyof HTMLElementTagNameMap>(
     element: HTMLElementTagNameMap[K],
-    children: (Node | string)[]
+    children: (Node | string)[] | NodeList
 ): HTMLElementTagNameMap[K] {
     element.innerHTML = "";
     element.append(...children);

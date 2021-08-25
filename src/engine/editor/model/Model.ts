@@ -1,14 +1,12 @@
 import { EventDispatcher, Event } from "engine/libs/patterns/messaging/events/EventDispatcher";
 
 export { ObjectModelChangeEvent };
-export { ListModelChangeEvent };
 export { ObjectModel };
-export { BaseObjectModel };
-export { ListModel };
-export { BaseListModel };
+export { ObjectModelBase };
+export { ListModelChangeEvent };
 export { ListModelChangeType };
-
-type ListModelChangeType = "insert" | "remove" | "clear";
+export { ListModel };
+export { ListModelBase };
 
 interface ObjectModelChangeEvent {
     type: "objectmodelchange";
@@ -19,21 +17,8 @@ interface ObjectModelChangeEvent {
     };
 }
 
-interface ListModelChangeEvent {
-    type: "listmodelchange";
-    data: {
-        index: number;
-        addedItems: any[];
-        removedItems: any[];
-    };
-}
-
 interface ObjectModelChangeEvents {
     "objectmodelchange": ObjectModelChangeEvent;
-}
-
-interface ListModelEvents {
-    "listmodelchange": ListModelChangeEvent;
 }
 
 interface ObjectModel<Data extends object> extends EventDispatcher<ObjectModelChangeEvents> {
@@ -41,7 +26,7 @@ interface ObjectModel<Data extends object> extends EventDispatcher<ObjectModelCh
     setData<K extends keyof Data>(key: K, value: Data[K]): void;
 }
 
-class BaseObjectModel<Data extends object> extends EventDispatcher<ObjectModelChangeEvents> implements ObjectModel<Data> {
+class ObjectModelBase<Data extends object> extends EventDispatcher<ObjectModelChangeEvents> implements ObjectModel<Data> {
     private _data: Data;
 
     constructor(data: Data) {
@@ -60,6 +45,21 @@ class BaseObjectModel<Data extends object> extends EventDispatcher<ObjectModelCh
     }
 }
 
+type ListModelChangeType = "insert" | "remove" | "clear";
+
+interface ListModelChangeEvent {
+    type: "listmodelchange";
+    data: {
+        index: number;
+        addedItems: any[];
+        removedItems: any[];
+    };
+}
+
+interface ListModelEvents {
+    "listmodelchange": ListModelChangeEvent;
+}
+
 interface ListModel<Item> extends EventDispatcher<ListModelEvents> {
     readonly items: ReadonlyArray<Item>;
     insertItem(index: number, item: Item): void;
@@ -67,7 +67,7 @@ interface ListModel<Item> extends EventDispatcher<ListModelEvents> {
     clearItems(): void;
 }
 
-class BaseListModel<Item> extends EventDispatcher<ListModelEvents> implements ListModel<Item> {
+class ListModelBase<Item> extends EventDispatcher<ListModelEvents> implements ListModel<Item> {
     private _items: Item[];
     
     constructor(items: Item[]) {
