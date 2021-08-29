@@ -1,7 +1,7 @@
 import { GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
 
 export { HTMLEImportElement };
-export { BaseHTMLEImportElement };
+export { HTMLEImportElementBase };
 
 interface HTMLEImportElement extends HTMLElement {
     src: string;
@@ -13,7 +13,7 @@ interface HTMLEImportElement extends HTMLElement {
 @GenerateAttributeAccessors([
     {name: "src", type: "string"}
 ])
-class BaseHTMLEImportElement extends HTMLElement {
+class HTMLEImportElementBase extends HTMLElement {
 
     public src!: string;
 
@@ -31,7 +31,7 @@ class BaseHTMLEImportElement extends HTMLElement {
                     throw new Error(response.statusText);
                 }
             });
-            this.dispatchEvent(new CustomEvent("load"));
+            this.dispatchEvent(new CustomEvent("e-load"));
         }
         if (this.src) {
             importRequest(this.src);
@@ -47,6 +47,6 @@ declare global {
 
 declare global {
     interface HTMLElementEventMap {
-        "load": CustomEvent
+        "e-load": CustomEvent
     }
 }

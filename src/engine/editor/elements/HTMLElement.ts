@@ -7,8 +7,9 @@ export { GenerateAttributeAccessors };
 export { createTemplate };
 export { bindShadowRoot };
 export { HTMLElementDescription };
-export { setHTMLElementProperties };
-export { setHTMLElementAttributes };
+export { setElementProperties };
+export { setElementAttributes };
+export { setElementChildren };
 export { HTMLElementConstructor };
 export { isParentNode };
 export { isReactiveNode };
@@ -17,17 +18,15 @@ export { ReactiveNode };
 export { ReactiveParentNode };
 export { ReactiveChildNodes };
 export { isElement };
-export { HTML };
+export { Element };
 export { HTMLElementInit };
 export { AttributeMutationMixin };
 export { AttributeType };
 export { areAttributesMatching };
-export { BaseAttributeMutationMixin };
+export { AttributeMutationMixinBase };
 export { createMutationObserverCallback };
-export { isNode };
-export { HTMLFragment };
 export { Fragment };
-export { HTMLStringTemplate };
+export { parseStringTemplate };
 
 function isTagElement<K extends keyof HTMLElementTagNameMap>(tagName: K, obj: any): obj is HTMLElementTagNameMap[K] {
     return obj instanceof Node && obj.nodeType === obj.ELEMENT_NODE && (obj as Element).tagName.toLowerCase() == tagName;
@@ -41,7 +40,7 @@ interface RegisterCustomHTMLElementDecorator {
     }): <C extends CustomElementConstructor>(elementCtor: C) => C;
 }
 
-function HTMLStringTemplate(template: string, items: {[key: string]: Node | string}): DocumentFragment {
+function parseStringTemplate(template: string, items: {[key: string]: Node | string}): DocumentFragment {
     const regexp = /\[(.*?)\]/gm;
     const itemsKeys = Object.keys(items);
     let result: RegExpExecArray  | null;
@@ -60,7 +59,7 @@ function HTMLStringTemplate(template: string, items: {[key: string]: Node | stri
     fragment.append(...resultNodes, template.substring(lastResultIndex, template.length));
     return fragment;
 }
-
+/*
 function fragment(parts: TemplateStringsArray, ...slots: (Node | string)[]): DocumentFragment {
     let timestamp = new Date().getTime();
     let html = parts.reduce((html, part, index) => {
@@ -82,7 +81,7 @@ function fragment(parts: TemplateStringsArray, ...slots: (Node | string)[]): Doc
     });
     return fragment;
 }
-
+*/
 const RegisterCustomHTMLElement: RegisterCustomHTMLElementDecorator = function(args: {
     name: string;
     attributes?: string[],
@@ -263,13 +262,13 @@ function HTMLElementConstructor<K extends keyof HTMLElementTagNameMap>(
     const element = document.createElement(tagName, init?.options);
     if (init) {
         if (init.props) {
-            setHTMLElementProperties(element, init.props);
+            setElementProperties(element, init.props);
         }
         if (init.attrs) {
-            setHTMLElementAttributes(element, init.attrs);
+            setElementAttributes(element, init.attrs);
         }
         if (init.children) {
-            setHTMLElementChildren(element, init.children);
+            setElementChildren(element, init.children);
         }
         if (init.listeners) {
             setHTMLElementEventListeners(element, init.listeners);
@@ -288,23 +287,23 @@ interface HTMLInit<K extends keyof HTMLElementTagNameMap> {
     }
 }
 
-function HTML<K extends keyof HTMLElementTagNameMap>(
+function Element<K extends keyof HTMLElementTagNameMap>(
     tag: HTMLElementTag<K>, init?: HTMLInit<K>): HTMLElementTagNameMap[K] {
         const tagName = tag.slice(1, tag.length - 1) as K;
         const element = document.createElement(tagName, init?.options);
         if (init) {
             if (init.props) {
-                setHTMLElementProperties(element, init.props);
+                setElementProperties(element, init.props);
             }
             if (init.attrs) {
-                setHTMLElementAttributes(element, init.attrs);
+                setElementAttributes(element, init.attrs);
             }
             if (init.children) {
                 if (typeof init.children === "function") {
-                    setHTMLElementChildren(element, init.children(element));
+                    setElementChildren(element, init.children(element));
                 }
                 else {
-                    setHTMLElementChildren(element, init.children);
+                    setElementChildren(element, init.children);
                 }
             }
             if (init.listeners) {
@@ -320,10 +319,6 @@ type ReactiveNode = Node & {
         _reactEvent: "objectmodelchange",
         _reactListener: (event: ObjectModelChangeEvent) => void;
     }
-}
-
-function isNode(obj: any): obj is Node {
-    return obj instanceof Node;
 }
 
 function isParentNode(node: Node): node is Node & ParentNode {
@@ -353,7 +348,7 @@ function isReactiveParentNode(node: Node): node is ReactiveParentNode {
 }
 
 function ReactiveNode<Data extends object, N extends Node>
-    (object: ObjectModel<Data>, node: N, react: <K extends keyof Data>(node: N, property: K, oldValue: Data[K], newValue: Data[K]) => void): N {
+    (node: N, object: ObjectModel<Data>, react: <K extends keyof Data>(node: N, property: K, oldValue: Data[K], newValue: Data[K]) => void): N {
         Object.assign(
             node, {
                 _reactAttributes: {
@@ -365,6 +360,10 @@ function ReactiveNode<Data extends object, N extends Node>
                 }
             }
         ) as ReactiveNode;
+        const keys = Object.keys(object.data) as (keyof Data)[];
+        keys.forEach((key) => {
+            react(node, key, void 0 as any, object.data[key]);
+        });
         return node;
 }
 
@@ -419,19 +418,19 @@ function setHTMLElementEventListeners<K extends keyof HTMLElementTagNameMap>(
     return element;
 };
 
-function setHTMLElementChildren<K extends keyof HTMLElementTagNameMap>(
-    element: HTMLElementTagNameMap[K],
+function setElementChildren<E extends Element>(
+    element: E,
     children: (Node | string)[] | NodeList
-): HTMLElementTagNameMap[K] {
-    element.innerHTML = "";
+): E {
+    element.textContent = "";
     element.append(...children);
     return element;
 };
 
-function setHTMLElementProperties<K extends keyof HTMLElementTagNameMap>(
-        element: HTMLElementTagNameMap[K],
-        properties?: Partial<Pick<HTMLElementTagNameMap[K], WritableKeys<HTMLElementTagNameMap[K]>>>
-    ): HTMLElementTagNameMap[K] {
+function setElementProperties<E extends Element>(
+        element: E,
+        properties?: Partial<Pick<E, WritableKeys<E>>>
+    ): E {
     for (const property in properties) {
         let value = properties[property];
         if (typeof value !== "undefined") {
@@ -441,10 +440,10 @@ function setHTMLElementProperties<K extends keyof HTMLElementTagNameMap>(
     return element;
 };
 
-function setHTMLElementAttributes<K extends keyof HTMLElementTagNameMap>(
-        element: HTMLElementTagNameMap[K],
+function setElementAttributes<E extends Element>(
+        element: E,
         attributes?: {[attrName: string]: number | string | boolean}
-    ): HTMLElementTagNameMap[K] {
+    ): E {
     for (const key in attributes) {
         const value = attributes[key];
         if (typeof value === "boolean") {
@@ -483,7 +482,7 @@ function areAttributesMatching(refAttributeType: AttributeType, refAttrName: str
     return false;
 }
 
-abstract class BaseAttributeMutationMixin implements AttributeMutationMixin {
+abstract class AttributeMutationMixinBase implements AttributeMutationMixin {
     readonly attributeName: string;
     readonly attributeValue: string;
     readonly attributeType: AttributeType;
@@ -515,6 +514,23 @@ function createMutationObserverCallback(
                             );
                             matchingMixins.forEach((mixin) => {
                                 mixin.attach(childElement);
+                            });
+                        });
+                    });
+                }
+            });
+            mutation.removedNodes.forEach((node: Node) => {
+                if (isElement(node)) {
+                    forAllSubtreeElements(node, (childElement: Element) => {
+                        [...childElement.attributes].forEach((attr) => {
+                            let matchingMixins = mixins.filter(
+                                mixin => areAttributesMatching(
+                                    mixin.attributeType, mixin.attributeName, mixin.attributeValue,
+                                    attr.name, attr.value
+                                )
+                            );
+                            matchingMixins.forEach((mixin) => {
+                                mixin.detach(childElement);
                             });
                         });
                     });

@@ -8,6 +8,9 @@ interface HTMLEDragzoneElement extends HTMLElement {
     draggables: HTMLEDraggableElement[];
     selectedDraggables: HTMLEDraggableElement[];
     label: string;
+    selectDraggable(draggable: HTMLEDraggableElement): void;
+    unselectDraggable(draggable: HTMLEDraggableElement): void;
+    clearSelection(): void;
 }
 
 @RegisterCustomHTMLElement({
@@ -60,7 +63,9 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
 
     public selectDraggable(draggable: HTMLEDraggableElement): void {
         draggable.selected = true;
-        this.selectedDraggables.push(draggable);
+        if (!this.selectedDraggables.includes(draggable)) {
+            this.selectedDraggables.push(draggable);
+        }
     }
 
     public unselectDraggable(draggable: HTMLEDraggableElement): void {
@@ -72,9 +77,10 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
     }
 
     public clearSelection(): void {
-        this.selectedDraggables.splice(0, this.selectedDraggables.length).forEach((draggable) => {
+        this.selectedDraggables.forEach((draggable) => {
             draggable.selected = false;
         });
+        this.selectedDraggables = [];
     }
     
     public connectedCallback() {
@@ -148,19 +154,23 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
                             this.unselectDraggable(target);
                     }
                     else if (event.shiftKey) {
-                        let startRangeIndex = Math.min(
-                            this.draggables.indexOf(this.selectedDraggables[0]),
-                            this.draggables.indexOf(target)
-                        );
-                        let endRangeIndex = Math.max(
-                            this.draggables.indexOf(this.selectedDraggables[0]),
-                            this.draggables.indexOf(target)
-                        );
-                        this.draggables.forEach((thisDraggable, thisDraggableIndex) => {
-                            (thisDraggableIndex >= startRangeIndex && thisDraggableIndex <= endRangeIndex) ? 
-                                this.selectDraggable(thisDraggable) :
-                                this.unselectDraggable(thisDraggable);
-                        });
+                        if (this.selectedDraggables.length > 0) {
+                            let targetIndex = this.draggables.indexOf(target);
+                            let firstIndex = this.draggables.indexOf(this.selectedDraggables[0]);
+                            let direction = Math.sign(targetIndex - firstIndex);
+                            let fromIndex = (direction > 0) ? 0 : this.draggables.length - 1;
+                            let toIndex = (direction > 0) ? this.draggables.length - 1 : 0;
+                            let startRangeIndex = (direction > 0) ? firstIndex : targetIndex;
+                            let endRangeIndex = (direction > 0) ? targetIndex : firstIndex;
+                            for (let index = fromIndex; index !== toIndex; index += direction) {
+                                (index >= startRangeIndex && index <= endRangeIndex) ? 
+                                    this.selectDraggable(this.draggables[index]) :
+                                    this.unselectDraggable(this.draggables[index]);
+                            }
+                        }
+                        else {
+                            this.selectDraggable(target);
+                        }
                     }
                 }
                 else {

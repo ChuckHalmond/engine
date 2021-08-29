@@ -1,12 +1,14 @@
-import { bindShadowRoot, Fragment, HTML, HTMLStringTemplate, isTagElement, ReactiveChildNodes, ReactiveNode, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
+import { Fragment, Element, ReactiveChildNodes, ReactiveNode, parseStringTemplate, setElementChildren } from "engine/editor/elements/HTMLElement";
 import { HTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
+import { HTMLEDragzoneElement } from "engine/editor/elements/lib/controls/draggable/Dragzone";
 import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
-import { HTMLEViewElementBase } from "engine/editor/elements/view/View";
-import { ListModelBase, ObjectModelBase, ListModel } from "engine/editor/model/Model";
+import { ViewBase } from "engine/editor/elements/view/View";
+import { ListModelBase, ObjectModelBase, ListModel, ObjectModelChangeEvent } from "engine/editor/model/Model";
 
 export { temp };
 
 function temp() {
+    
     interface FieldData {
         name: string,
         type: string,
@@ -21,17 +23,13 @@ function temp() {
         name: "same_as";
         other: string;
     }
-    
-    interface FieldsetData {
-        signature: string,
-        box: string, 
-        doc: string,
-        label: string,
-        is_expression: boolean
-    }
 
-    interface FielsetFieldsData {
-        fields: FieldData[]
+    interface FieldsetData {
+        signature: string;
+        box: string; 
+        doc: string;
+        label: string;
+        is_expression: boolean;
     }
 
     class FieldModel extends ObjectModelBase<FieldData> {
@@ -43,13 +41,114 @@ function temp() {
     class FieldsetModel extends ObjectModelBase<FieldsetData> {
         readonly fields: ListModel<FieldModel>;
 
-        constructor(data: FieldsetData & FielsetFieldsData) {
+        constructor(data: FieldsetData & {fields: FieldData[]}) {
             super(data);
             this.fields = new ListModelBase(
                 data.fields.map(field => new FieldModel(field))
             );
         }
+
+        public getData(): Readonly<FieldsetData & {fields: FieldData[]}> {
+            return Object.assign(
+                this.data, {
+                    fields: this.fields.items.map(item => item.data)
+                }
+            );
+        }
     }
+
+    type StatementExecutionStatus = "success" | "error" | "warning";
+
+    interface StatementLastExecutionData {
+        datetime: Date | null;
+        status: StatementExecutionStatus | null;
+        message: string | null;
+    }
+
+    interface StatementData {
+        fieldset: FieldsetData & {fields: FieldData[]};
+        children: StatementData[];
+        result: StatementResultData & {columns: DataframeColumnData[]};
+        lastExecution: StatementLastExecutionData;
+    }
+
+    class StatementLastExecutionModel extends ObjectModelBase<StatementLastExecutionData> {
+        constructor(data: StatementLastExecutionData) {
+            super(data);
+        }
+    }
+
+    interface StatementResultData {
+        dataframe: string;
+    }
+
+    interface DataframeColumnData {
+        name: string;
+    }
+
+    class DataframeColumnModel extends ObjectModelBase<DataframeColumnData> {
+        constructor(data: DataframeColumnData) {
+            super(data);
+        }
+    }
+
+    class StatementResultModel extends ObjectModelBase<StatementResultData> {
+        readonly columns:  ListModel<DataframeColumnModel>;
+
+        constructor(data: StatementResultData & {columns: DataframeColumnData[]}) {
+            super(data);
+            this.columns = new ListModelBase(
+                data.columns.map((column) => new DataframeColumnModel(column))
+            );
+        }
+
+        public getData(): Readonly<StatementResultData & {columns: DataframeColumnData[]}> {
+            return Object.assign(
+                this.data, {
+                    columns: this.columns.items.map(item => item.data)
+                }
+            );
+        }
+    }
+
+    class Statement {
+        readonly parent: Statement | null;
+        readonly children: Statement[];
+
+        readonly fieldsetModel: FieldsetModel;
+        readonly lastExecutionModel: StatementLastExecutionModel;
+        readonly resultModel: StatementResultModel;
+        
+        readonly fieldsetView: StatementFieldsetView;
+        readonly lastExecutionView: StatementLastExecutionView;
+        readonly resultView: StatementResultView;
+
+        constructor(parent: Statement | null, data: StatementData) {
+            this.parent = parent;
+            this.children = data.children.map(child => new Statement(this, child));
+            this.fieldsetModel = new FieldsetModel(data.fieldset);
+            this.lastExecutionModel = new StatementLastExecutionModel(data.lastExecution);
+            this.resultModel = new StatementResultModel(data.result);
+            this.fieldsetView = new StatementFieldsetView(this.fieldsetModel);
+            this.lastExecutionView = new StatementLastExecutionView(this.lastExecutionModel);
+            this.resultView = new StatementResultView(this.resultModel);
+        }
+
+        public execute() {
+
+        }
+
+        public invalidate() {
+
+        }
+    }
+
+    /*class Expression {
+        draggable: HTMLEDraggableElement;
+
+        constructor() {
+        }
+    }*/
     
     const fieldset = new FieldsetModel({
         box: "Transformer",
@@ -115,63 +214,94 @@ function temp() {
         ]
     });
 
-    const fieldFragment = (fieldset: HTMLElement, field: FieldModel) => Fragment(
-        HTML(/*html*/`<label>`, {
-            props: {
-                textContent: field.data.label
+    const FieldFragment = (fieldset: HTMLElement, field: FieldModel) => Fragment(
+        Element(
+            /*html*/`<div>`, {
+                children: [
+                    ReactiveNode(
+                        Element(/*html*/`<label>`),
+                        field,
+                        (div, property, oldValue, newValue) => {
+                            switch (property) {
+                                case "label":
+                                    if (newValue !== oldValue) {
+                                        div.textContent = field.data.label
+                                    }
+                                break;
+                            }
+                        }
+                    ),
+                    DropzoneInputFragment(fieldset, field)
+                ]
             }
-        }),
-        dropzoneInputFragment(fieldset, field)
+        )
     );
 
-    const dropzoneInputFragment = (fieldset: HTMLElement, field: FieldModel) => Fragment(
-        HTML(/*html*/`<e-dropzoneinput>`, {
+    const DropzoneInputFragment = (host: Element, field: FieldModel) => Fragment(
+        Element(/*html*/`<e-dropzoneinput>`, {
             children: [
-                HTML(/*html*/`<e-dropzone>`, {
-                    props: {
-                        slot: "dropzone",
-                        name: field.data.name,
-                        placeholder: field.data.type, 
-                        type: field.data.type,
-                        droptest: (dropzone: HTMLEDropzoneElement, draggables: HTMLEDraggableElement[]) => {
-                            let accepts = draggables.every(draggable => dropzone.type === "any" || draggable.type === dropzone.type);
-                            if (!accepts) {
-                                alert(`Only ${dropzone.type} draggables are allowed.`);
+                ReactiveNode(
+                    Element(/*html*/`<e-dropzone>`, {
+                        props: {
+                            className: "field__dropzone",
+                            slot: "dropzone",
+                            droptest: (dropzone: HTMLEDropzoneElement, draggables: HTMLEDraggableElement[]) => {
+                                let accepts = draggables.every(draggable => dropzone.type === "any" || draggable.type === dropzone.type);
+                                if (!accepts) {
+                                    alert(`Only ${dropzone.type} draggables are allowed.`);
+                                }
+                                return accepts;
                             }
-                            return accepts;
-                        }
-                    },
-                    listeners: {
-                        datachange: (event: DataChangeEvent) => {
-                            let dropzone = event.target as HTMLEDropzoneElement;
-                            let constraint = field.data.type_constraint;
-                            if (constraint) {
-                                switch (constraint.name) {
-                                    case "same_as":
-                                        let otherDropzone = fieldset.querySelector(`e-dropzone[name=${constraint.other}]`) as HTMLEDropzoneElement;
-                                        if (otherDropzone) {
-                                            if (event.detail.action === "insert") {    
-                                                let draggable = event.detail.draggables[0];
-                                                if (draggable) {
-                                                    dropzone.type = otherDropzone.type = draggable.type;
-                                                    dropzone.placeholder = otherDropzone.placeholder = draggable.type;
+                        },
+                        listeners: {
+                            datachange: (event: DataChangeEvent) => {
+                                let dropzone = event.target as HTMLEDropzoneElement;
+                                let constraint = field.data.type_constraint;
+                                if (constraint) {
+                                    switch (constraint.name) {
+                                        case "same_as":
+                                            let otherDropzone = host.querySelector(`e-dropzone[name=${constraint.other}]`) as HTMLEDropzoneElement;
+                                            if (otherDropzone) {
+                                                if (event.detail.action === "insert") {    
+                                                    let draggable = event.detail.draggables[0];
+                                                    if (draggable) {
+                                                        dropzone.type = otherDropzone.type = draggable.type;
+                                                        dropzone.placeholder = otherDropzone.placeholder = draggable.type;
+                                                    }
+                                                }
+                                                else {
+                                                    if (otherDropzone.draggables.length === 0) {
+                                                        dropzone.type = otherDropzone.type = "any";
+                                                        dropzone.placeholder = otherDropzone.placeholder = "any"; 
+                                                    }
                                                 }
                                             }
-                                            else {
-                                                if (otherDropzone.draggables.length === 0) {
-                                                    dropzone.type = otherDropzone.type = "any";
-                                                    dropzone.placeholder = otherDropzone.placeholder = "any"; 
-                                                }
-                                            }
-                                        }
-                                    break;
+                                        break;
+                                    }
                                 }
                             }
                         }
+                    }),
+                    field,
+                    (dropzone, property, oldValue, newValue) => {
+                        switch (property) {
+                            case "name":
+                                if (newValue !== oldValue) {
+                                    dropzone.name = newValue;
+                                }
+                            break;
+                            case "type":
+                                if (newValue !== oldValue) {
+                                    dropzone.placeholder = newValue;
+                                    dropzone.type = newValue;
+                                }
+                            break;
+                        }
                     }
-                }),
-                HTML(/*html*/`<input>`, {
+                ),
+                Element(/*html*/`<input>`, {
                     props: {
+                        className: "field__input",
                         slot: "input"
                     }
                 })
@@ -179,66 +309,122 @@ function temp() {
         })
     );
     
-    @RegisterCustomHTMLElement({
-        name: "v-fieldset"
-    })
-    class FieldsetView extends HTMLEViewElementBase<FieldsetModel> {
+    class StatementFieldsetView extends ViewBase<FieldsetModel, HTMLFieldSetElement> {
 
         constructor(model: FieldsetModel) {
             super(model);
         }
 
         public render() {
-            return ReactiveChildNodes(this.model.fields, (item) =>
-                HTML(/*html*/`<div>`, {
-                    props: {
-                        className: "field"
-                    },
-                    children: [
-                        HTML(/*html*/`<label>`, {
-                            props: {
-                                className: "label",
-                                textContent: item.data.label
-                            }
-                        }),
-                        fieldFragment(this, item)
-                    ]
-                })
-            )(this);
-        }
-    }
-
-    @RegisterCustomHTMLElement({
-        name: "v-draggablefieldset"
-    })
-    class DraggableFieldsetView extends HTMLEViewElementBase<FieldsetModel> {
-
-        constructor(model: FieldsetModel) {
-            super(model);
-        }
-
-        public render() {
-            return HTML(/*html*/`<div>`, {
+            return Element(/*html*/`<fieldset>`, {
                 props: {
-                    className: "field"
+                    className: "statement-fieldset"
                 },
-                children: HTMLStringTemplate(this.model.data.label, this.model.fields.items.reduce(
-                    (obj: any, item: FieldModel) => ({
-                        ...obj,
-                        [item.data.name]: dropzoneInputFragment(this, item)
-                    }), {}
-                )).childNodes
+                children: ReactiveChildNodes(
+                    this.model.fields,
+                    (item) => FieldFragment(this.element, item)
+                )
             });
         }
     }
 
-    let fieldsetView = new DraggableFieldsetView(plusOperatorFieldset);
-    let draggable = HTML(/*html*/`<e-draggable>`, {children: [fieldsetView]});
+    class StatementLastExecutionView extends ViewBase<StatementLastExecutionModel, HTMLDivElement> {
 
-    let extractButton = document.getElementById("extract-button");
-    if (extractButton) {
-        extractButton.after(draggable);
+        constructor(model: StatementLastExecutionModel) {
+            super(model);
+        }
+
+        public render() {
+            return Element(/*html*/`<div>`, {
+                children: [
+                    ReactiveNode(
+                        document.createTextNode(`Last execution date : ${this.model.data.datetime}`),
+                        this.model,
+                        (node, property, oldValue, newValue) => {
+                            if (property === "datetime") {
+                                node.textContent = `Last execution date : ${newValue}`;
+                            }
+                        }
+                    )
+                ]
+            });
+        }
     }
 
+    class StatementResultView extends ViewBase<StatementResultModel, HTMLEDragzoneElement> {
+
+        constructor(model: StatementResultModel) {
+            super(model);
+        }
+
+        public render() {
+            return Element(/*html*/`<e-dragzone>`, {
+                children: ReactiveChildNodes(
+                    this.model.columns,
+                    (item) => Element(/*html*/`<e-draggable>`, {
+                        props: {
+                            textContent: item.data.name
+                        }
+                    })
+                )
+            });
+        }
+    }
+    
+    class ExpressionDraggableView extends ViewBase<FieldsetModel, HTMLEDraggableElement> {
+
+        constructor(model: FieldsetModel) {
+            super(model);
+        }
+
+        public render() {
+            return ReactiveNode(
+                Element(/*html*/`<e-draggable>`, {
+                    children: parseStringTemplate(
+                        this.model.data.label,
+                        this.model.fields.items.reduce(
+                            (obj: any, item: FieldModel) => ({
+                                ...obj,
+                                [item.data.name]: DropzoneInputFragment(this.element, item)
+                            }), {}
+                        )
+                    ).childNodes
+                }),
+                this.model,
+                (draggable, property, oldValue, newValue) => {
+                    switch (property) {
+                        case "label":
+                            if (newValue !== oldValue) {
+                                setElementChildren(draggable, parseStringTemplate(
+                                    this.model.data.label,
+                                    this.model.fields.items.reduce(
+                                        (obj: any, item: FieldModel) => ({
+                                            ...obj,
+                                            [item.data.name]: DropzoneInputFragment(this.element, item)
+                                        }), {}
+                                    )
+                                ).childNodes);
+                            }
+                            break;
+                    }
+                }
+            );
+        }
+    }
+
+    const view = new StatementFieldsetView(fieldset);
+    let extractButton = document.getElementById("extract-button");
+    (window as any)["view"] = view;
     (window as any)["fieldset"] = fieldset;
+    if (extractButton) {
+        extractButton.after(view.element);
+    }
+    //let fieldsetView = new StatementFieldsetView(plusOperatorFieldset);
+    //let draggable = HTML(/*html*/`<e-draggable>`, {children: [fieldsetView]});
+
+    /*
+        extractButton.after(fieldsetView);
+    }
+
+    (window as any)["fieldset"] = fieldset;*/
 }

@@ -1,9 +1,9 @@
-import { AttributeMutationMixin, BaseAttributeMutationMixin, createMutationObserverCallback, isTagElement } from "engine/editor/elements/HTMLElement";
+import { AttributeMutationMixin, AttributeMutationMixinBase, createMutationObserverCallback, isTagElement } from "engine/editor/elements/HTMLElement";
 import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { mockup } from "./scenes/Mockup";
 import { temp } from "./scenes/temp";
 
-abstract class DataClassMixin extends BaseAttributeMutationMixin {
+abstract class DataClassMixin extends AttributeMutationMixinBase {
   constructor(attributeValue: string) {
     super("data-class", "listitem", attributeValue);
   }
@@ -211,32 +211,17 @@ class EnablerInputDataClassMixin extends DataClassMixin {
   }
 }
 
-
-class AutosizedDataClassMixin extends DataClassMixin {
-  public readonly changeEventListener: EventListener;
-
+class DataViewMixin extends AttributeMutationMixinBase {
   constructor() {
-    super("autosized-input");
-    
-    this.changeEventListener = (event) => {
-      let target = event.target;
-      if (isTagElement("input", target)) {
-        this.handlePostchangeDuplicate(target);
-      }
-    };
+    super("data-view");
   }
 
-  public attach(element: HTMLInputElement): void {
-    element.addEventListener("change", this.changeEventListener);
-    this.handlePostchangeDuplicate(element);
+  public attach(element: HTMLElement): void {
+    console.log("attach");
   }
 
-  public detach(element: HTMLInputElement): void {
-    element.removeEventListener("change", this.changeEventListener);
-  }
-
-  public handlePostchangeDuplicate(input: HTMLInputElement) {
-    input.style.setProperty("width", parseInt(window.getComputedStyle(input).getPropertyValue("font-size")) * Math.max(input.value.length, input.placeholder.length) + "px");
+  public detach(element: HTMLElement): void {
+    console.log("detach");;
   }
 }
 
@@ -245,7 +230,7 @@ const attributeMutationMixins: AttributeMutationMixin[] = [
   new InputDropzoneDataClassMixin(),
   new TogglerSelectDataClassMixin(),
   new DuplicaterInputDataClassMixin(),
-  new AutosizedDataClassMixin()
+  new DataViewMixin()
 ];
 
 const mainObserver = new MutationObserver(

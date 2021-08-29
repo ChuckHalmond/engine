@@ -1,12 +1,13 @@
 import { bindShadowRoot, GenerateAttributeAccessors, RegisterCustomHTMLElement } from "engine/editor/elements/HTMLElement";
 
 export { HTMLELoaderElement };
-export { BaseHTMLELoaderElement };
+export { HTMLELoaderElementBase };
 
 type LoaderType = "bar" | "circle";
 
 interface HTMLELoaderElement extends HTMLElement {
     type: LoaderType;
+    promise: Promise<any> | null;
 }
 
 @RegisterCustomHTMLElement({
@@ -15,9 +16,10 @@ interface HTMLELoaderElement extends HTMLElement {
 @GenerateAttributeAccessors([
     {name: "type", type: "string"}
 ])
-class BaseHTMLELoaderElement extends HTMLElement {
+class HTMLELoaderElementBase extends HTMLElement implements HTMLELoaderElement {
 
     public type!: LoaderType;
+    private _promise: Promise<any> | null;
 
     constructor() {
         super();
@@ -45,8 +47,8 @@ class BaseHTMLELoaderElement extends HTMLElement {
                     position: relative;
                     width: 12px;
                     height: 12px;
-                    border-top: 4px solid rgb(0, 128, 255);
-                    border-right: 4px solid rgb(0, 128, 255);
+                    border-top: 4px solid var(--loader-color, rgb(0, 128, 255));
+                    border-right: 4px solid var(--loader-color, rgb(0, 128, 255));
                     border-left: 4px solid transparent;
                     border-bottom: 4px solid transparent;
                     border-radius: 50%;
@@ -84,9 +86,9 @@ class BaseHTMLELoaderElement extends HTMLElement {
                 [part~="cursor"] {
                     position: relative;
                     display: inline-block;
-                    width: 16px;
+                    width: 32px;
                     height: 4px;
-                    background-color: rgb(0, 128, 255);
+                    background-color: var(--loader-color, rgb(0, 128, 255));
                     border-radius: 4px;
 
                     will-change: transform;
@@ -121,6 +123,20 @@ class BaseHTMLELoaderElement extends HTMLElement {
             </div>
             <div part="circle"></div>
         `);
+        this._promise = null;
+    }
+
+    public set promise(promise: Promise<any> | null) {
+        if (promise) {
+            promise.finally(() => {
+                this.remove();
+            });
+        }
+        this._promise = promise;
+    }
+
+    public get promise(): Promise<any> | null {
+        return this._promise;
     }
 }
 

@@ -1,5 +1,6 @@
-export { BaseEvent };
+export { EventBase };
 export { Event };
+export { EEvent };
 export { EventDispatcher };
 export { EventDispatcherBase };
 
@@ -13,7 +14,9 @@ interface Event<T extends string = string, D extends any = any> {
     readonly data: D;
 }
 
-class BaseEvent<T extends string, D extends any> implements Event<T, D> {
+type EEvent<T extends string = string, D extends any = any> = Event<T, D>;
+
+class EventBase<T extends string, D extends any> implements Event<T, D> {
     readonly type: T;
     readonly data: D;
 
@@ -23,7 +26,7 @@ class BaseEvent<T extends string, D extends any> implements Event<T, D> {
     }
 }
 
-var Event: EventConstructor = BaseEvent;
+var Event: EventConstructor = EventBase;
 
 type EventHandler<E extends Event> = (event: E) => void;
 

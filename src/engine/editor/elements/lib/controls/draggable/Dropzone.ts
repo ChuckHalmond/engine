@@ -129,7 +129,9 @@ class HTMLEDropzoneElementBase extends HTMLElement implements HTMLEDropzoneEleme
 
     public selectDraggable(draggable: HTMLEDraggableElement): void {
         draggable.selected = true;
-        this.selectedDraggables.push(draggable);
+        if (!this.selectedDraggables.includes(draggable)) {
+            this.selectedDraggables.push(draggable);
+        }
     }
 
     public unselectDraggable(draggable: HTMLEDraggableElement): void {
@@ -141,9 +143,10 @@ class HTMLEDropzoneElementBase extends HTMLElement implements HTMLEDropzoneEleme
     }
 
     public clearSelection(): void {
-        this.selectedDraggables.splice(0, this.selectedDraggables.length).forEach((draggable) => {
+        this.selectedDraggables.forEach((draggable) => {
             draggable.selected = false;
         });
+        this.selectedDraggables = [];
     }
     
     public connectedCallback() {
@@ -205,19 +208,23 @@ class HTMLEDropzoneElementBase extends HTMLElement implements HTMLEDropzoneEleme
                             this.unselectDraggable(target);
                     }
                     else if (event.shiftKey) {
-                        let startRangeIndex = Math.min(
-                            this.draggables.indexOf(this.selectedDraggables[0]),
-                            this.draggables.indexOf(target)
-                        );
-                        let endRangeIndex = Math.max(
-                            this.draggables.indexOf(this.selectedDraggables[0]),
-                            this.draggables.indexOf(target)
-                        );
-                        this.draggables.forEach((thisDraggable, thisDraggableIndex) => {
-                            (thisDraggableIndex >= startRangeIndex && thisDraggableIndex <= endRangeIndex) ? 
-                                this.selectDraggable(thisDraggable) :
-                                this.unselectDraggable(thisDraggable);
-                        });
+                        if (this.selectedDraggables.length > 0) {
+                            let targetIndex = this.draggables.indexOf(target);
+                            let firstIndex = this.draggables.indexOf(this.selectedDraggables[0]);
+                            let direction = Math.sign(targetIndex - firstIndex);
+                            let fromIndex = (direction > 0) ? 0 : this.draggables.length - 1;
+                            let toIndex = (direction > 0) ? this.draggables.length - 1 : 0;
+                            let startRangeIndex = (direction > 0) ? firstIndex : targetIndex;
+                            let endRangeIndex = (direction > 0) ? targetIndex : firstIndex;
+                            for (let index = fromIndex; index !== toIndex; index += direction) {
+                                (index >= startRangeIndex && index <= endRangeIndex) ? 
+                                    this.selectDraggable(this.draggables[index]) :
+                                    this.unselectDraggable(this.draggables[index]);
+                            }
+                        }
+                        else {
+                            this.selectDraggable(target);
+                        }
                     }
                 }
                 else {
@@ -318,7 +325,7 @@ class HTMLEDropzoneElementBase extends HTMLElement implements HTMLEDropzoneEleme
                             selectedDraggables.forEach((selectedDraggable) => {
                                 selectedDraggable.dragged = false;
                             });
-                            this.clearSelection();
+                            dragzone.clearSelection();
                             this.addDraggables(selectedDraggables, dropIndex);
                         }
                     }
@@ -346,8 +353,6 @@ class HTMLEDropzoneElementBase extends HTMLElement implements HTMLEDropzoneEleme
 
     public addDraggables(draggables: HTMLEDraggableElement[], position: number): HTMLEDraggableElement[] | null {
         if (draggables.length > 0) {
-            let firstDraggable = draggables[0];
-
             let dataTransferSuccess = true;
             if (this.droptest) {
                 dataTransferSuccess = this.droptest(this, draggables);
@@ -371,7 +376,7 @@ class HTMLEDropzoneElementBase extends HTMLElement implements HTMLEDropzoneEleme
                     });
                 }
                 else {
-                    let newDraggable = firstDraggable.cloneNode(true) as HTMLEDraggableElement;
+                    let newDraggable = draggables[0].cloneNode(true) as HTMLEDraggableElement;
                     if (this.draggables.length > 0) {
                         this.replaceChild(newDraggable, this.draggables[0]);
                     }

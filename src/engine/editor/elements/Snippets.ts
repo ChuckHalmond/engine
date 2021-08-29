@@ -6,10 +6,10 @@ export { pointIntersectsWithDOMRect };
 
 function forAllSubtreeElements(element: Element, func: (element: Element) => void) {
   let index = 0;
+  func(element);
   while (index < element.children.length) {
     let child = element.children.item(index);
     if (child) {
-      func(element);
       forAllSubtreeElements(child, func);
     }
     index++;

@@ -49,6 +49,10 @@ class HTMLEDraggableElementBase extends HTMLElement implements HTMLEDraggableEle
                     color: gray;
                     border-color: gray;
                 }
+
+                :host([selected]:active) {
+                    cursor: grabbing;
+                }
                 
                 :host([selected]) {
                     cursor: grab;

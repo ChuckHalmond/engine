@@ -76,7 +76,7 @@ class HTMLETreeViewListElementBase extends HTMLElement implements HTMLETreeViewL
                 case "ArrowLeft":
                     if (this.activeItem) {
                         if (this.activeItem.expanded) {
-                            this.activeItem.expanded = false;
+                            this.activeItem.toggle();
                         }
                         else {
                             if (isTagElement("e-treeviewitem", this.activeItem.parent)) {
@@ -89,7 +89,7 @@ class HTMLETreeViewListElementBase extends HTMLElement implements HTMLETreeViewL
                 case "ArrowRight":
                     if (this.activeItem) {
                         if (!this.activeItem.expanded) {
-                            this.activeItem.expanded = true;
+                            this.activeItem.toggle();
                         }
                         else {
                             if (this.activeItem.items.length > 0) {

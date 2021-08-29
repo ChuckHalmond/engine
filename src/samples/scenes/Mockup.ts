@@ -12,6 +12,8 @@ import "engine/editor/elements/lib/controls/draggable/Dragzone";
 import "engine/editor/elements/lib/controls/draggable/Dropzone";
 import "engine/editor/elements/lib/controls/draggable/DropzoneInput";
 import "engine/editor/elements/lib/utils/Import";
+import "engine/editor/elements/lib/utils/Loader";
+import "engine/editor/elements/lib/utils/Sash";
 
 import "engine/editor/elements/lib/containers/treeview/TreeViewList";
 import "engine/editor/elements/lib/containers/treeview/TreeViewItem";
@@ -19,17 +21,17 @@ import "engine/editor/elements/lib/containers/treeview/TreeViewItem";
 import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem"
 import "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail"
 
-import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
+import { HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { temp } from "./temp";
 import { HTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
 import { HotKey, Key, KeyModifier } from "engine/core/input/Input";
-import { editor } from "engine/editor/Editor";
+import { Editor, EditorBase } from "engine/editor/Editor";
 
 
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
     <div id="root" class="flex-rows">
-        <header class="flex-cols flex-none padded">
+        <!--<header class="flex-cols flex-none padded">
             <e-menubar tabindex="0">
                 <e-menuitem name="file-menu" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
@@ -55,7 +57,7 @@ const body = /*template*/`
                     </e-menu>
                 </e-menuitem>
             </e-menubar>
-        </header>
+        </header>-->
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">
@@ -65,95 +67,101 @@ const body = /*template*/`
                 </e-tablist>
             </div>
             <div id="data-col" class="col flex-none padded borded">
-                <details id="flow-details" open>
-                    <summary>Flow</summary>
-                    <details id="flow-details" class="indented" open>
-                        <summary>Extraction</summary>
+                <span>Extraction</span>
+                <div id="datasets">
+                    <details id="timeline-details" open>
+                        <summary>Timeline</summary>
                         <e-treeviewlist tabindex="-1">
-                            <e-treeviewitem id="treeviewitem" label="TreeViewItem 1" tabindex="-1"></e-treeviewitem>
-                            <e-treeviewitem label="TreeViewItem 2" tabindex="-1"></e-treeviewitem>
-                            <e-treeviewitem label="TreeViewItem 3" tabindex="-1">
-                                <e-treeviewitem label="TreeViewItem 31" tabindex="-1">
-                                    <e-treeviewitem label="TreeViewItem 311" tabindex="-1"></e-treeviewitem>
-                                    <e-treeviewitem label="TreeViewItem 312" tabindex="-1"></e-treeviewitem>
+                            <e-treeviewitem label="Extract" tabindex="-1">
+                                <e-treeviewitem label="[1] CSV Extractor" tabindex="-1"></e-treeviewitem>
+                                <e-treeviewitem label="[2] Netezza Extractor" tabindex="-1"></e-treeviewitem>
+                            </e-treeviewitem>
+                            <e-treeviewitem label="Transform" tabindex="-1">
+                                <e-treeviewitem label="[1] Loop" tabindex="-1">
+                                    <e-treeviewitem label="[1.1] Replace" tabindex="-1"></e-treeviewitem>
+                                    <e-treeviewitem label="[1.2] Merge" tabindex="-1"></e-treeviewitem>
                                 </e-treeviewitem>
-                                <e-treeviewitem label="TreeViewItem 32" tabindex="-1"></e-treeviewitem>
-                                <e-treeviewitem label="TreeViewItem 33" tabindex="-1"></e-treeviewitem>
+                            </e-treeviewitem>
+                            <e-treeviewitem label="Export" tabindex="-1">
+                                <e-treeviewitem label="[1] CSV Exporter" tabindex="-1"></e-treeviewitem>
                             </e-treeviewitem>
                         </e-treeviewlist>
                     </details>
-                </details>
-                <details id="datasets-details" open>
-                    <summary>Datasets</summary>
-                </details>
-                <details open>
-                    <summary>Constants</summary>
-                    <div class="details-content">
-                        <e-dragzone id="constants-dragzone">
-                            <e-draggable data-node-signature="const" type="date"><input type="date" name="const"/></e-draggable>
-                            <e-draggable data-node-signature="const" type="datetime"><input type="datetime-local" name="const"/></e-draggable>
-                            <e-draggable data-node-signature="const" type="string"><input type="text" name="const" placeholder="string"/></e-draggable>
-                            <e-draggable data-node-signature="const" type="number"><input type="number" name="const" placeholder="number"/></e-draggable>
-                            <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="True" readonly/></e-draggable>
-                            <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="False" readonly/></e-draggable>
-                        </e-dragzone>
-                    </div>
-                </details>
-                <details open>
-                    <summary>Metrics</summary>
-                    <e-dragzone id="metrics-dragzone">
-                        <e-draggable tabindex="-1"><fieldset data-signature="max_function">max(<e-dropzone placeholder="col"></e-dropzone>)</fieldset></e-draggable>
-                        <e-draggable tabindex="-1">notna(<e-dropzone placeholder="col"></e-dropzone>)</e-draggable>
-                    </e-dragzone>
-                </details>
-                <details open>
-                    <summary>Operators</summary>
-                    <e-dragzone id="operators-dragzone">
-                        <e-draggable tabindex="-1">(<e-dropzone placeholder="expr"></e-dropzone>)</e-draggable>
-                    </e-dragzone>
-                    <details class="indented" open>
-                        <summary>boolean</summary>
-                        <e-dragzone id="boolean-operators-dragzone">
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;and&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;or&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;<&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;>&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;==&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;!==&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                    <details id="datasets-details" open>
+                        <summary>Datasets</summary>
+                    </details>
+                </div>
+                <div id="expressions">
+                    <details>
+                        <summary>Constants</summary>
+                        <div class="details-content">
+                            <e-dragzone id="constants-dragzone">
+                                <e-draggable data-node-signature="const" type="date"><input type="date" name="const"/></e-draggable>
+                                <e-draggable data-node-signature="const" type="datetime"><input type="datetime-local" name="const"/></e-draggable>
+                                <e-draggable data-node-signature="const" type="string"><input type="text" name="const" placeholder="string"/></e-draggable>
+                                <e-draggable data-node-signature="const" type="number"><input type="number" name="const" placeholder="number"/></e-draggable>
+                                <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="True" readonly/></e-draggable>
+                                <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="False" readonly/></e-draggable>
+                            </e-dragzone>
+                        </div>
+                    </details>
+                    <details>
+                        <summary>Metrics</summary>
+                        <e-dragzone id="metrics-dragzone">
+                            <e-draggable tabindex="-1"><fieldset data-signature="max_function">max(<e-dropzone placeholder="col"></e-dropzone>)</fieldset></e-draggable>
+                            <e-draggable tabindex="-1">notna(<e-dropzone placeholder="col"></e-dropzone>)</e-draggable>
                         </e-dragzone>
                     </details>
-                    <details class="indented" open>
-                    <summary>numeric</summary>
-                        <e-dragzone id="numeric-operators-dragzone">
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;+&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;-&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;/&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
-                            <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;*&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                    <details>
+                        <summary>Operators</summary>
+                        <e-dragzone id="operators-dragzone">
+                            <e-draggable tabindex="-1">(<e-dropzone placeholder="expr"></e-dropzone>)</e-draggable>
                         </e-dragzone>
+                        <details class="indented">
+                            <summary>boolean</summary>
+                            <e-dragzone id="boolean-operators-dragzone">
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;and&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;or&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;<&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;>&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;==&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;!==&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            </e-dragzone>
+                        </details>
+                        <details class="indented">
+                        <summary>numeric</summary>
+                            <e-dragzone id="numeric-operators-dragzone">
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;+&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;-&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;/&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                                <e-draggable tabindex="-1"><e-dropzone placeholder="left"></e-dropzone>&nbsp;*&nbsp;<e-dropzone placeholder="right"></e-dropzone></e-draggable>
+                            </e-dragzone>
+                        </details>
                     </details>
-                </details>
-                <details open>
-                    <summary>Functions</summary>
-                    <details class="indented" open>
-                        <summary>string</summary>
-                        <e-dragzone id="string-functions-dragzone">
-                            <e-draggable class="draggable-dropzone" tabindex="-1">concat(<e-dropzone placeholder="left"></e-dropzone>, <e-dropzone placeholder="right"></e-dropzone>)</e-draggable>
-                        </e-dragzone>
+                    <details>
+                        <summary>Functions</summary>
+                        <details class="indented">
+                            <summary>string</summary>
+                            <e-dragzone id="string-functions-dragzone">
+                                <e-draggable class="draggable-dropzone" tabindex="-1">concat(<e-dropzone placeholder="left"></e-dropzone>, <e-dropzone placeholder="right"></e-dropzone>)</e-draggable>
+                            </e-dragzone>
+                        </details>
+                        <details class="indented">
+                            <summary>generator</summary>
+                            <e-dragzone id="generator-functions-dragzone">
+                                <e-draggable class="draggable-dropzone" tabindex="-1">range(<e-dropzone placeholder="number"></e-dropzone>)</e-draggable>
+                            </e-dragzone>
+                        </details>
                     </details>
-                    <details class="indented" open>
-                        <summary>generator</summary>
-                        <e-dragzone id="generator-functions-dragzone">
-                            <e-draggable class="draggable-dropzone" tabindex="-1">range(<e-dropzone placeholder="number"></e-dropzone>)</e-draggable>
-                        </e-dragzone>
-                    </details>
-                </details>
+                </div>
             </div>
+            <e-sash controls="data-col" data-view></e-sash>
             <div id="panels-col" class="col flex-auto padded-horizontal">
+                <!--<e-breadcrumbtrail class="margin-bottom">
+                    <e-breadcrumbitem>Item 0</e-breadcrumbitem>
+                    <e-breadcrumbitem>Item 1</e-breadcrumbitem>
+                </e-breadcrumbtrail>-->
                 <e-tabpanel id="extract-panel">
-                    <e-breadcrumbtrail class="margin-bottom">
-                        <e-breadcrumbitem>Item 0</e-breadcrumbitem>
-                        <e-breadcrumbitem>Item 1</e-breadcrumbitem>
-                    </e-breadcrumbtrail>
                     <form id="extract-form">
                     <!--<fieldset>
                         <details open>
@@ -187,31 +195,26 @@ const body = /*template*/`
                                     </summary>
                                     <fieldset name="netezza" class="grid-fieldset margin-top" hidden>
                                         <label for="user">User</label>
-                                        <input type="text" name="userid" required value="user" ondrop="event.preventDefault()"/>
+                                        <input type="text" name="userid" required ondrop="event.preventDefault()"/>
                                         <label for="password">Password</label>
-                                        <input type="password" name="password" value="password" required ondrop="event.preventDefault()"/>
+                                        <input type="password" name="password" required ondrop="event.preventDefault()"/>
                                         <label for="database">Database</label>
-                                        <input type="text" name="database" value="database" required ondrop="event.preventDefault()"/>
+                                        <input type="text" name="database" required ondrop="event.preventDefault()"/>
                                         <label for="query">Query</label>
-                                        <textarea name="query" required>Query</textarea>
+                                        <textarea name="query" required></textarea>
                                         <label for="as">As</label>
-                                        <input type="text" name="as" value="as" required ondrop="event.preventDefault()"/>
-                                        <label for="dropzone">Dropzone</label>
-                                        <!--<e-dropzoneinput>
-                                            <e-dropzone slot="dropzone" type="type"></e-dropzone>
-                                            <input slot="input" name="lol" required/>
-                                        </e-dropzoneinput>-->
+                                        <input type="text" name="as" required ondrop="event.preventDefault()"/>
                                     </fieldset>
-                                    <!--<fieldset name="csv" class="grid-fieldset margin-top" hidden>
+                                    <fieldset name="csv" class="grid-fieldset margin-top" hidden>
                                         <label for="filepath">Filepath</label>
                                         <input name="filepath" type="file"/>
                                         <label for="as">As</label>
                                         <input type="text" name="as" required ondrop="event.preventDefault()"/>
-                                    </fieldset>-->
+                                    </fieldset>
                                 </details>
                                 last execution: never<br/>
                                 last execution status: none<br/>
-                                <button id="extract-button" type="submit">Extract</button>
+                                <button id="extract-button" type="button">Extract</button>
                             </fieldset>
                         <!--</details>
                     </fieldset>-->
@@ -281,6 +284,7 @@ const body = /*template*/`
                 </form>
                 </e-tab-panel>
             </div>
+            <e-sash id="doc-col-sash" controls="doc-col"></e-sash>
             <div id="doc-col" class="col flex-none padded borded"></div>
         </main>
         <!--<footer class="flex-cols flex-none padded"></footer>-->
@@ -297,6 +301,8 @@ export async function mockup() {
     bodyTemplate.innerHTML = body;
     document.body.appendChild(bodyTemplate.content);
 
+    const editor = new EditorBase();
+    
     editor.registerCommand("import", {
         exec(): void {
           alert("Import");
@@ -342,32 +348,6 @@ export async function mockup() {
     }
 
     (window as any)["FormDataObject"] = FormDataObject;*/
-
-    let extractorsFieldsets = document.getElementById("extractors-fieldsets");
-    let netezzaExtractorTemplate = document.createElement("template");
-    netezzaExtractorTemplate.innerHTML = `
-        <fieldset data-signature="sql-extractor">
-            <fieldset name="left">
-                <input type="datetime-local" name="date" required ondrop="event.preventDefault()"/>
-                <label for="user">my radio 1</label>
-                <input type="radio" required ondrop="event.preventDefault()"/>
-                <label for="user">my radio 2</label>
-                <input type="radio" name="radio-2" required ondrop="event.preventDefault()"/>
-            <fieldset>
-            <label for="user">User</label>
-            <input type="text" name="userid" required value="Net" ondrop="event.preventDefault()"/>
-            <label for="password">Password</label>
-            <input type="password" name="password" required ondrop="event.preventDefault()"/>
-            <label for="database">Database</label>
-            <input type="text" name="database" required ondrop="event.preventDefault()"/>
-            <label for="query">Query</label>
-            <textarea name="query"></textarea>
-        </fieldset>
-    `;
-    
-    if (extractorsFieldsets) {
-        extractorsFieldsets.appendChild(netezzaExtractorTemplate.content);
-    }
 
     //(window as any)["StructuredFormData"] = StructuredFormData;
 
@@ -453,7 +433,7 @@ export async function mockup() {
     }
 
     if (extractButton) {
-        /*extractButton.addEventListener("click", () => {
+        extractButton.addEventListener("click", () => {
             if (transformTab) {
                 transformTab.active = true;
                 generateDataset("D1", [
@@ -463,7 +443,7 @@ export async function mockup() {
                     "A", "G", "H", "I", "J"
                 ]);
             }
-        });*/
+        });
     }
 
     if (transformButton) {

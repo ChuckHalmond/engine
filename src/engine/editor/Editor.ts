@@ -1,6 +1,6 @@
 import { HotKey } from "engine/core/input/Input";
 import { Command, isUndoCommand } from "engine/libs/patterns/commands/Command";
-import { EventDispatcher } from "engine/libs/patterns/messaging/events/EventDispatcher";
+import { EventDispatcher, EEvent } from "engine/libs/patterns/messaging/events/EventDispatcher";
 import { ResourceFetcher } from "engine/resources/ResourceFetcher";
 import { isTagElement } from "./elements/HTMLElement";
 import { HTMLEMenuBarElement } from "./elements/lib/containers/menus/MenuBar";
@@ -9,32 +9,14 @@ import { HTMLEStatusBarElement } from "./elements/lib/containers/status/StatusBa
 import { getPropertyFromPath, setPropertyFromPath } from "./elements/Snippets";
 import { HTMLEMenubarTemplate, HTMLEMenubarTemplateDescription } from "./templates/menus/MenubarTemplate";
 
-export { editor };
 export { Editor };
 export { EditorBase };
 export { EditorCommand };
 export { EditorHotKey };
 
-interface EditorEventsMap {
-    "contextenter": {
-        type: "contextenter",
-        data: {
-            value: any
-        }
-    },
-    "contextleave": {
-        type: "contextleave",
-        data: {
-            value: any
-        }
-    },
-    "statechange": {
-        type: "statechange",
-        data: {
-            value: any
-        }
-    }
-};
+type EditorEventsMap = {
+    "e-context-change": EEvent<"e-context-change">;
+}
 
 interface Editor extends EventDispatcher<EditorEventsMap> {
     //readonly resources: Resources;
@@ -73,7 +55,7 @@ interface EditorCommandCall extends EditorCommand {
 
 interface EditorHotKey extends HotKey {}
 
-class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
+class EditorBase<State extends object> extends EventDispatcher<EditorEventsMap> implements Editor {
 
     private _commands: Map<string, EditorCommand>;
     private _hotkeys: Map<EditorHotKey, (() => void)[]>;
@@ -83,7 +65,7 @@ class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
 
     private _context: string;
 
-    private _state: {};
+    private _state: State;
     private _stateListeners: Map<string, Array<(newValue: any) => void>>;
 
     //readonly resources: Resources;
@@ -111,7 +93,7 @@ class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
         this.menubar = null;
         this.statusbar = null;
 
-        this._state = {};
+        this._state = {} as State;
         this._stateListeners = new Map();
     }
     
@@ -201,10 +183,9 @@ class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
 
     public setContext(context: string): void {
         if (context !== this._context) {
-            /*this.dispatchEvent(`${this._context}contextleave`, {data: void 0});
-            this.dispatchEvent(`${context}contextenter`, {data: void 0});
+            //this.dispatchEvent(new CustomEvent("e-contextchange"));
             this._context = context;
-            if (this.menubar) {
+            /*if (this.menubar) {
                 this.menubar.findItems((item) => {
                     return !!item.command && (item.command.context === this._context)
                 }).forEach((item) => {
@@ -331,5 +312,3 @@ class EditorBase extends EventDispatcher<EditorEventsMap> implements Editor {
         }
     }
 }
-
-var editor: Editor = new EditorBase();

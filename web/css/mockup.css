@@ -15,6 +15,7 @@
 
 ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
     border-radius: 50%;
 }
 
@@ -76,7 +77,7 @@ e-menuitem[name="file-export-menu-button"]::part(icon)::after {
     -webkit-mask-image: url("../assets/editor/icons/download_black_18dp.svg");
     mask-image: url("../assets/editor/icons/download_black_18dp.svg");
 }
-
+/*
 e-treeviewitem::part(state) {
     position: relative;
     width: 18px;
@@ -92,7 +93,7 @@ e-treeviewitem::part(state)::after {
     background-color: dimgray;
     -webkit-mask-image: url("../assets/editor/icons/priority_high_black_18dp.svg");
     mask-image: url("../assets/editor/icons/priority_high_black_18dp.svg");
-}
+}*/
 
 e-tab::after {
     content: " ";
@@ -131,7 +132,6 @@ summary {
     list-style: none;
     user-select: none;
     background-color: gainsboro;
-    /*font-weight: bold;*/
     cursor: pointer;
     padding: 0 6px;
     border-radius: 4px;
@@ -193,6 +193,7 @@ e-draggable e-dropzoneinput {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    /*justify-content: space-between;*/
 }
 
 #data-col summary {

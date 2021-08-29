@@ -1,121 +1,78 @@
-import { isParentNode, isNode, isReactiveParentNode, isReactiveNode } from "../HTMLElement";
+import { isParentNode, isReactiveParentNode, isReactiveNode } from "../HTMLElement";
 import { forAllSubtreeNodes } from "../Snippets";
 
-export { HTMLEViewElement };
-export { HTMLEViewElementBase };
+export { ViewBase };
+export { View };
 
-interface HTMLEViewElement<M extends object> {
+interface View<M extends object, E extends HTMLElement> {
+    readonly element: E;
     readonly model: M;
-    setModel(model: M): void;
-    render(): Node | (Node | string)[];
-    connectedCallback(): void;
-    disconnectedCallback(): void;
+    close(): void;
+    render(): E;
 }
 
-abstract class HTMLEViewElementBase<M extends object> extends HTMLElement implements HTMLEViewElement<M> {
-    _model: M;
-    _observer: MutationObserver;
+abstract class ViewBase<M extends object, E extends HTMLElement> implements View<M, E> {
+    private _element: E;
+    private _model: M;
+    private _observer: MutationObserver;
 
     constructor(model: M) {
-        super();
         this._model = model;
-
+        this._element = this.render();
         this._observer = new MutationObserver((mutations: MutationRecord[]) => {
             mutations.forEach((record: MutationRecord) => {
                 Array.from(record.removedNodes).map((node) => {
                     this._removeReactiveListeners(node);
-                    if (isParentNode(node)) {
-                        forAllSubtreeNodes(node, (childNode) => {
-                            this._removeReactiveListeners(childNode);
-                        });
-                    }
                 });
                 Array.from(record.addedNodes).map((node) => {
                     this._addReactiveListeners(node);
-                    if (isParentNode(node)) {
-                        forAllSubtreeNodes(node, (childNode) => {
-                            this._addReactiveListeners(childNode);
-                        });
-                    }
                 });
             });
         });
-
-        let content = this.render();
-        if (isNode(content)) {
-            this.append(content);
-        }
-        else {
-            this.append(...content);
-        }
-
-        this._observer.observe(this, {
+        this._observer.observe(this._element, {
             subtree: true,
             childList: true
         });
+        this._addReactiveListeners(this._element);
+    }
 
-        this._addReactiveListeners(this);
+    public get element(): E {
+        return this._element;
+    }
+
+    public close(): void {
+        this._element.remove();
+        this._observer.disconnect();
+        this._removeReactiveListeners(this._element);
     }
 
     public get model(): M {
         return this._model;
     }
 
-    public setModel(model: M): void {
-        this._model = model;
-        this.innerHTML = "";
-        let content = this.render();
-        if (isNode(content)) {
-            this.append(content);
-        }
-        else {
-            this.append(...content);
-        }
-    }
-
-    public abstract render(): Node | (Node | string)[];
-
-    public connectedCallback(): void {
-        Array.from(this.childNodes).map((node) => {
-            this._addReactiveListeners(node);
-            if (isParentNode(node)) {
-                forAllSubtreeNodes(node, (childNode) => {
-                    this._addReactiveListeners(childNode);
-                });
-            }
-        });
-    }
-
-    public disconnectedCallback(): void {
-        Array.from(this.childNodes).map((node) => {
-            this._removeReactiveListeners(node);
-            if (isParentNode(node)) {
-                forAllSubtreeNodes(node, (childNode) => {
-                    this._removeReactiveListeners(childNode);
-                });
-            }
-        });
-    }
+    public abstract render(): E;
 
     private _addReactiveListeners(node: Node): void {
-        if (isReactiveParentNode(node)) {
+        if (isReactiveParentNode(node) || isReactiveNode(node)) {
             const { _reactModel, _reactEvent, _reactListener } = node._reactAttributes; 
-            _reactModel.addEventListener(_reactEvent, _reactListener);
+            _reactModel.addEventListener(_reactEvent as any, _reactListener as any);
         }
-        else if (isReactiveNode(node)) {
-            const { _reactModel, _reactEvent, _reactListener } = node._reactAttributes; 
-            _reactModel.addEventListener(_reactEvent, _reactListener);
+        if (isParentNode(node)) {
+            forAllSubtreeNodes(node, (childNode) => {
+                this._addReactiveListeners(childNode);
+            });
         }
     }
 
     private _removeReactiveListeners(node: Node): void {
-        if (isReactiveParentNode(node)) {
+        if (isReactiveParentNode(node) || isReactiveNode(node)) {
             const { _reactModel, _reactEvent, _reactListener } = node._reactAttributes; 
-            _reactModel.removeEventListener(_reactEvent, _reactListener);
+            _reactModel.removeEventListener(_reactEvent as any, _reactListener as any);
         }
-        else if (isReactiveNode(node)) {
-            const { _reactModel, _reactEvent, _reactListener } = node._reactAttributes; 
-            _reactModel.removeEventListener(_reactEvent, _reactListener);
+        if (isParentNode(node)) {
+            forAllSubtreeNodes(node, (childNode) => {
+                this._removeReactiveListeners(childNode);
+            });
         }
     }
 }

@@ -20,6 +20,7 @@ interface HTMLETreeViewItemElement extends HTMLElement {
     nextVisibleItem(): HTMLETreeViewItemElement;
     nearestParentItem(): HTMLETreeViewItemElement;
 
+    toggle(): void;
     trigger(): void;
 }
 
@@ -47,11 +48,17 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
 
     public items: HTMLETreeViewItemElement[];
     public parent: HTMLETreeViewItemElement | HTMLETreeViewListElement | null;
+    private _toggleArrow: Element;
 
     constructor() {
         super();
 
+        let collapseArrowUrl = JSON.stringify("../assets/editor/icons/chevron_right_black_18dp.svg");
+        let expandArrowUrl = JSON.stringify("../assets/editor/icons/expand_more_black_18dp.svg");
+
         bindShadowRoot(this, /*template*/`
+            <link rel="preload" href=${collapseArrowUrl} as="image" crossorigin>
+            <link rel="preload" href=${expandArrowUrl} as="image" crossorigin>
             <style>
                 :host {
                     display: inline-block;
@@ -63,6 +70,8 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
                     cursor: pointer;
 
                     --indent-width: 8px;
+                    --collapsed-arrow-url: url(${collapseArrowUrl});
+                    --expanded-arrow-url: url(${expandArrowUrl});
                 }
                 
                 :host([active]) [part~="content"],
@@ -95,7 +104,7 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
                     text-overflow: ellipsis;
                 }
 
-                :host(:empty) [part~="expand_arrow"] {
+                :host(:empty) [part~="toggle_arrow"] {
                     visibility: hidden;
                 }
 
@@ -103,14 +112,14 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
                     display: none;
                 }
 
-                [part~="expand_arrow"] {
+                [part~="toggle_arrow"] {
                     position: relative;
                     width: 18px;
                     height: 18px;
                     padding-right: 8px;
                 }
 
-                [part~="expand_arrow"]::after {
+                [part~="toggle_arrow"]::after {
                     content: "";
                     display: inline-block;
                     width: 18px;
@@ -120,14 +129,14 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
                     transform: scale(1.2) translateY(4%);
                 }
 
-                :host(:not([expanded])) [part~="expand_arrow"]::after {
-                    -webkit-mask-image: url("../assets/editor/icons/chevron_right_black_18dp.svg");
-                    mask-image: url("../assets/editor/icons/chevron_right_black_18dp.svg");
+                :host(:not([expanded])) [part~="toggle_arrow"]::after {
+                    -webkit-mask-image: var(--collapsed-arrow-url);
+                    mask-image: var(--collapsed-arrow-url);
                 }
 
-                :host([expanded]) [part~="expand_arrow"]::after {
-                    -webkit-mask-image: url("../assets/editor/icons/expand_more_black_18dp.svg");
-                    mask-image: url("../assets/editor/icons/expand_more_black_18dp.svg");
+                :host([expanded]) [part~="toggle_arrow"]::after {
+                    -webkit-mask-image: var(--expanded-arrow-url);
+                    mask-image: var(--expanded-arrow-url);
                 }
 
                 [part~="state"] {
@@ -143,7 +152,7 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
             </style>
             <li part="li">
                 <span part="content">
-                    <span part="expand_arrow"></span>
+                    <span part="toggle_arrow"></span>
                     <span part="icon"></span>
                     <span part="label"></span>
                     <span part="state"></span>
@@ -156,6 +165,8 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
         this.items = [];
         this.parent = null;
         this.indent = 0;
+
+        this._toggleArrow = this.shadowRoot!.querySelector("[part~=toggle_arrow]")!;
     }
 
     public connectedCallback() {
@@ -163,10 +174,10 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
 
         this.setAttribute("aria-label", this.label);
 
-        const itemsSlot = this.shadowRoot?.querySelector<HTMLSlotElement>("slot");
-        if (itemsSlot) {
-            itemsSlot.addEventListener("slotchange", () => {
-                const items = itemsSlot.assignedElements()
+        const slot = this.shadowRoot?.querySelector<HTMLSlotElement>("slot");
+        if (slot) {
+            slot.addEventListener("slotchange", () => {
+                const items = slot.assignedElements()
                     .filter(item => isTagElement("e-treeviewitem", item)) as HTMLETreeViewItemElement[];
                 this.items = items;
                 this.items.forEach((item) => {
@@ -175,6 +186,13 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
                 });
             });
         }
+
+        this.shadowRoot!.addEventListener("mousedown", (event) => {
+            let target = event.target as any;
+            if (target === this._toggleArrow) {
+                this.toggle();
+            }
+        });
     }
 
     public attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
@@ -249,8 +267,12 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
         return this;
     }
 
-    public trigger(): void {
+    public toggle(): void {
         this.expanded = !this.expanded;
+        this.dispatchEvent(new CustomEvent("e-toggle", {bubbles: true}));
+    }
+
+    public trigger(): void {
         this.dispatchEvent(new CustomEvent("e-trigger", {bubbles: true}));
     }
 }
@@ -258,6 +280,12 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
 declare global {
     interface HTMLElementTagNameMap {
         "e-treeviewitem": HTMLETreeViewItemElement,
+    }
+}
+
+declare global {
+    interface HTMLElementEventMap {
+        "e-toggle": Event,
     }
 }
 
