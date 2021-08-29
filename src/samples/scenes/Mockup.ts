@@ -31,7 +31,7 @@ import { Editor, EditorBase } from "engine/editor/Editor";
 const body = /*template*/`
     <link rel="stylesheet" href="../css/mockup.css"/>
     <div id="root" class="flex-rows">
-        <!--<header class="flex-cols flex-none padded">
+        <header class="flex-cols flex-none padded">
             <e-menubar tabindex="0">
                 <e-menuitem name="file-menu" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
@@ -41,7 +41,7 @@ const body = /*template*/`
                             tabindex="-1" aria-label="Export file"></e-menuitem>
                     </e-menu>
                 </e-menuitem>
-                <e-menuitem name="view-menu" type="menu" label="View" tabindex="-1" aria-label="View">
+                <e-menuitem name="view-menu" type="menu" label="Preferences" tabindex="-1" aria-label="Preferences">
                     <e-menu slot="menu" tabindex="-1">
                         <e-menuitem name="view-boolean-menuitem" type="checkbox" label="Advanced User"
                         tabindex="-1" aria-label="Advanced User"></e-menuitem>
@@ -57,13 +57,13 @@ const body = /*template*/`
                     </e-menu>
                 </e-menuitem>
             </e-menubar>
-        </header>-->
+        </header>
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">
-                    <e-tab name="extract" controls="extract-panel" title="Extract" active tabindex="-1"></e-tab>
-                    <e-tab name="transform" controls="transform-panel" title="Transform" tabindex="-1"></e-tab>
-                    <e-tab name="export" controls="export-panel" title="Export" tabindex="-1"></e-tab>
+                    <e-tab name="extract" controls="extract-panel" title="Extract" active tabindex="-1"><span>Extract</span></e-tab>
+                    <e-tab name="transform" controls="transform-panel" title="Transform" tabindex="-1"><span>Transform</span></e-tab>
+                    <e-tab name="export" controls="export-panel" title="Export" tabindex="-1"><span>Export</span></e-tab>
                 </e-tablist>
             </div>
             <div id="data-col" class="col flex-none padded borded">
@@ -98,8 +98,8 @@ const body = /*template*/`
                             <e-dragzone id="constants-dragzone">
                                 <e-draggable data-node-signature="const" type="date"><input type="date" name="const"/></e-draggable>
                                 <e-draggable data-node-signature="const" type="datetime"><input type="datetime-local" name="const"/></e-draggable>
-                                <e-draggable data-node-signature="const" type="string"><input type="text" name="const" placeholder="string"/></e-draggable>
-                                <e-draggable data-node-signature="const" type="number"><input type="number" name="const" placeholder="number"/></e-draggable>
+                                <e-draggable data-node-signature="const" type="string"><input type="text" data-dynamic-input  name="const" placeholder="string"/></e-draggable>
+                                <e-draggable data-node-signature="const" type="number"><input type="number" data-dynamic-input name="const" placeholder="number"/></e-draggable>
                                 <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="True" readonly/></e-draggable>
                                 <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="False" readonly/></e-draggable>
                             </e-dragzone>
@@ -143,19 +143,19 @@ const body = /*template*/`
                         <details class="indented">
                             <summary>string</summary>
                             <e-dragzone id="string-functions-dragzone">
-                                <e-draggable class="draggable-dropzone" tabindex="-1">concat(<e-dropzone placeholder="left"></e-dropzone>, <e-dropzone placeholder="right"></e-dropzone>)</e-draggable>
+                                <e-draggable tabindex="-1">concat(<e-dropzone placeholder="left"></e-dropzone>, <e-dropzone placeholder="right"></e-dropzone>)</e-draggable>
                             </e-dragzone>
                         </details>
                         <details class="indented">
                             <summary>generator</summary>
                             <e-dragzone id="generator-functions-dragzone">
-                                <e-draggable class="draggable-dropzone" tabindex="-1">range(<e-dropzone placeholder="number"></e-dropzone>)</e-draggable>
+                                <e-draggable tabindex="-1">range(<e-dropzone placeholder="number"></e-dropzone>)</e-draggable>
                             </e-dragzone>
                         </details>
                     </details>
                 </div>
             </div>
-            <e-sash controls="data-col" data-view></e-sash>
+            <e-sash controls="data-col"></e-sash>
             <div id="panels-col" class="col flex-auto padded-horizontal">
                 <!--<e-breadcrumbtrail class="margin-bottom">
                     <e-breadcrumbitem>Item 0</e-breadcrumbitem>

@@ -95,16 +95,28 @@ e-treeviewitem::part(state)::after {
     mask-image: url("../assets/editor/icons/priority_high_black_18dp.svg");
 }*/
 
+
+#tabs-col {
+    background-color: gainsboro;
+}
+
+#tabs-col e-tab:hover,
+#tabs-col e-tab[active] {
+    background-color: white;
+}
+
+e-tab > span {
+    display: block;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
 e-tab::after {
     content: " ";
     display: inline-block;
     height: 24px;
     width: 24px;
-    background-color: dimgray;
-}
-
-e-tab:hover::after,
-e-tab[active]::after {
     background-color: rgb(52, 52, 52);
 }
 

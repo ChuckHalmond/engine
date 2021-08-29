@@ -320,7 +320,7 @@ class HTMLEDropzoneElementBase extends HTMLElement implements HTMLEDropzoneEleme
                     let dragzoneId = dataTransfer.getData("text/plain");
                     let dragzone = document.getElementById(dragzoneId) as HTMLEDragzoneElement;
                     if (dragzone) {
-                        let selectedDraggables = dragzone.selectedDraggables; 
+                        let selectedDraggables = dragzone.selectedDraggables;
                         if (selectedDraggables) {
                             selectedDraggables.forEach((selectedDraggable) => {
                                 selectedDraggable.dragged = false;

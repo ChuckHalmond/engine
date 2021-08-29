@@ -5,6 +5,521 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+define("engine/libs/maths/MathError", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.MathError = void 0;
+    class MathError extends Error {
+        constructor() {
+            super(...arguments);
+            this.name = 'MathError';
+        }
+    }
+    exports.MathError = MathError;
+});
+define("engine/libs/patterns/injectors/Injector", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Register = exports.Inject = exports.InjectorBase = exports.Injector = void 0;
+    class InjectorBase {
+        constructor(args) {
+            this._defaultCtor = args.defaultCtor;
+            this._onDefaultOverride = args.onDefaultOverride;
+            this._constructors = new Map();
+        }
+        get defaultCtor() {
+            return this._defaultCtor;
+        }
+        overrideDefaultCtor(constructor) {
+            this._defaultCtor = constructor;
+            this._onDefaultOverride(constructor);
+        }
+        forceQualifier(qualifier) {
+            this._forcedQualifier = qualifier;
+        }
+        unforceQualifier() {
+            delete this._forcedQualifier;
+        }
+        getConstructor(qualifier) {
+            const qualifierValue = this._forcedQualifier || qualifier;
+            if (typeof qualifierValue === 'undefined') {
+                return this._defaultCtor;
+            }
+            const constructor = this._constructors.get(qualifierValue);
+            if (typeof constructor === 'undefined') {
+                throw new Error(`No constructor for qualifier ${qualifierValue}`);
+            }
+            return constructor;
+        }
+        inject(args) {
+            const constructor = this.getConstructor(args === null || args === void 0 ? void 0 : args.qualifier);
+            if (args === null || args === void 0 ? void 0 : args.args) {
+                const parameters = Array.from(args === null || args === void 0 ? void 0 : args.args);
+                return new constructor(...parameters);
+            }
+            return new constructor();
+        }
+        register(constructor, qualifier) {
+            if (!this._constructors.has(qualifier)) {
+                this._constructors.set(qualifier, constructor);
+            }
+        }
+    }
+    exports.InjectorBase = InjectorBase;
+    const Injector = InjectorBase;
+    exports.Injector = Injector;
+    const Register = function (injector, qualifier) {
+        return (ctor) => {
+            if (typeof qualifier !== 'undefined') {
+                injector.register(ctor, qualifier);
+            }
+            injector.register(ctor, ctor.name);
+            return ctor;
+        };
+    };
+    exports.Register = Register;
+    function Inject(injector, options) {
+        return (target, propertyKey) => {
+            const instance = injector.inject(options);
+            Object.defineProperty(target, propertyKey, {
+                value: instance
+            });
+        };
+    }
+    exports.Inject = Inject;
+});
+define("engine/libs/maths/algebra/vectors/Vector2", ["require", "exports", "engine/libs/maths/MathError", "engine/libs/patterns/injectors/Injector"], function (require, exports, MathError_1, Injector_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Vector2Base = exports.Vector2 = exports.Vector2Injector = void 0;
+    class Vector2Base {
+        constructor(values) {
+            this._array = (values) ? [
+                values[0], values[1]
+            ] : [0, 0];
+        }
+        get array() {
+            return this._array;
+        }
+        get values() {
+            return [
+                this._array[0],
+                this._array[1]
+            ];
+        }
+        set values(values) {
+            this._array[0] = values[0];
+            this._array[1] = values[1];
+        }
+        get x() {
+            return this._array[0];
+        }
+        set x(x) {
+            this._array[0] = x;
+        }
+        get y() {
+            return this._array[1];
+        }
+        set y(y) {
+            this._array[1] = y;
+        }
+        setArray(array) {
+            if (array.length < 2) {
+                throw new MathError_1.MathError(`Array must be of length 2 at least.`);
+            }
+            this._array = array;
+            return this;
+        }
+        setValues(v) {
+            const o = this._array;
+            o[0] = v[0];
+            o[1] = v[1];
+            return this;
+        }
+        equals(vec) {
+            const v = vec._array;
+            const o = this._array;
+            return v[0] === o[0]
+                && v[1] === o[1];
+        }
+        copy(vec) {
+            const o = this._array;
+            const v = vec._array;
+            o[0] = v[0];
+            o[1] = v[1];
+            return this;
+        }
+        clone() {
+            return new Vector2Base(this.values);
+        }
+        setZeros() {
+            const o = this._array;
+            o[0] = 0;
+            o[1] = 0;
+            return this;
+        }
+        add(vec) {
+            const v = vec._array;
+            const o = this._array;
+            o[0] = o[0] + v[0];
+            o[1] = o[1] + v[1];
+            return this;
+        }
+        addScalar(k) {
+            const o = this._array;
+            o[0] = o[0] + k;
+            o[1] = o[1] + k;
+            return this;
+        }
+        sub(vec) {
+            const v = vec._array;
+            const o = this._array;
+            o[0] = o[0] - v[0];
+            o[1] = o[1] - v[1];
+            return this;
+        }
+        lerp(vec, t) {
+            const v = vec._array;
+            const o = this._array;
+            o[0] = t * (v[0] - o[0]);
+            o[1] = t * (v[1] - o[1]);
+            return this;
+        }
+        clamp(min, max) {
+            const o = this._array;
+            const l = min._array;
+            const g = max._array;
+            o[0] = Math.min(g[0], Math.min(o[0], l[0])),
+                o[1] = Math.min(g[1], Math.min(o[1], l[1]));
+            return this;
+        }
+        multScalar(k) {
+            const o = this._array;
+            o[0] = o[0] * k;
+            o[1] = o[1] * k;
+            return this;
+        }
+        cross(vec) {
+            const a = this._array;
+            const b = vec._array;
+            return a[0] * b[1] - a[1] * b[0];
+        }
+        dot(vec) {
+            const a = this._array;
+            const b = vec._array;
+            return (a[0] * b[0]) + (a[1] * b[1]);
+        }
+        len() {
+            const v = this._array;
+            return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
+        }
+        lenSq() {
+            const v = this._array;
+            return v[0] * v[0] + v[1] * v[1];
+        }
+        dist(vec) {
+            const a = this._array;
+            const b = vec._array;
+            const dx = a[0] - b[0];
+            const dy = a[1] - b[1];
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        distSq(vec) {
+            const a = this._array;
+            const b = vec._array;
+            const dx = a[0] - b[0];
+            const dy = a[1] - b[1];
+            return dx * dx + dy * dy;
+        }
+        normalize() {
+            const o = this._array;
+            const lenSq = o[0] * o[0] + o[1] * o[1];
+            const len = Math.sqrt(lenSq);
+            if (len > Number.EPSILON) {
+                o[0] = o[0] / len;
+                o[1] = o[1] / len;
+            }
+            else {
+                o[0] = 0;
+                o[1] = 0;
+            }
+            return this;
+        }
+        negate() {
+            const o = this._array;
+            o[0] = -o[0];
+            o[1] = -o[1];
+            return this;
+        }
+        mult(vec) {
+            const v = vec._array;
+            const o = this._array;
+            o[0] = o[0] * v[0];
+            o[1] = o[1] * v[1];
+            return this;
+        }
+        addScaled(vec, k) {
+            const v = vec._array;
+            const o = this._array;
+            o[0] = o[0] + v[0] * k;
+            o[1] = o[1] + v[1] * k;
+            return this;
+        }
+        writeIntoArray(out, offset = 0) {
+            const v = this._array;
+            out[offset] = v[0];
+            out[offset + 1] = v[1];
+        }
+        readFromArray(arr, offset = 0) {
+            const o = this._array;
+            o[0] = arr[offset];
+            o[1] = arr[offset + 1];
+            return this;
+        }
+        copyAndSub(vecA, vecB) {
+            const o = this._array;
+            const a = vecA._array;
+            const b = vecB._array;
+            o[0] = a[0] - b[0];
+            o[1] = a[1] - b[1];
+            return this;
+        }
+    }
+    exports.Vector2Base = Vector2Base;
+    var Vector2 = Vector2Base;
+    exports.Vector2 = Vector2;
+    const Vector2Injector = new Injector_1.Injector({
+        defaultCtor: Vector2Base,
+        onDefaultOverride: (ctor) => {
+            exports.Vector2 = Vector2 = ctor;
+        }
+    });
+    exports.Vector2Injector = Vector2Injector;
+});
+define("engine/core/input/Input", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector2"], function (require, exports, Vector2_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Input = exports.MouseButton = exports.HotKey = exports.KeyModifier = exports.Key = void 0;
+    var Key;
+    (function (Key) {
+        Key["A"] = "a";
+        Key["B"] = "b";
+        Key["C"] = "c";
+        Key["D"] = "d";
+        Key["E"] = "e";
+        Key["F"] = "f";
+        Key["G"] = "g";
+        Key["H"] = "h";
+        Key["I"] = "i";
+        Key["J"] = "j";
+        Key["K"] = "k";
+        Key["L"] = "l";
+        Key["M"] = "m";
+        Key["O"] = "o";
+        Key["P"] = "p";
+        Key["Q"] = "q";
+        Key["R"] = "r";
+        Key["S"] = "s";
+        Key["T"] = "t";
+        Key["U"] = "u";
+        Key["V"] = "v";
+        Key["W"] = "w";
+        Key["X"] = "x";
+        Key["Y"] = "y";
+        Key["Z"] = "z";
+        Key["ENTER"] = "Enter";
+        Key["BACKSPACE"] = "Backspace";
+        Key["ARROW_DOWN"] = "ArrowDown";
+        Key["ARROW_LEFT"] = "ArrowLeft";
+        Key["ARROW_RIGHT"] = "ArrowRight";
+        Key["ARROW_UP"] = "ArrowUp";
+        Key["SHIFT"] = "Shift";
+    })(Key || (Key = {}));
+    exports.Key = Key;
+    var KeyModifier;
+    (function (KeyModifier) {
+        KeyModifier["Alt"] = "Alt";
+        KeyModifier["Control"] = "Control";
+        KeyModifier["Shift"] = "Shift";
+    })(KeyModifier || (KeyModifier = {}));
+    exports.KeyModifier = KeyModifier;
+    function displayKeyModifier(mode) {
+        switch (mode) {
+            case KeyModifier.Control:
+                return "Ctrl";
+            default:
+                return mode;
+        }
+    }
+    var MouseButton;
+    (function (MouseButton) {
+        MouseButton[MouseButton["LEFT"] = 1] = "LEFT";
+        MouseButton[MouseButton["WHEEL"] = 2] = "WHEEL";
+        MouseButton[MouseButton["RIGHT"] = 3] = "RIGHT";
+        MouseButton[MouseButton["FORWARD"] = 4] = "FORWARD";
+        MouseButton[MouseButton["BACK"] = 5] = "BACK";
+    })(MouseButton || (MouseButton = {}));
+    exports.MouseButton = MouseButton;
+    const BUTTONS_MAP = [
+        MouseButton.LEFT, MouseButton.WHEEL, MouseButton.RIGHT, MouseButton.BACK, MouseButton.FORWARD
+    ];
+    const KEYS_INDICES = Object.values(Key).reduce((map, key, index) => {
+        map[key] = index;
+        return map;
+    }, {});
+    const INPUT_EVENT = {
+        "DOWN": 0,
+        "REPEAT": 1,
+        "UP": 2
+    };
+    const testKeyModifier = (mod, event) => {
+        switch (mod) {
+            case 'Alt':
+                return event.altKey;
+            case 'Control':
+                return event.ctrlKey;
+            case 'Shift':
+                return event.shiftKey;
+            default:
+                return () => true;
+        }
+    };
+    class HotKey {
+        constructor(key, mod1, mod2) {
+            this.key = key;
+            this.mod1 = mod1;
+            this.mod2 = mod2;
+        }
+        toString() {
+            return `${this.mod1 ? `${displayKeyModifier(this.mod1)}+` : ''}${this.mod2 ? `${displayKeyModifier(this.mod2)}+` : ''}${(this.key.length === 1) ? this.key.toUpperCase() : this.key}`;
+        }
+        /*public static fromString(str: string): HotKey | null {
+            const keys = Object.values(Key);
+            const keyModifiers = Object.values(KeyModifier);
+    
+            let key: Key;
+            let mod1: KeyModifier | undefined;
+            let mod2: KeyModifier | undefined;
+    
+            const keysStr = str.split(' + ');
+            if (keysStr.length >= 1) {
+                key = keysStr[0] as Key;
+                if (!keys.indexOf(key)) {
+                    return null;
+                }
+                if (keysStr.length >= 2) {
+                    mod1 = keysStr[1] as KeyModifier;
+                    if (!keyModifiers.indexOf(mod1)) {
+                        return null;
+                    }
+                }
+                if (keysStr.length >= 3) {
+                    mod2 = keysStr[2] as KeyModifier;
+                    if (!keyModifiers.indexOf(mod2)) {
+                        return null;
+                    }
+                }
+                return new HotKey(key, mod1, mod2);
+            }
+            return null;
+        }*/
+        test(event) {
+            return ((!this.mod1 || testKeyModifier(this.mod1, event)) && (!this.mod2 || testKeyModifier(this.mod2, event)) && event.key === this.key);
+        }
+    }
+    exports.HotKey = HotKey;
+    class Input {
+        static clear() {
+            this.keyFlags.fill(false);
+            // Keeps the INPUT_EVENT.REPEAT section values
+            this.mouseFlags.fill(false, INPUT_EVENT.DOWN * this.mouseButtonsCount, INPUT_EVENT.REPEAT * this.mouseButtonsCount);
+            this.mouseFlags.fill(false, INPUT_EVENT.UP * this.mouseButtonsCount);
+            this.wheelDelta = 0;
+        }
+        static initializePointerHandlers(element) {
+            element.addEventListener('pointerdown', (event) => {
+                this.mouseFlags[INPUT_EVENT.DOWN * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = true;
+                this.mouseFlags[INPUT_EVENT.REPEAT * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = true;
+                /*if (document.activeElement === element) {
+                    event.preventDefault();
+                }*/
+            });
+            element.addEventListener('pointerup', (event) => {
+                this.mouseFlags[INPUT_EVENT.REPEAT * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = false;
+                this.mouseFlags[INPUT_EVENT.UP * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = true;
+            });
+            element.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+            });
+            element.addEventListener('pointermove', (event) => {
+                this.mousePos.setValues([(event.offsetX / element.clientWidth) - 0.5, (event.offsetY / element.clientHeight) - 0.5]);
+            });
+            element.addEventListener('wheel', (event) => {
+                this.wheelDelta = Math.min(event.deltaY, 1000) / 1000;
+            }, { passive: true });
+        }
+        static initializeKeyboardHandlers(element) {
+            element.addEventListener('keydown', (event) => {
+                this.keyFlags[(!event.repeat ? INPUT_EVENT.DOWN : INPUT_EVENT.REPEAT) * this.keysCount + KEYS_INDICES[event.key]] = true;
+            });
+            element.addEventListener('keyup', (event) => {
+                this.keyFlags[INPUT_EVENT.UP * this.keysCount + KEYS_INDICES[event.key]] = true;
+                this.keyFlags[INPUT_EVENT.DOWN * this.keysCount + KEYS_INDICES[event.key]] = false;
+                this.keyFlags[INPUT_EVENT.REPEAT * this.keysCount + KEYS_INDICES[event.key]] = false;
+            });
+        }
+        static initialize(elem) {
+            this.initializePointerHandlers(elem);
+            this.initializeKeyboardHandlers(elem);
+        }
+        /*public static getAxis(axisName: string) {
+    
+        }
+    
+        public static getButton(buttonName: string) {
+    
+        }
+    
+        public static getButtonUp(buttonName: string) {
+    
+        }
+    
+        public static getButtonDown(buttonName: string) {
+    
+        }*/
+        static getKey(key) {
+            return this.keyFlags[INPUT_EVENT.REPEAT * this.keysCount + KEYS_INDICES[key]];
+        }
+        static getKeyUp(key) {
+            return this.keyFlags[INPUT_EVENT.UP * this.keysCount + KEYS_INDICES[key]];
+        }
+        static getKeyDown(key) {
+            return this.keyFlags[INPUT_EVENT.DOWN * this.keysCount + KEYS_INDICES[key]];
+        }
+        static getMouseButton(button) {
+            return this.mouseFlags[INPUT_EVENT.REPEAT * this.mouseButtonsCount + button];
+        }
+        static getMouseButtonPosition() {
+            return this.mousePos;
+        }
+        static getWheelDelta() {
+            return this.wheelDelta;
+        }
+        static getMouseButtonDown(button) {
+            return this.mouseFlags[INPUT_EVENT.DOWN * this.mouseButtonsCount + button];
+        }
+        static getMouseButtonUp(button) {
+            return this.mouseFlags[INPUT_EVENT.UP * this.mouseButtonsCount + button];
+        }
+    }
+    exports.Input = Input;
+    Input.keysCount = Object.keys(Key).length;
+    Input.mouseButtonsCount = Object.keys(MouseButton).length;
+    Input.keyFlags = new Array(Object.keys(INPUT_EVENT).length * Input.keysCount);
+    Input.mouseFlags = new Array(Object.keys(INPUT_EVENT).length * Input.mouseButtonsCount);
+    Input.mousePos = new Vector2_1.Vector2();
+    Input.wheelDelta = 0;
+});
 define("engine/libs/patterns/messaging/events/EventDispatcher", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -727,6 +1242,8 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
             if (!this.selectedDraggables.includes(draggable)) {
                 this.selectedDraggables.push(draggable);
             }
+            console.log("select");
+            console.log(this.selectedDraggables);
         }
         unselectDraggable(draggable) {
             let index = this.selectedDraggables.indexOf(draggable);
@@ -734,11 +1251,14 @@ define("engine/editor/elements/lib/controls/draggable/Dragzone", ["require", "ex
                 draggable.selected = false;
                 this.selectedDraggables.splice(index, 1);
             }
+            console.log("unselect");
+            console.log(this.selectedDraggables);
         }
         clearSelection() {
             this.selectedDraggables.forEach((draggable) => {
                 draggable.selected = false;
             });
+            console.log("clear");
             this.selectedDraggables = [];
         }
         connectedCallback() {
@@ -1219,521 +1739,6 @@ define("engine/editor/elements/lib/controls/draggable/Dropzone", ["require", "ex
         ])
     ], HTMLEDropzoneElementBase);
     exports.HTMLEDropzoneElementBase = HTMLEDropzoneElementBase;
-});
-define("engine/libs/maths/MathError", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.MathError = void 0;
-    class MathError extends Error {
-        constructor() {
-            super(...arguments);
-            this.name = 'MathError';
-        }
-    }
-    exports.MathError = MathError;
-});
-define("engine/libs/patterns/injectors/Injector", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Register = exports.Inject = exports.InjectorBase = exports.Injector = void 0;
-    class InjectorBase {
-        constructor(args) {
-            this._defaultCtor = args.defaultCtor;
-            this._onDefaultOverride = args.onDefaultOverride;
-            this._constructors = new Map();
-        }
-        get defaultCtor() {
-            return this._defaultCtor;
-        }
-        overrideDefaultCtor(constructor) {
-            this._defaultCtor = constructor;
-            this._onDefaultOverride(constructor);
-        }
-        forceQualifier(qualifier) {
-            this._forcedQualifier = qualifier;
-        }
-        unforceQualifier() {
-            delete this._forcedQualifier;
-        }
-        getConstructor(qualifier) {
-            const qualifierValue = this._forcedQualifier || qualifier;
-            if (typeof qualifierValue === 'undefined') {
-                return this._defaultCtor;
-            }
-            const constructor = this._constructors.get(qualifierValue);
-            if (typeof constructor === 'undefined') {
-                throw new Error(`No constructor for qualifier ${qualifierValue}`);
-            }
-            return constructor;
-        }
-        inject(args) {
-            const constructor = this.getConstructor(args === null || args === void 0 ? void 0 : args.qualifier);
-            if (args === null || args === void 0 ? void 0 : args.args) {
-                const parameters = Array.from(args === null || args === void 0 ? void 0 : args.args);
-                return new constructor(...parameters);
-            }
-            return new constructor();
-        }
-        register(constructor, qualifier) {
-            if (!this._constructors.has(qualifier)) {
-                this._constructors.set(qualifier, constructor);
-            }
-        }
-    }
-    exports.InjectorBase = InjectorBase;
-    const Injector = InjectorBase;
-    exports.Injector = Injector;
-    const Register = function (injector, qualifier) {
-        return (ctor) => {
-            if (typeof qualifier !== 'undefined') {
-                injector.register(ctor, qualifier);
-            }
-            injector.register(ctor, ctor.name);
-            return ctor;
-        };
-    };
-    exports.Register = Register;
-    function Inject(injector, options) {
-        return (target, propertyKey) => {
-            const instance = injector.inject(options);
-            Object.defineProperty(target, propertyKey, {
-                value: instance
-            });
-        };
-    }
-    exports.Inject = Inject;
-});
-define("engine/libs/maths/algebra/vectors/Vector2", ["require", "exports", "engine/libs/maths/MathError", "engine/libs/patterns/injectors/Injector"], function (require, exports, MathError_1, Injector_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Vector2Base = exports.Vector2 = exports.Vector2Injector = void 0;
-    class Vector2Base {
-        constructor(values) {
-            this._array = (values) ? [
-                values[0], values[1]
-            ] : [0, 0];
-        }
-        get array() {
-            return this._array;
-        }
-        get values() {
-            return [
-                this._array[0],
-                this._array[1]
-            ];
-        }
-        set values(values) {
-            this._array[0] = values[0];
-            this._array[1] = values[1];
-        }
-        get x() {
-            return this._array[0];
-        }
-        set x(x) {
-            this._array[0] = x;
-        }
-        get y() {
-            return this._array[1];
-        }
-        set y(y) {
-            this._array[1] = y;
-        }
-        setArray(array) {
-            if (array.length < 2) {
-                throw new MathError_1.MathError(`Array must be of length 2 at least.`);
-            }
-            this._array = array;
-            return this;
-        }
-        setValues(v) {
-            const o = this._array;
-            o[0] = v[0];
-            o[1] = v[1];
-            return this;
-        }
-        equals(vec) {
-            const v = vec._array;
-            const o = this._array;
-            return v[0] === o[0]
-                && v[1] === o[1];
-        }
-        copy(vec) {
-            const o = this._array;
-            const v = vec._array;
-            o[0] = v[0];
-            o[1] = v[1];
-            return this;
-        }
-        clone() {
-            return new Vector2Base(this.values);
-        }
-        setZeros() {
-            const o = this._array;
-            o[0] = 0;
-            o[1] = 0;
-            return this;
-        }
-        add(vec) {
-            const v = vec._array;
-            const o = this._array;
-            o[0] = o[0] + v[0];
-            o[1] = o[1] + v[1];
-            return this;
-        }
-        addScalar(k) {
-            const o = this._array;
-            o[0] = o[0] + k;
-            o[1] = o[1] + k;
-            return this;
-        }
-        sub(vec) {
-            const v = vec._array;
-            const o = this._array;
-            o[0] = o[0] - v[0];
-            o[1] = o[1] - v[1];
-            return this;
-        }
-        lerp(vec, t) {
-            const v = vec._array;
-            const o = this._array;
-            o[0] = t * (v[0] - o[0]);
-            o[1] = t * (v[1] - o[1]);
-            return this;
-        }
-        clamp(min, max) {
-            const o = this._array;
-            const l = min._array;
-            const g = max._array;
-            o[0] = Math.min(g[0], Math.min(o[0], l[0])),
-                o[1] = Math.min(g[1], Math.min(o[1], l[1]));
-            return this;
-        }
-        multScalar(k) {
-            const o = this._array;
-            o[0] = o[0] * k;
-            o[1] = o[1] * k;
-            return this;
-        }
-        cross(vec) {
-            const a = this._array;
-            const b = vec._array;
-            return a[0] * b[1] - a[1] * b[0];
-        }
-        dot(vec) {
-            const a = this._array;
-            const b = vec._array;
-            return (a[0] * b[0]) + (a[1] * b[1]);
-        }
-        len() {
-            const v = this._array;
-            return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
-        }
-        lenSq() {
-            const v = this._array;
-            return v[0] * v[0] + v[1] * v[1];
-        }
-        dist(vec) {
-            const a = this._array;
-            const b = vec._array;
-            const dx = a[0] - b[0];
-            const dy = a[1] - b[1];
-            return Math.sqrt(dx * dx + dy * dy);
-        }
-        distSq(vec) {
-            const a = this._array;
-            const b = vec._array;
-            const dx = a[0] - b[0];
-            const dy = a[1] - b[1];
-            return dx * dx + dy * dy;
-        }
-        normalize() {
-            const o = this._array;
-            const lenSq = o[0] * o[0] + o[1] * o[1];
-            const len = Math.sqrt(lenSq);
-            if (len > Number.EPSILON) {
-                o[0] = o[0] / len;
-                o[1] = o[1] / len;
-            }
-            else {
-                o[0] = 0;
-                o[1] = 0;
-            }
-            return this;
-        }
-        negate() {
-            const o = this._array;
-            o[0] = -o[0];
-            o[1] = -o[1];
-            return this;
-        }
-        mult(vec) {
-            const v = vec._array;
-            const o = this._array;
-            o[0] = o[0] * v[0];
-            o[1] = o[1] * v[1];
-            return this;
-        }
-        addScaled(vec, k) {
-            const v = vec._array;
-            const o = this._array;
-            o[0] = o[0] + v[0] * k;
-            o[1] = o[1] + v[1] * k;
-            return this;
-        }
-        writeIntoArray(out, offset = 0) {
-            const v = this._array;
-            out[offset] = v[0];
-            out[offset + 1] = v[1];
-        }
-        readFromArray(arr, offset = 0) {
-            const o = this._array;
-            o[0] = arr[offset];
-            o[1] = arr[offset + 1];
-            return this;
-        }
-        copyAndSub(vecA, vecB) {
-            const o = this._array;
-            const a = vecA._array;
-            const b = vecB._array;
-            o[0] = a[0] - b[0];
-            o[1] = a[1] - b[1];
-            return this;
-        }
-    }
-    exports.Vector2Base = Vector2Base;
-    var Vector2 = Vector2Base;
-    exports.Vector2 = Vector2;
-    const Vector2Injector = new Injector_1.Injector({
-        defaultCtor: Vector2Base,
-        onDefaultOverride: (ctor) => {
-            exports.Vector2 = Vector2 = ctor;
-        }
-    });
-    exports.Vector2Injector = Vector2Injector;
-});
-define("engine/core/input/Input", ["require", "exports", "engine/libs/maths/algebra/vectors/Vector2"], function (require, exports, Vector2_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Input = exports.MouseButton = exports.HotKey = exports.KeyModifier = exports.Key = void 0;
-    var Key;
-    (function (Key) {
-        Key["A"] = "a";
-        Key["B"] = "b";
-        Key["C"] = "c";
-        Key["D"] = "d";
-        Key["E"] = "e";
-        Key["F"] = "f";
-        Key["G"] = "g";
-        Key["H"] = "h";
-        Key["I"] = "i";
-        Key["J"] = "j";
-        Key["K"] = "k";
-        Key["L"] = "l";
-        Key["M"] = "m";
-        Key["O"] = "o";
-        Key["P"] = "p";
-        Key["Q"] = "q";
-        Key["R"] = "r";
-        Key["S"] = "s";
-        Key["T"] = "t";
-        Key["U"] = "u";
-        Key["V"] = "v";
-        Key["W"] = "w";
-        Key["X"] = "x";
-        Key["Y"] = "y";
-        Key["Z"] = "z";
-        Key["ENTER"] = "Enter";
-        Key["BACKSPACE"] = "Backspace";
-        Key["ARROW_DOWN"] = "ArrowDown";
-        Key["ARROW_LEFT"] = "ArrowLeft";
-        Key["ARROW_RIGHT"] = "ArrowRight";
-        Key["ARROW_UP"] = "ArrowUp";
-        Key["SHIFT"] = "Shift";
-    })(Key || (Key = {}));
-    exports.Key = Key;
-    var KeyModifier;
-    (function (KeyModifier) {
-        KeyModifier["Alt"] = "Alt";
-        KeyModifier["Control"] = "Control";
-        KeyModifier["Shift"] = "Shift";
-    })(KeyModifier || (KeyModifier = {}));
-    exports.KeyModifier = KeyModifier;
-    function displayKeyModifier(mode) {
-        switch (mode) {
-            case KeyModifier.Control:
-                return "Ctrl";
-            default:
-                return mode;
-        }
-    }
-    var MouseButton;
-    (function (MouseButton) {
-        MouseButton[MouseButton["LEFT"] = 1] = "LEFT";
-        MouseButton[MouseButton["WHEEL"] = 2] = "WHEEL";
-        MouseButton[MouseButton["RIGHT"] = 3] = "RIGHT";
-        MouseButton[MouseButton["FORWARD"] = 4] = "FORWARD";
-        MouseButton[MouseButton["BACK"] = 5] = "BACK";
-    })(MouseButton || (MouseButton = {}));
-    exports.MouseButton = MouseButton;
-    const BUTTONS_MAP = [
-        MouseButton.LEFT, MouseButton.WHEEL, MouseButton.RIGHT, MouseButton.BACK, MouseButton.FORWARD
-    ];
-    const KEYS_INDICES = Object.values(Key).reduce((map, key, index) => {
-        map[key] = index;
-        return map;
-    }, {});
-    const INPUT_EVENT = {
-        "DOWN": 0,
-        "REPEAT": 1,
-        "UP": 2
-    };
-    const testKeyModifier = (mod, event) => {
-        switch (mod) {
-            case 'Alt':
-                return event.altKey;
-            case 'Control':
-                return event.ctrlKey;
-            case 'Shift':
-                return event.shiftKey;
-            default:
-                return () => true;
-        }
-    };
-    class HotKey {
-        constructor(key, mod1, mod2) {
-            this.key = key;
-            this.mod1 = mod1;
-            this.mod2 = mod2;
-        }
-        toString() {
-            return `${this.mod1 ? `${displayKeyModifier(this.mod1)}+` : ''}${this.mod2 ? `${displayKeyModifier(this.mod2)}+` : ''}${(this.key.length === 1) ? this.key.toUpperCase() : this.key}`;
-        }
-        /*public static fromString(str: string): HotKey | null {
-            const keys = Object.values(Key);
-            const keyModifiers = Object.values(KeyModifier);
-    
-            let key: Key;
-            let mod1: KeyModifier | undefined;
-            let mod2: KeyModifier | undefined;
-    
-            const keysStr = str.split(' + ');
-            if (keysStr.length >= 1) {
-                key = keysStr[0] as Key;
-                if (!keys.indexOf(key)) {
-                    return null;
-                }
-                if (keysStr.length >= 2) {
-                    mod1 = keysStr[1] as KeyModifier;
-                    if (!keyModifiers.indexOf(mod1)) {
-                        return null;
-                    }
-                }
-                if (keysStr.length >= 3) {
-                    mod2 = keysStr[2] as KeyModifier;
-                    if (!keyModifiers.indexOf(mod2)) {
-                        return null;
-                    }
-                }
-                return new HotKey(key, mod1, mod2);
-            }
-            return null;
-        }*/
-        test(event) {
-            return ((!this.mod1 || testKeyModifier(this.mod1, event)) && (!this.mod2 || testKeyModifier(this.mod2, event)) && event.key === this.key);
-        }
-    }
-    exports.HotKey = HotKey;
-    class Input {
-        static clear() {
-            this.keyFlags.fill(false);
-            // Keeps the INPUT_EVENT.REPEAT section values
-            this.mouseFlags.fill(false, INPUT_EVENT.DOWN * this.mouseButtonsCount, INPUT_EVENT.REPEAT * this.mouseButtonsCount);
-            this.mouseFlags.fill(false, INPUT_EVENT.UP * this.mouseButtonsCount);
-            this.wheelDelta = 0;
-        }
-        static initializePointerHandlers(element) {
-            element.addEventListener('pointerdown', (event) => {
-                this.mouseFlags[INPUT_EVENT.DOWN * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = true;
-                this.mouseFlags[INPUT_EVENT.REPEAT * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = true;
-                /*if (document.activeElement === element) {
-                    event.preventDefault();
-                }*/
-            });
-            element.addEventListener('pointerup', (event) => {
-                this.mouseFlags[INPUT_EVENT.REPEAT * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = false;
-                this.mouseFlags[INPUT_EVENT.UP * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = true;
-            });
-            element.addEventListener('contextmenu', (event) => {
-                event.preventDefault();
-            });
-            element.addEventListener('pointermove', (event) => {
-                this.mousePos.setValues([(event.offsetX / element.clientWidth) - 0.5, (event.offsetY / element.clientHeight) - 0.5]);
-            });
-            element.addEventListener('wheel', (event) => {
-                this.wheelDelta = Math.min(event.deltaY, 1000) / 1000;
-            }, { passive: true });
-        }
-        static initializeKeyboardHandlers(element) {
-            element.addEventListener('keydown', (event) => {
-                this.keyFlags[(!event.repeat ? INPUT_EVENT.DOWN : INPUT_EVENT.REPEAT) * this.keysCount + KEYS_INDICES[event.key]] = true;
-            });
-            element.addEventListener('keyup', (event) => {
-                this.keyFlags[INPUT_EVENT.UP * this.keysCount + KEYS_INDICES[event.key]] = true;
-                this.keyFlags[INPUT_EVENT.DOWN * this.keysCount + KEYS_INDICES[event.key]] = false;
-                this.keyFlags[INPUT_EVENT.REPEAT * this.keysCount + KEYS_INDICES[event.key]] = false;
-            });
-        }
-        static initialize(elem) {
-            this.initializePointerHandlers(elem);
-            this.initializeKeyboardHandlers(elem);
-        }
-        /*public static getAxis(axisName: string) {
-    
-        }
-    
-        public static getButton(buttonName: string) {
-    
-        }
-    
-        public static getButtonUp(buttonName: string) {
-    
-        }
-    
-        public static getButtonDown(buttonName: string) {
-    
-        }*/
-        static getKey(key) {
-            return this.keyFlags[INPUT_EVENT.REPEAT * this.keysCount + KEYS_INDICES[key]];
-        }
-        static getKeyUp(key) {
-            return this.keyFlags[INPUT_EVENT.UP * this.keysCount + KEYS_INDICES[key]];
-        }
-        static getKeyDown(key) {
-            return this.keyFlags[INPUT_EVENT.DOWN * this.keysCount + KEYS_INDICES[key]];
-        }
-        static getMouseButton(button) {
-            return this.mouseFlags[INPUT_EVENT.REPEAT * this.mouseButtonsCount + button];
-        }
-        static getMouseButtonPosition() {
-            return this.mousePos;
-        }
-        static getWheelDelta() {
-            return this.wheelDelta;
-        }
-        static getMouseButtonDown(button) {
-            return this.mouseFlags[INPUT_EVENT.DOWN * this.mouseButtonsCount + button];
-        }
-        static getMouseButtonUp(button) {
-            return this.mouseFlags[INPUT_EVENT.UP * this.mouseButtonsCount + button];
-        }
-    }
-    exports.Input = Input;
-    Input.keysCount = Object.keys(Key).length;
-    Input.mouseButtonsCount = Object.keys(MouseButton).length;
-    Input.keyFlags = new Array(Object.keys(INPUT_EVENT).length * Input.keysCount);
-    Input.mouseFlags = new Array(Object.keys(INPUT_EVENT).length * Input.mouseButtonsCount);
-    Input.mousePos = new Vector2_1.Vector2();
-    Input.wheelDelta = 0;
 });
 define("engine/editor/elements/lib/containers/menus/MenuBar", ["require", "exports", "engine/editor/elements/HTMLElement"], function (require, exports, HTMLElement_4) {
     "use strict";
@@ -3459,15 +3464,20 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewItem", ["require"
                     visibility: hidden;
                 }
 
+                [part~="toggle_arrow"]:hover {
+                    background-color: lightgray;
+                }
+
                 :host(:empty) [part~="container"] {
                     display: none;
                 }
 
                 [part~="toggle_arrow"] {
                     position: relative;
+                    flex: none;
+                    display: inline-block;
                     width: 18px;
-                    height: 18px;
-                    padding-right: 8px;
+                    margin-right: 6px;
                 }
 
                 [part~="toggle_arrow"]::after {
@@ -3477,17 +3487,16 @@ define("engine/editor/elements/lib/containers/treeview/TreeViewItem", ["require"
                     height: 18px;
                     position: absolute;
                     background-color: dimgray;
-                    transform: scale(1.2) translateY(4%);
-                }
-
-                :host(:not([expanded])) [part~="toggle_arrow"]::after {
-                    -webkit-mask-image: var(--collapsed-arrow-url);
-                    mask-image: var(--collapsed-arrow-url);
                 }
 
                 :host([expanded]) [part~="toggle_arrow"]::after {
                     -webkit-mask-image: var(--expanded-arrow-url);
                     mask-image: var(--expanded-arrow-url);
+                }
+                
+                :host(:not([expanded])) [part~="toggle_arrow"]::after {
+                    -webkit-mask-image: var(--collapsed-arrow-url);
+                    mask-image: var(--collapsed-arrow-url);
                 }
 
                 [part~="state"] {
@@ -4250,12 +4259,7 @@ define("samples/scenes/temp", ["require", "exports", "engine/editor/elements/HTM
                 super(model);
             }
             render() {
-                return HTMLElement_21.ReactiveNode(HTMLElement_21.Element(/*html*/ `<e-draggable>`, {
-                    children: HTMLElement_21.parseStringTemplate(this.model.data.label, this.model.fields.items.reduce((obj, item) => ({
-                        ...obj,
-                        [item.data.name]: DropzoneInputFragment(this.element, item)
-                    }), {})).childNodes
-                }), this.model, (draggable, property, oldValue, newValue) => {
+                return HTMLElement_21.ReactiveNode(HTMLElement_21.Element(/*html*/ `<e-draggable>`), this.model, (draggable, property, oldValue, newValue) => {
                     switch (property) {
                         case "label":
                             if (newValue !== oldValue) {
@@ -4269,7 +4273,7 @@ define("samples/scenes/temp", ["require", "exports", "engine/editor/elements/HTM
                 });
             }
         }
-        const view = new StatementFieldsetView(fieldset);
+        const view = new ExpressionDraggableView(fieldset);
         let extractButton = document.getElementById("extract-button");
         window["view"] = view;
         window["fieldset"] = fieldset;
@@ -4656,6 +4660,27 @@ define("engine/editor/Editor", ["require", "exports", "engine/libs/patterns/comm
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EditorBase = void 0;
+    /*
+    
+    
+    createStatement(statementData)
+    deleteStatement(statement)
+    focusStatement(statement)
+    
+    executeRemoteStatement(statement);
+    
+    invalidateStatement(statement, reason)
+    validateStatement(statement, result)
+    
+    fetchStatements()
+    fetchExpressions()
+    
+    statments
+    expressions
+    
+    
+    
+    */
     class EditorBase extends EventDispatcher_2.EventDispatcher {
         /*readonly toolbar: HTMLElement;
         readonly statusbar: HTMLElement;*/
@@ -4871,7 +4896,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/core/input/Input"
     const body = /*template*/ `
     <link rel="stylesheet" href="../css/mockup.css"/>
     <div id="root" class="flex-rows">
-        <!--<header class="flex-cols flex-none padded">
+        <header class="flex-cols flex-none padded">
             <e-menubar tabindex="0">
                 <e-menuitem name="file-menu" type="menu" label="File" tabindex="-1" aria-label="File">
                     <e-menu slot="menu" tabindex="-1">
@@ -4881,7 +4906,7 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/core/input/Input"
                             tabindex="-1" aria-label="Export file"></e-menuitem>
                     </e-menu>
                 </e-menuitem>
-                <e-menuitem name="view-menu" type="menu" label="View" tabindex="-1" aria-label="View">
+                <e-menuitem name="view-menu" type="menu" label="Preferences" tabindex="-1" aria-label="Preferences">
                     <e-menu slot="menu" tabindex="-1">
                         <e-menuitem name="view-boolean-menuitem" type="checkbox" label="Advanced User"
                         tabindex="-1" aria-label="Advanced User"></e-menuitem>
@@ -4897,13 +4922,13 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/core/input/Input"
                     </e-menu>
                 </e-menuitem>
             </e-menubar>
-        </header>-->
+        </header>
         <main class="flex-cols flex-auto padded">
             <div id="tabs-col" class="col flex-none">
                 <e-tablist id="tablist">
-                    <e-tab name="extract" controls="extract-panel" title="Extract" active tabindex="-1"></e-tab>
-                    <e-tab name="transform" controls="transform-panel" title="Transform" tabindex="-1"></e-tab>
-                    <e-tab name="export" controls="export-panel" title="Export" tabindex="-1"></e-tab>
+                    <e-tab name="extract" controls="extract-panel" title="Extract" active tabindex="-1"><span>Extract</span></e-tab>
+                    <e-tab name="transform" controls="transform-panel" title="Transform" tabindex="-1"><span>Transform</span></e-tab>
+                    <e-tab name="export" controls="export-panel" title="Export" tabindex="-1"><span>Export</span></e-tab>
                 </e-tablist>
             </div>
             <div id="data-col" class="col flex-none padded borded">
@@ -4938,8 +4963,8 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/core/input/Input"
                             <e-dragzone id="constants-dragzone">
                                 <e-draggable data-node-signature="const" type="date"><input type="date" name="const"/></e-draggable>
                                 <e-draggable data-node-signature="const" type="datetime"><input type="datetime-local" name="const"/></e-draggable>
-                                <e-draggable data-node-signature="const" type="string"><input type="text" name="const" placeholder="string"/></e-draggable>
-                                <e-draggable data-node-signature="const" type="number"><input type="number" name="const" placeholder="number"/></e-draggable>
+                                <e-draggable data-node-signature="const" type="string"><input type="text" data-dynamic-input  name="const" placeholder="string"/></e-draggable>
+                                <e-draggable data-node-signature="const" type="number"><input type="number" data-dynamic-input name="const" placeholder="number"/></e-draggable>
                                 <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="True" readonly/></e-draggable>
                                 <e-draggable data-node-signature="const" type="bool"><input type="text" name="const" value="False" readonly/></e-draggable>
                             </e-dragzone>
@@ -4983,19 +5008,19 @@ define("samples/scenes/Mockup", ["require", "exports", "engine/core/input/Input"
                         <details class="indented">
                             <summary>string</summary>
                             <e-dragzone id="string-functions-dragzone">
-                                <e-draggable class="draggable-dropzone" tabindex="-1">concat(<e-dropzone placeholder="left"></e-dropzone>, <e-dropzone placeholder="right"></e-dropzone>)</e-draggable>
+                                <e-draggable tabindex="-1">concat(<e-dropzone placeholder="left"></e-dropzone>, <e-dropzone placeholder="right"></e-dropzone>)</e-draggable>
                             </e-dragzone>
                         </details>
                         <details class="indented">
                             <summary>generator</summary>
                             <e-dragzone id="generator-functions-dragzone">
-                                <e-draggable class="draggable-dropzone" tabindex="-1">range(<e-dropzone placeholder="number"></e-dropzone>)</e-draggable>
+                                <e-draggable tabindex="-1">range(<e-dropzone placeholder="number"></e-dropzone>)</e-draggable>
                             </e-dragzone>
                         </details>
                     </details>
                 </div>
             </div>
-            <e-sash controls="data-col" data-view></e-sash>
+            <e-sash controls="data-col"></e-sash>
             <div id="panels-col" class="col flex-auto padded-horizontal">
                 <!--<e-breadcrumbtrail class="margin-bottom">
                     <e-breadcrumbitem>Item 0</e-breadcrumbitem>
@@ -5464,16 +5489,27 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
             }
         }
     }
-    class DataViewMixin extends HTMLElement_29.AttributeMutationMixinBase {
+    class DynamicInputMixin extends HTMLElement_29.AttributeMutationMixinBase {
         constructor() {
-            super("data-view");
+            super("data-dynamic-input");
+        }
+        onInputEventCallback(event) {
+            DynamicInputMixin.resizeInputElement(event.target);
+        }
+        static resizeInputElement(element) {
+            let length = (element.value.length > 0) ? element.value.length : (element.placeholder.length > 0) ? element.placeholder.length : 1;
+            element.style.width = `${(length + 1) * parseFloat(window.getComputedStyle(element).getPropertyValue("font-size"))}px`;
         }
         attach(element) {
-            console.log("attach");
+            if (HTMLElement_29.isTagElement("input", element)) {
+                element.addEventListener("input", this.onInputEventCallback);
+                DynamicInputMixin.resizeInputElement(element);
+            }
         }
         detach(element) {
-            console.log("detach");
-            ;
+            if (HTMLElement_29.isTagElement("input", element)) {
+                element.removeEventListener("input", this.onInputEventCallback);
+            }
         }
     }
     const attributeMutationMixins = [
@@ -5481,7 +5517,7 @@ define("samples/Sandbox", ["require", "exports", "engine/editor/elements/HTMLEle
         new InputDropzoneDataClassMixin(),
         new TogglerSelectDataClassMixin(),
         new DuplicaterInputDataClassMixin(),
-        new DataViewMixin()
+        new DynamicInputMixin()
     ];
     const mainObserver = new MutationObserver(HTMLElement_29.createMutationObserverCallback(attributeMutationMixins));
     mainObserver.observe(document.body, {

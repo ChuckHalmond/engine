@@ -55,6 +55,29 @@ interface EditorCommandCall extends EditorCommand {
 
 interface EditorHotKey extends HotKey {}
 
+/*
+
+
+createStatement(statementData)
+deleteStatement(statement)
+focusStatement(statement)
+
+executeRemoteStatement(statement);
+
+invalidateStatement(statement, reason)
+validateStatement(statement, result)
+
+fetchStatements()
+fetchExpressions()
+
+statments
+expressions
+
+
+
+*/
+
+
 class EditorBase<State extends object> extends EventDispatcher<EditorEventsMap> implements Editor {
 
     private _commands: Map<string, EditorCommand>;

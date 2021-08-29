@@ -361,11 +361,12 @@ function temp() {
             return Element(/*html*/`<e-dragzone>`, {
                 children: ReactiveChildNodes(
                     this.model.columns,
-                    (item) => Element(/*html*/`<e-draggable>`, {
-                        props: {
-                            textContent: item.data.name
-                        }
-                    })
+                    (item) =>
+                        Element(/*html*/`<e-draggable>`, {
+                            props: {
+                                textContent: item.data.name
+                            }
+                        })
                 )
             });
         }
@@ -379,17 +380,7 @@ function temp() {
 
         public render() {
             return ReactiveNode(
-                Element(/*html*/`<e-draggable>`, {
-                    children: parseStringTemplate(
-                        this.model.data.label,
-                        this.model.fields.items.reduce(
-                            (obj: any, item: FieldModel) => ({
-                                ...obj,
-                                [item.data.name]: DropzoneInputFragment(this.element, item)
-                            }), {}
-                        )
-                    ).childNodes
-                }),
+                Element(/*html*/`<e-draggable>`),
                 this.model,
                 (draggable, property, oldValue, newValue) => {
                     switch (property) {
@@ -412,7 +403,7 @@ function temp() {
         }
     }
 
-    const view = new StatementFieldsetView(fieldset);
+    const view = new ExpressionDraggableView(fieldset);
     let extractButton = document.getElementById("extract-button");
     (window as any)["view"] = view;
     (window as any)["fieldset"] = fieldset;

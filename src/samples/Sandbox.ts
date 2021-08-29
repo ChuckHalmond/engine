@@ -1,3 +1,4 @@
+import { Input } from "engine/core/input/Input";
 import { AttributeMutationMixin, AttributeMutationMixinBase, createMutationObserverCallback, isTagElement } from "engine/editor/elements/HTMLElement";
 import { DataChangeEvent, HTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
 import { mockup } from "./scenes/Mockup";
@@ -211,17 +212,31 @@ class EnablerInputDataClassMixin extends DataClassMixin {
   }
 }
 
-class DataViewMixin extends AttributeMutationMixinBase {
+class DynamicInputMixin extends AttributeMutationMixinBase {
   constructor() {
-    super("data-view");
+    super("data-dynamic-input");
   }
 
-  public attach(element: HTMLElement): void {
-    console.log("attach");
+  public onInputEventCallback(event: InputEvent) {
+    DynamicInputMixin.resizeInputElement(event.target as HTMLInputElement);
   }
 
-  public detach(element: HTMLElement): void {
-    console.log("detach");;
+  public static resizeInputElement(element: HTMLInputElement) {
+    let length = (element.value.length > 0) ? element.value.length : (element.placeholder.length > 0) ? element.placeholder.length : 1;
+    element.style.width = `${(length + 1) * parseFloat(window.getComputedStyle(element).getPropertyValue("font-size"))}px`;
+  }
+
+  public attach(element: HTMLInputElement): void {
+    if (isTagElement("input", element)) {
+      element.addEventListener("input", this.onInputEventCallback as EventListener);
+      DynamicInputMixin.resizeInputElement(element);
+    }
+  }
+
+  public detach(element: HTMLInputElement): void {
+    if (isTagElement("input", element)) {
+      element.removeEventListener("input", this.onInputEventCallback as EventListener);
+    }
   }
 }
 
@@ -230,7 +245,7 @@ const attributeMutationMixins: AttributeMutationMixin[] = [
   new InputDropzoneDataClassMixin(),
   new TogglerSelectDataClassMixin(),
   new DuplicaterInputDataClassMixin(),
-  new DataViewMixin()
+  new DynamicInputMixin()
 ];
 
 const mainObserver = new MutationObserver(

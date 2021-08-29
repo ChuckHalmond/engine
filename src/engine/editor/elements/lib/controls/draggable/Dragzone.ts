@@ -66,6 +66,8 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
         if (!this.selectedDraggables.includes(draggable)) {
             this.selectedDraggables.push(draggable);
         }
+        console.log("select");
+        console.log(this.selectedDraggables);
     }
 
     public unselectDraggable(draggable: HTMLEDraggableElement): void {
@@ -74,13 +76,17 @@ class HTMLEDragzoneElementBase extends HTMLElement implements HTMLEDragzoneEleme
             draggable.selected = false;
             this.selectedDraggables.splice(index, 1);
         }
+        console.log("unselect");
+        console.log(this.selectedDraggables);
     }
 
     public clearSelection(): void {
         this.selectedDraggables.forEach((draggable) => {
             draggable.selected = false;
         });
+        console.log("clear");
         this.selectedDraggables = [];
+
     }
     
     public connectedCallback() {

@@ -108,15 +108,20 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
                     visibility: hidden;
                 }
 
+                [part~="toggle_arrow"]:hover {
+                    background-color: lightgray;
+                }
+
                 :host(:empty) [part~="container"] {
                     display: none;
                 }
 
                 [part~="toggle_arrow"] {
                     position: relative;
+                    flex: none;
+                    display: inline-block;
                     width: 18px;
-                    height: 18px;
-                    padding-right: 8px;
+                    margin-right: 6px;
                 }
 
                 [part~="toggle_arrow"]::after {
@@ -126,17 +131,16 @@ class HTMLETreeViewItemElementBase extends HTMLElement implements HTMLETreeViewI
                     height: 18px;
                     position: absolute;
                     background-color: dimgray;
-                    transform: scale(1.2) translateY(4%);
-                }
-
-                :host(:not([expanded])) [part~="toggle_arrow"]::after {
-                    -webkit-mask-image: var(--collapsed-arrow-url);
-                    mask-image: var(--collapsed-arrow-url);
                 }
 
                 :host([expanded]) [part~="toggle_arrow"]::after {
                     -webkit-mask-image: var(--expanded-arrow-url);
                     mask-image: var(--expanded-arrow-url);
+                }
+                
+                :host(:not([expanded])) [part~="toggle_arrow"]::after {
+                    -webkit-mask-image: var(--collapsed-arrow-url);
+                    mask-image: var(--collapsed-arrow-url);
                 }
 
                 [part~="state"] {
