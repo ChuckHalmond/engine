@@ -1,11 +1,8 @@
-import { Triangle } from "engine/libs/maths/geometry/primitives/Triangle";
-import { TriangleList } from "engine/libs/maths/extensions/lists/TriangleList";
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { clamp } from "engine/libs/maths/Snippets";
-import { Vector3List } from "engine/libs/maths/extensions/lists/Vector3List";
-import { Vector3Pool } from "engine/libs/maths/extensions/pools/Vector3Pools";
-import { TriangleListPool } from "engine/libs/maths/extensions/pools/lists/TriangleListPools";
-import { Vector3ListPool } from "engine/libs/maths/extensions/pools/lists/Vector3ListPools";
+import { Vector3 } from "../../../../libs/maths/algebra/vectors/Vector3";
+import { TriangleListPool } from "../../../../libs/maths/extensions/pools/lists/TriangleListPools";
+import { Vector3ListPool } from "../../../../libs/maths/extensions/pools/lists/Vector3ListPools";
+import { Vector3Pool } from "../../../../libs/maths/extensions/pools/Vector3Pools";
+import { Triangle } from "../../../../libs/maths/geometry/primitives/Triangle";
 
 export { GeometryUtils };
 

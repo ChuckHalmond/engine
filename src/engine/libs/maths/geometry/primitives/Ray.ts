@@ -1,12 +1,12 @@
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { BoundingBox } from "../../../physics/collisions/BoundingBox";
+import { BoundingSphere } from "../../../physics/collisions/BoundingSphere";
+import { Matrix4 } from "../../algebra/matrices/Matrix4";
+import { Vector3 } from "../../algebra/vectors/Vector3";
+import { Vector3Pool } from "../../extensions/pools/Vector3Pools";
 import { Plane } from "./Plane";
-import { BoundingSphere } from "engine/libs/physics/collisions/BoundingSphere";
-import { Triangle } from "./Triangle";
-import { BoundingBox } from "engine/libs/physics/collisions/BoundingBox";
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
 import { Quad } from "./Quad";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
-import { Vector3Pool } from "engine/libs/maths/extensions/pools/Vector3Pools";
+import { Triangle } from "./Triangle";
 
 export { Ray };
 export { RayInjector }

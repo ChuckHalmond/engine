@@ -1,26 +1,38 @@
-import { Injector } from "engine/libs/patterns/injectors/Injector";
-import { MathError } from "engine/libs/maths/MathError";
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { Vector2 } from "engine/libs/maths/algebra/vectors/Vector2";
-import { Vector4 } from "engine/libs/maths/algebra/vectors/Vector4";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { MathError } from "../../MathError";
+import { Vector2, Vector2Values } from "../vectors/Vector2";
+import { Vector3, Vector3Values } from "../vectors/Vector3";
+import { Vector4, Vector4Values } from "../vectors/Vector4";
+import { Matrix3Values } from "./Matrix3";
+
 
 export { Matrix4Values };
 export { Matrix4 };
 export { Matrix4Injector };
 export { Matrix4Base };
 
-type Vector2Values = [number, ...number[]] & { length: 2 };
-type Vector3Values = [number, ...number[]] & { length: 3 };
-type Vector4Values = [number, ...number[]] & { length: 4 };
-type Matrix3Values = [number, ...number[]] & { length: 9 };
-type Matrix34Values = [number, ...number[]] & { length: 12 };
-type Matrix4Values = [number, ...number[]] & { length: 16 };
+type Matrix4Values = [
+  number, number, number, number,
+  number, number, number, number,
+  number, number, number, number,
+  number, number, number, number
+];
+
+type Matrix34Values = [
+  number, number, number,
+  number, number, number,
+  number, number, number,
+  number, number, number
+];
 
 interface Matrix4Constructor {
 	readonly prototype: Matrix4;
 	new(): Matrix4;
 	new(values: Matrix4Values): Matrix4;
-	new(values?: Matrix4Values): Matrix4;
+  translation(vector: Vector3): Matrix4;
+  rotationX(angleInRadians: number): Matrix4;
+  rotationY(angleInRadians: number): Matrix4;
+  rotationZ(angleInRadians: number): Matrix4;
 }
 
 interface Matrix4 {
@@ -463,13 +475,15 @@ class Matrix4Base {
   public setUpper33(m: Matrix3Values): this {
     const o = this._array;
 
-    o[ 0] = m[ 0];
-    o[ 1] = m[ 1];
-    o[ 2] = m[ 2];
-    o[ 4] = m[ 4];
-    o[ 5] = m[ 5];
-    o[ 6] = m[ 6];
-    o[ 8] = m[ 8];
+    o[ 0] = m[0];
+    o[ 1] = m[1];
+    o[ 2] = m[2];
+    o[ 4] = m[3];
+    o[ 5] = m[4];
+    o[ 6] = m[5];
+    o[ 8] = m[6];
+    o[ 9] = m[7];
+    o[10] = m[8];
 
     return this;
   }
@@ -1194,6 +1208,10 @@ class Matrix4Base {
     ];
   }
 
+  public static translation(vec: Vector3): Matrix4Base {
+    return new Matrix4Base().setTranslation(vec);
+  }
+
   public setTranslation(vec: Vector3): this {
     const o = this._array;
     const x = vec.x;
@@ -1252,6 +1270,10 @@ class Matrix4Base {
     return this;
   }
 
+  public static rotationX(angleInRadians: number): Matrix4Base {
+    return new Matrix4Base().setRotationX(angleInRadians);
+  }
+
   public setRotationX(angleInRadians: number): this {
     const o = this._array;
     const c = Math.cos(angleInRadians);
@@ -1301,6 +1323,10 @@ class Matrix4Base {
     o[15] = c * m34 - s * m24;
 
     return this;
+  }
+
+  public static rotationY(angleInRadians: number): Matrix4Base {
+    return new Matrix4Base().setRotationY(angleInRadians);
   }
 
   public setRotationY(angleInRadians: number): this {
@@ -1353,6 +1379,10 @@ class Matrix4Base {
     o[15] = c * m34 + s * m14;
 
     return this;
+  }
+
+  public static rotationZ(angleInRadians: number): Matrix4Base {
+    return new Matrix4Base().setRotationZ(angleInRadians);
   }
 
   public setRotationZ(angleInRadians: number): this {

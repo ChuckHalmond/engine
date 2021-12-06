@@ -10,8 +10,6 @@ type WritableArrayLike<T> = {
     readonly length: number;
 };
 
-type HTMLElementTag<K extends keyof HTMLElementTagNameMap> = `<${K}>`;
-
 type List<T = any> = {
     [name: string]: T
 }

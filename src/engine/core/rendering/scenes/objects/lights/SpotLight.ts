@@ -1,5 +1,5 @@
-import { LightBase } from "engine/core/rendering/scenes/objects/lights/Light";
 import { Mesh } from "../meshes/Mesh";
+import { LightBase } from "./Light";
 
 export { SpotLight };
 

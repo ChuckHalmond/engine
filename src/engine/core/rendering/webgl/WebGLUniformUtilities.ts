@@ -54,17 +54,15 @@ class WebGLUniformUtilities {
     }
 
     public static getUniformsListSetter(gl: WebGL2RenderingContext, glProg: WebGLProgram, list: UniformsList): UniformsSettersList {
-        
-        let settersList = {
+        const settersList = {
             setters: {}
         } as UniformsSettersList;
         
-        for (const name in list) {
+        Object.keys(list).forEach((name) => {
             const uniform = list[name];
-
             const setter = this.getUniformSetter(gl, glProg, name, uniform);
             settersList.setters[name] = setter;
-        }
+        });
 
         settersList.glProg = glProg;
 
@@ -72,22 +70,16 @@ class WebGLUniformUtilities {
     }
 
     public static setUniformsListValues(gl: WebGL2RenderingContext, settersList: UniformsSettersList, list: UniformsList): void {
-
-        for (const name in list) {
+        Object.keys(list).forEach((name) => {
             const uniform = list[name];
             const setter = settersList.setters[name];
-
-            if (setter == null) {
-                continue;
-            }
-            
-            if (typeof setter !== 'undefined') {
+            if (setter) {
                 setter.func(uniform.value);
             }
             else {
                 console.warn(`Uniform ${name} does not match with the given setters.`);
             }
-        }
+        });
     }
 
     public static isTexture(uniformValue: UniformValue): boolean {

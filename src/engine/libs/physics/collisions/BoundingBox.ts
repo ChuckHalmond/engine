@@ -1,11 +1,11 @@
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { Plane } from "engine/libs/maths/geometry/primitives/Plane";
+import { Vector3 } from "../../maths/algebra/vectors/Vector3";
+import { Vector3List } from "../../maths/extensions/lists/Vector3List";
+import { Vector3Pool } from "../../maths/extensions/pools/Vector3Pools";
+import { Plane } from "../../maths/geometry/primitives/Plane";
+import { Triangle } from "../../maths/geometry/primitives/Triangle";
+import { Injector } from "../../patterns/injectors/Injector";
+import { StackPool } from "../../patterns/pools/StackPool";
 import { BoundingSphere } from "./BoundingSphere";
-import { Triangle } from "engine/libs/maths/geometry/primitives/Triangle";
-import { Vector3List } from "engine/libs/maths/extensions/lists/Vector3List";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
-import { StackPool } from "engine/libs/patterns/pools/StackPool";
-import { Vector3Pool } from "engine/libs/maths/extensions/pools/Vector3Pools";
 
 export { BoundingBox };
 export { BoundingBoxInjector };

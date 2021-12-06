@@ -1,7 +1,7 @@
-import { Vector2, Vector2Values } from "engine/libs/maths/algebra/vectors/Vector2";
-import { MathError } from "engine/libs/maths/MathError";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
-import { StackPool } from "engine/libs/patterns/pools/StackPool";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { StackPool } from "../../../patterns/pools/StackPool";
+import { MathError } from "../../MathError";
+import { Vector2Values, Vector2 } from "../vectors/Vector2";
 
 export { Matrix2Values };
 export { Matrix2 };

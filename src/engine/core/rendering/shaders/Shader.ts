@@ -1,5 +1,5 @@
-import { Resources } from "engine/resources/Resources";
-import { Logger } from "engine/core/logger/Logger";
+import { Resources } from "../../../resources/Resources";
+import { Logger } from "../../logger/Logger";
 import { ShadersLib } from "./ShadersLib";
 
 export { ShaderType };

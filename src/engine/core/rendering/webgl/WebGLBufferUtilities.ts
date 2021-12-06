@@ -6,7 +6,7 @@ class WebGLBufferUtilities {
         const glBuff = gl.createBuffer();
 
         if (glBuff == null) {
-            console.error('Could not create WebGLBuffer.');
+            console.error(`Could not create WebGLBuffer.`);
         }
 
         return glBuff;

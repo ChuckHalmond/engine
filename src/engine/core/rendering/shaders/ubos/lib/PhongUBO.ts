@@ -1,6 +1,7 @@
-import { PhongMaterial, PhongMaterialPropertyKeys } from "engine/core/rendering/scenes/materials/lib/PhongMaterial";
-import { Uniform } from "engine/core/rendering/webgl/WebGLUniformUtilities";
-import { Flags } from "engine/libs/patterns/flags/Flags";
+
+import { Flags } from "../../../../../libs/patterns/flags/Flags";
+import { PhongMaterial, PhongMaterialPropertyKeys } from "../../../scenes/materials/lib/PhongMaterial";
+import { Uniform } from "../../../webgl/WebGLUniformUtilities";
 import { UBOBase } from "../UBO";
 
 export { PhongUBOReferences };

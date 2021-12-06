@@ -1,5 +1,6 @@
-import { MathError } from "engine/libs/maths/MathError";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
+import { Matrix3 } from "engine/libs/maths/algebra/matrices/Matrix3";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { MathError } from "../../MathError";
 
 export { Vector3Values };
 export { Vector3Constructor };
@@ -13,7 +14,7 @@ interface Vector3Constructor {
 	readonly prototype: Vector3;
 	new(): Vector3;
 	new(values: Vector3Values): Vector3;
-	new(values?: Vector3Values): Vector3;
+	mult(mat: Matrix3, vec: Vector3): Vector3;
 }
 
 interface Vector3 {
@@ -45,6 +46,7 @@ interface Vector3 {
 	normalize(): this;
 	negate(): this;
 	mult(vec: Vector3): this;
+	mult(mat: Matrix3): this;
 	addScaled(vec: Vector3, k: number): this;
 	copyAndSub(vecA: Vector3, vecB: Vector3): this;
 	copyAndCross(vecA: Vector3, vecB: Vector3): this;
@@ -328,15 +330,43 @@ class Vector3Base {
 		return this;
 	}
 
-	public mult(vec: Vector3): this {
+	public mult(mat: Matrix3): this
+	public mult(vec: Vector3): this
+	public mult(arg0: Matrix3 | Vector3): this {
 		const o = this._array;
+		if (arg0 instanceof Vector3) {
+			const v = arg0.array;
+
+			o[0] = o[0] * v[0];
+			o[1] = o[1] * v[1];
+			o[2] = o[2] * v[2];
+
+			return this;
+		}
+		else {
+			const x = this.x;
+			const y = this.y;
+			const z = this.z;
+
+			const m = arg0.array;
+
+			this.x = x * m[0] + y * m[3] + z * m[6];
+			this.y = x * m[1] + y * m[4] + z * m[7];
+			this.z = x * m[2] + y * m[5] + z * m[8];
+
+			return this;
+		}
+	}
+
+	public static mult(mat: Matrix3, vec: Vector3): Vector3 {
+		const m = mat.array;
 		const v = vec.array;
 
-		o[0] = o[0] * v[0];
-		o[1] = o[1] * v[1];
-		o[2] = o[2] * v[2];
-
-		return this;
+		return new Vector3Base([
+			m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
+			m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
+			m[6] * v[0] + m[7] * v[1] + m[8] * v[2]
+		]);
 	}
 
 	public writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {

@@ -1,5 +1,5 @@
-import { TriangleList, TriangleListBase } from "engine/libs/maths/extensions/lists/TriangleList";
-import { StackPool } from "engine/libs/patterns/pools/StackPool";
+import { StackPool } from "../../../../patterns/pools/StackPool";
+import { TriangleList, TriangleListBase } from "../../lists/TriangleList";
 
 export { TriangleListPool };
 

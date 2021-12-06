@@ -1,4 +1,4 @@
-import { PixelFormat } from "engine/core/rendering/webgl/WebGLConstants";
+import { PixelFormat } from "./WebGLConstants";
 
 export { WebGLRenderbufferUtilities };
 

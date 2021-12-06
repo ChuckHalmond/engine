@@ -62,7 +62,7 @@ class InjectorBase<C extends Constructor<any> = Constructor<any>> implements Inj
     public inject(args?: { qualifier?: string, args?: ConstructorParameters<C> }): InstanceType<C> {
         const constructor = this.getConstructor(args?.qualifier);
         if (args?.args) {
-            const parameters = Array.from(args?.args);
+            const parameters = Array.from(args.args);
             return new constructor(...parameters);
         }
         return new constructor();

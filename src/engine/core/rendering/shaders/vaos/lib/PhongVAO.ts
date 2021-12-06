@@ -1,8 +1,8 @@
-import { GeometryPropertyKeys } from "engine/core/rendering/scenes/geometries/Geometry";
-import { PhongGeometry } from "engine/core/rendering/scenes/geometries/PhongGeometry";
-import { VAOBase } from "engine/core/rendering/shaders/vaos/VAO";
-import { Attribute, AttributeProperties } from "engine/core/rendering/webgl/WebGLAttributeUtilities";
-import { ArraySections, ArraySectionValues } from "engine/libs/structures/arrays/ArraySection";
+import { ArraySections, ArraySectionValues } from "../../../../../libs/structures/arrays/ArraySection";
+import { GeometryPropertyKeys } from "../../../scenes/geometries/Geometry";
+import { PhongGeometry } from "../../../scenes/geometries/PhongGeometry";
+import { Attribute, AttributeProperties } from "../../../webgl/WebGLAttributeUtilities";
+import { VAOBase } from "../VAO";
 
 export { PhongVAOReferences };
 export { PhongVAOAttributesList };

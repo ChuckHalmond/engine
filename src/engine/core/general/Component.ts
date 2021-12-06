@@ -1,4 +1,4 @@
-import { Entity } from "engine/core/general/Entity";
+import { Entity } from "./Entity";
 
 export type ComponentDesc = {
     [key: string]: any;

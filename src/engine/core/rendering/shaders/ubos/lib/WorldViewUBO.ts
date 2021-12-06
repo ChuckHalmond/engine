@@ -1,8 +1,9 @@
-import { Transform } from "engine/core/general/Transform";
-import { Camera } from "engine/core/rendering/scenes/cameras/Camera";
-import { UniformsList } from "engine/core/rendering/webgl/WebGLUniformUtilities";
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { Matrix4Pool } from "engine/libs/maths/extensions/pools/Matrix4Pools";
+
+import { Matrix4 } from "../../../../../libs/maths/algebra/matrices/Matrix4";
+import { Matrix4Pool } from "../../../../../libs/maths/extensions/pools/Matrix4Pools";
+import { Transform } from "../../../../general/Transform";
+import { Camera } from "../../../scenes/cameras/Camera";
+import { UniformsList } from "../../../webgl/WebGLUniformUtilities";
 import { UBOBase } from "../UBO";
 
 export { WorldViewUBO };

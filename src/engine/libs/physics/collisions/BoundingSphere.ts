@@ -1,9 +1,9 @@
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
+import { Matrix4 } from "../../maths/algebra/matrices/Matrix4";
+import { Vector3 } from "../../maths/algebra/vectors/Vector3";
+import { Vector3List } from "../../maths/extensions/lists/Vector3List";
+import { Plane } from "../../maths/geometry/primitives/Plane";
+import { Injector } from "../../patterns/injectors/Injector";
 import { BoundingBox, BoundingBoxPool } from "./BoundingBox";
-import { Plane } from "engine/libs/maths/geometry/primitives/Plane";
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { Vector3List } from "engine/libs/maths/extensions/lists/Vector3List";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
 
 export { BoundingSphere };
 export { BoundingSphereInjector };

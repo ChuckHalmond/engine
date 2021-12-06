@@ -1,8 +1,9 @@
-import { Object3D, Object3DBase } from "engine/core/rendering/scenes/objects/Object3D";
+import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
+import { Matrix4 } from "../../../../libs/maths/algebra/matrices/Matrix4";
+import { UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
+import { Frustrum } from "../../../../libs/physics/collisions/Frustrum";
 import { Mesh } from "../objects/meshes/Mesh";
-import { Frustrum } from "engine/libs/physics/collisions/Frustrum";
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator";
+import { Object3D, Object3DBase } from "../objects/Object3D";
 
 export { Camera };
 export { CameraBase };

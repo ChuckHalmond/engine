@@ -1,10 +1,10 @@
-import { Shader } from "engine/core/rendering/shaders/Shader";
+import { Shader } from "../Shader";
 
 export { PhongShader };
 
 const name = 'Phong';
 
-const vertex = `#version 330 es
+const vertex = /*glsl*/`#version 330 es
     uniform Model {
         uniform mat4 u_model;
         uniform mat4 u_modelInverseTranspose;
@@ -64,7 +64,7 @@ const vertex = `#version 330 es
         gl_Position = v_position;
 }`;
 
-const fragment = `#version 330 es
+const fragment = /*glsl*/`#version 330 es
 
     precision mediump float;
 

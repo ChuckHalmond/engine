@@ -1,4 +1,4 @@
-import { ComponentDesc, Component } from "engine/core/general/Component";
+import { ComponentDesc } from "../../general/Component";
 
 export interface TMeshComponentDesc extends ComponentDesc {
     mesh?: string

@@ -1,4 +1,4 @@
-import { System } from "engine/core/general/System";
+import { System } from "../general/System";
 
 export const GAudioContext = new AudioContext();
 

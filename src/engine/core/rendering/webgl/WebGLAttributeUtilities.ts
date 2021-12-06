@@ -96,8 +96,8 @@ class WebGLAttributeUtilities {
             }
         );
         
-        const numElements = (typeof list.indices !== 'undefined') ? list.indices.length : this.getAttributesListNumElements(list);
-        const indexType = (typeof list.indices !== 'undefined') ? this.getAttributeIndicesBufferType(list.indices) : BufferIndexType.UNSIGNED_SHORT;
+        const numElements = (typeof list.indices !== "undefined") ? list.indices.length : this.getAttributesListNumElements(list);
+        const indexType = (typeof list.indices !== "undefined") ? this.getAttributeIndicesBufferType(list.indices) : BufferIndexType.UNSIGNED_SHORT;
         
         const settersList = {
             setters: {}
@@ -128,7 +128,7 @@ class WebGLAttributeUtilities {
             gl.enableVertexAttribArray(location);
 
             const type = this.getAttributeArrayDataType(attribute.array);
-            const normalized = (typeof props.normalized === 'undefined') ? false : props.normalized;
+            const normalized = (typeof props.normalized === "undefined") ? false : props.normalized;
 
             gl.vertexAttribPointer(location, props.numComponents, type, normalized, 0, bufferBytesOffset);
             
@@ -145,7 +145,7 @@ class WebGLAttributeUtilities {
         }
 
         let hasIndices = false;
-        if (typeof list.indices !== 'undefined') {
+        if (typeof list.indices !== "undefined") {
             hasIndices = true;
             gl.bindBuffer(BufferTarget.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
             gl.bufferData(BufferTarget.ELEMENT_ARRAY_BUFFER, list.indices.byteLength, BufferDataUsage.STATIC_READ);
@@ -178,22 +178,22 @@ class WebGLAttributeUtilities {
         gl.bindVertexArray(settersList.glVao);
         gl.bindBuffer(settersList.props.target, settersList.glBuffer);
 
-        for (const name in attributes) {
+        Object.keys(attributes).forEach((name) => {
             const attribute = attributes[name];
             const setter = settersList.setters[name];
 
-            const srcOffset = (typeof attribute.props.srcOffset === 'undefined') ? 0 : attribute.props.srcOffset;
-            const srcLength = (typeof attribute.props.srcLength === 'undefined') ? attribute.array.length : attribute.props.srcLength;
+            const srcOffset = (typeof attribute.props.srcOffset === "undefined") ? 0 : attribute.props.srcOffset;
+            const srcLength = (typeof attribute.props.srcLength === "undefined") ? attribute.array.length : attribute.props.srcLength;
 
-            if (typeof setter !== 'undefined') {
+            if (typeof setter !== "undefined") {
                 gl.bufferSubData(settersList.props.target, setter.bufferBytesOffset, attribute.array, srcOffset, srcLength);
             }
             else {
                 console.warn(`Attribute ${name} does not exist in the setters.`);
             }
-        }
+        });
 
-        if (typeof list.indices !== 'undefined') {
+        if (typeof list.indices !== "undefined") {
             gl.bindBuffer(BufferTarget.ELEMENT_ARRAY_BUFFER, settersList.glIndicesBuffer);
             gl.bufferSubData(BufferTarget.ELEMENT_ARRAY_BUFFER, 0, list.indices);
         }
@@ -225,7 +225,7 @@ class WebGLAttributeUtilities {
         else if (array instanceof Uint8Array) {
             return DataType.UNSIGNED_BYTE;
         }
-        console.error(`Unsupported attribute array ${array}.`);
+        console.error(`Unsupported attribute array ${array.constructor.name}.`);
         return -1;
     }
 

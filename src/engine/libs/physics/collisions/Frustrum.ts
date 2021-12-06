@@ -1,10 +1,10 @@
-import { Plane, PlaneInjector } from "engine/libs/maths/geometry/primitives/Plane";
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { BoundingSphere } from "engine/libs/physics/collisions/BoundingSphere";
-import { BoundingBox } from "engine/libs/physics/collisions/BoundingBox";
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
-import { Vector3Pool } from "engine/libs/maths/extensions/pools/Vector3Pools";
+import { Matrix4 } from "../../maths/algebra/matrices/Matrix4";
+import { Vector3 } from "../../maths/algebra/vectors/Vector3";
+import { Vector3Pool } from "../../maths/extensions/pools/Vector3Pools";
+import { Plane, PlaneInjector } from "../../maths/geometry/primitives/Plane";
+import { Injector } from "../../patterns/injectors/Injector";
+import { BoundingBox } from "./BoundingBox";
+import { BoundingSphere } from "./BoundingSphere";
 
 export { Frustrum };
 export { FrustrumInjector };

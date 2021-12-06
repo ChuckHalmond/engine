@@ -128,22 +128,22 @@ class WebGLUniformBlockUtilities {
 
     public static setUniformBlockValues(gl: WebGL2RenderingContext, setter: UniformBlockSetter, uniforms: UniformsList): void {
         
-        const blockUniformsNames = Object.keys(setter.uniforms);
+        /*const blockUniformsNames = Object.keys(setter.uniforms);
         const matchingUniformsNames = Object.keys(uniforms).filter(
             (name: string) => {
                 return blockUniformsNames.includes(name);
             }
-        );
+        );*/
 
         gl.bindBuffer(gl.UNIFORM_BUFFER, setter.glBuffer);
         gl.bindBufferRange(gl.UNIFORM_BUFFER, setter.bindingPoint, setter.glBuffer, 0, setter.bufferByteLength);
         
-        for (const uniformName of matchingUniformsNames) {
+        Object.keys(uniforms).forEach((uniformName) => {
             const uniform = setter.uniforms[uniformName];
             const newUniformValue = WebGLUniformUtilities.getUniformValueArrayBufferView(uniforms[uniformName].value);
 
             gl.bufferSubData(gl.UNIFORM_BUFFER, uniform.offset, newUniformValue);
-        }
+        });
     }
 
     public static bindUniformBlock(gl: WebGL2RenderingContext, setter: UniformBlockSetter): void {

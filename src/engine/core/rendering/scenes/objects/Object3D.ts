@@ -1,4 +1,4 @@
-import { Transform, TransformBase } from "engine/core/general/Transform";
+import { Transform, TransformBase } from "../../../general/Transform";
 
 export { Object3D };
 export { isObject3D };

@@ -1,6 +1,6 @@
-import { Triangle, TrianglePool } from "engine/libs/maths/geometry/primitives/Triangle";
-import { Vector3Values } from "engine/libs/maths/algebra/vectors/Vector3";
-import { clamp } from "engine/libs/maths/Snippets";
+import { Vector3Values } from "../../algebra/vectors/Vector3";
+import { Triangle, TrianglePool } from "../../geometry/primitives/Triangle";
+import { clamp } from "../../Snippets";
 
 export { TriangleList };
 export { TriangleListBase };

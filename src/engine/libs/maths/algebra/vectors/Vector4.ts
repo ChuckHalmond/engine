@@ -1,5 +1,7 @@
-import { MathError } from "engine/libs/maths/MathError";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { MathError } from "../../MathError";
+import { Matrix4 } from "../matrices/Matrix4";
+import { Vector3 } from "./Vector3";
 
 export { Vector4Values };
 export { Vector4 };
@@ -13,7 +15,8 @@ interface Vector4Constructor {
 	readonly prototype: Vector4;
 	new(): Vector4;
 	new(values: Vector4Values): Vector4;
-	new(values?: Vector4Values): Vector4;
+	mult(mat: Matrix4, vec: Vector4): Vector4;
+	fromXYZ(vec: Vector3): Vector4;
 }
 
 interface Vector4 {
@@ -323,6 +326,26 @@ class Vector4Base {
 		o[3] = o[3] * v[3];
 
 		return this;
+	}
+
+	public static fromXYZ(vec: Vector3): Vector4Base {
+		const v = vec.array;
+
+		return new Vector4Base([
+			v[0], v[1], v[2], 0
+		]);
+	}
+
+	public static mult(mat: Matrix4, vec: Vector4): Vector4 {
+		const m = mat.array;
+		const v = vec.array;
+
+		return new Vector4Base([
+			m[ 0] * v[0] + m[ 1] * v[1] + m[ 2] * v[2] + m[ 3] * v[3],
+			m[ 4] * v[0] + m[ 5] * v[1] + m[ 6] * v[2] + m[ 7] * v[3],
+			m[ 8] * v[0] + m[ 9] * v[1] + m[10] * v[2] + m[11] * v[3],
+			m[12] * v[0] + m[13] * v[1] + m[14] * v[2] + m[15] * v[3]
+		]);
 	}
 
 	public addScaled(vec: Vector4, k: number): this {

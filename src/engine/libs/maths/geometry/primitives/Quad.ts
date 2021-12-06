@@ -1,8 +1,7 @@
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { Matrix4 } from "../../algebra/matrices/Matrix4";
+import { Vector3 } from "../../algebra/vectors/Vector3";
 import { Triangle } from "./Triangle";
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
-
 //  p1----p2
 //  |\    |
 //  | \   |

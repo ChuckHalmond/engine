@@ -1,5 +1,5 @@
-import { Vector4, Vector4Values } from "engine/libs/maths/algebra/vectors/Vector4";
-import { SingleTopicMessageBroker } from "engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker";
+import { SingleTopicMessageBroker } from "../../../patterns/messaging/brokers/SingleTopicMessageBroker";
+import { Vector4, Vector4Values } from "../../algebra/vectors/Vector4";
 
 export { ObservableVector4 };
 export { ObservableVector4Base };

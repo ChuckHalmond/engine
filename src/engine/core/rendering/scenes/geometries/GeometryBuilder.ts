@@ -1,8 +1,7 @@
-import { Geometry, GeometryBase } from "engine/core/rendering/scenes/geometries/Geometry";
-import { GeometryUtils } from "engine/core/rendering/scenes/geometries/GeometryUtils";
-import { TriangleList } from "engine/libs/maths/extensions/lists/TriangleList";
-import { Vector2List } from "engine/libs/maths/extensions/lists/Vector2List";
-import { Vector3List } from "engine/libs/maths/extensions/lists/Vector3List";
+import { TriangleList } from "../../../../libs/maths/extensions/lists/TriangleList";
+import { Vector2List } from "../../../../libs/maths/extensions/lists/Vector2List";
+import { Vector3List } from "../../../../libs/maths/extensions/lists/Vector3List";
+import { Geometry } from "./Geometry";
 
 export { GeometryBuilder };
 export { GeometryBuilderBase };

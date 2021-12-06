@@ -2,13 +2,13 @@
 
 // Vertices : counter clock-wise ordered
 
-import { GeometryUtils } from "engine/core/rendering/scenes/geometries/GeometryUtils";
-import { TriangleList } from "engine/libs/maths/extensions/lists/TriangleList";
-import { Vector2List } from "engine/libs/maths/extensions/lists/Vector2List";
-import { Vector3List } from "engine/libs/maths/extensions/lists/Vector3List";
-import { UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator";
-import { BoundingBox } from "engine/libs/physics/collisions/BoundingBox";
-import { BoundingSphere } from "engine/libs/physics/collisions/BoundingSphere";
+import { TriangleList } from "../../../../libs/maths/extensions/lists/TriangleList";
+import { Vector2List } from "../../../../libs/maths/extensions/lists/Vector2List";
+import { Vector3List } from "../../../../libs/maths/extensions/lists/Vector3List";
+import { UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
+import { BoundingBox } from "../../../../libs/physics/collisions/BoundingBox";
+import { BoundingSphere } from "../../../../libs/physics/collisions/BoundingSphere";
+import { GeometryUtils } from "./GeometryUtils";
 
 // FaceIndices : 3 vertices indices
 // FaceArea : triangle.getArea()

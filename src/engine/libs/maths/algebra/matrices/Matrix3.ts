@@ -1,7 +1,7 @@
-import { Injector } from "engine/libs/patterns/injectors/Injector";
-import { MathError } from "engine/libs/maths/MathError";
-import { Vector2, Vector2Values } from "engine/libs/maths/algebra/vectors/Vector2";
-import { Vector3, Vector3Values } from "engine/libs/maths/algebra/vectors/Vector3";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { MathError } from "../../MathError";
+import { Vector2, Vector2Values } from "../vectors/Vector2";
+import { Vector3Values, Vector3 } from "../vectors/Vector3";
 
 export { Matrix3Values };
 export { Matrix3 };

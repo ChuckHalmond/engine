@@ -1,5 +1,5 @@
-import { ResourceFetcher } from 'engine/resources/ResourceFetcher';
-import { Logger } from 'engine/core/logger/Logger';
+import { Logger } from "../core/logger/Logger";
+import { ResourceFetcher } from "./ResourceFetcher";
 
 export { Resources };
 

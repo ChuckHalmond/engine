@@ -1,7 +1,7 @@
-import { Vector2 } from "engine/libs/maths/algebra/vectors/Vector2";
-import { UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator";
-import { SingleTopicMessageBroker, SingleTopicMessageSubscriber } from "engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker";
 
+import { Vector2 } from "../../../../libs/maths/algebra/vectors/Vector2";
+import { UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
+import { SingleTopicMessageSubscriber, SingleTopicMessageBroker } from "../../../../libs/patterns/messaging/brokers/SingleTopicMessageBroker";
 import { TextureTarget, PixelFormat, PixelType, TextureWrapMode, TextureMinFilter, TextureMagFilter } from "../../webgl/WebGLConstants";
 import { TexturePixels } from "../../webgl/WebGLTextureUtilities";
 

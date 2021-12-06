@@ -1,10 +1,11 @@
-import { Injector } from "engine/libs/patterns/injectors/Injector";
-import { qSqrt } from "engine/libs/maths/Snippets";
-import { Matrix3, Matrix3Values } from "../matrices/Matrix3";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { StackPool } from "../../../patterns/pools/StackPool";
+import { MathError } from "../../MathError";
+import { qSqrt } from "../../Snippets";
+import { EulerAngles } from "../angles/EulerAngles";
+import { Matrix3Values, Matrix3 } from "../matrices/Matrix3";
 import { Matrix4 } from "../matrices/Matrix4";
 import { Vector3 } from "../vectors/Vector3";
-import { StackPool } from "engine/libs/patterns/pools/StackPool";
-import { MathError } from "engine/libs/maths/MathError";
 
 export { QuaternionValues };
 export { Quaternion };
@@ -18,7 +19,9 @@ interface QuaternionConstructor {
 	readonly prototype: Quaternion;
 	new(): Quaternion;
 	new(values: QuaternionValues): Quaternion;
-	new(values?: QuaternionValues): Quaternion;
+	fromEuler(euler: EulerAngles): Quaternion;
+	fromVector(vector: Vector3): Quaternion;
+	fromMatrix(matrix: Matrix3): Quaternion;
 }
 
 interface Quaternion {
@@ -33,12 +36,13 @@ interface Quaternion {
 	copy(quat: Quaternion): this;
 	clone(): this;
 	getAxis(out: Vector3): Vector3;
-	asMatrix33(): Matrix3Values;
-	asRotationMatrix(out: Matrix3): Matrix3;
+	setFromMatrix(matrix: Matrix3): Quaternion;
+	toMatrix(): Matrix3;
 	rotate(vec: Vector3): Vector3;
-	setEuler(yaw: number, pitch: number, roll: number): this;
+	setEuler(euler: EulerAngles): this;
+	toEuler(): EulerAngles;
+	toVector(): Vector3;
 	setFromAxisAngle(axis: Vector3, angle: number): this;
-	setFromTransformMatrix(mat: Matrix4): this;
 	setFromVectors(from: Vector3, to: Vector3): this;
 	angleTo(quat: Quaternion): number;
 	rotateTowards(quat: Quaternion): this;
@@ -51,6 +55,7 @@ interface Quaternion {
 	add(quat: Quaternion): this;
 	sub(quat: Quaternion): this;
 	mult(quat: Quaternion): this;
+	multScalar(scalar: number): this;
 	slerp(quat: Quaternion, t: number): this;
 	equals(quat: Quaternion): boolean;
 	copyIntoArray(out: WritableArrayLike<number>, offset?: number): void;
@@ -66,6 +71,29 @@ class QuaternionBase {
 		this._array = (values) ? [
 			values[0], values[1], values[2], values[3]
 		] : [0, 0, 0, 0];
+	}
+
+	public static fromVector(vector: Vector3): QuaternionBase {
+		return new QuaternionBase([vector.x, vector.y, vector.z, 0]);
+	}
+	
+	public static fromEuler(eulerAngles: EulerAngles): QuaternionBase {
+		const halfYaw = eulerAngles.pitch * 0.5;
+		const halfPitch = eulerAngles.yaw * 0.5;
+		const halfRoll = eulerAngles.roll * 0.5;
+		const cosYaw = Math.cos(halfYaw);
+		const sinYaw = Math.sin(halfYaw);
+		const cosPitch = Math.cos(halfPitch);
+		const sinPitch = Math.sin(halfPitch);
+		const cosRoll = Math.cos(halfRoll);
+		const sinRoll = Math.sin(halfRoll);
+		
+		return new QuaternionBase([
+			cosRoll * sinPitch * cosYaw + sinRoll * cosPitch * sinYaw,
+			cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw,
+			sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw,
+			cosRoll * cosPitch * cosYaw + sinRoll * sinPitch * sinYaw
+		]);
 	}
 
 	public get array(): ArrayLike<number> {
@@ -188,7 +216,7 @@ class QuaternionBase {
 	}
 
 	public equals(quat: Quaternion): boolean {
-		const o  =this._array;
+		const o = this._array;
 		const q = quat.array;
 
 		return (o[0] === q[0])
@@ -211,7 +239,7 @@ class QuaternionBase {
 		return out;
 	}
 
-	public asMatrix33(): Matrix3Values {
+	public toMatrix(): Matrix3 {
 		const d = this.len();
 		const s = 2.0 / d;
 
@@ -236,45 +264,11 @@ class QuaternionBase {
 		const yz = y * zs;
 		const zz = z * zs;
 
-		return [
-			1 - (yy + zz),	xy + wz,		xz - wy,
-			xy - wz,		1 - (xx + zz),	yz + wx,
-			xz + wy,		yz - wx,		1 - (xx + yy)
-		];
-	}
-
-	public asRotationMatrix(out: Matrix3): Matrix3 {
-		const d = this.len();
-		const s = 2.0 / d;
-
-		const x = this._x;
-		const y = this._y;
-		const z = this._z;
-		const w = this._w;
-
-		const xs = x * s;
-		const ys = y * s;
-		const zs = z * s;
-	  
-		const wx = w * xs;
-		const wy = w * ys;
-		const wz = w * zs;
-	  
-		const xx = x * xs;
-		const xy = x * ys;
-		const xz = x * zs;
-	  
-		const yy = y * ys;
-		const yz = y * zs;
-		const zz = z * zs;
-
-		out.setValues([
+		return new Matrix3([
 			1 - (yy + zz),	xy + wz,		xz - wy,
 			xy - wz,		1 - (xx + zz),	yz + wx,
 			xz + wy,		yz - wx,		1 - (xx + yy)
 		]);
-
-		return out;
 	}
 
 	public rotate(vec: Vector3): Vector3 {
@@ -301,10 +295,41 @@ class QuaternionBase {
 		return vec;
 	}
 
-	public setEuler(yaw: number, pitch: number, roll: number): this {
-		const halfYaw = yaw * 0.5;
-		const halfPitch = pitch * 0.5;
-		const halfRoll = roll * 0.5;
+	public toEuler(): EulerAngles {
+		const euler = new EulerAngles();
+		
+		const x = this.x;
+		const y = this.y;
+		const z = this.z;
+		const w = this.w;
+		
+		const sinr_cosp = 2 * (w * x + y * z);
+		const cosr_cosp = 1 - 2 * (x * x + y * y);
+		euler.roll = Math.atan2(sinr_cosp, cosr_cosp);
+		
+		const sinp = 2 * (w * y - z * x);
+		if (Math.abs(sinp) >= 1)
+			euler.pitch = Math.sign(sinp) * (Math.PI / 2); // use 90 degrees if out of range
+		else
+			euler.pitch = Math.asin(sinp);
+		
+		const siny_cosp = 2 * (w * z + x * y);
+		const cosy_cosp = 1 - 2 * (y * y + z * z);
+		euler.yaw = Math.atan2(siny_cosp, cosy_cosp);
+	
+		return euler;
+	}
+
+	public toVector(): Vector3 {
+		return new Vector3([
+			this.x, this.y, this.z
+		]);
+	}
+
+	public setEuler(eulerAngles: EulerAngles): this {
+		const halfYaw = eulerAngles.yaw * 0.5;
+		const halfPitch = eulerAngles.pitch * 0.5;
+		const halfRoll = eulerAngles.roll * 0.5;
 		const cosYaw = Math.cos(halfYaw);
 		const sinYaw = Math.sin(halfYaw);
 		const cosPitch = Math.cos(halfPitch);
@@ -332,11 +357,12 @@ class QuaternionBase {
 		return this;
 	}
 
-	public setFromTransformMatrix(mat: Matrix4): this {
-		const m = mat.values;
-		const m11 = m[0], m12 = m[4], m13 = m[ 8],
-			  m21 = m[1], m22 = m[5], m23 = m[ 9],
-			  m31 = m[2], m32 = m[6], m33 = m[10];
+	public setFromMatrix(matrix: Matrix3): this {
+		const m = matrix.values;
+
+		const m11 = m[0], m12 = m[1], m13 = m[2],
+			  m21 = m[3], m22 = m[4], m23 = m[5],
+			  m31 = m[6], m32 = m[7], m33 = m[8];
 		const trace = m11 + m22 + m33;
 
 		if (trace > 0) {
@@ -369,6 +395,10 @@ class QuaternionBase {
 		}
 
 		return this;
+	}
+
+	public static fromMatrix(matrix: Matrix3): QuaternionBase {
+		return new QuaternionBase().setFromMatrix(matrix);
 	}
 
 	public setFromVectors(from: Vector3, to: Vector3): this {
@@ -481,7 +511,6 @@ class QuaternionBase {
 	}
 
 	public mult(quat: Quaternion): this {
-
 		const ax = this._x, ay = this._y, az = this._z, aw = this._w;
 		const bx = quat.x, by = quat.y, bz = quat.z, bw = quat.w;
 
@@ -491,7 +520,15 @@ class QuaternionBase {
 		this._w = aw * bw - ax * bx - ay * by - az * bz;
 
 		return this;
+	}
 
+	public multScalar(scalar: number): this {
+		this._x = this._x * scalar;
+		this._y = this._y * scalar;
+		this._z = this._z * scalar;
+		this._w = this._w * scalar;
+
+		return this;
 	}
 
 	public slerp(quat: Quaternion, t: number): this {

@@ -1,6 +1,6 @@
-import { Identifiable, UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator";
-import { Flags } from "engine/libs/patterns/flags/Flags";
-import { UniformsList } from "engine/core/rendering/webgl/WebGLUniformUtilities";
+import { UUID, Identifiable, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
+import { Flags } from "../../../../libs/patterns/flags/Flags";
+import { UniformsList } from "../../webgl/WebGLUniformUtilities";
 
 export { UBO };
 export { UBOBase };

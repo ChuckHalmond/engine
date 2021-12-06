@@ -1,8 +1,7 @@
-import { Texture } from "engine/core/rendering/shaders/textures/Texture";
-import { TextureProperties } from "engine/core/rendering/webgl/WebGLTextureUtilities";
-import { Color, ColorValues } from "engine/libs/graphics/colors/Color";
+import { Color, ColorValues } from "../../../../../libs/graphics/colors/Color";
+import { SingleTopicMessageSubscriber, SingleTopicMessageBroker } from "../../../../../libs/patterns/messaging/brokers/SingleTopicMessageBroker";
+import { Texture, TextureProperties } from "../../../webgl/WebGLTextureUtilities";
 import { Material, MaterialBase } from "../Material";
-import { SingleTopicMessageBroker, SingleTopicMessageSubscriber } from "engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker";
 
 export { PhongMaterialPropertyKeys };
 export { PhongMaterialProperties };

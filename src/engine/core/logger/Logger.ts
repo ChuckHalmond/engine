@@ -1,4 +1,4 @@
-import { SingleTopicMessageBroker } from "engine/libs/patterns/messaging/brokers/SingleTopicMessageBroker";
+import { SingleTopicMessageBroker } from "../../libs/patterns/messaging/brokers/SingleTopicMessageBroker";
 
 export { LogLevel };
 export { LoggerMessage };

@@ -1,6 +1,6 @@
-import { BoundingBox } from "engine/libs/physics/collisions/BoundingBox";
 import { CompositeMesh } from "./CompositeMesh";
 import { Material } from "../../materials/Material";
+import { BoundingBox } from "../../../../../libs/physics/collisions/BoundingBox";
 
 export { Submesh };
 export { BaseSubmesh };

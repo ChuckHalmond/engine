@@ -1,5 +1,5 @@
-import { Matrix4, Matrix4Base } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { StackPool } from "engine/libs/patterns/pools/StackPool";
+import { StackPool } from "../../../patterns/pools/StackPool";
+import { Matrix4, Matrix4Base } from "../../algebra/matrices/Matrix4";
 
 export { Matrix4Pool };
 

@@ -1,6 +1,6 @@
-import { Object3D, Object3DBase } from "engine/core/rendering/scenes/objects/Object3D";
 import { Geometry } from "../../geometries/Geometry";
 import { Material } from "../../materials/Material";
+import { Object3D, Object3DBase } from "../Object3D";
 
 export { Mesh };
 export { isMesh };

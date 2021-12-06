@@ -1,5 +1,5 @@
-import { Component } from "engine/core/general/Component";
-import { Entity } from "engine/core/general/Entity";
+import { Component } from "./Component";
+import { Entity } from "./Entity";
 
 export class ComponentsRegistry {
     private static _instance: ComponentsRegistry;

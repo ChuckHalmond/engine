@@ -1,4 +1,4 @@
-import { Vector3List } from "engine/libs/maths/extensions/lists/Vector3List";
+import { Vector3List } from "../../../../libs/maths/extensions/lists/Vector3List";
 import { Geometry } from "./geometry";
 
 export { PhongGeometry };

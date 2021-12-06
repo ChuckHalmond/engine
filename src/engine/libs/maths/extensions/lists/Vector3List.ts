@@ -1,6 +1,6 @@
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { Vector3Pool } from "engine/libs/maths/extensions/pools/Vector3Pools";
-import { clamp } from "engine/libs/maths/Snippets";
+import { Vector3 } from "../../algebra/vectors/Vector3";
+import { clamp } from "../../Snippets";
+import { Vector3Pool } from "../pools/Vector3Pools";
 
 export { Vector3List };
 export { Vector3ListBase };

@@ -1,11 +1,11 @@
-import { Scene } from "engine/core/general/Scene";
-import { UniformsList } from "engine/core/rendering/webgl/WebGLUniformUtilities";
+import { Scene } from "../../../scenes/Scene";
+import { UniformsList } from "../../../webgl/WebGLUniformUtilities";
 import { UBOBase } from "../UBO";
 
 export { LightsUBO };
 
 type LightsUBOReferences = {
-    scene: Scene;
+    //scene: Scene;
 }
 
 class LightsUBO extends UBOBase<LightsUBOReferences> implements LightsUBO {

@@ -1,274 +1,62 @@
-import { Transform } from "engine/core/general/Transform";
-import { Input, MouseButton } from "engine/core/input/Input";
-import { PerspectiveCamera } from "engine/core/rendering/scenes/cameras/PerspectiveCamera";
-import { CubeGeometry } from "engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry";
-import { IcosahedronGeometry } from "engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry";
-import { QuadGeometry } from "engine/core/rendering/scenes/geometries/lib/QuadGeometry";
-import { TextureWrapMode, TextureMagFilter, TextureMinFilter, BufferDataUsage, Capabilities, BufferMaskBit, TestFunction, FramebufferTarget, FramebufferAttachment, FramebufferTextureTarget, PixelFormat, PixelType, RenderbufferTarget, Parameter } from "engine/core/rendering/webgl/WebGLConstants";
-import { WebGLFramebufferUtilities } from "engine/core/rendering/webgl/WebGLFramebufferUtilities";
-import { WebGLPacketUtilities, Packet } from "engine/core/rendering/webgl/WebGLPacketUtilities";
-import { WebGLProgramUtilties } from "engine/core/rendering/webgl/WebGLProgramUtilities";
-import { WebGLRenderbufferUtilities } from "engine/core/rendering/webgl/WebGLRenderbuffersUtilities";
-import { WebGLRendererUtilities } from "engine/core/rendering/webgl/WebGLRendererUtilities";
-import { WebGLTextureUtilities } from "engine/core/rendering/webgl/WebGLTextureUtilities";
-import { editor } from "engine/editor/Editor";
-import { BaseHTMLEMenuElement } from "engine/editor/elements/lib/containers/menus/Menu";
-import { BaseHTMLEMenuBarElement } from "engine/editor/elements/lib/containers/menus/MenuBar";
-import { BaseHTMLEMenuItemElement } from "engine/editor/elements/lib/containers/menus/MenuItem";
-import { PanelElement } from "engine/editor/elements/lib/containers/panels/Panel";
-import { PanelGroupElement } from "engine/editor/elements/lib/containers/panels/PanelGroup";
-import { BaseHTMLETabElement } from "engine/editor/elements/lib/containers/tabs/Tab";
-import { BaseHTMLETabListElement } from "engine/editor/elements/lib/containers/tabs/TabList";
-import { BaseHTMLETabPanelElement } from "engine/editor/elements/lib/containers/tabs/TabPanel";
-import { BaseHTMLEImportElement } from "engine/editor/elements/lib/utils/Import";
-import { Color } from "engine/libs/graphics/colors/Color";
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { Vector2 } from "engine/libs/maths/algebra/vectors/Vector2";
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { clamp } from "engine/libs/maths/Snippets";
-import { Resources } from "engine/resources/Resources";
-import { HTMLEStatusBarElement } from "engine/editor/elements/lib/containers/status/StatusBar";
-import { HTMLEDropdownElement } from "engine/editor/elements/lib/containers/dropdown/Dropdown";
-import { HTMLEStatusItemElement } from "engine/editor/elements/lib/containers/status/StatusItem";
-import { BaseHTMLEMenuItemGroupElement, HTMLEMenuItemGroupElement } from "engine/editor/elements/lib/containers/menus/MenuItemGroup";
-import { BaseHTMLEMenuButtonElement } from "engine/editor/elements/lib/containers/menus/MenuButton";
-import { PaletteElement } from "engine/editor/elements/lib/misc/Palette";
-import { HTMLEBreadcrumbTrailElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbTrail";
-import { HTMLEBreadcrumbItemElement } from "engine/editor/elements/lib/controls/breadcrumb/BreadcrumbItem";
-import { BaseHTMLEDraggableElement } from "engine/editor/elements/lib/controls/draggable/Draggable";
-import { BaseHTMLEDropzoneElement } from "engine/editor/elements/lib/controls/draggable/Dropzone";
-import { HTMLEMenuTemplate } from "engine/editor/templates/menus/MenuTemplate";
-import { HTMLElementConstructor } from "engine/editor/elements/HTMLElement";
-import { BaseHTMLELoaderElement } from "engine/editor/elements/lib/utils/Loader";
-
-HTMLEStatusBarElement;
-HTMLEStatusItemElement;
-BaseHTMLEImportElement;
-
-PanelElement;
-PanelGroupElement;
-
-BaseHTMLETabElement;
-BaseHTMLETabListElement;
-BaseHTMLETabPanelElement;
-
-HTMLEDropdownElement;
-HTMLEBreadcrumbTrailElement;
-HTMLEBreadcrumbItemElement;
-PaletteElement;
-
-BaseHTMLEDraggableElement;
-BaseHTMLEMenuBarElement;
-BaseHTMLEMenuButtonElement
-BaseHTMLEMenuElement;
-BaseHTMLEMenuItemElement;
-BaseHTMLEDropzoneElement;
-BaseHTMLEMenuItemGroupElement;
-BaseHTMLEMenuItemElement;
-
-BaseHTMLELoaderElement;
+import { ArcBallControl } from "../../engine/core/controls/ArcBallControl";
+import { Transform } from "../../engine/core/general/Transform";
+import { Input, MouseButton } from "../../engine/core/input/Input";
+import { PerspectiveCamera } from "../../engine/core/rendering/scenes/cameras/PerspectiveCamera";
+import { CubeGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry";
+import { IcosahedronGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry";
+import { QuadGeometry } from "../../engine/core/rendering/scenes/geometries/lib/QuadGeometry";
+import { TextureWrapMode, TextureMagFilter, TextureMinFilter, BufferDataUsage, FramebufferTextureTarget, FramebufferAttachment, Parameter, PixelFormat, Capabilities, BufferMaskBit, TestFunction } from "../../engine/core/rendering/webgl/WebGLConstants";
+import { WebGLFramebufferUtilities } from "../../engine/core/rendering/webgl/WebGLFramebufferUtilities";
+import { WebGLPacketUtilities, Packet } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
+import { WebGLProgramUtilties } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
+import { WebGLRenderbufferUtilities } from "../../engine/core/rendering/webgl/WebGLRenderbuffersUtilities";
+import { WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
+import { WebGLTextureUtilities } from "../../engine/core/rendering/webgl/WebGLTextureUtilities";
+import { Color } from "../../engine/libs/graphics/colors/Color";
+import { EulerAngles } from "../../engine/libs/maths/algebra/angles/EulerAngles";
+import { Matrix3 } from "../../engine/libs/maths/algebra/matrices/Matrix3";
+import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
+import { Quaternion } from "../../engine/libs/maths/algebra/quaternions/Quaternion";
+import { Vector2 } from "../../engine/libs/maths/algebra/vectors/Vector2";
+import { Vector3, Vector3Values } from "../../engine/libs/maths/algebra/vectors/Vector3";
+import { Vector4, Vector4Values } from "../../engine/libs/maths/algebra/vectors/Vector4";
+import { Space } from "../../engine/libs/maths/geometry/space/Space";
+import { clamp } from "../../engine/libs/maths/Snippets";
+import { Resources } from "../../engine/resources/Resources";
 
 const simpleSceneDOM = /*template*/`
 <link rel="stylesheet" href="../css/main.css"/>
-  <div>
-
-    <div class="flex-rows">
-
-      <!--<e-import src="html/samples/menus.html"></e-import>-->
-      <nav class="flex-cols">
-          <div id="menubar-container"></div>
-        <!--<button data-command="get">get</button>
-        <button data-command="set">set</button>-->
-      </nav>
-
-      <div class="flex-auto flex-cols">
-
-        <!--<e-window title="My window">-->
-<!--
-
-        </e-window>-->
-
-        <e-panel id="panel-1" class="flex-rows flex-none" state="opened" label="L.Panel">
-
-            <e-tablist id="list">
-              <e-tab name="play" controls="play-panel" active>Play tab</e-tab>
-              <e-tab name="pause" controls="pause-panel">Pause Tab</e-tab>
-            </e-tablist>
-            <e-tabpanel id="play-panel">
-              <e-loader></e-loader>
-              assets/editor/icons/play.svg
-            </e-tabpanel>
-            <e-tabpanel id="pause-panel">
-              <!--<e-palette cols="5" colors='[
-                "var(--theme-color-50)",
-                "var(--theme-color-100)",
-                "var(--theme-color-200)",
-                "var(--theme-color-300)",
-                "var(--theme-color-400)",
-                "var(--theme-color-500)",
-                "var(--theme-color-600)",
-                "var(--theme-color-700)",
-                "var(--theme-color-800)",
-                "var(--theme-color-900)",
-                "var(--theme-palette-color-1)",
-                "var(--theme-palette-color-2)",
-                "var(--theme-palette-color-3)"
-              ]'></e-palette>-->
-              <e-breadcrumbtrail>
-                <e-breadcrumbitem label="label 1"></e-breadcrumbitem>
-                <e-breadcrumbitem label="label 2"></e-breadcrumbitem>
-              </e-breadcrumbtrail>
-              <!--<e-dragzone>
-                <e-draggable id="draggableA" tabindex="-1" ref="A">A</e-draggable>
-                <e-draggable id="draggableB" tabindex="-1" ref="B">B</e-draggable>
-                <e-draggable id="draggableC" tabindex="-1" ref="C">C</e-draggable>
-                <e-draggable id="draggableD" tabindex="-1" ref="D">D</e-draggable>
-              </e-dragzone>
-              <e-dropzone id="dropzone1" tabindex="-1" multiple></e-dropzone>-->
-              <!--<details>
-                <summary>Summary..</summary>
-                <fieldset>
-                  <label>My label</label><input value="My input"></input>
-                  <details>
-                    <summary><label>aggregates</label><input value="1" type="number"></input></summary>
-                    <fieldset>
-                    <label>My internal label</label><input value="My internal input"></input>
-                  </details>
-                </fieldset>
-                </fieldset>
-              </details>-->
-              <input type="number" name="temp-radio" value="1"></input>
-            </e-tabpanel>
-              
-            <section>
-              <form id="test-form" novalidate>
-                <input name="number-input" type="number" value="10"></input><br/>
-                <input type="text" name="text-input"  value="Test"></input><br/>
-                <select>
-                  <option>Kek</option>
-                  <option>Kikou</option>
-                </select>
-                <input type="range" name="range-input" min="10" max="20" step="5"></input>
-                <progress id="file" max="100" value="70"> 70% </progress>
-                <br/>
-                <input type="radio" name="temp-radio" value="1"></input>
-                <input type="radio" name="temp-radio" value="2"></input><br/>
-                <textarea name="textarea-input">This is my tyext area.</textarea>
-                <a href="#">Follow this link</a>
-              </form>
-              <e-dropdown>
-                <button slot="button">My button</button>
-                <div slot="content">
-                  <ul>
-                    <li>1</li>
-                    <li>2</li>
-                  </ul>
-                  <input id="range" type="range" min="10" max="20" step="5"></input>
-                </div>
-              </e-dropdown>
-
-              <button data-button-role="dropdown" data-button-dropdown-target="dropdown">My button</button>
-              <div slot="content">
-                <ul>
-                  <li>1</li>
-                  <li>2</li>
-                </ul>
-                <input id="range" type="range" min="10" max="20" step="5"></input>
-              </div>
-              <!--<details>
-                <summary>Sum</summary>
-                <p>Requires a computer running an operating system.</p>
-              </details>-->
-            </section>
-        </e-panel>
-
-        <main class="flex-rows flex-auto">
-            <header class="centered">Toolbar</header>
-            <section class="centered padded">
-    
-              <div id="ui" class="flex-cols">
-                <div class="flex-auto"><span class="blue">"RigidBuddy FTW!"</span> <span class="yellow">:-)</span></div>
-                <div class="flex-none">FPS: <span id="canvas-fps">-.-</span></div>
-              </div>
-
-              <canvas id="canvas" tabindex="0" tooltip="mon-canvas"></canvas>
-              <e-logs-feed></e-logs-feed>
-
-            </section>
-
-            <footer class="centered">
-              <p id="status-bar"></p>
-            </footer>
-        </main>
-        
-        <e-panel id="panel-3" class="flex-rows flex-none" style="margin-left: 6px;" state="closed" label="R.Panel">
-            <section>
-              <e-panel-group label="My group" state="closed">
-                <div>My content</div>
-              </e-panel-group>
-            </section>
-        </e-panel>
-      </div>
-
-      <e-statusbar>
-        <e-statusitem name="show-fps-status"></e-statusitem>
-        <e-statusitem name="letter-status"></e-statusitem>
-        <!--<output>125</output>
-        <output>Kek</output>
-        <button id="play" data-lol="" data-kek="kek">Play</button>
-        <button id="pause" data-command-lol="pause-canvas">Pause</button>
-        <progress max="100" value="100" style="height: 100%">100%</progress>-->
-        <!--<e-dropdown class="statusbar-dropdown">
-          <button slot="button">My button</button>
-          <div slot="content">
-            <ul>
-              <li>1</li>
-              <li>2</li>
-            </ul>
-            <input id="range" type="range" min="10" max="20" step="5"></input>
+  <div class="flex-auto flex-cols">
+    <main class="flex-rows flex-auto">
+        <section class="centered padded">
+          <div id="ui" class="flex-cols">
+            <div class="flex-auto"><span class="blue">"RigidBuddy FTW!"</span> <span class="yellow">:-)</span></div>
+            <div class="flex-none">FPS: <span id="canvas-fps">-.-</span></div>
           </div>
-        </e-dropdown>-->
-      </e-statusbar>
-    </div>
+          <canvas id="canvas" tabindex="0" tooltip="mon-canvas"></canvas>
+        </section>
+    </main>
   </div>`;
 
 export async function start() {
-
-  document.addEventListener("contextmenu", (event: MouseEvent) => {
-    let menu = HTMLElementConstructor("e-menu", {children: [HTMLElementConstructor("e-menuitem", {attr: {label: "Say my name!"}})]});
-    menu.style.position = "absolute";
-    menu.style.top = `${event.clientY}px`;
-    menu.style.left = `${event.clientX}px`;
-    document.body.append(menu);
-    let listener = (event: FocusEvent) => {
-      let target = event.target as any;
-      if (!(menu == target || menu.contains(target))) {
-        menu.remove();
-        document.removeEventListener("focusin", listener);
-      }
-    };
-    menu.focus();
-    document.addEventListener("focusin", listener);
-    event.preventDefault();
-  });
 
   const template = document.createElement('template');
 
   template.innerHTML = simpleSceneDOM;
   document.body.insertBefore(template.content, document.body.firstChild);
 
-  const imports = Array.from(document.getElementsByTagName('e-import'));
+  /*const imports = Array.from(document.getElementsByTagName('e-import'));
   Promise.all(imports.map((imp) => {
     return new Promise((resolve) => {
       imp.addEventListener('loaded', () => {
         resolve(true);
       }, {once: true});
     })
-  })).then(function(){ 
-    editor.setup().then(() => {
+  })).then(function(){ */
+    //editor.setup().then(() => {
       launchScene();
-    });
-  });
+    //});
+  //});
 }
 /*
 function test() {
@@ -299,167 +87,10 @@ function test() {
   document.querySelector('#play-panel')!.append(table);
 }*/
 
-(window as any)["editor"] = editor;
 export async function launchScene() {
   let frameRequest: number;
   let render: (time: number) => void;
   let fps: number = 0;
-
-  editor.registerCommand("play-canvas", {
-    exec(): void {
-      cancelAnimationFrame(frameRequest);
-      frameRequest = requestAnimationFrame(render);
-      canvas.focus();
-    },
-    context: 'default'
-  });
-
-  editor.registerCommand("pause-canvas", {
-    exec(): void {
-      cancelAnimationFrame(frameRequest);
-      canvas.focus();
-    },
-    context: 'default'
-  });
-
-  const showFpsMenuItem = editor.menubar?.findItem((item) => item.name === "show-fps-item");
-  const canvasFPS = document.getElementById("canvas-fps");
-
-  if (showFpsMenuItem) {
-    showFpsMenuItem.command = "toggle-show-fps";
-    editor.addStateListener("show-fps", (showFps) => {
-      showFpsMenuItem.checked = showFps;
-    });
-  }
-
-  if (canvasFPS) {
-    editor.registerCommand('toggle-show-fps', {
-      exec(): void {
-        editor.setState("show-fps", true);
-        canvasFPS.parentElement!.classList.remove('hidden');
-      },
-      undo(): void {
-        editor.setState("show-fps", false);
-        canvasFPS.parentElement!.classList.add('hidden');
-      },
-      context: 'default'
-    });
-  }
-
-  const showFpsStatusItem = editor.statusbar?.findItem((item) => item.name === "show-fps-status");
-
-  if (showFpsStatusItem) {
-    showFpsStatusItem.stateMap = (showFps: boolean) => {
-      return {
-        content: `${showFps ? "FPS" : "--"}`
-      };
-    };
-    //showFpsStatusItem.update(editor.getState("show-fps"));
-    editor.addStateListener("show-fps", (showFps) => {
-      showFpsStatusItem.update(showFps);
-    });
-    showFpsStatusItem.command = "toggle-show-fps";
-  }
-
-
-  editor.registerCommand('change-favorite-letter', {
-    exec(value: string): void {
-      editor.setState("favorite-letter", value);
-    },
-    undo(value: string): void {
-    },
-    context: 'default'
-  });
-
-  const radiosGroup = document.querySelector<HTMLEMenuItemGroupElement>("e-menuitemgroup[name='favorite-letter']");
-  if (radiosGroup) {
-    editor.addStateListener("favorite-letter", (favoriteLetter: string) => {
-      let radioToCheck = radiosGroup.items.find(
-        (item) => item.type === "radio" && item.value === favoriteLetter
-      );
-      if (radioToCheck) {
-        radioToCheck.checked = true;
-      }
-    });
-
-    radiosGroup.items.filter(item => item.type === "radio").forEach((item) => {
-      item.command = "change-favorite-letter";
-      item.commandArgs = item.value;
-    });
-  }
-
-  const letterStatus = editor.statusbar?.findItem((item) => item.name === "letter-status");
-
-  if (letterStatus) {
-    letterStatus.stateMap = (letter: string) => {
-      return {
-        content: `U like ${letter.toUpperCase()}`
-      };
-    };
-    //letterStatus.update(editor.getState("favorite-letter"));
-    editor.addStateListener("favorite-letter", (favoriteLetter: string) => {
-      letterStatus.update(favoriteLetter);
-    });
-  }
-
-  await editor.reloadState();
-
-  /*const showFPSAction = (showFPS: boolean) => {
-    if (showFPS) {
-      canvasFPS.parentElement!.classList.remove('hidden');
-    }
-    else {
-      canvasFPS.parentElement!.classList.add('hidden');
-    }
-  };*/
-
-  /*showFPSAction(showFpsCheckbox.checked);
-
-  if (showFpsCheckbox && canvasFPS) {
-    showFpsCheckbox.addEventListener('click', () => {
-      showFPSAction(showFpsCheckbox.checked);
-    });
-  }*/
-
-
-
-
-  /*const dropzone1 = document.querySelector<HTMLEDropzoneElement>("e-dropzone#dropzone1");
-  dropzone1?.addEventListener("datatransfer", ((event: EDataTransferEvent) => {
-    console.log(event.detail.data);
-    console.log(event.detail.success);
-    console.log(event.detail.position);
-  }) as EventListener);*/
-  /*
-  const draggableA = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableA");
-  if (draggableA) {
-    draggableA.data = "A";
-    
-  }
-
-  const draggableB = document.querySelector<HTMLEDraggableElement>("e-draggable#draggableB");
-  if (draggableB) {
-    draggableB.data = "B";
-  }*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 
@@ -471,7 +102,10 @@ export async function launchScene() {
   canvas.height = 800;
   
   
-  const gl = canvas.getContext('webgl2', {antialias: true})!;
+  const gl = canvas.getContext('webgl2');
+  if (!gl) {
+    return;
+  }
 
   const assets = new Resources('assets/engine/');
   await assets.loadList('resources.json');
@@ -559,20 +193,22 @@ export async function launchScene() {
   const zFar = 100;
   const projection = new Matrix4().asPerspective(fov, aspect, zNear, zFar);
 
-  const cam = new PerspectiveCamera(fov, aspect, zNear, zFar);
+  //const cam = new PerspectiveCamera(fov, aspect, zNear, zFar);
 
   const eye: Vector3 = new Vector3([3, 3, 0]);
   const target: Vector3 = new Vector3([0, 0, 0]);
   const up: Vector3 = new Vector3([0, 1, 0]);
   const camera = new Matrix4().lookAt(eye, target, up);
+  
+  //const cameraTransform = new Transform();
 
   const viewInverse = camera.clone();
   const view = camera.clone().invert();
   const viewProjection = projection.clone().mult(view);
   const viewProjectionInverse = viewProjection.clone().invert();
 
-  const cubeTransform = new Transform();
-  const quadTransform = new Transform();
+  /*const cubeTransform = new Transform();
+  const quadTransform = new Transform();*/
   
   const cubeWorldArr = new Float32Array(16);
   const cubeWorld = new Matrix4().setArray(cubeWorldArr).setIdentity().scaleScalar(0.5);
@@ -740,10 +376,9 @@ export async function launchScene() {
   
   let lastFrameTime = 0;
   let deltaTime = 0;
-
-  let lastPos: Vector2 = new Vector2();
-  await Input.initialize(canvas);
-
+    
+  await Input.initialize(document.body);
+  
   render = function(frameTime: number) {
     
     frameTime *= 0.001;
@@ -752,66 +387,13 @@ export async function launchScene() {
     lastFrameTime = frameTime;
     fps = 1 / deltaTime;
 
-    canvasFPS!.innerHTML = fps.toFixed(2);
+    //canvasFPS!.innerHTML = fps.toFixed(2);
     
     WebGLRendererUtilities.clearColor(gl, Color.GREEN.valuesNormalized());
     WebGLRendererUtilities.clear(gl, BufferMaskBit.COLOR_BUFFER_BIT | BufferMaskBit.DEPTH_BUFFER_BIT);
 
-    if (Input.getMouseButtonDown(MouseButton.RIGHT)) {
-      lastPos.copy(Input.getMouseButtonPosition());
-    }
-    
-    if (Input.getMouseButton(MouseButton.RIGHT)) {
-      const newPos = Input.getMouseButtonPosition();
-      
-      if (!newPos.equals(lastPos)) {
+    updateCamera(camera, target, up);
 
-        const cameraPos = new Vector3().setValues([camera.getAt(12), camera.getAt(13), camera.getAt(14)]);
-
-        //console.log(`cameraPos ${cameraPos.x.toFixed(4)} ${cameraPos.y.toFixed(4)} ${cameraPos.z.toFixed(4)}`);
-
-        const cameraTarget = target.clone();
-
-        const deltaX = lastPos.y - newPos.y;
-        const deltaY = newPos.x - lastPos.x;
-
-        const deltaPhi = (Math.PI / canvas.clientWidth) * deltaX * 1000;
-        const deltaTheta = (Math.PI / canvas.clientHeight) * deltaY * 1000;
-
-        const cameraToTarget = cameraPos.clone().sub(cameraTarget);
-        const radius = cameraToTarget.len();
-
-        //console.log(`cameraToTarget ${cameraToTarget.x.toFixed(4)} ${cameraToTarget.y.toFixed(4)} ${cameraToTarget.z.toFixed(4)}`);
-        
-        let theta = Math.acos(cameraToTarget.z / radius);
-        let phi = Math.atan2(cameraToTarget.y, cameraToTarget.x);
-
-        theta = clamp(theta - deltaTheta, 0, Math.PI);
-        phi -= deltaPhi;
-
-        //console.log(`theta ${theta.toFixed(4)} phi ${phi.toFixed(4)}`);
-      
-        // Turn back into Cartesian coordinates
-        const newCameraPos = new Vector3(
-          [
-            radius * Math.sin(theta) * Math.cos(phi),
-            radius * Math.sin(theta) * Math.sin(phi),
-            radius * Math.cos(theta)
-          ]
-        );
-        
-        camera.setAt(12, newCameraPos.x);
-        camera.setAt(13, newCameraPos.y);
-        camera.setAt(14, newCameraPos.z);
-
-        //console.log(`newCameraPos ${newCameraPos.x.toFixed(4)} ${newCameraPos.y.toFixed(4)} ${newCameraPos.z.toFixed(4)}`);
-        
-        camera.lookAt(newCameraPos, target, up);
-        
-        lastPos.copy(newPos);
-      }
-    }
-    
     viewInverse.copy(camera);
     view.copy(viewInverse).invert();
     viewProjection.copy(projection).mult(view);
@@ -821,7 +403,15 @@ export async function launchScene() {
     //viewProjectionInverse.rotateY(deltaTime / 2);
     //viewProjectionInverse.rotateX(deltaTime);
 
+
+
+
+    // Framebuffer
+
     WebGLFramebufferUtilities.bindFramebuffer(gl, fb);
+
+    // Framebuffer
+
     WebGLRendererUtilities.clear(gl, BufferMaskBit.COLOR_BUFFER_BIT | BufferMaskBit.DEPTH_BUFFER_BIT);
     
 
@@ -855,8 +445,7 @@ export async function launchScene() {
     WebGLPacketUtilities.drawPacket(gl, skyboxPacketSetter);
 
     
-    
-    //WebGLFramebufferUtilities.unbindFramebuffer(gl, stencilFb);
+    // Framebuffer
 
     WebGLFramebufferUtilities.blit(gl, fb, postFb,
       [0, 0, canvas.width, canvas.height],
@@ -864,26 +453,124 @@ export async function launchScene() {
       BufferMaskBit.COLOR_BUFFER_BIT,
       TextureMagFilter.LINEAR
     );
-    //WebGLFramebufferUtilities.clearColor(gl, fb, [1, 1, 1, 1]);
     
     WebGLFramebufferUtilities.unbindFramebuffer(gl);
-
-
-
-    /*WebGLFramebufferUtilities.blit(gl, postFb, null,
-      [0, 0, canvas.width, canvas.height],
-      [0, 0, canvas.width, canvas.height],
-      BufferMaskBit.COLOR_BUFFER_BIT,
-      TextureMagFilter.LINEAR
-    );*/
-    //WebGLFramebufferUtilities.clearColor(gl, postFb, [1, 1, 1, 1]);
 
     WebGLProgramUtilties.useProgram(gl, texGlProg);
     WebGLRendererUtilities.depthFunc(gl, TestFunction.LEQUAL);
     WebGLPacketUtilities.drawPacket(gl, texPacketSetter);
 
+    // Framebuffer
+
     Input.clear();
 
     frameRequest = requestAnimationFrame(render);
+  }
+
+  render(0);
+}
+
+let lastPos = new Vector2();
+function updateCamera(camera: Matrix4, target: Vector3, up: Vector3) {
+  if (Input.getMouseButtonDown(MouseButton.RIGHT)) {
+    lastPos.copy(Input.getMouseButtonPosition());
+  }
+
+  if (Input.getMouseButton(MouseButton.RIGHT)) {
+    const newPos = Input.getMouseButtonPosition();
+    
+    if (!newPos.equals(lastPos)) {
+
+      const angleX = (newPos.x - lastPos.x);
+      const angleY = (newPos.y - lastPos.y);
+
+      //console.log(eye.values);
+
+      //const euler = EulerAngles.fromMatrix(new Matrix3(camera.getUpper33()));
+
+      /*const viewVector = new Vector3([
+        Math.cos(euler.yaw) * Math.cos(euler.pitch),
+        Math.sin(euler.pitch),
+        -Math.sin(euler.yaw) * Math.cos(euler.pitch)
+      ]);
+
+      const rightVector = viewVector.clone().cross(new Vector3([0, 1, 0]));
+      const upVector = viewVector.clone().cross(rightVector);
+
+      const quaternion = new Quaternion([viewVector.x, viewVector.y, viewVector.z, 0]);*/
+
+      
+      
+      const eye = new Vector3([camera.m41, camera.m42, camera.m43]);
+      const radius = eye.clone().sub(target);
+
+      const cameraRight = new Vector3([camera.m11, camera.m12, camera.m13]).normalize();
+
+      const quat = Quaternion.fromMatrix(new Matrix3(camera.getUpper33())).normalize();
+      const xRot = new Quaternion().setFromAxisAngle(cameraRight, angleX);
+      const yRot = new Quaternion().setFromAxisAngle(Space.up, angleY);
+
+      const newQuat = yRot.clone().mult(xRot.clone().mult(quat).mult(xRot.clone().conjugate())).mult(yRot.clone().conjugate());
+      const newPosition = yRot.clone().mult(xRot.clone().mult(Quaternion.fromVector(eye)).mult(xRot.clone().conjugate())).mult(yRot.clone().conjugate()).toVector();
+
+      const newMat = newQuat.toMatrix();
+
+      camera.m41 = newPosition.x;
+      camera.m42 = newPosition.y;
+      camera.m43 = newPosition.z;
+
+      camera.m41 = newPosition.x;
+      camera.m42 = newPosition.y;
+      camera.m43 = newPosition.z;
+
+      camera.m41 = newPosition.x;
+      camera.m42 = newPosition.y;
+      camera.m43 = newPosition.z;
+
+      //camera.lookAt(newPosition, target, up);
+
+      /*const cameraRight = new Vector3([camera.m11, camera.m12, camera.m13]).normalize();
+      const cameraUp = new Vector3([camera.m21, camera.m22, camera.m23]).normalize();
+
+      const rotatedX = new Matrix4().setIdentity().rotateAxis(cameraUp, -angleX);
+      const rotatedY = new Matrix4().setIdentity().rotateAxis(cameraRight, -angleY);
+
+      camera.copy(
+        Matrix4.translation(
+          radius.clone().negate()
+        ).mult(
+          rotatedX
+        ).mult(
+          rotatedY
+        ).mult(
+          Matrix4.translation(
+            target.clone().negate()
+          )
+        )
+      );
+      
+      //camera.lookAt(viewVector, target, upVector);
+
+      /*const cameraRight = new Vector3([camera.m11, camera.m12, camera.m13]);
+      const cameraUp = new Vector3([camera.m21, camera.m22, camera.m23]);
+
+      eye.copy(
+        Vector3.mult(
+          new Matrix3(new Matrix4().setIdentity().rotateAxis(cameraUp, angleX).getUpper33()),
+          eye.clone().sub(target)
+        ).add(target)
+      );
+
+      eye.copy(
+        Vector3.mult(
+          new Matrix3(new Matrix4().setIdentity().rotateAxis(cameraRight, angleY).getUpper33()),
+          eye.clone().sub(target)
+        ).add(target)
+      );
+      
+      camera.lookAt(eye, target, up);*/
+
+      lastPos.copy(newPos);
+    }
   }
 }

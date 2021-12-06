@@ -10,5 +10,6 @@ out vec4 outColor;
 
 void main()
 {
-    outColor = texture(u_tex, v_uv);
+    vec4 tex = texture(u_tex, v_uv);
+    outColor = vec4(1.0 - tex.r, 1.0 - tex.g, 1.0 - tex.b, 1.0);
 }

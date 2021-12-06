@@ -1,5 +1,5 @@
-import { MathError } from "engine/libs/maths/MathError";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { MathError } from "../../MathError";
 
 export { Vector2Values };
 export { Vector2Injector };

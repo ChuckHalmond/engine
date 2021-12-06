@@ -1,4 +1,4 @@
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
+import { Matrix4 } from "../../../../libs/maths/algebra/matrices/Matrix4";
 import { CameraBase, Camera } from "./Camera";
 
 export class OrthographicCamera extends CameraBase {

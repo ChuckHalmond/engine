@@ -1,6 +1,6 @@
-import { Vector2 } from "engine/libs/maths/algebra/vectors/Vector2";
-import { Vector2Pool } from "engine/libs/maths/extensions/pools/Vector2Pools";
-import { clamp } from "engine/libs/maths/Snippets";
+import { Vector2 } from "../../algebra/vectors/Vector2";
+import { clamp } from "../../Snippets";
+import { Vector2Pool } from "../pools/Vector2Pools";
 
 export { Vector2List };
 export { Vector2ListBase };

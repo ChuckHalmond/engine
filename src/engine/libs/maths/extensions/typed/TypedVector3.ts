@@ -1,5 +1,5 @@
-import { Vector3, Vector3Base, Vector3Values } from "engine/libs/maths/algebra/vectors/Vector3";
-import { MathError } from "engine/libs/maths/MathError";
+import { Vector3Values, Vector3, Vector3Base } from "../../algebra/vectors/Vector3";
+import { MathError } from "../../MathError";
 
 export { TypedVector3Constructor };
 export { TypedVector3 };

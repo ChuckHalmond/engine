@@ -1,6 +1,6 @@
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { Vector3Pool } from "engine/libs/maths/extensions/pools/Vector3Pools";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { Vector3 } from "../../algebra/vectors/Vector3";
+import { Vector3Pool } from "../../extensions/pools/Vector3Pools";
 
 export { Plane };
 export { PlaneInjector };

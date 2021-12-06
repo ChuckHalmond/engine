@@ -1,4 +1,4 @@
-import { Packet, PacketBindingsProperties, PacketBindings } from "engine/core/rendering/webgl/WebGLPacketUtilities";
+import { PacketBindingsProperties, PacketBindings, Packet } from "../../webgl/WebGLPacketUtilities";
 
 export abstract class AbstractPacket {
     public abstract getPacketBindingsProperties(...args: any): PacketBindingsProperties;

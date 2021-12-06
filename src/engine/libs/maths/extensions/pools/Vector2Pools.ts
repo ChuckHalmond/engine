@@ -1,5 +1,5 @@
-import { Vector2, Vector2Base } from "engine/libs/maths/algebra/vectors/Vector2";
-import { StackPool } from "engine/libs/patterns/pools/StackPool";
+import { StackPool } from "../../../patterns/pools/StackPool";
+import { Vector2, Vector2Base } from "../../algebra/vectors/Vector2";
 
 export { Vector2Pool };
 

@@ -1,6 +1,6 @@
+import { Identifiable, UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
+import { ArraySections } from "../../../../libs/structures/arrays/ArraySection";
 import { AttributesList } from "../../webgl/WebGLAttributeUtilities";
-import { Identifiable, UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator";
-import { ArraySections } from "engine/libs/structures/arrays/ArraySection";
 
 export { VAO };
 export { VAOBase };

@@ -1,4 +1,4 @@
-import { TypedVector3 } from "engine/libs/maths/extensions/typed/TypedVector3";
+import { TypedVector3 } from "../../extensions/typed/TypedVector3";
 
 /**      
  *     y axis  

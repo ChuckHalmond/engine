@@ -1,18 +1,21 @@
 {
     "compilerOptions": {
-        "outFile": "web/dist/merged.js",
-        "outDir": "web/dist",
-        "target": "es2019",
-        "experimentalDecorators": true,
-        "module": "amd",
-        "moduleResolution": "node",
-        "sourceMap": true,
-        "strict": true,
-        //"declaration": true,
-        "rootDir": "./src",
-        "baseUrl": "./src"
+      "outDir": "./lib",
+      "target": "es2018",
+      "experimentalDecorators": true,
+      "module": "esnext",
+      "moduleResolution": "node",
+      "sourceMap": true,
+      "strict": true,
+      "declaration": true,
+      "rootDir": "./",
+      "baseUrl": "./src",
+      "skipLibCheck": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true
     },
-    "include": [
-        "./src/**/*.ts"
+    "exclude": [
+      "./lib",
+      "./node_modules"
     ]
-}
+  }

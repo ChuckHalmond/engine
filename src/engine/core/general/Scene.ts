@@ -1,5 +1,5 @@
-import { EntityDesc, Entity, EntityBase } from "engine/core/general/Entity";
-import { UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator";
+import { UUID, UUIDGenerator } from "../../libs/maths/statistics/random/UUIDGenerator";
+import { EntityDesc, Entity, EntityBase } from "./Entity";
 
 export { Scene };
 export { SceneBase };

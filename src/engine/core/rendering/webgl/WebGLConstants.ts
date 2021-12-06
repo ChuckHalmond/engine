@@ -1,6 +1,4 @@
-import { crashIfNull } from "engine/utils/Snippets";
-
-const gl = crashIfNull(document.createElement('canvas').getContext('webgl2'));
+const gl = document.createElement('canvas').getContext('webgl2')!;
 
 export { BlendingMode };
 export { BlendingEquation };

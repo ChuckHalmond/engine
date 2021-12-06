@@ -1,7 +1,7 @@
-import { ComponentDesc, Component } from "engine/core/general/Component";
-import { UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator"
-import { ComponentsRegistry } from "engine/core/general/ComponentsRegistry";
-import { TransformBase, Transform } from "engine/core/general/Transform";
+import { UUID, UUIDGenerator } from "../../libs/maths/statistics/random/UUIDGenerator";
+import { ComponentDesc, Component } from "./Component";
+import { ComponentsRegistry } from "./ComponentsRegistry";
+import { Transform } from "./Transform";
 
 export { EntityDesc };
 export { Entity };

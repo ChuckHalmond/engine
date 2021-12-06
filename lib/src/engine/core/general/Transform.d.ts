@@ -1,0 +1,74 @@
+import { Matrix4 } from "../../libs/maths/algebra/matrices/Matrix4";
+import { Quaternion } from "../../libs/maths/algebra/quaternions/Quaternion";
+import { Vector3 } from "../../libs/maths/algebra/vectors/Vector3";
+import { UUID } from "../../libs/maths/statistics/random/UUIDGenerator";
+import { Node, NodeBase } from "../../libs/structures/trees/Node";
+import { Object3D } from "../rendering/scenes/objects/Object3D";
+export { Transform };
+export { isTransform };
+export { TransformBase };
+declare function isTransform(obj: any): obj is Transform;
+interface TransformConstructor {
+    readonly prototype: Transform;
+    new (owner?: Object3D): Transform;
+}
+interface Transform extends Node<Transform> {
+    readonly isTransform: true;
+    readonly uuid: UUID;
+    readonly owner: Object3D | null;
+    localPosition: Vector3;
+    globalPosition: Vector3;
+    rotation: Quaternion;
+    localScale: Vector3;
+    localMatrix: Matrix4;
+    globalMatrix: Matrix4;
+    left: Vector3;
+    up: Vector3;
+    forward: Vector3;
+    root(): Transform;
+    translate(vec: Vector3): this;
+    scale(vec: Vector3): this;
+    rotate(quat: Quaternion): this;
+    lookAt(target: Vector3, up: Vector3): this;
+}
+declare class TransformBase extends NodeBase<TransformBase> implements Transform {
+    readonly isTransform: true;
+    readonly uuid: UUID;
+    readonly owner: Object3D | null;
+    private _localMatrixArray;
+    private _globalMatrixArray;
+    private _localMatrix;
+    private _globalMatrix;
+    private _array;
+    private _localPosition;
+    private _globalPosition;
+    private _rotation;
+    private _localScale;
+    private _up;
+    private _left;
+    private _forward;
+    private _hasChanged;
+    constructor(owner?: Object3D);
+    get localMatrix(): Matrix4;
+    get localPosition(): Vector3;
+    get globalMatrix(): Matrix4;
+    set localPosition(position: Vector3);
+    get globalPosition(): Vector3;
+    set globalPosition(position: Vector3);
+    get rotation(): Quaternion;
+    set rotation(rotation: Quaternion);
+    get localScale(): Vector3;
+    set localScale(scale: Vector3);
+    get left(): Vector3;
+    get up(): Vector3;
+    get forward(): Vector3;
+    root(): Transform;
+    get hasChanged(): boolean;
+    translate(vec: Vector3): this;
+    scale(vec: Vector3): this;
+    rotate(quat: Quaternion): this;
+    lookAt(target: Vector3, up: Vector3): this;
+    private _bottomUpRecursiveMatrixUpdate;
+    private _topDownRecursiveFlagUpdate;
+}
+declare const Transform: TransformConstructor;

@@ -1,6 +1,6 @@
-import { GeometryBase } from "engine/core/rendering/scenes/geometries/geometry";
-import { GOLDEN_RATIO as p } from "engine/libs/maths/geometry/GeometryConstants";
-import { buildArrayFromIndexedArrays } from "engine/utils/Snippets";
+import { buildArrayFromIndexedArrays } from "../../../../../../utils/Snippets";
+import { GeometryBase } from "../../Geometry";
+import { GOLDEN_RATIO as p } from "../../../../../../libs/maths/geometry/GeometryConstants";
 
 export { IcosahedronGeometry };
 

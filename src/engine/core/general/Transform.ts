@@ -1,10 +1,10 @@
-
-import { Quaternion } from "engine/libs/maths/algebra/quaternions/Quaternion";
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator";
+import { Matrix3 } from "../../libs/maths/algebra/matrices/Matrix3";
+import { Matrix4 } from "../../libs/maths/algebra/matrices/Matrix4";
+import { Quaternion } from "../../libs/maths/algebra/quaternions/Quaternion";
+import { Vector3 } from "../../libs/maths/algebra/vectors/Vector3";
+import { UUID, UUIDGenerator } from "../../libs/maths/statistics/random/UUIDGenerator";
+import { Node, NodeBase } from "../../libs/structures/trees/Node";
 import { Object3D } from "../rendering/scenes/objects/Object3D";
-import { Node, NodeBase } from "engine/libs/structures/trees/Node";
 
 export { Transform };
 export { isTransform };
@@ -94,8 +94,10 @@ class TransformBase extends NodeBase<TransformBase> implements Transform {
         );
         
         let storageIdx = 0;
+        
         this._localPosition = new Vector3().setArray(this._array.subarray(storageIdx, storageIdx += localPosLength));
         this._globalPosition = new Vector3().setArray(this._array.subarray(storageIdx, storageIdx += globalPosLength));
+
         this._rotation = new Quaternion().setArray(this._array.subarray(storageIdx, storageIdx += rotationLength));
         this._localScale = new Vector3().setArray(this._array.subarray(storageIdx, storageIdx += localScaleLength));
         this._up = new Vector3().setArray(this._array.subarray(storageIdx, storageIdx += upLength));
@@ -141,11 +143,11 @@ class TransformBase extends NodeBase<TransformBase> implements Transform {
     }
 
     public get rotation(): Quaternion {
-        return this._rotation.setFromTransformMatrix(this._localMatrix);
+        return this._rotation.setFromMatrix(new Matrix3(this._localMatrix.getUpper33()));
     }
 
     public set rotation(rotation: Quaternion) {
-        this._localMatrix.setUpper33(rotation.asMatrix33());
+        this._localMatrix.setUpper33(rotation.toMatrix().values);
 
         this._hasChanged = true;
     }
@@ -207,7 +209,7 @@ class TransformBase extends NodeBase<TransformBase> implements Transform {
     }
 
     public rotate(quat: Quaternion): this {
-        this._globalMatrix.setUpper33(quat.asMatrix33());
+        this._globalMatrix.setUpper33(quat.toMatrix().values);
         return this;
     }
 

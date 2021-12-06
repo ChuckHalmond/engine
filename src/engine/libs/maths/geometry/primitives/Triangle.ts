@@ -1,10 +1,10 @@
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
-import { Matrix4 } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { Vector2 } from "engine/libs/maths/algebra/vectors/Vector2";
+import { Injector } from "../../../patterns/injectors/Injector";
+import { StackPool } from "../../../patterns/pools/StackPool";
+import { Matrix4 } from "../../algebra/matrices/Matrix4";
+import { Vector2 } from "../../algebra/vectors/Vector2";
+import { Vector3 } from "../../algebra/vectors/Vector3";
+import { Vector3Pool } from "../../extensions/pools/Vector3Pools";
 import { Plane } from "./Plane";
-import { StackPool } from "engine/libs/patterns/pools/StackPool";
-import { Injector } from "engine/libs/patterns/injectors/Injector";
-import { Vector3Pool } from "engine/libs/maths/extensions/pools/Vector3Pools";
 
 //  p1
 //  |\

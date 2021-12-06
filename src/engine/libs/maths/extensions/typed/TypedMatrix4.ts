@@ -1,5 +1,5 @@
-import { Matrix4, Matrix4Base, Matrix4Values } from "engine/libs/maths/algebra/matrices/Matrix4";
-import { MathError } from "engine/libs/maths/MathError";
+import { Matrix4Values, Matrix4, Matrix4Base } from "../../algebra/matrices/Matrix4";
+import { MathError } from "../../MathError";
 
 export { TypedMatrix4Constructor };
 export { TypedMatrix4 };

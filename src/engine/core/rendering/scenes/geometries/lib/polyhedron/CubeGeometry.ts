@@ -1,5 +1,6 @@
-import { GeometryBase } from "engine/core/rendering/scenes/geometries/geometry";
-import { buildArrayFromIndexedArrays } from "engine/utils/Snippets";
+import { buildArrayFromIndexedArrays } from "../../../../../../utils/Snippets";
+import { GeometryBase } from "../../Geometry";
+
 
 export { CubeGeometry };
 

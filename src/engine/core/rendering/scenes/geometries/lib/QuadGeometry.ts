@@ -1,5 +1,5 @@
+import { buildArrayFromIndexedArrays } from "../../../../../utils/Snippets";
 import { GeometryBase } from "../geometry";
-import { buildArrayFromIndexedArrays } from "engine/utils/Snippets";
 
 export { QuadGeometry };
 

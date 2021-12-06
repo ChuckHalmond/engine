@@ -1,7 +1,7 @@
-import { Light, isLight } from "engine/core/rendering/scenes/objects/lights/Light";
-import { isMesh, Mesh } from "engine/core/rendering/scenes/objects/meshes/Mesh";
-import { TransformBase, Transform } from "engine/core/general/Transform";
+import { Transform, TransformBase } from "../../general/Transform";
+import { Light, isLight } from "./objects/lights/Light";
 import { CompositeMesh } from "./objects/meshes/CompositeMesh";
+import { Mesh, isMesh } from "./objects/meshes/Mesh";
 
 export { Scene };
 export { BaseScene };

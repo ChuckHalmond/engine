@@ -1,4 +1,4 @@
-import { Flags } from "engine/libs/patterns/flags/Flags";
+import { Flags } from "../Flags";
 
 export { Options };
 export { AdvancedOptionsBase };

@@ -1,6 +1,7 @@
-import { Color } from "engine/libs/graphics/colors/Color";
-import { Object3D, Object3DBase } from "engine/core/rendering/scenes/objects/Object3D";
+
+import { Color } from "../../../../../libs/graphics/colors/Color";
 import { Mesh } from "../meshes/Mesh";
+import { Object3D, Object3DBase } from "../Object3D";
 
 export { LightProperties };
 export { Light };

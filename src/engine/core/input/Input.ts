@@ -1,4 +1,4 @@
-import { Vector2 } from "engine/libs/maths/algebra/vectors/Vector2";
+import { Vector2 } from "../../libs/maths/algebra/vectors/Vector2";
 
 export { Key };
 export { KeyModifier };
@@ -187,7 +187,7 @@ class Input {
         });
 
         element.addEventListener('pointermove', (event: MouseEvent) => {
-            this.mousePos.setValues([(event.offsetX / element.clientWidth) - 0.5, (event.offsetY / element.clientHeight) - 0.5]);
+            this.mousePos.setValues([(event.clientX / element.clientWidth) - 0.5, (event.clientY / element.clientHeight) - 0.5]);
         });
 
         element.addEventListener('wheel', (event: WheelEvent) => {

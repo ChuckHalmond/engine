@@ -1,13 +1,13 @@
-import { Scene } from "engine/core/general/Scene";
-import { Camera } from "engine/core/rendering/scenes/cameras/Camera";
-import { Packet, PacketBindings, PacketBindingsProperties } from "engine/core/rendering/webgl/WebGLPacketUtilities";
 import { AbstractPacket } from "../Packet";
-import { PhongUBO } from "engine/core/rendering/shaders/ubos/lib/PhongUBO";
-import { PhongVAO } from "engine/core/rendering/shaders/vaos/lib/PhongVAO";
 import { TextureReference } from "../../textures/TextureReference";
 import { WorldViewUBO } from "../../ubos/lib/WorldViewUBO";
 import { LightsUBO } from "../../ubos/lib/LightsUBO";
-import { PhongMesh } from "engine/core/rendering/scenes/objects/meshes/PhongMesh";
+import { Camera } from "../../../scenes/cameras/Camera";
+import { PhongMesh } from "../../../scenes/objects/meshes/PhongMesh";
+import { Scene } from "../../../scenes/Scene";
+import { PacketBindingsProperties, PacketBindings, Packet } from "../../../webgl/WebGLPacketUtilities";
+import { PhongUBO } from "../../ubos/lib/PhongUBO";
+import { PhongVAO } from "../../vaos/lib/PhongVAO";
 
 export type MeshPhongPacketReferences = {
   mesh: PhongMesh;
@@ -49,11 +49,11 @@ export class MeshPhongPacket extends AbstractPacket {
     this.lightsUBO = LightsUBO.getInstance({scene: scene});
     
     if (material.albedoMap) {
-      this.textures.albedoMap = TextureReference.getInstance(material.albedoMap);
+      //this.textures.albedoMap = TextureReference.getInstance(material.albedoMap);
     }
 
     if (material.normalMap) {
-      this.textures.normalMap = TextureReference.getInstance(material.normalMap);
+      //this.textures.normalMap = TextureReference.getInstance(material.normalMap);
     }
   }
   

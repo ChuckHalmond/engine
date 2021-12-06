@@ -1,4 +1,4 @@
-import { UUID, UUIDGenerator } from "engine/libs/maths/statistics/random/UUIDGenerator";
+import { UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
 
 export { Material };
 export { isMaterial };

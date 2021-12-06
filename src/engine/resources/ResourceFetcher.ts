@@ -1,4 +1,5 @@
-import { RessourceError } from "engine/resources/ResourceError";
+import { RessourceError } from "./ResourceError";
+
 
 export { ResourceFetcher };
 
