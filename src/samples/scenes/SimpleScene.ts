@@ -464,7 +464,7 @@ export async function launchScene() {
 
     Input.clear();
 
-    frameRequest = requestAnimationFrame(render);
+    //frameRequest = requestAnimationFrame(render);
   }
 
   render(0);
@@ -501,31 +501,24 @@ function updateCamera(camera: Matrix4, target: Vector3, up: Vector3) {
 
       
       
-      const eye = new Vector3([camera.m41, camera.m42, camera.m43]);
+      /*const eye = new Vector3([camera.m41, camera.m42, camera.m43]);
       const radius = eye.clone().sub(target);
 
       const cameraRight = new Vector3([camera.m11, camera.m12, camera.m13]).normalize();
 
       const quat = Quaternion.fromMatrix(new Matrix3(camera.getUpper33())).normalize();
-      const xRot = new Quaternion().setFromAxisAngle(cameraRight, angleX);
-      const yRot = new Quaternion().setFromAxisAngle(Space.up, angleY);
+      //const xRot = new Quaternion().setFromAxisAngle(cameraRight, angleX);
+      //const yRot = new Quaternion().setFromAxisAngle(Space.up, angleY);
 
-      const newQuat = yRot.clone().mult(xRot.clone().mult(quat).mult(xRot.clone().conjugate())).mult(yRot.clone().conjugate());
-      const newPosition = yRot.clone().mult(xRot.clone().mult(Quaternion.fromVector(eye)).mult(xRot.clone().conjugate())).mult(yRot.clone().conjugate()).toVector();
+      //const newQuat = yRot.clone().mult(xRot.clone().mult(quat).mult(xRot.clone().conjugate())).mult(yRot.clone().conjugate());
+      //const newPosition = yRot.clone().mult(xRot.clone().mult(Quaternion.fromVector(eye)).mult(xRot.clone().conjugate())).mult(yRot.clone().conjugate()).toVector();
 
-      const newMat = newQuat.toMatrix();
+      const newMat = quat.toMatrix();
 
-      camera.m41 = newPosition.x;
-      camera.m42 = newPosition.y;
-      camera.m43 = newPosition.z;
-
-      camera.m41 = newPosition.x;
-      camera.m42 = newPosition.y;
-      camera.m43 = newPosition.z;
-
-      camera.m41 = newPosition.x;
-      camera.m42 = newPosition.y;
-      camera.m43 = newPosition.z;
+      camera.m41 = eye.x;
+      camera.m42 = eye.y;
+      camera.m43 = eye.z;
+      camera.setUpper33(newMat.values);*/
 
       //camera.lookAt(newPosition, target, up);
 
