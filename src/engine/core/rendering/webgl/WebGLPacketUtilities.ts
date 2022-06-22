@@ -1,77 +1,92 @@
-import { AttributesList, AttributesSettersList, WebGLAttributeUtilities } from "./WebGLAttributeUtilities"
-import { Texture, TextureProperties, TexturesUnitsContext, WebGLTextureUtilities } from "./WebGLTextureUtilities"
-import { UniformBlock, UniformBlockProperties, UniformBlocksBindingsContext, UniformBlockSetter, WebGLUniformBlockUtilities } from "./WebGLUniformBlockUtilities"
-import { UniformsList, UniformsSettersList, WebGLUniformUtilities } from "./WebGLUniformUtilities"
-import { DrawMode } from "./WebGLConstants"
-import { WebGLDrawUtilities } from "./WebGLDrawUtilities"
+import { VertexArray, VertexArrayValues, VertexArrayProperties, WebGLVertexArrayUtilities, DrawMode } from "./WebGLVertexArrayUtilities"
+import { Texture, TextureParameters, TextureProperties, WebGLTextureUtilities } from "./WebGLTextureUtilities"
+import { UniformBlock, UniformBuffer, UniformBufferProperties, WebGLUniformBlockUtilities } from "./WebGLUniformBlockUtilities"
+import { UniformsList, UniformsListSetter, WebGLUniformUtilities } from "./WebGLUniformUtilities"
+import { Program } from "./WebGLProgramUtilities"
 
-export { Packet };
-export { PacketBindingsProperties };
-export { PacketBindings };
-export { PacketOptions };
-export { PacketSetter };
-export { WebGLPacketUtilities };
-
-type Packet = {
-    attributes?: AttributesList;
+export type PacketProperties = {
+    vertexArray?: VertexArrayProperties;
     uniforms?: UniformsList;
-    uniformBlocks?: List<{
+    textures?: {
+        texture: Texture;
+        props?: TextureProperties;
+        params?: TextureParameters;
+    }[];
+    uniformBlocks?: {
         block: UniformBlock;
-        list: UniformsList;
-    }>,
-    options?: PacketOptions
+        buffer?: UniformBuffer | UniformBufferProperties;
+        uniforms?: UniformsList;
+    }[];
+    options?: {
+        drawMode?: DrawMode;
+        instanceCount?: number;
+    };
 }
 
-type PacketBindingsProperties = {
-    texturesProps?: List<TextureProperties>;
-    blocksProps?: List<UniformBlockProperties>;
-    texturesCtx?: TexturesUnitsContext;
-    blocksCtx?: UniformBlocksBindingsContext;
+export type PacketValues = {
+    vertexArray?: VertexArrayValues;
+    uniforms?: UniformsList;
+    textures?: {
+        texture: Texture;
+        props?: TextureProperties;
+        params?: TextureParameters;
+    }[];
+    uniformBlocks?: {
+        block: UniformBlock;
+        buffer: UniformBuffer;
+        uniforms: UniformsList;
+    }[];
 }
 
-type PacketBindings = {
-    textures: List<Texture>;
-    blocks: List<UniformBlock>;
-    texturesCtx?: TexturesUnitsContext;
-    blocksCtx?: UniformBlocksBindingsContext;
+export type PacketBindingsProperties = {
+    program: Program;
+    textures?: {
+        [name: string]: TextureProperties & TextureParameters;
+    };
+    uniformBlocks?: string[];
 }
 
-type PacketOptions = {
-    drawMode?: DrawMode;
-    instanced?: boolean;
+export type PacketBindings = {
+    textures: {
+        [name: string]: Texture;
+    };
+    uniformBlocks: {
+        [name: string]: UniformBlock;
+    };
+}
+
+export type Packet = {
+    vertexArray?: VertexArray;
+    uniformsSetter?: UniformsListSetter;
+    uniformBlocks?: {
+        [name: string]: {
+            block: UniformBlock;
+            buffer: UniformBuffer;
+        }
+    };
+    bindings?: PacketBindings;
+    drawMode: DrawMode;
     instanceCount?: number;
 }
 
-type PacketSetter = {
-    attributesSetter?: AttributesSettersList;
-    uniformsSetter?: UniformsSettersList;
-    uniformBlockSetters?: List<UniformBlockSetter>;
-    drawMode: DrawMode;
-    instanced: boolean;
-    instanceCount: number;
-}
-
-class WebGLPacketUtilities {
+export class WebGLPacketUtilities {
 
     private constructor() {}
 
-    public static createPacketBindings(gl: WebGL2RenderingContext, props: PacketBindingsProperties): PacketBindings | null {
-        const textures: List<Texture> = {};
-        const blocks: List<UniformBlock> = {};
+    public static createBindings(gl: WebGL2RenderingContext, props: PacketBindingsProperties): PacketBindings | null {
+        const textures: {
+            [key: string]: Texture
+        } = {};
+        const uniformBlocks: {
+            [key: string]: UniformBlock
+        } = {};
 
-        const texturesCtx = props.texturesCtx || WebGLTextureUtilities.createBindingsContext(gl);
-        const blocksCtx = props.blocksCtx || WebGLUniformBlockUtilities.createBindingsContext(gl);
-
-        const texturesProps = props.texturesProps;
-        const blocksProps = props.blocksProps;
+        const texturesInfo = props.textures;
+        const uniformBlocksInfo = props.uniformBlocks;
         
-        if (typeof texturesProps !== "undefined") {
-            Object.keys(texturesProps).forEach((textureName) => {
-                const textureProps = texturesProps[textureName];
-                const texture = WebGLTextureUtilities.createTexture(
-                    gl, texturesCtx, 
-                    textureProps
-                );
+        if (typeof texturesInfo !== "undefined") {
+            Object.entries(texturesInfo).forEach(([textureName, textureInfo]) => {
+                const texture = WebGLTextureUtilities.createTexture(gl, textureInfo);
                 if (texture == null) {
                     return null;
                 }
@@ -79,159 +94,146 @@ class WebGLPacketUtilities {
             });
         }
 
-        if (typeof blocksProps !== "undefined") {
-            Object.keys(blocksProps).forEach((blockName) => {
-                const blockProp = blocksProps[blockName];
-                const block = WebGLUniformBlockUtilities.createUniformBlock(
-                    gl, blocksCtx, 
-                    blockProp.name
+        if (typeof uniformBlocksInfo !== "undefined") {
+            uniformBlocksInfo.forEach((blockName) => {
+                const uniformBlock = WebGLUniformBlockUtilities.createUniformBlock(
+                    gl, props.program, blockName
                 );
-                if (block == null) {
+                if (uniformBlock == null) {
                     return null;
                 }
-                blocks[blockName] = block;
+                uniformBlocks[blockName] = uniformBlock;
             });
         }
 
         return {
             textures: textures,
-            blocks: blocks,
-            texturesCtx: texturesCtx,
-            blocksCtx: blocksCtx
+            uniformBlocks: uniformBlocks
         };
     }
 
-    public static getPacketSetter(gl: WebGL2RenderingContext, glProg: WebGLProgram, packet: Packet): PacketSetter | null {
-        const attributes = packet.attributes;
-        const uniforms = packet.uniforms;
-        const uniformBlocks = packet.uniformBlocks;
+    public static createPacket(gl: WebGL2RenderingContext, program: Program, packet: PacketProperties): Packet | null {
+        const drawMode = packet.options?.drawMode || DrawMode.TRIANGLES;
+        const instanceCount = packet.options?.instanceCount;
 
-        const props = packet.options;
-        const drawMode = (typeof props === "undefined" || typeof props.drawMode === "undefined") ? DrawMode.TRIANGLES : props.drawMode;
-        const instanced = (typeof props === "undefined" || typeof props.instanced === "undefined") ? false : props.instanced;
-        const instanceCount = (typeof props === "undefined" || typeof props.instanceCount === "undefined") ? 0 : props.instanceCount;
-
-        let attributesSetter: AttributesSettersList | null | undefined = void 0;
-        if (typeof attributes !== "undefined") {
-            attributesSetter = WebGLAttributeUtilities.getAttributesListSetter(gl, glProg, attributes);
-            if (attributesSetter == null) {
+        let vertexArray: VertexArray | null | undefined = void 0;
+        if (typeof packet.vertexArray !== "undefined") {
+            vertexArray = WebGLVertexArrayUtilities.createVertexArray(gl, program, packet.vertexArray);
+            if (vertexArray == null) {
                 return null;
             }
         }
-
-        let uniformBlockSetters: List<UniformBlockSetter> | undefined = void 0;
-        if (typeof uniformBlocks !== "undefined") {
-            uniformBlockSetters = {};
-            Object.keys(uniformBlocks).forEach((blockName) => {
-                const uniformBlock = uniformBlocks[blockName];
-                const uniformBlockSetter = WebGLUniformBlockUtilities.getUniformBlockSetter(gl, glProg, uniformBlock.block);
-                if (uniformBlockSetter == null) {
-                    return null;
-                }
-                uniformBlockSetters![blockName] = uniformBlockSetter;
-            });
-        }
       
-        let uniformsSetter: UniformsSettersList | undefined = void 0;
-        if (typeof uniforms !== "undefined") {
-            uniformsSetter = WebGLUniformUtilities.getUniformsListSetter(gl, glProg, uniforms);
+        let uniformsSetter: UniformsListSetter | null | undefined = void 0;
+        if (typeof packet.uniforms !== "undefined") {
+            uniformsSetter = WebGLUniformUtilities.getUniformsListSetter(gl, program, packet.uniforms);
             if (uniformsSetter == null) {
                 return null;
             }
+            WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, packet.uniforms);
+        }
+
+        let uniformBlocks: {
+            [name: string]: {
+                block: UniformBlock;
+                buffer: UniformBuffer;
+            }
+        } | null | undefined = void 0;
+
+        if (typeof packet.uniformBlocks !== "undefined") {
+            uniformBlocks = {};
+            packet.uniformBlocks.forEach((uniformBlock) => {
+                const block = uniformBlock.block;
+                let buffer: UniformBuffer | null = null;
+                if (typeof uniformBlock.buffer === "undefined") {
+                    buffer = WebGLUniformBlockUtilities.createUniformBuffer(gl, program, block.name);
+                }
+                else if (!("internal" in uniformBlock.buffer)) {
+                    const bufferProps = uniformBlock.buffer;
+                    buffer = WebGLUniformBlockUtilities.createUniformBuffer(gl, program, block.name,
+                        bufferProps.usage, bufferProps.byteLength, bufferProps.rangeOffset, bufferProps.rangeSize
+                    );
+                }
+                else {
+                    buffer = uniformBlock.buffer;
+                }
+                if (buffer === null) {
+                    return null;
+                }
+                if (typeof uniformBlock.uniforms !== "undefined") {
+                    WebGLUniformBlockUtilities.setUniformBufferValues(gl, block.layout, buffer, uniformBlock.uniforms);
+                }
+                WebGLUniformBlockUtilities.bindUniformBuffer(gl, block, buffer);
+                uniformBlocks![block.name] = {
+                    block: block,
+                    buffer: buffer
+                };
+            });
+        }
+
+        if (typeof packet.textures !== "undefined") {
+            packet.textures.forEach((texture) => {
+                if (typeof texture.props !== "undefined") {
+                    WebGLTextureUtilities.setTextureProperties(gl, texture.texture, texture.props);
+                }
+                if (typeof texture.params !== "undefined") {
+                    WebGLTextureUtilities.setTextureParameters(gl, texture.texture, texture.params);
+                }
+            });
         }
 
         return {
-            attributesSetter: attributesSetter,
+            vertexArray: vertexArray,
             uniformsSetter: uniformsSetter,
-            uniformBlockSetters: uniformBlockSetters,
+            uniformBlocks: uniformBlocks,
             drawMode: drawMode,
-            instanced: instanced,
             instanceCount: instanceCount
         };
     }
 
-    public static setPacketValues(gl: WebGL2RenderingContext, setter: PacketSetter, packet: Packet): void {
-        const attributes = packet.attributes;
-        const uniforms = packet.uniforms;
-        const uniformBlocks = packet.uniformBlocks;
+    public static setPacketValues(gl: WebGL2RenderingContext, packet: Packet, values: PacketValues): void {
 
-        const attributeSetter = setter.attributesSetter;
-        const uniformsSetter = setter.uniformsSetter;
-        const uniformBlockSetters = setter.uniformBlockSetters;
-
-        if (typeof attributes !== "undefined" && attributeSetter) {
-            WebGLAttributeUtilities.setAttributesListValues(gl, attributeSetter, attributes);
+        if (typeof values.vertexArray !== "undefined" && typeof packet.vertexArray !== "undefined") {
+            WebGLVertexArrayUtilities.setVertexArrayValues(gl, packet.vertexArray, values.vertexArray);
         }
 
-        if (typeof uniforms !== "undefined" && uniformsSetter) {
-            WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, uniforms);
+        if (typeof values.uniforms !== "undefined" && typeof packet.uniformsSetter !== "undefined") {
+            WebGLUniformUtilities.setUniformsListValues(gl, packet.uniformsSetter, values.uniforms);
         }
 
-        if (typeof uniformBlocks !== "undefined") {
-            if (typeof uniformBlockSetters !== "undefined") {
-                Object.keys(uniformBlocks).forEach((blockName) => {
-                    const uniformBlockSetter = uniformBlockSetters[blockName];
-                    const uniformBlock = uniformBlocks[blockName];
-                    if (uniformBlockSetter) {
-                        WebGLUniformBlockUtilities.setUniformBlockValues(gl, uniformBlockSetter, uniformBlock.list);
-                    }
-                });
-            }
+        if (typeof values.uniformBlocks !== "undefined") {
+            values.uniformBlocks.forEach((uniformBlock) => {
+                WebGLUniformBlockUtilities.setUniformBufferValues(gl, uniformBlock.block.layout, uniformBlock.buffer, uniformBlock.uniforms);
+            });
+        }
+
+        if (typeof values.textures !== "undefined") {
+            values.textures.forEach((texture) => {
+                if (typeof texture.props !== "undefined") {
+                    WebGLTextureUtilities.setTextureProperties(gl, texture.texture, texture.props);
+                }
+                if (typeof texture.params !== "undefined") {
+                    WebGLTextureUtilities.setTextureParameters(gl, texture.texture, texture.params);
+                }
+            });
         }
     }
 
-    public static drawPacket(gl: WebGL2RenderingContext, setter: PacketSetter): void {
-        const attributeSetter = setter.attributesSetter;
+    public static drawPacket(gl: WebGL2RenderingContext, packet: Packet): void {
+        const vertexArray = packet.vertexArray;
+        const uniformBlocks = packet.uniformBlocks;
 
-        if (typeof attributeSetter !== "undefined") {
+        if (typeof uniformBlocks !== "undefined") {
+            Object.values(uniformBlocks).forEach((uniformBlock) => {
+                WebGLUniformBlockUtilities.bindUniformBuffer(gl, uniformBlock.block, uniformBlock.buffer);
+            });
+        }
 
-            WebGLAttributeUtilities.bindAttributesList(gl, attributeSetter);
-            
-            if (attributeSetter.hasIndices) {
-                if (setter.instanced) {
-                    WebGLDrawUtilities.drawElementsInstanced(
-                        gl,
-                        setter.drawMode,
-                        attributeSetter.indexType,
-                        attributeSetter.numElements,
-                        0,
-                        setter.instanceCount
-                    );
-                }
-                else {
-                    WebGLDrawUtilities.drawElements(
-                        gl,
-                        setter.drawMode,
-                        attributeSetter.indexType,
-                        attributeSetter.numElements,
-                        0
-                    );
-                }
-            }
-            else {
-                if (setter.instanced) {
-                    WebGLDrawUtilities.drawArraysInstanced(
-                        gl,
-                        setter.drawMode,
-                        0,
-                        attributeSetter.numElements,
-                        setter.instanceCount
-                    );
-                }
-                else {
-                    WebGLDrawUtilities.drawArrays(
-                        gl,
-                        setter.drawMode,
-                        0,
-                        attributeSetter.numElements
-                    );
-                }
-            }
-
-            WebGLAttributeUtilities.unbindAttributesList(gl);
+        if (typeof vertexArray !== "undefined") {
+            WebGLVertexArrayUtilities.drawVertexArray(gl, vertexArray, packet.drawMode, packet.instanceCount);
         }
         else {
-            console.error(`No attributes to draw.`);
+            console.error("No vertex array to draw.");
         }
     }
 }

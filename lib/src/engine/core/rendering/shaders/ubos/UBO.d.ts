@@ -11,8 +11,16 @@ interface UBO<L extends UniformsList = UniformsList> {
     getUniformValues(): L;
     getDeltaUniformValues(): Partial<L> | null;
 }
-declare type UBOCtor<U extends UBOBase, R extends List<Identifiable> = List<Identifiable>> = new (references: R) => U;
-declare abstract class UBOBase<R extends List<Identifiable> = List<Identifiable>, L extends UniformsList = UniformsList> implements UBO<L> {
+declare type UBOCtor<U extends UBOBase, R extends {
+    [key: string]: Identifiable;
+} = {
+    [key: string]: Identifiable;
+}> = new (references: R) => U;
+declare abstract class UBOBase<R extends {
+    [key: string]: Identifiable;
+} = {
+    [key: string]: Identifiable;
+}, L extends UniformsList = UniformsList> implements UBO<L> {
     readonly name: string;
     readonly uuid: UUID;
     protected _references: R;
@@ -24,6 +32,10 @@ declare abstract class UBOBase<R extends List<Identifiable> = List<Identifiable>
     abstract unsubscribeReferences(): void;
     abstract getUniformValues(): L;
     abstract getDeltaUniformValues(): Partial<L> | null;
-    protected static getReferencesHash<R extends List<Identifiable>>(references: R): string;
-    protected static getConcreteInstance<U extends UBOBase, R extends List<Identifiable>>(ctor: UBOCtor<U, R>, references: R): U;
+    protected static getReferencesHash<R extends {
+        [key: string]: Identifiable;
+    }>(references: R): string;
+    protected static getConcreteInstance<U extends UBOBase, R extends {
+        [key: string]: Identifiable;
+    }>(ctor: UBOCtor<U, R>, references: R): U;
 }

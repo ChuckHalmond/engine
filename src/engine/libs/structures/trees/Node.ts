@@ -1,26 +1,34 @@
 export { Node };
 export { NodeBase };
 
-interface Node<N extends Node<any>> {
-    parent: N | null;
-    readonly children: N[];
-    traverse(func: (node: N, parent: N | null) => any): void;
+interface Node {
+    parent: Node | null;
+    readonly children: Node[];
+    removeChild(child: Node): void;
+    root(): Node | null;
 }
 
-abstract class NodeBase<N extends NodeBase<any>> implements Node<N> {
-    protected _parent: N | null;
-    protected _children: N[];
+abstract class NodeBase implements Node {
+    protected _parent: Node | null;
+    protected _children: Node[];
 
     constructor()
-    constructor(parent: N)
-    constructor(parent?: N) {
-        this._parent = null;
+    constructor(parent: Node)
+    constructor(parent?: Node) {
+        this._parent = parent || null;
         this._children = [];
     }
 
-    public set parent(parent: N | null) {
+    public root(): Node | null {
+        if (this._parent !== null) {
+            return this._parent.parent;
+        }
+        return this;
+    }
+
+    public set parent(parent: Node | null) {
         if (this._parent != null) {
-            this._parent._removeChild(this);
+            this._parent.removeChild(this);
         }
         if (parent != null) {
             this._parent = parent;
@@ -28,28 +36,21 @@ abstract class NodeBase<N extends NodeBase<any>> implements Node<N> {
         }
     }
 
-    public get parent(): N | null {
+    public get parent(): Node | null {
         return this._parent;
     }
 
-    public get children(): N[] {
+    public get children(): Node[] {
         return this._children;
     }
 
-    protected _removeChild(child: N) {
+    public removeChild(child: Node): void {
         const childIdx = this._children.indexOf(child);
         if (childIdx > -1) {
             const last = this._children.pop();
             if (last !== undefined) {
                 this._children[childIdx] = last;
             }
-        }
-    }
-    
-    public traverse(func: (node: N, parent: N | null) => any) {
-        func(this as unknown as N, this.parent);
-        for (const child of this._children) {
-            child.traverse(func);
         }
     }
 }

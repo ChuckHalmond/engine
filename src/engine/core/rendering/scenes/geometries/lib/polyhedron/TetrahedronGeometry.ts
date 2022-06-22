@@ -1,6 +1,6 @@
 import { buildArrayFromIndexedArrays } from "../../../../../../utils/Snippets";
 import { GeometryBase } from "../../Geometry";
-
+/*
 export { TetrahedronGeometry };
 
 class TetrahedronGeometry extends GeometryBase {
@@ -13,7 +13,7 @@ class TetrahedronGeometry extends GeometryBase {
 		})
 	}
 }
-
+*/
 /**
  *          v0
  *         / \

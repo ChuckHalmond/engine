@@ -1,5 +1,5 @@
 import { Node } from "./Node";
-
+/*
 export { Tree };
 export { BaseTree };
 
@@ -18,4 +18,4 @@ class BaseTree<N extends Node<any>> {
     public traverse(func: (...args: any) => any): void {
         this.root.traverse(func);
     }
-}
+}*/

@@ -1,105 +1,87 @@
+import { Matrix3 } from "../../../../../libs/maths/algebra/matrices/Matrix3";
+import { Space } from "../../../../../libs/maths/geometry/space/Space";
 import { buildArrayFromIndexedArrays } from "../../../../../utils/Snippets";
 import { GeometryBase } from "../geometry";
+import { GeometryBuilder } from "../GeometryBuilder";
 
 export { QuadGeometry };
 
 class QuadGeometry extends GeometryBase {
+	width: number;
+	height: number;
+	widthSegment: number;
+	heightSegment: number;
 
-	constructor() {
-		super({
-			vertices: new Float32Array(quadVertices),
-			uvs: new Float32Array(quadUVS),
-			indices: new Uint8Array(quadIndices)
-		});
+	constructor(properties?: {width?: number, height?: number, widthSegment?: number, heightSegment?: number}) {
+		super();
+		this.width = properties?.width ?? 2;
+		this.height = properties?.height ?? 2;
+		this.widthSegment = properties?.widthSegment ?? 1;
+		this.heightSegment = properties?.heightSegment ?? 1;
 	}
+	
+	public toBuilder(): GeometryBuilder {
+		const builder = new class extends GeometryBuilder {
+			public tangentsArray(): Float32Array {
+				console.log("tangents");
+				return new Float32Array([0, 1, 0]);
+			}
+		
+			public verticesNormalsArray(): Float32Array {
+				console.log("verticesNormalsArray");
+				return new Float32Array([0, 0, 1]);
+			}
+		};
+		const vertices = builder.vertices;
+		const {heightSegment, widthSegment, width, height} = this;
+		
+		const segmentVertexWidth = width / widthSegment;
+		const segmentVertexHeight = height / heightSegment;
+		const segmentUvWidth = 1 / widthSegment;
+		const segmentUvHeight = 1 / heightSegment;
+		const vertexOrigin = [-(this.width / 2), -(this.height / 2)];
+		const uvOrigin = [0, 0];
+		const vertexPosition = [...vertexOrigin];
+		const uvPosition = [...uvOrigin];
+		const uvs = [];
+		
+		for (let hi = 0; hi <= heightSegment; hi++) {
+			builder.addVertex([vertexPosition[0], vertexPosition[1], 0]);
+			uvs.push([uvPosition[0], uvPosition[1]]);
+			vertexPosition[1] += segmentVertexHeight;
+			uvPosition[1] += segmentUvHeight;
+		}
+		vertexPosition[1] = vertexOrigin[1];
 
+		for (let wi = 0; wi < widthSegment; wi++) {
+			vertexPosition[1] = vertexOrigin[1];
+			uvPosition[1] = uvOrigin[1];
+
+			builder.addVertex([vertexPosition[0] + segmentVertexWidth, vertexPosition[1], 0]);
+			uvs.push([uvPosition[0] + segmentUvWidth, uvPosition[1]]);
+			for (let hi = 0; hi < heightSegment; hi++) {
+				const verticesCount = vertices.length;
+				builder.addVertex([vertexPosition[0] + segmentVertexWidth, vertexPosition[1] + segmentVertexHeight, 0]);
+				uvs.push([uvPosition[0] + segmentUvWidth, uvPosition[1] + segmentUvHeight]);
+				builder.addQuadFace(
+					vertices[verticesCount - (heightSegment + 1)],
+					vertices[verticesCount - (heightSegment + 1) - 1],
+					vertices[verticesCount - 1],
+					vertices[verticesCount], {
+						uv: [
+							uvs[verticesCount - (heightSegment + 1)],
+							uvs[verticesCount - (heightSegment + 1) - 1],
+							uvs[verticesCount - 1],
+							uvs[verticesCount]
+						]
+					}
+				);
+				vertexPosition[1] += segmentVertexHeight;
+				uvPosition[1] += segmentUvHeight;
+			}
+			vertexPosition[0] += segmentVertexWidth;
+			uvPosition[0] += segmentUvWidth;
+		}
+		return builder;
+	}
 }
-
-/**      
- *     y axis  
- * 	      ^   z axis
- *     UP |   ^  FORWARD
- *        | /
- *        +------> x axis
- *         RIGHT
- * 
- *  left-handed coordinates system
- *  
- */
-
- /**      
- *      v0       v1
- * 		+_______+      o   ^ 
- * 	    \      /\     /     \
- *       \   /   \    \     / 
- *        \/      \    \ _ /
- *        +--------+
- *       v2         v3
- * 
- *  counter-clockwise winding order:
- * 		v0 -> v2 -> v1
- * 		v1 -> v2 -> v3
- */
-/**
- *     v0_______v1
- *     |\        |
- *     |  \   f1 |
- *     |    \    |
- *     |  f0  \  |
- *    v2_______\v3
- *  
- * v0 = [-1, +1, -1]
- * v1 = [+1, +1, -1]
- * v2 = [-1, +1, +1]
- * v3 = [+1, +1, +1]
- */
-/**
- * 	texture mappings
- * 
- *           
- *    uv0_____uv1
- *    | \       |
- *    |   \     |
- *    |     \   |
- *    |       \ |
- *    uv2_____uv3
- *        
- * 
- * uv0 = [0,0]
- * uv1 = [1,0]
- * uv2 = [0,1]
- * uv3 = [1,1]
- */
-
-const quadVerticesSet = [
-	[-1, +1, 1], // v0
-	[+1, +1, 1], // v1
-	[-1, -1, 1], // v2
-	[+1, -1, 1], // v3
-];
-
-const quadUVsSet = [
-	[0, 0],
-	[1, 0],
-	[0, 1],
-	[1, 1]
-];
-
-const quadVertices = buildArrayFromIndexedArrays(
-	quadVerticesSet,
-	[
-		0, 2, 3, 1, //  f0  f1
-	]
-);
-
-const quadUVS = buildArrayFromIndexedArrays(
-	quadUVsSet,
-	[
-		0, 2, 3, 1, //  f0  f1
-	]
-);
-
-const quadIndices = [
-	0, 1, 2, //  f0
-	0, 2, 3, //  f1
-];

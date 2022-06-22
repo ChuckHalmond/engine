@@ -22,6 +22,6 @@ class SkinnedMeshBase extends MeshBase implements SkinnedMesh {
         this.bonesIndices = new Uint16Array(0);
         this.bonesWeights = new Uint8Array(0);
         this.hipsJoint = new JointBase();
-        this.hipsJoint.transform.parent = this.transform;
+        //this.hipsJoint.transform.parent = this.transform;
     }
 }

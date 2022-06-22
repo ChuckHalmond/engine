@@ -1,14 +1,15 @@
 import { UUID } from "../../libs/maths/statistics/random/UUIDGenerator";
-import { EntityDesc, Entity } from "./Entity";
+import { Entity, EntityDescription } from "./Entity";
+export { SceneDescription };
 export { Scene };
 export { SceneBase };
-declare type SceneDesc = {
-    [key: string]: EntityDesc;
+declare type SceneDescription = {
+    [key: string]: EntityDescription;
 };
 interface Scene {
     readonly uuid: UUID;
     readonly root: Entity;
-    build(desc: SceneDesc): void;
+    build(desc: SceneDescription): void;
 }
 interface SceneConstructor {
     readonly prototype: Scene;
@@ -18,7 +19,7 @@ declare class SceneBase implements Scene {
     readonly root: Entity;
     readonly uuid: UUID;
     constructor();
-    private parseEntityRecursive;
-    build(desc: SceneDesc, root?: Entity): void;
+    private _buildEntityRecursive;
+    build(desc: SceneDescription, root?: Entity): void;
 }
 declare const Scene: SceneConstructor;

@@ -44,11 +44,11 @@ declare enum KeyModifier {
     Shift = "Shift"
 }
 declare enum MouseButton {
-    LEFT = 1,
-    WHEEL = 2,
-    RIGHT = 3,
-    FORWARD = 4,
-    BACK = 5
+    LEFT = 0,
+    WHEEL = 1,
+    RIGHT = 2,
+    FORWARD = 3,
+    BACK = 4
 }
 declare class HotKey {
     readonly key: Key;
@@ -58,23 +58,17 @@ declare class HotKey {
     toString(): string;
     test(event: KeyboardEvent): boolean;
 }
-declare class Input {
-    private static readonly keysCount;
-    private static readonly mouseButtonsCount;
-    private static readonly keyFlags;
-    private static readonly mouseFlags;
-    private static readonly mousePos;
-    private static wheelDelta;
-    static clear(): void;
-    private static initializePointerHandlers;
-    private static initializeKeyboardHandlers;
-    static initialize(elem: HTMLElement): void;
-    static getKey(key: Key): boolean;
-    static getKeyUp(key: Key): boolean;
-    static getKeyDown(key: Key): boolean;
-    static getMouseButton(button: MouseButton): boolean;
-    static getMouseButtonPosition(): Vector2;
-    static getWheelDelta(): number;
-    static getMouseButtonDown(button: MouseButton): boolean;
-    static getMouseButtonUp(button: MouseButton): boolean;
+interface Input {
+    initialize(canvas: HTMLCanvasElement): void;
+    clear(): void;
+    getKey(key: Key): boolean;
+    getKeyUp(key: Key): boolean;
+    getKeyDown(key: Key): boolean;
+    getMouseButton(button: MouseButton): boolean;
+    getPointerPosition(): Vector2;
+    getPointerScreenPosition(): Vector2;
+    getWheelDelta(): number;
+    getMouseButtonDown(button: MouseButton): boolean;
+    getMouseButtonUp(button: MouseButton): boolean;
 }
+declare var Input: Input;

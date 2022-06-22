@@ -1,166 +1,178 @@
-import { WebGLBufferUtilities } from "./WebGLBufferUtilities";
 import { UniformsList, WebGLUniformUtilities } from "./WebGLUniformUtilities";
-import { BufferDataUsage, BufferTarget } from "./WebGLConstants";
+import { BufferProperties, Buffer, BufferDataUsage } from "./WebGLBufferUtilities";
+import { Program } from "./WebGLProgramUtilities";
 
-export { UniformBlockProperties };
-export { UniformBlockReference };
-export { UniformBlockBinding };
-export { UniformBlock };
-export { UniformBlockSetter };
-export { UniformBlocksBindingsContext };
-export { WebGLUniformBlockUtilities };
-
-type UniformBlockProperties = {
+export type UniformBlock = {
     name: string;
-    usage?: BufferDataUsage;
-}
-
-type UniformBlockReference = {
-    glBuffer: WebGLBuffer;
-}
-
-type UniformBlockBinding = {
+    program: Program;
+    layout: UniformBlockLayout;
+    blockSize: number;
     bindingPoint: number;
 }
 
-type UniformBlock = UniformBlockProperties & UniformBlockReference & UniformBlockBinding;
+export type UniformBlockLayout = {
+    [name: string]: {
+        offset: number;
+    }
+};
 
-type UniformBlockSetter = UniformBlock & {
-    index: number;
-    uniforms: {
-        [name: string]: {
-            offset: number;
-        }
-    };
-    bufferByteLength: number;
-    glProg: WebGLProgram;
+export type UniformBuffer = Buffer & {
+    rangeOffset?: number;
+    rangeSize?: number;
 }
 
-type UniformBlocksBindingsContext = {
+export type UniformBufferProperties = Omit<BufferProperties, "target"> & {
+    rangeOffset?: number;
+    rangeSize?: number;
+}
+
+export type UniformBlocksBindingsContext = {
     maxBindingPoints: number;
     registeredBindingPoints: Array<boolean>;
 }
 
-class WebGLUniformBlockUtilities {
-
-
+export class WebGLUniformBlockUtilities {
+    
     private constructor() {}
-
-    public static createBindingsContext(gl: WebGL2RenderingContext): UniformBlocksBindingsContext {
-        const maxBindingPoints = gl.MAX_UNIFORM_BUFFER_BINDINGS;
-        const registeredBindingPoints = new Array<boolean>(maxBindingPoints);
-        
-        return {
-            maxBindingPoints: maxBindingPoints,
-            registeredBindingPoints: registeredBindingPoints
-        }
-    }
-
-    public static createUniformBlock(gl: WebGL2RenderingContext, ctx: UniformBlocksBindingsContext, name: string): UniformBlock | null {
-        
-        const glBuffer = WebGLBufferUtilities.createBuffer(gl);
-        if (glBuffer === null) {
-            return null;
-        }
-
-        const bindingPoint = this._allocateBindingPoint(ctx);
-        if (bindingPoint === null) {
-            console.error(`Could not allocate another binding point.`);
+    
+    public static createUniformBuffer(gl: WebGL2RenderingContext, program: Program, blockName: string, usage?: BufferDataUsage, byteLength?: number, rangeOffset?: number, rangeSize?: number): UniformBuffer | null {
+        const buffer = gl.createBuffer();
+        if (buffer == null) {
+            console.error("Could not create WebGLBuffer.");
             return null;
         }
         
-        return {
-            name: name,
-            bindingPoint: bindingPoint,
-            glBuffer: glBuffer,
-        }
-    }
+        const target = gl.UNIFORM_BUFFER;
+        gl.bindBuffer(target, buffer);
 
-    public static getUniformBlockSetter(gl: WebGL2RenderingContext, glProg: WebGLProgram, block: UniformBlock): UniformBlockSetter | null {
-        gl.bindBuffer(BufferTarget.UNIFORM_BUFFER, block.glBuffer);
-        
-        const blockIndex = gl.getUniformBlockIndex(glProg, block.name);
+        const blockIndex = gl.getUniformBlockIndex(program.internal, blockName);
         if (blockIndex === gl.INVALID_INDEX) {
-            console.error(`Block '${block.name}' does not identify a valid uniform block.`);
+            console.error(`Block '${blockName}' does not identify a valid uniform block.`);
             return null;
         }
 
-        const usage = (typeof block.usage === 'undefined') ? gl.DYNAMIC_DRAW : block.usage;
-        
-        const bindingPoint = block.bindingPoint;
-        gl.uniformBlockBinding(glProg, blockIndex, bindingPoint);
+        const blockSize = gl.getActiveUniformBlockParameter(program.internal, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE) as number;
+        byteLength = Math.min(byteLength ?? 0, 0) || blockSize;
 
-        const blockSize = gl.getActiveUniformBlockParameter(glProg, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE);
-        gl.bufferData(gl.UNIFORM_BUFFER, blockSize, usage);
+        usage = usage ?? gl.DYNAMIC_DRAW;
+        rangeOffset = rangeOffset ?? 0;
+        rangeSize = rangeSize ?? blockSize - rangeOffset;
 
-        const uniforms: {
-            [name: string]: {
-                offset: number
-            }
-        } = {};
+        gl.bufferData(target, byteLength, usage);
 
-        const blockUniformsIndices = gl.getActiveUniformBlockParameter(glProg, blockIndex, gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES);
-        gl.getActiveUniforms(glProg, blockUniformsIndices, gl.UNIFORM_OFFSET).forEach(
-            (uniformOffset: number, idx: number) => {
-                const uniformIndex = blockUniformsIndices[idx];
-                const uniformInfo = gl.getActiveUniform(glProg, uniformIndex);
-
-                if (uniformInfo !== null) {
-                    const uniformName = uniformInfo.name;
-                    uniforms[uniformName] = {
-                        offset: uniformOffset
-                    };
-                }
-            }
-        );
-        
         return {
-            name: block.name,
+            internal: buffer,
+            target: target,
             usage: usage,
-            bindingPoint: bindingPoint,
-            index: blockIndex,
-            uniforms: uniforms,
-            bufferByteLength: blockSize,
-            glBuffer: block.glBuffer,
-            glProg: glProg
-        }
+            byteLength: byteLength,
+            rangeOffset: rangeOffset,
+            rangeSize: rangeSize
+        };
     }
 
-    public static setUniformBlockValues(gl: WebGL2RenderingContext, setter: UniformBlockSetter, uniforms: UniformsList): void {
-        
-        /*const blockUniformsNames = Object.keys(setter.uniforms);
-        const matchingUniformsNames = Object.keys(uniforms).filter(
-            (name: string) => {
-                return blockUniformsNames.includes(name);
-            }
-        );*/
-
-        gl.bindBuffer(gl.UNIFORM_BUFFER, setter.glBuffer);
-        gl.bindBufferRange(gl.UNIFORM_BUFFER, setter.bindingPoint, setter.glBuffer, 0, setter.bufferByteLength);
+    public static setUniformBufferValues(gl: WebGL2RenderingContext, layout: UniformBlockLayout, buffer: UniformBuffer, uniforms: UniformsList): void {
+        const currentUniformBuffer = gl.getParameter(gl.UNIFORM_BUFFER_BINDING);
+        if (currentUniformBuffer !== buffer.internal) {
+            gl.bindBuffer(gl.UNIFORM_BUFFER, buffer.internal);
+        }
         
         Object.keys(uniforms).forEach((uniformName) => {
-            const uniform = setter.uniforms[uniformName];
-            const newUniformValue = WebGLUniformUtilities.getUniformValueArrayBufferView(uniforms[uniformName].value);
-
-            gl.bufferSubData(gl.UNIFORM_BUFFER, uniform.offset, newUniformValue);
+            const uniformLayout = layout[uniformName];
+            const newValue = WebGLUniformUtilities.getUniformValueArrayBufferView(uniforms[uniformName].value);
+            gl.bufferSubData(gl.UNIFORM_BUFFER, uniformLayout.offset, newValue);
         });
     }
 
-    public static bindUniformBlock(gl: WebGL2RenderingContext, setter: UniformBlockSetter): void {
-        gl.bindBufferBase(BufferTarget.UNIFORM_BUFFER, setter.bindingPoint, setter.glBuffer);
+    public static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void {
+        const rangeOffset = buffer.rangeOffset || 0;
+        const rangeSize = buffer.rangeSize || (buffer.byteLength - (rangeOffset || 0));
+        
+        if (typeof buffer.rangeOffset !== "undefined" || typeof buffer.rangeSize !== "undefined") {
+            gl.bindBufferRange(gl.UNIFORM_BUFFER, block.bindingPoint, buffer.internal, rangeOffset, rangeSize);
+        }
+        else {
+            gl.bindBufferBase(gl.UNIFORM_BUFFER, block.bindingPoint, buffer.internal);
+        }
     }
-    
-    private static _allocateBindingPoint(ctx: UniformBlocksBindingsContext): number | null {
-        for (let unit = 0; unit < ctx.maxBindingPoints; unit++) {
-            if (!ctx.registeredBindingPoints[unit]) {
-                ctx.registeredBindingPoints[unit] = true;
-                return unit;
+
+    public static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null {
+        const bindingPoint = this._allocateBindingPoint(gl);
+        if (bindingPoint === null) {
+            console.error(`Could not bind another uniform buffer object. Max (${gl.MAX_UNIFORM_BUFFER_BINDINGS}) was reached.`);
+            return null;
+        }
+
+        const blockIndex = gl.getUniformBlockIndex(program.internal, name);
+        if (blockIndex === gl.INVALID_INDEX) {
+            console.error(`Block '${name}' does not identify a valid uniform block.`);
+            return null;
+        }
+
+        gl.uniformBlockBinding(program.internal, blockIndex, bindingPoint);
+
+        const blockSize = gl.getActiveUniformBlockParameter(program.internal, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE);
+
+        const layout: UniformBlockLayout = {};
+        const blockUniformsIndices = gl.getActiveUniformBlockParameter(program.internal, blockIndex, gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES);
+        gl.getActiveUniforms(program.internal, blockUniformsIndices, gl.UNIFORM_OFFSET).forEach(
+            (uniformOffset: number, idx: number) => {
+                const uniformIndex = blockUniformsIndices[idx];
+                const uniformInfo = gl.getActiveUniform(program.internal, uniformIndex);
+
+                if (uniformInfo !== null) {
+                    const uniformFullName = uniformInfo.name;
+                    const bracketIndex = uniformFullName.indexOf("[");
+                    if (bracketIndex > -1) {
+                        const uniformName = uniformFullName.substring(0, bracketIndex);
+                        if (typeof layout[uniformName] === "undefined") {
+                            layout[uniformName] = {
+                                offset: uniformOffset
+                            };
+                        }
+                    }
+                    else {
+                        layout[uniformFullName] = {
+                            offset: uniformOffset
+                        };
+                    }
+                }
+            }
+        );
+
+        return {
+            name: name,
+            bindingPoint: bindingPoint,
+            blockSize: blockSize,
+            layout: layout,
+            program: program
+        };
+    }
+
+    private static _bindingPoints: Map<WebGL2RenderingContext, boolean[]> = new Map();
+
+    private static _freeBindingPoint(gl: WebGL2RenderingContext, bindingPoint: number): number | null {
+        const maxBindings = this._bindingPoints.get(gl);
+        if (typeof maxBindings !== "undefined") {
+            if (maxBindings.length < 0) {
+                maxBindings[bindingPoint] = false;
             }
         }
         return null;
     }
 
-    private static _freeBindingPoint(ctx: UniformBlocksBindingsContext, bindingPoint: number): void {
-        ctx.registeredBindingPoints[bindingPoint] = false;
+    private static _allocateBindingPoint(gl: WebGL2RenderingContext): number {
+        const maxBindings = gl.MAX_UNIFORM_BUFFER_BINDINGS;
+        let bindingPoints = this._bindingPoints.get(gl);
+        if (typeof bindingPoints === "undefined") {
+            bindingPoints = new Array(maxBindings);
+            this._bindingPoints.set(gl, bindingPoints);
+        }
+        for (let i = 1; i < maxBindings; i++) {
+            if (!bindingPoints[i]) {
+                bindingPoints[i] = true;
+                return i;
+            }
+        }
+        return -1;
     }
 }

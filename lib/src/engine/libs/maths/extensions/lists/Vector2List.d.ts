@@ -2,7 +2,7 @@ import { Vector2 } from "../../algebra/vectors/Vector2";
 export { Vector2List };
 export { Vector2ListBase };
 interface Vector2List {
-    readonly array: ArrayLike<number>;
+    readonly array: WritableArrayLike<number>;
     readonly count: number;
     setArray(array: WritableArrayLike<number>): this;
     forEach(func: (vec: Vector2, idx: number) => void, options?: {
@@ -22,7 +22,7 @@ declare class Vector2ListBase implements Vector2List {
     private _array;
     constructor();
     constructor(array: WritableArrayLike<number>);
-    get array(): ArrayLike<number>;
+    get array(): WritableArrayLike<number>;
     get count(): number;
     setArray(array: WritableArrayLike<number>): this;
     forEach(func: (vec: Vector2, idx: number) => void, options?: {

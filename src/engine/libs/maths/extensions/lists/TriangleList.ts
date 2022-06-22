@@ -6,7 +6,7 @@ export { TriangleList };
 export { TriangleListBase };
 
 interface TriangleList {
-    readonly array: ArrayLike<number>;
+    readonly array: WritableArrayLike<number>;
     readonly count: number;
 
     setArray(array: WritableArrayLike<number>): this;
@@ -43,7 +43,7 @@ class TriangleListBase implements TriangleList {
         this._array = array || [];
     }
     
-    public get array(): ArrayLike<number> {
+    public get array(): WritableArrayLike<number> {
         return this._array;
     }
 
@@ -78,18 +78,16 @@ class TriangleListBase implements TriangleList {
             idxObj = 0,
             indexOf = -1;
         
-        const tempTri = TrianglePool.acquire();
-        {
-            while (idxBuf < count) {
-                tempTri.readFromArray(this._array, idxBuf);
-                if (tri.equals(tempTri)) {
-                    indexOf = idxObj;
-                    idxObj += 1;
-                    break;
-                }
+        const [tempTri] = TrianglePool.acquire(1);
+        while (idxBuf < count) {
+            tempTri.readFromArray(this._array, idxBuf);
+            if (tri.equals(tempTri)) {
+                indexOf = idxObj;
                 idxObj += 1;
-                idxBuf += 9;
+                break;
             }
+            idxObj += 1;
+            idxBuf += 9;
         }
         TrianglePool.release(1);
 
@@ -107,15 +105,11 @@ class TriangleListBase implements TriangleList {
         
         let idxObj = idxFrom;
         
-        const tempTri = TrianglePool.acquire();
-        {
-            while (idxObj < idxTo) {
-
-                this.get(idxObj, tempTri);
-
-                func(tempTri, idxObj);
-                idxObj += 1;
-            }
+        const [tempTri] = TrianglePool.acquire(1);
+        while (idxObj < idxTo) {
+            this.get(idxObj, tempTri);
+            func(tempTri, idxObj);
+            idxObj += 1;
         }
         TrianglePool.release(1);
     }
@@ -137,21 +131,19 @@ class TriangleListBase implements TriangleList {
         
         let idxBuf = idxFrom * 3;
         
-        const tempTri = TrianglePool.acquire();
-        {
-            const pointsIndices: Vector3Values = [0, 0, 0];
-            for (let idxObj = idxFrom; idxObj < idxTo; idxObj++) {
-                pointsIndices[0] = indices[idxBuf    ];
-                pointsIndices[1] = indices[idxBuf + 1];
-                pointsIndices[2] = indices[idxBuf + 2];
-                
-                tempTri.point1.readFromArray(this._array, pointsIndices[0] * 3);
-                tempTri.point2.readFromArray(this._array, pointsIndices[1] * 3);
-                tempTri.point3.readFromArray(this._array, pointsIndices[2] * 3);
+        const [tempTri] = TrianglePool.acquire(1);
+        const pointsIndices: Vector3Values = [0, 0, 0];
+        for (let idxObj = idxFrom; idxObj < idxTo; idxObj++) {
+            pointsIndices[0] = indices[idxBuf    ];
+            pointsIndices[1] = indices[idxBuf + 1];
+            pointsIndices[2] = indices[idxBuf + 2];
+            
+            tempTri.point1.readFromArray(this._array, pointsIndices[0] * 3);
+            tempTri.point2.readFromArray(this._array, pointsIndices[1] * 3);
+            tempTri.point3.readFromArray(this._array, pointsIndices[2] * 3);
 
-                func(tempTri, idxObj, pointsIndices);
-                idxBuf += 3;
-            }
+            func(tempTri, idxObj, pointsIndices);
+            idxBuf += 3;
         }
         TrianglePool.release(1);
     }

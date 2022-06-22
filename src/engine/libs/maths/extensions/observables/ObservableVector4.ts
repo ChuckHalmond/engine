@@ -1,6 +1,6 @@
 import { SingleTopicMessageBroker } from "../../../patterns/messaging/brokers/SingleTopicMessageBroker";
 import { Vector4, Vector4Values } from "../../algebra/vectors/Vector4";
-
+/*
 export { ObservableVector4 };
 export { ObservableVector4Base };
 
@@ -34,8 +34,8 @@ class ObservableVector4Base implements Vector4 {
 			}
 		);
 	}
-
-	public get array(): ArrayLike<number> {
+	
+	public get array(): WritableArrayLike<number> {
 		return this.internal.array;
 	}
 
@@ -121,6 +121,10 @@ class ObservableVector4Base implements Vector4 {
 		return this.internal.setZeros() as this;
 	}
 
+	public setUnit(): this {
+		return this.internal.setUnit() as this;
+	}
+
 	public add(vec: Vector4): this {
 		return this.internal.add(vec) as this;
 	}
@@ -149,20 +153,20 @@ class ObservableVector4Base implements Vector4 {
 		return this.internal.dot(vec);
 	}
 
-	public len(): number {
-		return this.internal.len();
+	public length(): number {
+		return this.internal.length();
 	}
 
-	public lenSq(): number {
-		return this.internal.lenSq();
+	public lengthSquared(): number {
+		return this.internal.lengthSquared();
 	}
 
 	public dist(vec: Vector4): number {
 		return this.internal.dist(vec);
 	}
 
-	public distSq(vec: Vector4): number {
-		return this.internal.distSq(vec);
+	public distSquared(vec: Vector4): number {
+		return this.internal.distSquared(vec);
 	}
 
 	public normalize(): this {
@@ -190,4 +194,4 @@ class ObservableVector4Base implements Vector4 {
     }
 }
 
-const ObservableVector4: ObservableVector4Constructor = ObservableVector4Base;
+const ObservableVector4: ObservableVector4Constructor = ObservableVector4Base;*/

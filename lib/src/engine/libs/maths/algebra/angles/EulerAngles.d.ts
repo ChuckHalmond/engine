@@ -1,4 +1,3 @@
-import { Matrix3 } from "../matrices/Matrix3";
 import { Quaternion } from "../quaternions/Quaternion";
 import { Vector3Values } from "../vectors/Vector3";
 export { EulerAngles };
@@ -15,6 +14,5 @@ interface EulerAnglesConstructor {
     new (): EulerAngles;
     new (values: Vector3Values): EulerAngles;
     fromQuaternion(quaternion: Quaternion): EulerAngles;
-    fromMatrix(mat: Matrix3): EulerAngles;
 }
 declare var EulerAngles: EulerAnglesConstructor;

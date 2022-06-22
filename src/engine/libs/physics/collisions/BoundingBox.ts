@@ -94,7 +94,7 @@ class BoundingBoxBase implements BoundingBox {
     }
 
 	public getCenter(out: Vector3): Vector3 {
-		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._min).add(this._max).multScalar(0.5);
+		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._min).add(this._max).scale(0.5);
 		return out;
 	}
     
@@ -146,14 +146,11 @@ class BoundingBoxBase implements BoundingBox {
 	}
 
 	public distanceToPoint(point: Vector3): number {
-
 		let dist = 0;
-
-		Vector3Pool.acquireTemp(1, (temp) => {
-			const clampedPoint = temp.copy(point).clamp(this._min, this._max);
-			dist = clampedPoint.sub(point).len();
-		});
-
+		const [temp] = Vector3Pool.acquire(1);
+		const clampedPoint = temp.copy(point).clamp(this._min, this._max);
+		dist = clampedPoint.sub(point).length();
+		Vector3Pool.release(1);
         return dist;
 	}
 
@@ -193,10 +190,10 @@ class BoundingBoxBase implements BoundingBox {
 	public intersectsSphere(sphere: BoundingSphere): boolean {
         let intersects = false;
 
-        Vector3Pool.acquireTemp(1, (clamped) => {
-			this.clampPoint(sphere.center, clamped);
-			intersects = clamped.distSq(sphere.center) <= (sphere.radius * sphere.radius);
-		});
+        const [clamped] = Vector3Pool.acquire(1);
+		this.clampPoint(sphere.center, clamped);
+		intersects = clamped.distanceSquared(sphere.center) <= (sphere.radius * sphere.radius);
+		Vector3Pool.release(1);
 
 		return intersects;
 	}
@@ -210,7 +207,7 @@ class BoundingBoxBase implements BoundingBox {
     }
 
 	public getBoundingSphere(out: BoundingSphere): BoundingSphere {
-		out.radius = this.getSize(out.center).len() * 0.5;
+		out.radius = this.getSize(out.center).length() * 0.5;
 		this.getCenter(out.center);
 
 		return out;
@@ -227,75 +224,69 @@ class BoundingBoxBase implements BoundingBox {
 			point3 = triangle.point3;
 
 		let intersects = false;
+		const [center, extents, v1, v2, v3, edge1, edge2, edge3] = Vector3Pool.acquire(8);
 
-		Vector3Pool.acquireTemp(8,
-			(center, extents, v1, v2, v3, edge1, edge2, edge3) => {
-			
-			this.getCenter(center);
-			
-			extents.copyAndSub(this._max, center),
-			v1.copyAndSub(point1, center),
-			v2.copyAndSub(point2, center),
-			v3.copyAndSub(point3, center),
-			edge1.copyAndSub(point2, point1),
-			edge2.copyAndSub(point3, point2),
-			edge3.copyAndSub(point1, point3);
+		this.getCenter(center);
+		
+		extents.copyAndSub(this._max, center),
+		v1.copyAndSub(point1, center),
+		v2.copyAndSub(point2, center),
+		v3.copyAndSub(point3, center),
+		edge1.copyAndSub(point2, point1),
+		edge2.copyAndSub(point3, point2),
+		edge3.copyAndSub(point1, point3);
 
-			let axes = new Float32Array([
-				0, 			-edge1.z, 	edge1.y,
-				0,			-edge2.z, 	edge2.y,
-				0, 			-edge3.z,	edge3.y,
-				edge1.z,	0,			-edge1.x,
-				edge2.z,	0,			-edge2.x,
-				edge3.z,	0,			-edge3.x,
-				-edge1.y,	edge1.x,	0,
-				-edge2.y,	edge2.x,	0,
-				-edge3.y,	edge3.x,	0
-			]);
+		let axes = new Float32Array([
+			0, 			-edge1.z, 	edge1.y,
+			0,			-edge2.z, 	edge2.y,
+			0, 			-edge3.z,	edge3.y,
+			edge1.z,	0,			-edge1.x,
+			edge2.z,	0,			-edge2.x,
+			edge3.z,	0,			-edge3.x,
+			-edge1.y,	edge1.x,	0,
+			-edge2.y,	edge2.x,	0,
+			-edge3.y,	edge3.x,	0
+		]);
 
-			if (!this.satForAxes(axes, v1, v2, v3, extents)) {
-				intersects = false;
-				return;
-			}
+		if (!this.satForAxes(axes, v1, v2, v3, extents)) {
+			Vector3Pool.release(8);
+			return intersects;
+		}
 
-			axes = new Float32Array([
-				1, 0, 0,
-				0, 1, 0,
-				0, 0, 1
-			]);
-			if (!this.satForAxes(axes, v1, v2, v3, extents)) {
-				intersects = false;
-				return;
-			}
+		axes = new Float32Array([
+			1, 0, 0,
+			0, 1, 0,
+			0, 0, 1
+		]);
+		if (!this.satForAxes(axes, v1, v2, v3, extents)) {
+			Vector3Pool.release(8);
+			return intersects;
+		}
 
-			const triangleNormal = center.copyAndCross(edge1, edge2);
-			intersects = this.satForAxes(triangleNormal.values, v1, v2, v3, extents);
-		});
+		const triangleNormal = center.copyAndCross(edge1, edge2);
+		intersects = this.satForAxes(triangleNormal.values, v1, v2, v3, extents);
+		Vector3Pool.release(8);
 
 		return intersects;
 	}
 
 	private satForAxes(axes: ArrayLike<number>, v1: Vector3, v2: Vector3, v3: Vector3, extents: Vector3) {
-
 		let sat = true;
-	
-		Vector3Pool.acquireTemp(1, (axis) => {
-			for (let i = 0, j = axes.length - 3; i <= j; i += 3) {
-				axis.x = axes[i    ];
-				axis.y = axes[i + 1];
-				axis.z = axes[i + 2];
+		const [axis] = Vector3Pool.acquire(1);
+		for (let i = 0, j = axes.length - 3; i <= j; i += 3) {
+			axis.x = axes[i    ];
+			axis.y = axes[i + 1];
+			axis.z = axes[i + 2];
+			const r = extents.x * Math.abs(axis.x) + extents.y * Math.abs(axis.y) + extents.z * Math.abs(axis.z);
+			const p1 = v1.dot(axis);
+			const p2 = v2.dot(axis);
+			const p3 = v3.dot(axis);
 
-				const r = extents.x * Math.abs(axis.x) + extents.y * Math.abs(axis.y) + extents.z * Math.abs(axis.z);
-				const p1 = v1.dot(axis);
-				const p2 = v2.dot(axis);
-				const p3 = v3.dot(axis);
-	
-				if (Math.max(-Math.max(p1, p2, p3), Math.min(p1, p2, p3)) > r) {
-					sat = false;
-				}
+			if (Math.max(-Math.max(p1, p2, p3), Math.min(p1, p2, p3)) > r) {
+				sat = false;
 			}
-		});
-	
+		}
+		Vector3Pool.release(1);
 		return sat;
 	}
 }

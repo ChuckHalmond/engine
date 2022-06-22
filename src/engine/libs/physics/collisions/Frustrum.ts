@@ -19,7 +19,7 @@ interface Frustrum {
     rightPlane: Plane;
     copy(frustrum: Frustrum): Frustrum;
 	clone(): Frustrum;
-	setFromPerspectiveMatrix(mat: Matrix4): Frustrum;
+	setFromPerspectiveMatrix(matrix: Matrix4): Frustrum;
 	set(
         nearPlane: Plane, farPlane: Plane,
         topPlane: Plane, bottomPlane: Plane,
@@ -133,25 +133,23 @@ class FrustrumBase implements Frustrum {
 		return new FrustrumBase().copy(this);
     }
     
-	public setFromPerspectiveMatrix(mat: Matrix4): FrustrumBase {
-        const m = mat.values;
-
-        const m11 = m[ 0];
-        const m12 = m[ 1];
-        const m13 = m[ 2];
-        const m14 = m[ 3];
-        const m21 = m[ 4];
-        const m22 = m[ 5];
-        const m23 = m[ 6];
-        const m24 = m[ 7];
-        const m31 = m[ 8];
-        const m32 = m[ 9];
-        const m33 = m[10];
-        const m34 = m[11];
-        const m41 = m[12];
-        const m42 = m[13];
-        const m43 = m[14];
-        const m44 = m[15];
+	public setFromPerspectiveMatrix(matrix: Matrix4): FrustrumBase {
+        const m11 = matrix.m11;
+        const m12 = matrix.m12;
+        const m13 = matrix.m13;
+        const m14 = matrix.m14;
+        const m21 = matrix.m21;
+        const m22 = matrix.m22;
+        const m23 = matrix.m23;
+        const m24 = matrix.m24;
+        const m31 = matrix.m31;
+        const m32 = matrix.m32;
+        const m33 = matrix.m33;
+        const m34 = matrix.m34;
+        const m41 = matrix.m41;
+        const m42 = matrix.m42;
+        const m43 = matrix.m43;
+        const m44 = matrix.m44;
 
         this._nearPlane.set(m31 + m41, m32 + m42, m33 + m43, m34 + m44).normalized();
         this._farPlane.set(-m31 + m41, -m32 + m42, -m33 + m43, -m34 + m44).normalized();
@@ -180,40 +178,38 @@ class FrustrumBase implements Frustrum {
         const boxMax = box.max;
         const boxMin = box.min;
 
-        const temp: Vector3 = Vector3Pool.acquire();
-        {
-            intersects = 
-                this._nearPlane.distanceToPoint(temp.setValues([
-                    this._nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                    this._nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                    this._nearPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                ])) >= 0 &&
-                this._farPlane.distanceToPoint(temp.setValues([
-                    this._farPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                    this._farPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                    this._farPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                ])) >= 0 &&
-                this._bottomPlane.distanceToPoint(temp.setValues([
-                    this._bottomPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                    this._bottomPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                    this._bottomPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                ])) >= 0 &&
-                this._topPlane.distanceToPoint(temp.setValues([
-                    this._topPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                    this._topPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                    this._topPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                ])) >= 0 &&
-                this._leftPlane.distanceToPoint(temp.setValues([
-                    this._leftPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                    this._leftPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                    this._leftPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                ])) >= 0 &&
-                this._rightPlane.distanceToPoint(temp.setValues([
-                    this._rightPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                    this._rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                    this._rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
-                ])) >= 0;
-        }
+        const [temp] = Vector3Pool.acquire(1);
+        intersects = 
+            this._nearPlane.distanceToPoint(temp.setValues([
+                this._nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this._nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this._nearPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            ])) >= 0 &&
+            this._farPlane.distanceToPoint(temp.setValues([
+                this._farPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this._farPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this._farPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            ])) >= 0 &&
+            this._bottomPlane.distanceToPoint(temp.setValues([
+                this._bottomPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this._bottomPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this._bottomPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            ])) >= 0 &&
+            this._topPlane.distanceToPoint(temp.setValues([
+                this._topPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this._topPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this._topPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            ])) >= 0 &&
+            this._leftPlane.distanceToPoint(temp.setValues([
+                this._leftPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this._leftPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this._leftPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            ])) >= 0 &&
+            this._rightPlane.distanceToPoint(temp.setValues([
+                this._rightPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this._rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this._rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            ])) >= 0;
         Vector3Pool.release(1);
 
 		return intersects;

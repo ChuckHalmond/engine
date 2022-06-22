@@ -1,149 +1,77 @@
-import { buildArrayFromIndexedArrays } from "../../../../../../utils/Snippets";
+import { Matrix3 } from "../../../../../../libs/maths/algebra/matrices/Matrix3";
+import { Vector3Pool } from "../../../../../../libs/maths/extensions/pools/Vector3Pools";
+import { Space } from "../../../../../../libs/maths/geometry/space/Space";
+import { Transform } from "../../../../../general/Transform";
 import { GeometryBase } from "../../Geometry";
+import { GeometryBuilder } from "../../GeometryBuilder";
 
+/**
+ *     v0_______v1
+ *     |\        |
+ *     |  \      |
+ *     |    \    |
+ *     |      \  |
+ *    v2_______\v3
+ *
+ */
+export class CubeGeometry extends GeometryBase {
+	width: number;
+	height: number;
+	depth: number;
+	widthSegment: number;
+	heightSegment: number;
+	depthSegment: number;
 
-export { CubeGeometry };
-
-class CubeGeometry extends GeometryBase {
-	constructor() {
-		super({
-			vertices: new Float32Array(cubeVertices),
-			indices: new Uint8Array(cubeIndices),
-			uvs: new Float32Array(cubeUVS),
-		})
+	constructor(properties?: {width?: number, height?: number, depth?: number, widthSegment?: number, heightSegment?: number, depthSegment?: number}) {
+		super();
+		this.width = properties?.width ?? 1;
+		this.height = properties?.height ?? 1;
+		this.depth = properties?.depth ?? 1;
+		this.widthSegment = properties?.widthSegment ?? 1;
+		this.heightSegment = properties?.heightSegment ?? 1;
+		this.depthSegment = properties?.depthSegment ?? 1;
+	}
+	
+	public toBuilder(): GeometryBuilder {
+		const builder = new GeometryBuilder();
+		const directions = [Space.left, Space.right, Space.up, Space.down, Space.forward, Space.backward];
+		const transform = new Transform();
+		const dimensions = new Matrix3([
+			this.width / 2, 0, 0,
+			0, this.height / 2, 0,
+			0, 0, this.depth / 2
+		]);
+		const [forward, right, up] = Vector3Pool.acquire(3);
+		directions.forEach((direction) => {
+			switch (direction.dot(Space.up)) {
+				case 1: 
+					transform.lookAt(direction.clone().scale(-1), Space.backward);
+					break;
+				case -1: 
+					transform.lookAt(direction.clone().scale(-1), Space.forward);
+					break;
+				default:
+					transform.lookAt(direction.clone().scale(-1), Space.up);
+					break;
+			}
+			const forwardArray = transform.getForward(forward).mult(dimensions).array;
+			const rightArray = transform.getRight(right).mult(dimensions).array;
+			const upArray = transform.getUp(up).mult(dimensions).array;
+			const upperLeftVertex = forwardArray.map((forward_i, i) => forward_i - rightArray[i] + upArray[i]);
+			const upperLeftUV = [0, 0];
+			const lowerLeftVertex = forwardArray.map((forward_i, i) => forward_i - rightArray[i] - upArray[i]);
+			const lowerLeftUV = [0, 1];
+			const lowerRightVertex = forwardArray.map((forward_i, i) => forward_i + rightArray[i] - upArray[i]);
+			const lowerRightUV = [1, 1];
+			const upperRightVertex = forwardArray.map((forward_i, i) => forward_i + rightArray[i] + upArray[i]);
+			const upperRightUV = [1, 0];
+			builder.addQuadFaceVertices(
+				upperLeftVertex, lowerLeftVertex, lowerRightVertex, upperRightVertex,  {
+					uv: [upperLeftUV, lowerLeftUV, lowerRightUV, upperRightUV]
+				}
+			);
+		});
+		Vector3Pool.release(3);
+		return builder;
 	}
 }
-
-/**      
- *     y axis  
- * 	      ^   z axis
- *     UP |   ^  FORWARD
- *        | /
- *        +------> x axis
- *         RIGHT
- * 
- *  left-handed coordinates system
- *  
- */
-
- /**      
- *      v0       v1
- * 		+_______+      o   ^ 
- * 	    \      /\     /     \
- *       \   /   \    \     / 
- *        \/      \    \ _ /
- *        +--------+
- *       v2         v3
- * 
- *  counter-clockwise winding order:
- * 		v0 -> v2 -> v1
- * 		v1 -> v2 -> v3
- */
-
-/**
- *              v0_______v1
- *              |\        |
- *              |  \   f1 |
- *              |    \    |
- *              |  f0  \  |
- *    v0________v2_______\v3________v1
- *    |\        |\        |\        |
- *    |  \  f3  |  \  f5  |  \  f7  |
- *    |    \    |    \    |    \    |
- *    | f2   \  | f4   \  | f6   \  |
- *    v4_______\v5_______\v6_______\v7
- *              |\        |
- *              |  \   f9 |
- *              |    \    |
- *              |  f8  \  |
- *              v4_______\v7
- *              |\        |
- *              |  \  f11 |
- *              |    \    |
- *              | f10  \  |
- *              v0_______\v1
- *  
- * v0 = [-1, +1, -1]
- * v1 = [+1, +1, -1]
- * v2 = [-1, +1, +1]
- * v3 = [+1, +1, +1]
- * v4 = [-1, -1, -1]
- * v5 = [-1, -1, +1]
- * v6 = [+1, -1, +1]
- * v7 = [+1, -1, -1]
- */
-
-/**
- * 	texture mappings
- * 
- *           
- *    uv0_____uv1
- *    | \       |
- *    |   \     |
- *    |     \   |
- *    |       \ |
- *    uv2_____uv3
- *        
- * 
- * uv0 = [0,0]
- * uv1 = [1,0]
- * uv2 = [0,1]
- * uv3 = [1,1]
- */
-
-const cubeVerticesSet = [
-	[-1, +1, -1], // v0
-	[+1, +1, -1], // v1
-	[-1, +1, +1], // v2
-	[+1, +1, +1], // v3
-	[-1, -1, -1], // v4
-	[-1, -1, +1], // v5
-	[+1, -1, +1], // v6
-	[+1, -1, -1], // v7
-];
-
-const cubeVertices = buildArrayFromIndexedArrays(
-	cubeVerticesSet,
-	[
-		0, 2, 3, 1, //  f0  f1
-		0, 4, 5, 2, //  f2  f3
-		2, 5, 6, 3, //  f4  f5
-		3, 6, 7, 1, //  f6  f6
-		5, 4, 7, 6, //  f8  f9
-		4, 0, 1, 7, // f10 f11
-	]
-);
-
-const cubeUVsSet = [
-	[0, 0],
-	[1, 0],
-	[0, 1],
-	[1, 1],
-];
-
-const cubeUVS = buildArrayFromIndexedArrays(
-	cubeUVsSet,
-	[
-		0, 1, 3, 2, //  f0  f1
-		0, 1, 3, 2, //  f2  f3
-		0, 1, 3, 2, //  f4  f5
-		0, 1, 3, 2, //  f6  f6
-		0, 1, 3, 2, //  f8  f9
-		0, 1, 3, 2, // f10 f11
-	]
-);
-
-const cubeIndices = [
-	 0,  1,  2, //  f0
-	 0,  2,  3, //  f1
-	 4,  5,  6, //  f2
-	 4,  6,  7, //  f3
-	 8,  9, 10, //  f4
-	 8, 10, 11, //  f5
-	12, 13, 14, //  f6
-	12, 14, 15, //  f7
-	16, 17, 18, //  f8
-	16, 18, 19, //  f9
-	20, 21, 22, // f10
-	20, 22, 23, // f11
-];

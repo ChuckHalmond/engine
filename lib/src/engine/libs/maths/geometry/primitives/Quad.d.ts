@@ -42,7 +42,7 @@ declare class QuadBase implements Quad {
     clone(): QuadBase;
     copy(quad: QuadBase): QuadBase;
     translate(vec: Vector3): void;
-    transform(mat: Matrix4): void;
+    transform(matrix: Matrix4): void;
     copyTriangles(triangle1: Triangle, triangle2: Triangle): void;
 }
 declare var Quad: QuadConstructor;

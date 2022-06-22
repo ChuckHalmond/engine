@@ -18,43 +18,47 @@ interface EulerAnglesConstructor {
     new(): EulerAngles;
     new(values: Vector3Values): EulerAngles;
     fromQuaternion(quaternion: Quaternion): EulerAngles;
-	fromMatrix(mat: Matrix3): EulerAngles;
+	//fromMatrix(mat: Matrix3): EulerAngles;
 }
 
 /**
  * https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
  */
 class EulerAnglesBase implements EulerAngles {
+	public yaw: number;
     public pitch: number;
-    public yaw: number;
     public roll: number;
 
 	constructor()
 	constructor(values: Vector3Values)
 	constructor(values?: Vector3Values) {
         if (values) {
-            this.pitch = values[0];
-            this.yaw = values[1];
+			this.yaw = values[0];
+            this.pitch = values[1];
             this.roll = values[2];
         }
         else {
+			this.yaw = 0;
             this.pitch = 0;
-            this.yaw = 0;
             this.roll = 0;
         }
 	}
 
+	public toString(): string {
+		return `EulerAngles([${this.yaw}, ${this.pitch}, ${this.roll}])`;
+	}
+
 	public get values(): Vector3Values {
 		return [
-			this.pitch,
 			this.yaw,
+			this.pitch,
 			this.roll
 		];
 	}
 
 	public set values(values: Vector3Values) {
-		this.pitch = values[0];
-		this.yaw = values[1];
+		this.yaw = values[0];
+		this.pitch = values[1];
 		this.roll = values[2];
 	}
 
@@ -67,10 +71,10 @@ class EulerAnglesBase implements EulerAngles {
 		const sinRoll = Math.sin(this.roll * 0.5);
 
 		return new Quaternion([
+            sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw,
             cosRoll * sinPitch * cosYaw + sinRoll * cosPitch * sinYaw,
             cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw,
-            sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw,
-            cosRoll * cosPitch * cosYaw + sinRoll * sinPitch * sinYaw
+			cosRoll * cosPitch * cosYaw + sinRoll * sinPitch * sinYaw
         ]);
 	}
 
@@ -80,21 +84,21 @@ class EulerAnglesBase implements EulerAngles {
 		const z = quaternion.z;
 		const w = quaternion.w;
 		
-		const sinr_cosp = 2 * (w * x + y * z);
-		const cosr_cosp = 1 - 2 * (x * x + y * y);
-		this.roll = Math.atan2(sinr_cosp, cosr_cosp);
+		const sinRollCosPitch = 2 * (w * x + y * z);
+		const cosRollCosPitch = 1 - 2 * (x * x + y * y);
+		this.roll = Math.atan2(sinRollCosPitch, cosRollCosPitch);
 		
-		const sinp = 2 * (w * y - z * x);
-		if (Math.abs(sinp) >= 1) {
-            this.pitch = Math.sign(sinp) * (Math.PI / 2);
+		const sinPitch = 2 * (w * y - z * x);
+		if (Math.abs(sinPitch) >= 1) {
+            this.pitch = Math.sign(sinPitch) * (Math.PI / 2);
         }
 		else {
-            this.pitch = Math.asin(sinp);
+            this.pitch = Math.asin(sinPitch);
         }
 		
-		const siny_cosp = 2 * (w * z + x * y);
-		const cosy_cosp = 1 - 2 * (y * y + z * z);
-		this.yaw = Math.atan2(siny_cosp, cosy_cosp);
+		const sinYawCosPitch = 2 * (w * z + x * y);
+		const cosYawCosPitch = 1 - 2 * (y * y + z * z);
+		this.yaw = Math.atan2(sinYawCosPitch, cosYawCosPitch);
 	
 		return this;
 	}
@@ -103,15 +107,13 @@ class EulerAnglesBase implements EulerAngles {
 		return new EulerAnglesBase().setQuaternion(quaternion);
     }
 
-	public static fromMatrix(mat: Matrix3): EulerAngles {
-		const m = mat.array;
-
-		const yaw = Math.atan2(m[3], m[0]);
-		const pitch = Math.atan2(-m[6], Math.sqrt(m[7] * m[7] + m[8] * m[8]));
-		const roll = Math.atan2(m[7], m[8]);
+	/*public static fromMatrix(matrix: Matrix3): EulerAngles {
+		const yaw = Math.atan2(matrix.m21, matrix.m11);
+		const pitch = Math.atan2(-matrix.m31, Math.hypot(matrix.m32, matrix.m33));
+		const roll = Math.atan2(matrix.m32, matrix.m33);
 
 		return new EulerAnglesBase([yaw, pitch, roll]);
-	}
+	}*/
 }
 
 var EulerAngles: EulerAnglesConstructor = EulerAnglesBase;

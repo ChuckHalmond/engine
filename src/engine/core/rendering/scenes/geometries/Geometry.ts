@@ -8,6 +8,8 @@ import { Vector3List } from "../../../../libs/maths/extensions/lists/Vector3List
 import { UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
 import { BoundingBox } from "../../../../libs/physics/collisions/BoundingBox";
 import { BoundingSphere } from "../../../../libs/physics/collisions/BoundingSphere";
+import { GeometryBuffer } from "./GeometryBuffer";
+import { GeometryBuilder } from "./GeometryBuilder";
 import { GeometryUtils } from "./GeometryUtils";
 
 // FaceIndices : 3 vertices indices
@@ -39,7 +41,7 @@ import { GeometryUtils } from "./GeometryUtils";
 
 export { GeometryPropertyKeys };
 export { Geometry };
-export { isGeometry };
+//export { isGeometry };
 export { GeometryBase };
 
 enum GeometryPropertyKeys {
@@ -58,11 +60,13 @@ interface GeometryConstructor {
 }
 
 interface Geometry {
-    readonly isGeometry: true;
+    /*readonly isGeometry: true;
     readonly uuid: UUID;
     
     indices: TypedArray;
+    distances: TypedArray;
     vertices: Vector3List;
+    barycentrics: Vector2List
     faces: TriangleList;
     uvs: Vector2List;
 
@@ -71,10 +75,8 @@ interface Geometry {
     tangents: Vector3List;
     bitangents: Vector3List;
 
-    [attrib: string]: any;
-
     readonly boundingBox?: BoundingBox;
-    readonly boundingSphere?: BoundingSphere;
+    readonly boundingSphere?: BoundingSphere;*/
 
     //builder(): GeometryBuilder;
 
@@ -87,26 +89,28 @@ interface Geometry {
     //computeVerticesNormals(weighted?: boolean, options?: ListLoopOptions): Geometry;
     //computeTangentsAndBitangents(options?: ListLoopOptions): Geometry;
 
-	computeBoundingBox(): BoundingBox;
-    computeBoundingSphere(): BoundingSphere;
+	// computeBoundingBox(): BoundingBox;
+    // computeBoundingSphere(): BoundingSphere;
     
     //updateVertices(vertices: TypedArray, offset?: number): Geometry;
     //updateUvs(uvs: TypedArray, offset?: number): Geometry;
 }
-
+/*
 function isGeometry(obj: any): obj is Geometry {
     return (obj as Geometry).isGeometry;
-}
+}*/
 
-class GeometryBase implements Geometry {
+abstract class GeometryBase implements Geometry {
 
-    public readonly uuid: UUID;
+    /*public readonly uuid: UUID;
     public readonly isGeometry: true;
     
     private _boundingBox?: BoundingBox;
     private _boundingSphere?: BoundingSphere;
 
     private _indicesArray: TypedArray;
+
+    private _distancesArray: TypedArray;
 
     private _verticesArray: TypedArray;
     private _vertices: Vector3List;
@@ -127,15 +131,18 @@ class GeometryBase implements Geometry {
     private _bitangentsArray: TypedArray;
     private _bitangents: Vector3List;
 
-    private _weightedVerticesNormals: boolean;
+    private _barycentricsArray: TypedArray;
+    private _barycentrics: Vector2List;
 
-    constructor(desc: {
+    private _weightedVerticesNormals: boolean;*/
+
+    constructor(/*desc: {
         vertices: TypedArray;
         indices: TypedArray;
         uvs: TypedArray;
         weightedVerticesNormals?: boolean
-    }) {
-        this.uuid = UUIDGenerator.newUUID();
+    }*/) {
+        /*this.uuid = UUIDGenerator.newUUID();
         this.isGeometry = true;
         
         this._verticesArray = desc.vertices;
@@ -147,31 +154,44 @@ class GeometryBase implements Geometry {
         this._uvsArray = desc.uvs;
         this._uvs = new Vector2List(this._uvsArray);
 
-        this._weightedVerticesNormals = desc.weightedVerticesNormals || false;
+        this._weightedVerticesNormals = desc.weightedVerticesNormals ?? false;
 
         this._facesNormalsArray = GeometryUtils.computeFacesNormals(this._verticesArray, this._indicesArray, Float32Array);
         this._facesNormals = new Vector3List(this._facesNormalsArray);
         
         this._verticesNormalsArray = GeometryUtils.computeVerticesNormals(this._verticesArray, this._indicesArray, this._weightedVerticesNormals, Float32Array, this._facesNormalsArray);
         this._verticesNormals = new Vector3List(this._verticesNormalsArray);
+
+        this._barycentricsArray = GeometryUtils.computeBarycentrics(this._verticesArray, Float32Array);
+        this._barycentrics = new Vector2List(this._barycentricsArray);
+
+        this._distancesArray = GeometryUtils.computeDistances(this._verticesArray, this._indicesArray, Float32Array);
         
         const { tangentsArray, bitangentsArray } = GeometryUtils.computeTangentsAndBitangents(this._verticesArray, this._uvsArray, this._indicesArray, Float32Array);
         this._tangentsArray = tangentsArray;
         this._bitangentsArray = bitangentsArray;
         this._tangents = new Vector3List(this._tangentsArray);
-        this._bitangents = new Vector3List(this._bitangentsArray);
+        this._bitangents = new Vector3List(this._bitangentsArray);*/
     }
 
     /*public builder(): GeometryBuilder {
         return new GeometryBuilderBase(this);
     }*/
 
-    public get indices(): TypedArray {
+    /*public get indices(): TypedArray {
         return this._indicesArray;
     }
 
     public get vertices(): Vector3List {
         return this._vertices;
+    }
+
+    public get barycentrics(): Vector2List {
+        return this._barycentrics;
+    }
+
+    public get distances(): TypedArray {
+        return this._distancesArray;
     }
 
     public get uvs(): Vector2List {
@@ -204,8 +224,10 @@ class GeometryBase implements Geometry {
     
 	public get boundingSphere(): BoundingSphere | undefined {
         return this._boundingSphere;
-    }
+    }*/
 
+    public abstract toBuilder(): GeometryBuilder;
+    
     /*public copy(geometry: GeometryBase): GeometryBase {
         this._verticesArray = geometry._verticesArray.slice();
         this._indicesArray = geometry._indicesArray.slice();
@@ -287,7 +309,7 @@ class GeometryBase implements Geometry {
         return this;
     }*/
     
-	public computeBoundingBox(): BoundingBox {
+	/*public computeBoundingBox(): BoundingBox {
         if (this._boundingBox === undefined) {
             this._boundingBox = new BoundingBox().setFromPoints(this._vertices);
         }
@@ -305,5 +327,5 @@ class GeometryBase implements Geometry {
             this._boundingSphere.setFromPoints(this._vertices);
         }
         return this._boundingSphere;
-    }
+    }*/
 }

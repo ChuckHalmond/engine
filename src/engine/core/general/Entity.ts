@@ -1,36 +1,37 @@
 import { UUID, UUIDGenerator } from "../../libs/maths/statistics/random/UUIDGenerator";
-import { ComponentDesc, Component } from "./Component";
+import { Component } from "./Component";
 import { ComponentsRegistry } from "./ComponentsRegistry";
-import { Transform } from "./Transform";
 
-export { EntityDesc };
+export { EntityDescription };
 export { Entity };
-export { EntityBase };
 
-interface EntityDesc {
-    components?: {
-        [name: string]: ComponentDesc
-    },
-    children?: {
-        [name: string]: EntityDesc
+interface EntityDescription {
+    name: string;
+    children: EntityDescription[];
+    components: {
+        [key: string]: any;
     }
 }
-//TODO: recursively parse active entities ONLY
+
 interface Entity {
+    readonly parent: Entity | null;
+    readonly children: Entity[];
+
+    addChild(child: Entity, index: number): void;
+    removeChild(child: Entity): void;
+    setParent(parent: Entity | null): void;
+    root(): Entity | null;
+
     uuid: UUID;
-    desc: EntityDesc;
     name: string;
-    active: boolean;
-    components: Map<string, Component<any>>;
-    transform: Transform;
     
-    setup(desc: EntityDesc): void;
+    setActive(active: boolean): void;
+    readonly active: boolean;
+    
+    components: Map<string, Component>;
 
-    parent?: Entity;
-    children: Entity[];
-
-    getComponent<T extends Component<any>>(name: string): T | undefined;
-    addComponent<T extends Component<any>>(name: string, desc: any): void;
+    getComponent<T extends Component>(name: string): T | undefined;
+    addComponent<T extends Component>(name: string, ...args: any[]): T;
 }
 
 interface EntityConstructor {
@@ -41,35 +42,86 @@ interface EntityConstructor {
 class EntityBase implements Entity {
     public readonly uuid: UUID;
 
-    desc: EntityDesc;
-    name: string;
-    active: boolean;
-    parent?: Entity;
-    children: Entity[]
-    components: Map<string, Component<any>>;
-    transform: Transform;
+    private _parent: Entity | null;
 
+    public get parent(): Entity | null {
+        return this._parent;
+    }
+
+    readonly children: Entity[];
+
+    name: string;
+
+    private _active: boolean;
+
+    public get active(): boolean {
+        return this._active;
+    }
+
+    components: Map<string, Component>;
+
+    constructor(name: string)
+    constructor(name: string, parent: Entity)
     constructor(name: string, parent?: Entity) {
         this.uuid = UUIDGenerator.newUUID();
-        this.desc = {};
         this.name = name;
-        this.active = false;
-        this.parent = parent;
+        this._active = false;
+        this._parent = parent || null;
         this.children = [];
-        this.components = new Map<string, Component<any>>();
-        this.transform = new Transform();
+        this.components = new Map<string, Component>();
     }
 
-    public setup(desc: EntityDesc) {
-        this.desc = desc;
+    public setActive(active: boolean): void {
+        this._active = active;
     }
 
-    public getComponent<T extends Component<any>>(name: string): T| undefined {
+    public root(): Entity | null {
+        if (this._parent !== null) {
+            return this._parent.parent;
+        }
+        return this;
+    }
+
+    public setParent(parent: Entity | null) {
+        if (this._parent != null) {
+            const childIdx = this._parent.children.indexOf(this);
+            if (childIdx > -1) {
+                const last = this._parent.children.pop();
+                if (last !== undefined) {
+                    this._parent.children[childIdx] = last;
+                }
+            }
+        }
+        if (parent != null) {
+            this._parent = parent;
+            this._parent.children.push(this);
+        }
+    }
+
+    public addChild(child: Entity, index: number): void {
+        if (index > -1) {
+            this.children.length += 1;
+            this.children.copyWithin(index + 1, index, this.children.length);
+            this.children[index] = child;
+        }
+    }
+
+    public removeChild(child: Entity): void {
+        const childIdx = this.children.indexOf(child);
+        if (childIdx > -1) {
+            const last = this.children.pop();
+            if (last !== undefined) {
+                this.children[childIdx] = last;
+            }
+        }
+    }
+
+    public getComponent<T extends Component>(name: string): T | undefined {
         return this.components.get(name) as T;
     }
 
-    public addComponent<T extends Component<any>>(name: string, desc: any): T | undefined {
-        const component = ComponentsRegistry.instance.create(name, this, desc) as T;
+    public addComponent<T extends Component>(name: string, ...args: any[]): T {
+        const component = ComponentsRegistry.instance.create(name, this, ...args) as T;
         this.components.set(name, component);
         return component;
     }

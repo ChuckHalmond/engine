@@ -4,10 +4,9 @@ export type ComponentDesc = {
     [key: string]: any;
 }
 
-export interface Component<T extends ComponentDesc> {
+export interface Component {
     type: string;
     owner: Entity;
-    desc: T;
 
     enabled: boolean;
 
@@ -15,16 +14,14 @@ export interface Component<T extends ComponentDesc> {
     cleanup(): void;
 }
 
-export abstract class AbstractComponent<T extends ComponentDesc> implements Component<T> {
+export abstract class AbstractComponent implements Component {
     type: string;
     owner: Entity;
     enabled: boolean;
-    desc: T;
 
-    constructor(owner: Entity, desc: T) {
+    constructor(owner: Entity) {
         this.type = this.constructor.name;
         this.owner = owner;
-        this.desc = desc;
         this.enabled = false;
     }
 

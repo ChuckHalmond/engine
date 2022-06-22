@@ -1,7 +1,7 @@
-import { ArraySections, ArraySectionValues } from "../../../../../libs/structures/arrays/ArraySection";
+/*import { ArraySections, ArraySectionValues } from "../../../../../libs/structures/arrays/ArraySection";
 import { GeometryPropertyKeys } from "../../../scenes/geometries/Geometry";
 import { PhongGeometry } from "../../../scenes/geometries/PhongGeometry";
-import { Attribute, AttributeProperties } from "../../../webgl/WebGLAttributeUtilities";
+import { Attribute } from "../../../webgl/WebGLAttributeUtilities";
 import { VAOBase } from "../VAO";
 
 export { PhongVAOReferences };
@@ -14,12 +14,12 @@ type PhongVAOReferences = {
 }
 
 type PhongVAOValues = {
-    list: PhongVAOAttributesList,
+    attributes: PhongVAOAttributesList,
     indices: Uint8Array | Uint16Array | Uint32Array,
 }
 
 type PartialPhongVAOValues = {
-    list: RecursivePartial<PhongVAOAttributesList>,
+    attributes: RecursivePartial<PhongVAOAttributesList>,
     indices?: Uint8Array | Uint16Array | Uint32Array,
 }
 
@@ -39,7 +39,7 @@ enum PhongVAOBufferSections {
     a_uv
 }
 
-type BufferAttributesInfo = [keyof PhongVAOAttributesList, ArrayLike<number>, AttributeProperties];
+type BufferAttributesInfo = [keyof PhongVAOAttributesList, Attribute["array"], Attribute["props"]];
 
 class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements PhongVAO {
     
@@ -51,11 +51,11 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
         const geometry = this._references.geometry;
 
         this.buffersAttributes = [
-            ['a_position', geometry.vertices.array, { numComponents: 3 }],
-            ['a_normal', geometry.verticesNormals.array, { numComponents: 3 }],
-            ['a_tangent', geometry.tangents.array, { numComponents: 3 }],
-            ['a_bitangent', geometry.bitangents.array, { numComponents: 3 }],
-            ['a_uv', geometry.uvs.array, { numComponents: 3 }]
+            ['a_position', new Float32Array(geometry.vertices.array), { numComponents: 3 }],
+            ['a_normal', new Float32Array(geometry.verticesNormals.array), { numComponents: 3 }],
+            ['a_tangent', new Float32Array(geometry.tangents.array), { numComponents: 3 }],
+            ['a_bitangent', new Float32Array(geometry.bitangents.array), { numComponents: 3 }],
+            ['a_uv', new Float32Array(geometry.uvs.array), { numComponents: 3 }]
         ];
     }
 
@@ -67,7 +67,7 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
         const geometry = this._references.geometry;
         
         this._values = {
-            list: 
+            attributes: 
                 this.buffersAttributes.reduce((result, item) => {
                 return {
                   ...result,
@@ -109,7 +109,7 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
 
         let hasValues: boolean = false;
         let deltaValues: PartialPhongVAOValues = {
-            list: {}
+            attributes: {}
         };
 
         const sections = this._deltaSections;
@@ -117,8 +117,8 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
             if (!sections.isEmpty(PhongVAOBufferSections.a_position)) {
                 const section = sections.getThenSetEmpty(PhongVAOBufferSections.a_position);
                 
-                deltaValues.list.a_position = {
-                    array: this._values.list.a_position.array,
+                deltaValues.attributes.a_position = {
+                    array: this._values.attributes.a_position.array,
                     props: {
                         numComponents: 3,
                         srcOffset: section[0],
@@ -132,4 +132,4 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
 
         return (hasValues) ? deltaValues : null;
     }
-}
+}*/

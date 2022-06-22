@@ -67,7 +67,7 @@ declare class RayBase implements Ray {
     intersectionWithSphere(sphere: BoundingSphere, out: Vector3): Vector3 | null;
     intersectionWithPlane(plane: Plane, out: Vector3): Vector3 | null;
     intersectionWithBox(box: BoundingBox, out: Vector3): Vector3 | null;
-    transform(mat: Matrix4): void;
+    transform(matrix: Matrix4): void;
 }
 declare var Ray: RayConstructor;
 declare const RayInjector: Injector<RayConstructor>;

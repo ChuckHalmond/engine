@@ -99,11 +99,11 @@ class PlaneBase implements Plane {
 
 	public setFromCoplanarPoints(point1: Vector3, point2: Vector3, point3: Vector3): PlaneBase {
         const normal = point3.clone();
-        Vector3Pool.acquireTemp(1, (temp) => {
-            temp.copy(point1);
-            normal.sub(point2).cross(temp.sub(point2)).normalize();
-            this.setFromNormalAndCoplanarPoint(normal, point1);
-        });
+        const [temp] = Vector3Pool.acquire(1);
+        temp.copy(point1);
+        normal.sub(point2).cross(temp.sub(point2)).normalize();
+        this.setFromNormalAndCoplanarPoint(normal, point1);
+        Vector3Pool.release(1);
 		return this;
     }
 
@@ -112,9 +112,9 @@ class PlaneBase implements Plane {
 	}
     
     public normalized(): PlaneBase {
-        const inverseNormalLength = 1.0 / this._normal.len();
+        const inverseNormalLength = 1.0 / this._normal.length();
         
-        this._normal.multScalar(inverseNormalLength);
+        this._normal.scale(inverseNormalLength);
 		this._constant *= inverseNormalLength;
 
 		return this;

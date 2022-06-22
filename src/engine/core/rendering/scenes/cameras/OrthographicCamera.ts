@@ -4,25 +4,25 @@ import { CameraBase, Camera } from "./Camera";
 export class OrthographicCamera extends CameraBase {
     
     constructor(
-        left: number = 0,
-        width: number = 0,
-        height: number = 400,
-        top: number = 400,
-        near: number = 400,
-        far: number = -400) {
+        left: number,
+        right: number,
+        bottom: number,
+        top: number,
+        near: number,
+        far: number) {
         
-        super(new Matrix4().asOrthographic(left, left + width, top + height, top, near, far));
+        super(Matrix4.orthographic(left, right, bottom, top, near, far));
     }
 
     public setValues(
-        left: number = 0,
-        width: number = 0,
-        height: number = 400,
-        top: number = 400,
-        near: number = 400,
-        far: number = -400): Camera {
+        left: number,
+        right: number,
+        bottom: number,
+        top: number,
+        near: number,
+        far: number): Camera {
         
-        this._projection.asOrthographic(left, left + width, top + height, top, near, far);
+        this._projection.setOrthographic(left, right, bottom, top, near, far);
         this.updateFrustrum();
         return this;
     }

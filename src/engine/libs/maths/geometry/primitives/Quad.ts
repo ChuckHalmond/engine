@@ -111,11 +111,11 @@ class QuadBase implements Quad {
         this._point4.add(vec);
     }
 
-    public transform(mat: Matrix4): void {
-        this._point1.setValues(mat.transformDirection(this._point1));
-        this._point2.setValues(mat.transformDirection(this._point2));
-        this._point3.setValues(mat.transformDirection(this._point3));
-        this._point4.setValues(mat.transformDirection(this._point4));
+    public transform(matrix: Matrix4): void {
+        matrix.transformDirection(this._point1);
+        matrix.transformDirection(this._point2);
+        matrix.transformDirection(this._point3);
+        matrix.transformDirection(this._point4);
     }
 
     public copyTriangles(triangle1: Triangle, triangle2: Triangle): void {

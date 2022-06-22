@@ -20,7 +20,7 @@ interface ColorConstructor {
 }
 
 interface Color {
-    array: ArrayLike<number>;
+    array: WritableArrayLike<number>;
     r: number;
     g: number;
     b: number;
@@ -75,7 +75,7 @@ class ColorBase implements Color {
         return a;
     }
 
-    public get array(): ArrayLike<number> {
+    public get array(): WritableArrayLike<number> {
         return this._array;
     }
 

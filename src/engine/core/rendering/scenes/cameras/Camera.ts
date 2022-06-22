@@ -1,5 +1,6 @@
 import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
 import { Matrix4 } from "../../../../libs/maths/algebra/matrices/Matrix4";
+import { Space } from "../../../../libs/maths/geometry/space/Space";
 import { UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
 import { Frustrum } from "../../../../libs/physics/collisions/Frustrum";
 import { Mesh } from "../objects/meshes/Mesh";
@@ -10,8 +11,9 @@ export { CameraBase };
 
 interface Camera extends Object3D {
   readonly uuid: UUID;
-  projection: Matrix4;
-  getProjection(mat: Matrix4): Matrix4;
+  readonly viewProjection: Matrix4;
+  readonly projection: Matrix4;
+  readonly view: Matrix4
   isViewing(mesh: Mesh): boolean;
 }
 
@@ -30,19 +32,24 @@ class CameraBase extends Object3DBase {
     }
 
     public get projection(): Matrix4 {
-      return this._projection;
+      return this._projection.clone();
     }
 
-    public getProjection(mat: Matrix4): Matrix4 {
-      return mat.copy(this._projection);
+    public get view(): Matrix4 {
+      return this.transform.matrix.clone().invert();
+    }
+
+    public get viewProjection(): Matrix4 {
+      return this.projection.clone().mult(this.view);
     }
 
     public isViewing(mesh: Mesh): boolean {
-      if (typeof mesh.geometry.boundingBox === 'undefined') {
+      /*if (typeof mesh.geometry.boundingBox === 'undefined') {
         const boundingBox = mesh.geometry.computeBoundingBox();
         return this._frustrum.intersectsBox(boundingBox);
       }
-      return this._frustrum.intersectsBox(mesh.geometry.boundingBox);
+      return this._frustrum.intersectsBox(mesh.geometry.boundingBox);*/
+      return true;
     }
 
     protected updateFrustrum(): void {

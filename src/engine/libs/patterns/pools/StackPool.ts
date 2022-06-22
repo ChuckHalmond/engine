@@ -1,13 +1,14 @@
 import { PoolAutoExtendPolicy, PoolBase, Pool } from "./Pool";
 
 export { StackPool };
-export { StackPoolBase };
 
-interface StackPool<O extends object = object> extends Pool<O> {}
+interface StackPool<O extends object = object> extends Pool<O> {
+    
+}
 
 interface StackPoolConstructor {
     readonly prototype: StackPool;
-    new<O extends object, C extends Constructor<O>>(constructor: C, options?: {args?: ConstructorParameters<C>, policy?: PoolAutoExtendPolicy, size?: number}): StackPool<O>;
+    new<O extends object>(constructor: Constructor<O>, options?: {args?: ConstructorParameters<Constructor<O>>, policy?: PoolAutoExtendPolicy, size?: number}): StackPool<O>;
 }
 
 class StackPoolBase<O extends object = object> extends PoolBase<O> implements Pool<O> {
@@ -22,69 +23,30 @@ class StackPoolBase<O extends object = object> extends PoolBase<O> implements Po
         this._top = 0;
     }
     
-    public acquireTemp<N extends number>(n: N, func: (...args: O[]) => void): void {
+    public acquire(count: number): O[] {
         const top = this._top;
-        const target = top + n;
-        const obj = this._objects;
+        const target = top + count;
 
-        while (obj.length < target) {
-            this._autoExtend();
+        if (this._autoExtendPolicy) {
+            while (this._objects.length < target) {
+                this.autoExtend();
+            }
         }
         this._top = target;
         
-        switch (n) {
-            case 1:
-                func(obj[top]);
-                break;
-            case 2:
-                func(obj[top], obj[top + 1]);
-                break;
-            case 3:
-                func(obj[top], obj[top + 1], obj[top + 2]);
-                break;
-            case 4:
-                func(obj[top], obj[top + 1], obj[top + 2], obj[top + 3]);
-                break;
-            case 5:
-                func(obj[top], obj[top + 1], obj[top + 2], obj[top + 3], obj[top + 4]);
-                break;
-            case 6:
-                func(obj[top], obj[top + 1], obj[top + 2], obj[top + 3], obj[top + 4], obj[top + 5]);
-                break;
-            case 7:
-                func(obj[top], obj[top + 1], obj[top + 2], obj[top + 3], obj[top + 4], obj[top + 5], obj[top + 6]);
-                break;
-            case 8:
-                func(obj[top], obj[top + 1], obj[top + 2], obj[top + 3], obj[top + 4], obj[top + 5], obj[top + 6], obj[top + 7]);
-                break;
-            default:
-                func(...obj.slice(top, top + n));
-                break;
-        };
-
-        this._top = top;
-    }
-    
-    public acquire(): O {
-        if (this._top + 1 > this._objects.length) {
-            this._autoExtend();
-        }
-        
-        return this._objects[this._top++];
-    }
-    
-    public release(n: number): void {
-        const target = this._top - n;
-        if (target > 0) {
-            this._top = target;
-        }
-        else {
-            this._top = 0;
-        }
+        return this._objects.slice(top, target);
     }
 
-    public extend(n: number): void {
-        this._objects.push(...Array(n).fill(0).map(() => {
+    public release(count: number): void {
+        const top = this._top;
+        if (count > top) {
+            console.warn("Releasing under zero.");
+        }
+        this._top = Math.max(top - count, 0);
+    }
+
+    public extend(count: number): void {
+        this._objects.push(...Array(count).fill(0).map(() => {
             return new this.ctor();
         }));
     }
@@ -96,4 +58,4 @@ class StackPoolBase<O extends object = object> extends PoolBase<O> implements Po
     }
 }
 
-const StackPool: StackPoolConstructor = StackPoolBase;
+var StackPool: StackPoolConstructor = StackPoolBase;

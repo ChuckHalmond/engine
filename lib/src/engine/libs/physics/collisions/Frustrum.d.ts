@@ -16,7 +16,7 @@ interface Frustrum {
     rightPlane: Plane;
     copy(frustrum: Frustrum): Frustrum;
     clone(): Frustrum;
-    setFromPerspectiveMatrix(mat: Matrix4): Frustrum;
+    setFromPerspectiveMatrix(matrix: Matrix4): Frustrum;
     set(nearPlane: Plane, farPlane: Plane, topPlane: Plane, bottomPlane: Plane, leftPlane: Plane, rightPlane: Plane): Frustrum;
     intersectsSphere(sphere: BoundingSphere): boolean;
     intersectsBox(box: BoundingBox): boolean;
@@ -49,7 +49,7 @@ declare class FrustrumBase implements Frustrum {
     set(nearPlane: Plane, farPlane: Plane, topPlane: Plane, bottomPlane: Plane, leftPlane: Plane, rightPlane: Plane): Frustrum;
     copy(frustrum: FrustrumBase): FrustrumBase;
     clone(): FrustrumBase;
-    setFromPerspectiveMatrix(mat: Matrix4): FrustrumBase;
+    setFromPerspectiveMatrix(matrix: Matrix4): FrustrumBase;
     intersectsSphere(sphere: BoundingSphere): boolean;
     intersectsBox(box: BoundingBox): boolean;
     containsPoint(point: Vector3): boolean;

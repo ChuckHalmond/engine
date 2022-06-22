@@ -85,15 +85,15 @@ class BoundingSphereBase implements BoundingSphere {
 			this._center.copy(center);
         }
         else {
-			BoundingBoxPool.acquireTemp(1, (box) => {
-				box.setFromPoints(points).getCenter(this._center);
-			});
+			const [box] = BoundingBoxPool.acquire(1);
+			box.setFromPoints(points).getCenter(this._center);
+			BoundingBoxPool.release(1);
 		}
 
         let maxRadiusSq = 0;
 		
 		points.forEach((point: Vector3) => {
-			maxRadiusSq = Math.max(maxRadiusSq, this._center.distSq(point));
+			maxRadiusSq = Math.max(maxRadiusSq, this._center.distanceSquared(point));
 		});
 
 		this._radius = Math.sqrt(maxRadiusSq);
@@ -113,11 +113,11 @@ class BoundingSphereBase implements BoundingSphere {
 	}
 
 	public containsPoint(point: Vector3): boolean {
-		return (point.distSq(this._center) <= (this._radius * this._radius));
+		return (point.distanceSquared(this._center) <= (this._radius * this._radius));
 	}
 
 	public dist(point: Vector3): number {
-		return (point.dist(this._center) - this._radius);
+		return (point.distance(this._center) - this._radius);
 	}
 
 	public distToPlane(plane: Plane): number {
@@ -127,7 +127,7 @@ class BoundingSphereBase implements BoundingSphere {
 	public intersectsSphere(sphere: BoundingSphereBase): boolean {
         const radiusSum = this._radius + sphere._radius;
         
-		return this._center.distSq(sphere._center) <= (radiusSum * radiusSum);
+		return this._center.distanceSquared(sphere._center) <= (radiusSum * radiusSum);
 	}
 
 	public intersectsBox(box: BoundingBox): boolean {
@@ -139,13 +139,13 @@ class BoundingSphereBase implements BoundingSphere {
 	}
 
 	public clampPoint(point: Vector3, out: Vector3): Vector3 {
-		const deltaLenSq = this._center.distSq(point);
+		const deltaLenSq = this._center.distanceSquared(point);
 
 		out.copy(point);
 
 		if (deltaLenSq > (this._radius * this._radius)) {
 			out.sub(this._center).normalize();
-			out.multScalar(this._radius).add(this._center);
+			out.scale(this._radius).add(this._center);
 		}
 
 		return out;
@@ -164,9 +164,9 @@ class BoundingSphereBase implements BoundingSphere {
 		return out;
 	}
 
-	public transform(mat: Matrix4): void {
-		this._center.setValues(mat.transformPoint(this._center));
-		this._radius = this._radius * mat.getMaxScaleOnAxis();
+	public transform(matrix: Matrix4): void {
+		matrix.transformPoint(this._center);
+		this._radius = this._radius * matrix.getMaxScaleOnAxis();
 	}
 
 	public translate(offset: Vector3): void {

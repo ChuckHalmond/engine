@@ -10,14 +10,11 @@ interface TypedMatrix4Constructor {
 }
 interface TypedMatrix4<T extends TypedArray = Float64Array> extends Matrix4 {
     readonly array: T;
-    setArray<O extends T>(typedArray: O): this;
 }
 declare class TypedMatrix4Base<T extends TypedArray = Float64Array> extends Matrix4Base {
-    protected _array: T;
+    readonly array: T;
     constructor();
     constructor(type: Constructor<T>);
     constructor(type: Constructor<T>, values: Matrix4Values);
-    get array(): T;
-    setArray<O extends T>(typedArray: O): this;
 }
-declare const TypedMatrix4: TypedMatrix4Constructor;
+declare var TypedMatrix4: TypedMatrix4Constructor;

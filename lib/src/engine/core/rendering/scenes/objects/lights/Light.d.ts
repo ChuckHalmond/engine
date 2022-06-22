@@ -3,7 +3,6 @@ import { Mesh } from "../meshes/Mesh";
 import { Object3D, Object3DBase } from "../Object3D";
 export { LightProperties };
 export { Light };
-export { isLight };
 export { LightBase };
 declare enum LightProperties {
     color = 0
@@ -13,7 +12,6 @@ interface Light extends Object3D {
     color: Color;
     isLightingOn(mesh: Mesh): boolean;
 }
-declare function isLight(obj: any): obj is Light;
 declare abstract class LightBase extends Object3DBase {
     readonly isLight: true;
     private _color;

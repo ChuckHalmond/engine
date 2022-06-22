@@ -6,6 +6,8 @@
         "shaders/common/texture.frag",
         "shaders/common/phong.vert",
         "shaders/common/phong.frag",
+        "shaders/common/phong_2.vert",
+        "shaders/common/phong_2.frag",
         "shaders/common/skybox.vert",
         "shaders/common/skybox.frag",
         "img/waves_normal.png",

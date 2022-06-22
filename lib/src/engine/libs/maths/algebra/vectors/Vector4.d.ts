@@ -1,12 +1,10 @@
 import { Injector } from "../../../patterns/injectors/Injector";
 import { Matrix4 } from "../matrices/Matrix4";
-import { Vector3 } from "./Vector3";
-export { Vector4Values };
 export { Vector4 };
 export { Vector4Constructor };
 export { Vector4Injector };
 export { Vector4Base };
-declare type Vector4Values = [number, ...number[]] & {
+export declare type Vector4Values = [number, ...number[]] & {
     length: 4;
 };
 interface Vector4Constructor {
@@ -14,21 +12,20 @@ interface Vector4Constructor {
     new (): Vector4;
     new (values: Vector4Values): Vector4;
     mult(mat: Matrix4, vec: Vector4): Vector4;
-    fromXYZ(vec: Vector3): Vector4;
 }
 interface Vector4 {
-    readonly array: ArrayLike<number>;
+    readonly array: Float32Array;
     values: Vector4Values;
     x: number;
     y: number;
     z: number;
     w: number;
-    setArray(array: WritableArrayLike<number>): this;
     setValues(v: Vector4Values): this;
     copy(vec: Vector4): this;
     clone(): this;
     equals(vec: Vector4): boolean;
     setZeros(): this;
+    setUnit(): this;
     add(vec: Vector4): this;
     addScalar(k: number): this;
     sub(vec: Vector4): this;
@@ -36,10 +33,10 @@ interface Vector4 {
     clamp(min: Vector4, max: Vector4): this;
     multScalar(k: number): this;
     dot(vec: Vector4): number;
-    len(): number;
-    lenSq(): number;
+    length(): number;
+    lengthSquared(): number;
     dist(vec: Vector4): number;
-    distSq(vec: Vector4): number;
+    distSquared(vec: Vector4): number;
     normalize(): this;
     negate(): this;
     mult(vec: Vector4): this;
@@ -48,12 +45,19 @@ interface Vector4 {
     readFromArray(arr: ArrayLike<number>, offset?: number): this;
 }
 declare class Vector4Base {
-    protected _array: WritableArrayLike<number>;
+    readonly array: Float32Array;
     constructor();
     constructor(values: Vector4Values);
-    get array(): ArrayLike<number>;
     get values(): Vector4Values;
     set values(values: Vector4Values);
+    get 0(): number;
+    set 0(x: number);
+    get 1(): number;
+    set 1(y: number);
+    get 2(): number;
+    set 2(z: number);
+    get 3(): number;
+    set 3(w: number);
     get x(): number;
     set x(x: number);
     get y(): number;
@@ -62,12 +66,12 @@ declare class Vector4Base {
     set z(z: number);
     get w(): number;
     set w(w: number);
-    setArray(array: WritableArrayLike<number>): this;
     setValues(v: Vector4Values): this;
     copy(vec: Vector4): this;
     clone(): this;
     equals(vec: Vector4): boolean;
     setZeros(): this;
+    setUnit(): this;
     add(vec: Vector4): this;
     addScalar(k: number): this;
     sub(vec: Vector4): this;
@@ -75,14 +79,13 @@ declare class Vector4Base {
     clamp(min: Vector4, max: Vector4): this;
     multScalar(k: number): this;
     dot(vec: Vector4): number;
-    len(): number;
-    lenSq(): number;
+    length(): number;
+    lengthSquared(): number;
     dist(vec: Vector4): number;
-    distSq(vec: Vector4): number;
+    distSquared(vec: Vector4): number;
     normalize(): this;
     negate(): this;
     mult(vec: Vector4): this;
-    static fromXYZ(vec: Vector3): Vector4Base;
     static mult(mat: Matrix4, vec: Vector4): Vector4;
     addScaled(vec: Vector4, k: number): this;
     writeIntoArray(out: WritableArrayLike<number>, offset?: number): void;

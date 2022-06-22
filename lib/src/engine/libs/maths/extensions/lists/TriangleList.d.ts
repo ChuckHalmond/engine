@@ -3,7 +3,7 @@ import { Triangle } from "../../geometry/primitives/Triangle";
 export { TriangleList };
 export { TriangleListBase };
 interface TriangleList {
-    readonly array: ArrayLike<number>;
+    readonly array: WritableArrayLike<number>;
     readonly count: number;
     setArray(array: WritableArrayLike<number>): this;
     get(idx: number, tri: Triangle): Triangle;
@@ -28,7 +28,7 @@ declare class TriangleListBase implements TriangleList {
     private _array;
     constructor();
     constructor(array: WritableArrayLike<number>);
-    get array(): ArrayLike<number>;
+    get array(): WritableArrayLike<number>;
     get count(): number;
     setArray(array: WritableArrayLike<number>): this;
     get(idx: number, tri: Triangle): Triangle;

@@ -2,10 +2,14 @@ import { Vector3 } from "../../algebra/vectors/Vector3";
 export { Vector3List };
 export { Vector3ListBase };
 interface Vector3List {
-    readonly array: ArrayLike<number>;
+    readonly array: WritableArrayLike<number>;
     readonly count: number;
     setArray(array: WritableArrayLike<number>): this;
     forEach(func: (vec: Vector3, idx: number) => void, options?: {
+        idxFrom: number;
+        idxTo: number;
+    }): void;
+    forEachFromIndices(func: (vec: Vector3, idx: number, indice: number) => void, indices: ArrayLike<number>, options?: {
         idxFrom: number;
         idxTo: number;
     }): void;
@@ -22,7 +26,7 @@ declare class Vector3ListBase implements Vector3List {
     private _array;
     constructor();
     constructor(array: WritableArrayLike<number>);
-    get array(): ArrayLike<number>;
+    get array(): WritableArrayLike<number>;
     get count(): number;
     setArray(array: WritableArrayLike<number>): this;
     forEach(func: (vec: Vector3, idx: number) => void, options?: {

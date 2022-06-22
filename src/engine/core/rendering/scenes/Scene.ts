@@ -1,7 +1,7 @@
 import { Transform, TransformBase } from "../../general/Transform";
-import { Light, isLight } from "./objects/lights/Light";
+import { Light } from "./objects/lights/Light";
 import { CompositeMesh } from "./objects/meshes/CompositeMesh";
-import { Mesh, isMesh } from "./objects/meshes/Mesh";
+import { Mesh } from "./objects/meshes/Mesh";
 
 export { Scene };
 export { BaseScene };
@@ -32,7 +32,7 @@ class BaseScene implements Scene {
 
     public parseObjectRecursive(transform: Transform): void {
 
-        for (const child of transform.children) {
+        /*for (const child of transform.children) {
             this.parseObjectRecursive(child);
         }
         
@@ -43,7 +43,7 @@ class BaseScene implements Scene {
             if (isLight(transform.owner)) {
                 this.lights.push(transform.owner);
             }
-        }
+        }*/
     }
 
     public *lightsOn(mesh: Mesh): IterableIterator<Light> {

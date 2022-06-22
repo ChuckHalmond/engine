@@ -73,7 +73,7 @@ declare class TriangleBase implements Triangle {
     closestPointToPoint(point: Vector3, out: Vector3): Vector3;
     equals(triangle: TriangleBase): boolean;
     translate(vec: Vector3): void;
-    transform(mat: Matrix4): void;
+    transform(matrix: Matrix4): void;
     readFromArray(arr: ArrayLike<number>, offset: number): TriangleBase;
     writeIntoArray(arr: WritableArrayLike<number>, offset: number): void;
 }

@@ -61,8 +61,8 @@ class DualQuaternionBase implements DualQuaternion {
 	}
 
 	public multScalar(scalar: number): this {
-		this.real = this.real.multScalar(scalar);
-		this.dual = this.dual.multScalar(scalar);
+		this.real = this.real.scale(scalar);
+		this.dual = this.dual.scale(scalar);
 
 		return this;
 	}
@@ -77,19 +77,19 @@ class DualQuaternionBase implements DualQuaternion {
 		const quat = this.clone().normalize();
 		const mat = new Matrix4();
 
-		const t = quat.dual.mult(quat.real.conjugate().multScalar(2.0));
+		const t = quat.dual.mult(quat.real.conjugate().scale(2.0));
 
 		const w = quat.real.w;
 		const x = quat.real.x;
 		const y = quat.real.y;
 		const z = quat.real.z;
 
-		mat.setValues([
+		mat.setValues(
 			w * w + x * x - y * y - z * z, 2 * x * y + 2 * w * z,         2 * x * z - 2 * w * y,         0,
 			2 * x * y - 2 * w * z,         w * w + y * y - x * x - z * z, 2 * y * z + 2 * w * x,         0,
 			2 * x * z + 2 * w * y,         2 * y * z - 2 * w * x,         w * w + z * z - x * x - y * y, 0,
 			t.x,                           t.y,                           t.z,                           1
-		]);
+		);
 
 		return mat; 
 	}

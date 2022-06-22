@@ -53,7 +53,7 @@ declare class BoundingSphereBase implements BoundingSphere {
     intersectsPlane(plane: Plane): boolean;
     clampPoint(point: Vector3, out: Vector3): Vector3;
     getBoundingBox(out: BoundingBox): BoundingBox;
-    transform(mat: Matrix4): void;
+    transform(matrix: Matrix4): void;
     translate(offset: Vector3): void;
 }
 declare var BoundingSphere: BoundingSphereConstructor;

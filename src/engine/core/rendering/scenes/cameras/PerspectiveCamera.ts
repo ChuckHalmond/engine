@@ -4,21 +4,21 @@ import { CameraBase } from "./Camera";
 export class PerspectiveCamera extends CameraBase {
     
     constructor(
-        fieldOfViewYInRadians: number = Math.PI,
-        aspect: number = 1,
-        zNear: number = 400,
-        zFar: number = -400) {
+        fov: number,
+        aspect: number,
+        zNear: number,
+        zFar: number) {
         
-        super(new Matrix4().asPerspective(fieldOfViewYInRadians, aspect, zNear, zFar));
+        super(Matrix4.perspective(fov, aspect, zNear, zFar));
     }
 
     public setValues(
-        fieldOfViewYInRadians: number = Math.PI,
-        aspect: number = 1,
-        zNear: number = 400,
-        zFar: number = -400): PerspectiveCamera
+        fov: number,
+        aspect: number,
+        zNear: number,
+        zFar: number): PerspectiveCamera
     {
-        this._projection.asPerspective(fieldOfViewYInRadians, aspect, zNear, zFar);
+        this._projection.setPerspective(fov, aspect, zNear, zFar);
         this.updateFrustrum();
         return this;
     }

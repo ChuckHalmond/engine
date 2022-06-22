@@ -6,8 +6,9 @@ export { Camera };
 export { CameraBase };
 interface Camera extends Object3D {
     readonly uuid: UUID;
-    projection: Matrix4;
-    getProjection(mat: Matrix4): Matrix4;
+    readonly viewProjection: Matrix4;
+    readonly projection: Matrix4;
+    readonly view: Matrix4;
     isViewing(mesh: Mesh): boolean;
 }
 declare class CameraBase extends Object3DBase {
@@ -17,7 +18,8 @@ declare class CameraBase extends Object3DBase {
     constructor();
     constructor(projection: Matrix4);
     get projection(): Matrix4;
-    getProjection(mat: Matrix4): Matrix4;
+    get view(): Matrix4;
+    get viewProjection(): Matrix4;
     isViewing(mesh: Mesh): boolean;
     protected updateFrustrum(): void;
 }

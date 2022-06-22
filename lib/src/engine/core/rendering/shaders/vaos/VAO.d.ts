@@ -1,10 +1,14 @@
 import { Identifiable, UUID } from "../../../../libs/maths/statistics/random/UUIDGenerator";
 import { ArraySections } from "../../../../libs/structures/arrays/ArraySection";
-import { AttributesList } from "../../webgl/WebGLAttributeUtilities";
+import { VertexArray } from "../../webgl/WebGLVertexArrayUtilities";
 export { VAO };
 export { VAOBase };
-declare type VAOCtor<U extends VAOBase, R extends List<Identifiable> = List<Identifiable>> = new (references: R) => U;
-interface VAO<L extends AttributesList = AttributesList> {
+declare type VAOCtor<U extends VAOBase, R extends {
+    [key: string]: Identifiable;
+} = {
+    [key: string]: Identifiable;
+}> = new (references: R) => U;
+interface VAO<L extends VertexArray = VertexArray> {
     readonly name: string;
     readonly uuid: UUID;
     enableDeltaSubscriptions(): void;
@@ -12,7 +16,11 @@ interface VAO<L extends AttributesList = AttributesList> {
     getAttributeValues(): L;
     getDeltaAttributeValues(): RecursivePartial<L> | null;
 }
-declare abstract class VAOBase<R extends List<Identifiable> = List<Identifiable>, L extends AttributesList = AttributesList> implements VAO<L> {
+declare abstract class VAOBase<R extends {
+    [key: string]: Identifiable;
+} = {
+    [key: string]: Identifiable;
+}, L extends VertexArray = VertexArray> implements VAO<L> {
     readonly uuid: UUID;
     readonly name: string;
     protected _references: R;
@@ -25,6 +33,10 @@ declare abstract class VAOBase<R extends List<Identifiable> = List<Identifiable>
     abstract enableDeltaSubscriptions(): void;
     abstract disableDeltaSubscriptions(): void;
     private static _dictionary;
-    protected static getReferencesHash<R extends List<Identifiable>>(references: R): string;
-    static getConcreteInstance<V extends VAOBase, R extends List<Identifiable>>(ctor: VAOCtor<V, R>, references: R): V;
+    protected static getReferencesHash<R extends {
+        [key: string]: Identifiable;
+    }>(references: R): string;
+    static getConcreteInstance<V extends VAOBase, R extends {
+        [key: string]: Identifiable;
+    }>(ctor: VAOCtor<V, R>, references: R): V;
 }

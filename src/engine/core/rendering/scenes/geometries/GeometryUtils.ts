@@ -8,7 +8,7 @@ export { GeometryUtils };
 
 class GeometryUtils {
 
-    public static computeTangentsAndBitangents<C extends (new(length: number) => WritableArrayLike<number>)>(
+    public static computeTangentsAndBitangents<C extends new(length: number) => WritableArrayLike<number>>(
         verticesArray: ArrayLike<number>, uvsArray: ArrayLike<number>, indicesArray: ArrayLike<number>, type: C): {
         tangentsArray: InstanceType<C>,
         bitangentsArray: InstanceType<C>
@@ -85,13 +85,16 @@ class GeometryUtils {
         };
     }
 
-    public static computeFacesNormals<C extends (new(length: number) => WritableArrayLike<number>)>(verticesArray: ArrayLike<number>, indicesArray: ArrayLike<number>, type: C): InstanceType<C> {
+    public static computeFacesNormals<C extends new(length: number) => WritableArrayLike<number>>(verticesArray: ArrayLike<number>, indicesArray: ArrayLike<number>, type: C): InstanceType<C> {
         
         const facesNormalsArray = new type(indicesArray.length);
 
-        let faces = TriangleListPool.acquire().setArray(verticesArray);
-        let facesNormals = Vector3ListPool.acquire().setArray(facesNormalsArray);
-        let normal = Vector3Pool.acquire();
+        const [faces] = TriangleListPool.acquire(1);
+        const [facesNormals] = Vector3ListPool.acquire(1);
+        const [normal] = Vector3Pool.acquire(1);
+        
+        faces.setArray(verticesArray);
+        facesNormals.setArray(facesNormalsArray);
         
         faces.forIndexedPoints((face: Triangle, idx: number) => {
             face.getNormal(normal);
@@ -104,45 +107,82 @@ class GeometryUtils {
 
         return facesNormalsArray as InstanceType<C>;
     }
+
+    public static computeBarycentrics<C extends new(length: number) => WritableArrayLike<number>>(verticesArray: ArrayLike<number>, type: C): InstanceType<C> {
+        const barycentricsArray = new type(verticesArray.length * (2 / 3));
+
+        for (let i = 0; i < barycentricsArray.length; i += 6) {
+            barycentricsArray[i + 2] = 1;
+            barycentricsArray[i + 5] = 1;
+        }
+        
+        return barycentricsArray as InstanceType<C>;
+    }
+
+    public static computeDistances<C extends new(length: number) => WritableArrayLike<number>>(facesArray: ArrayLike<number>, indicesArray: ArrayLike<number>, type: C): InstanceType<C> {
+        const [faces] = TriangleListPool.acquire(1);
+        faces.setArray(facesArray);
+
+        const distancesArray = new type(faces.count * 3);
+
+        faces.forIndexedPoints((face: Triangle, faceIdx: number) => {
+            const dist1 = face.point2.distance(face.point1);
+            const dist2 = face.point3.distance(face.point2);
+            const dist3 = face.point1.distance(face.point3);
+            const index = faceIdx * 3;
+            distancesArray[index    ] = dist1;
+            distancesArray[index + 1] = dist2;
+            distancesArray[index + 2] = dist3;
+        }, indicesArray);
+
+        TriangleListPool.release(1);
+        
+        return distancesArray as InstanceType<C>;
+    }
     
-    public static computeVerticesNormals<C extends (new(length: number) => WritableArrayLike<number>)>(
+    public static computeVerticesNormals<C extends new(length: number) => WritableArrayLike<number>>(
         verticesArray: ArrayLike<number>, indicesArray: ArrayLike<number>, weighted: boolean, type: C, facesNormalsArray?: ArrayLike<number>): InstanceType<C> {
         
         const verticesNormalsArray = new type(verticesArray.length);
         
-        let verticesNormals = Vector3ListPool.acquire().setArray(verticesNormalsArray);
-        let vertices = Vector3ListPool.acquire().setArray(verticesArray);
-        let faces = TriangleListPool.acquire().setArray(verticesArray);
+        const [verticesNormals, facesNormals, vertices] = Vector3ListPool.acquire(3);
+        const [faces] = TriangleListPool.acquire(1);
 
-        let facesNormals = Vector3ListPool.acquire().setArray(
-            facesNormalsArray ?  facesNormalsArray : this.computeFacesNormals(verticesArray, indicesArray, type)
+        verticesNormals.setArray(verticesNormalsArray);
+        vertices.setArray(verticesArray);
+        faces.setArray(verticesArray);
+        
+        facesNormals.setArray(
+            facesNormalsArray ? facesNormalsArray : this.computeFacesNormals(verticesArray, indicesArray, type)
         );
         
-        Vector3Pool.acquireTemp(2, (vertexNormalsSum, faceNormal) => {
-            if (weighted) {
-                vertices.forEach((vert: Vector3, vertIdx: number) => {
-                    verticesNormals.get(vertIdx, vertexNormalsSum);
-                    
-                    faces.forIndexedPoints((face: Triangle, faceIdx: number) => {
-                        if (face.indexOfPoint(vert) > -1) {
-                            facesNormals.get(faceIdx, faceNormal);
-                            vertexNormalsSum.add(faceNormal.multScalar(face.getArea()));
-                        }
-                    }, indicesArray);
-
-                    vertexNormalsSum.normalize();
-                    verticesNormals.set(vertIdx, vertexNormalsSum);
-                });
-            }
-            else {
-                faces.forIndexedPoints((face: Triangle, faceIdx: number, pointsIndices: Tuple<number, 3>) => {
-                    face.getNormal(faceNormal);
-                    verticesNormals.set(pointsIndices[0], faceNormal);
-                    verticesNormals.set(pointsIndices[1], faceNormal);
-                    verticesNormals.set(pointsIndices[2], faceNormal);
+        const [vertexNormal, faceNormal] = Vector3Pool.acquire(3);
+        
+        if (weighted) {
+            vertices.forEach((vert: Vector3, vertIdx: number) => {
+                verticesNormals.get(vertIdx, vertexNormal);
+                faces.forIndexedPoints((face: Triangle, faceIdx: number) => {
+                    if (face.indexOfPoint(vert) > -1) {
+                        facesNormals.get(faceIdx, faceNormal);
+                        vertexNormal.add(faceNormal.scale(face.getArea()));
+                    }
                 }, indicesArray);
-            }
-        });
+                vertexNormal.normalize();
+                verticesNormals.set(vertIdx, vertexNormal);
+            });
+        }
+        else {
+            faces.forIndexedPoints((face: Triangle, faceIdx: number, pointsIndices: Tuple<number, 3>) => {
+                face.getNormal(faceNormal);
+                pointsIndices.forEach(point => {
+                    verticesNormals.set(point, faceNormal);
+                });
+            }, indicesArray);
+        }
+        
+        Vector3ListPool.release(3);
+        TriangleListPool.release(1);
+        Vector3Pool.release(3);
 
         return verticesNormalsArray as InstanceType<C>;
     }

@@ -17,13 +17,25 @@ type Matrix3Values = [
 interface Matrix3Constructor {
 	readonly prototype: Matrix3;
 	new(): Matrix3;
-	new(values: Matrix3Values): Matrix3;
-	new(values?: Matrix3Values): Matrix3;
+	new(
+    m11: number, m21: number, m31: number,
+    m12: number, m22: number, m32: number,
+    m13: number, m23: number, m33: number
+  ): Matrix3;
+  new(array: ArrayLike<number>): Matrix3;
+  rotationX(angle: number): Matrix3;
+  rotationY(angle: number): Matrix3;
+  rotationZ(angle: number): Matrix3;
 }
 
 interface Matrix3 {
-  readonly array: ArrayLike<number>;
-  values: Matrix3Values;
+  readonly array: WritableArrayLike<number>;
+  setValues(
+    m11: number, m21: number, m31: number,
+    m12: number, m22: number, m32: number,
+    m13: number, m23: number, m33: number
+  ): this;
+  getValues(): Matrix3Values;
   row1: Vector3Values;
   row2: Vector3Values;
   row3: Vector3Values;
@@ -39,16 +51,9 @@ interface Matrix3 {
   m31: number;
   m32: number;
   m33: number;
-  setArray(array: WritableArrayLike<number>): this;
-  setValues(m: Matrix3Values): this;
-  getAt(idx: number): number;
-  setAt(idx: number, val: number): this;
-  getEntry(row: number, col: number): number;
-  setEntry(row: number, col: number, val: number): this;
-  getRow(idx: number): Vector3Values;
-  setRow(idx: number, row: Vector3Values): this;
-  getCol(idx: number): Vector3Values;
-  setCol(idx: number, col: Vector3Values): this;
+  setRotationX(angle: number): this;
+  setRotationY(angle: number): this;
+  setRotationZ(angle: number): this;
 
   equals(mat: Matrix3): boolean;
   copy(mat: Matrix3): this;
@@ -70,306 +75,248 @@ interface Matrix3 {
   readFromArray(arr: ArrayLike<number>, offset?: number): void;
 }
 
-class Matrix3Base {
-  protected _array: WritableArrayLike<number>;
+class Matrix3Base implements Matrix3 {
+  public readonly array: Float32Array;
 
 	constructor()
-	constructor(values: Matrix3Values)
-	constructor(values?: Matrix3Values) {
-		this._array = (values) ? [
-      values[0], values[1], values[2],
-      values[3], values[4], values[5],
-      values[6], values[7], values[8]
-		] : [
-      0, 0, 0,
-      0, 0, 0,
-      0, 0, 0
-    ];
-  }
-
-  public get array(): ArrayLike<number> {
-    return this._array;
-  }
-  
-  public get values(): Matrix3Values {
-		return [
-      this._array[0], this._array[1], this._array[2],
-      this._array[3], this._array[4], this._array[5],
-      this._array[6], this._array[7], this._array[8]
-    ];
-	}
-
-	public set values(values: Matrix3Values) {
-    this._array[0] = values[0];
-    this._array[1] = values[1];
-    this._array[2] = values[2];
-    this._array[3] = values[3];
-    this._array[4] = values[4];
-    this._array[5] = values[5];
-    this._array[6] = values[6];
-    this._array[7] = values[7];
-    this._array[8] = values[8];
+  constructor(array: ArrayLike<number>)
+	constructor(
+    m11: number, m21: number, m31: number,
+    m12: number, m22: number, m32: number,
+    m13: number, m23: number, m33: number
+  )
+	constructor(
+    ...args: any[]
+  ) {
+		if (typeof args[0] === "number") {
+			this.array = new Float32Array([
+        args[0], args[1], args[2],
+        args[3], args[4], args[5],
+        args[6], args[7], args[8]
+      ]);
+		}
+		else if (typeof args[0] === "object") {
+      const array = args[0];
+      this.checkArray(array);
+      if (array instanceof Float32Array) {
+        this.array = array;
+      }
+      else {
+        this.array = new Float32Array(array);
+      }
+		}
+		else {
+			this.array = new Float32Array([
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0
+      ]);
+		}
   }
 
   public get row1(): Vector3Values {
 		return [
-      this._array[0],
-      this._array[1],
-      this._array[2]
+      this.array[0],
+      this.array[3],
+      this.array[6]
     ];
 	}
 
-	public set row1(row1: Vector3Values) {
-    this._array[0] = row1[0];
-    this._array[1] = row1[1];
-    this._array[2] = row1[2];
+	public set row1(row: Vector3Values) {
+    this.array[0] = row[0];
+    this.array[3] = row[1];
+    this.array[6] = row[2];
   }
 
   public get row2(): Vector3Values {
 		return [
-      this._array[3],
-      this._array[4],
-      this._array[5]
+      this.array[1],
+      this.array[4],
+      this.array[7]
     ];
 	}
 
-	public set row2(row2: Vector3Values) {
-    this._array[3] = row2[0];
-    this._array[4] = row2[1];
-    this._array[5] = row2[2]
+	public set row2(row: Vector3Values) {
+    this.array[1] = row[0];
+    this.array[4] = row[1];
+    this.array[7] = row[2]
   }
 
   public get row3(): Vector3Values {
 		return [
-      this._array[6],
-      this._array[7],
-      this._array[8]
+      this.array[2],
+      this.array[5],
+      this.array[8]
     ];
 	}
 
-	public set row3(row3: Vector3Values) {
-    this._array[6] = row3[0];
-    this._array[7] = row3[1];
-    this._array[8] = row3[2]
+	public set row3(row: Vector3Values) {
+    this.array[2] = row[0];
+    this.array[5] = row[1];
+    this.array[8] = row[2]
   }
 
   public get col1(): Vector3Values {
 		return [
-      this._array[0],
-      this._array[3],
-      this._array[6]
+      this.array[0],
+      this.array[1],
+      this.array[2]
     ];
 	}
 
-	public set col1(col1: Vector3Values) {
-    this._array[0] = col1[0];
-    this._array[3] = col1[1];
-    this._array[6] = col1[2];
+	public set col1(col: Vector3Values) {
+    this.array[0] = col[0];
+    this.array[1] = col[1];
+    this.array[2] = col[2];
   }
 
   public get col2(): Vector3Values {
 		return [
-      this._array[1],
-      this._array[4],
-      this._array[7]
+      this.array[3],
+      this.array[4],
+      this.array[5]
     ];
 	}
 
-	public set col2(col2: Vector3Values) {
-    this._array[1] = col2[0];
-    this._array[4] = col2[1];
-    this._array[7] = col2[2]
+	public set col2(col: Vector3Values) {
+    this.array[3] = col[0];
+    this.array[4] = col[1];
+    this.array[5] = col[2]
   }
 
   public get col3(): Vector3Values {
 		return [
-      this._array[2],
-      this._array[5],
-      this._array[8]
+      this.array[6],
+      this.array[7],
+      this.array[8]
     ];
 	}
 
-	public set col3(col3: Vector3Values) {
-    this._array[2] = col3[0];
-    this._array[5] = col3[1];
-    this._array[8] = col3[2];
+	public set col3(col: Vector3Values) {
+    this.array[6] = col[0];
+    this.array[7] = col[1];
+    this.array[8] = col[2];
   }
 
   public get m11() {
-		return this._array[0];
+		return this.array[0];
 	}
 
-	public set m11(m11: number) {
-		this._array[0] = m11;
+	public set m11(val: number) {
+		this.array[0] = val;
   }
   
   public get m12() {
-		return this._array[1];
+		return this.array[3];
 	}
 
-	public set m12(m12: number) {
-		this._array[1] = m12;
+	public set m12(val: number) {
+		this.array[3] = val;
   }
   
   public get m13() {
-		return this._array[2];
+		return this.array[6];
 	}
 
-	public set m13(m13: number) {
-		this._array[2] = m13;
+	public set m13(val: number) {
+		this.array[6] = val;
   }
   
   public get m21() {
-		return this._array[4];
+		return this.array[1];
 	}
 
-	public set m21(m21: number) {
-		this._array[4] = m21;
+	public set m21(val: number) {
+		this.array[1] = val;
   }
   
   public get m22() {
-		return this._array[5];
+		return this.array[4];
 	}
 
-	public set m22(m22: number) {
-		this._array[5] = m22;
+	public set m22(val: number) {
+		this.array[4] = val;
   }
   
   public get m23() {
-		return this._array[6];
+		return this.array[7];
 	}
 
-	public set m23(m23: number) {
-		this._array[6] = m23;
+	public set m23(val: number) {
+		this.array[7] = val;
   }
   
   public get m31() {
-		return this._array[8];
+		return this.array[2];
 	}
 
-  public set m31(m31: number) {
-		this._array[8] = m31;
+  public set m31(val: number) {
+		this.array[2] = val;
   }
   
   public get m32() {
-		return this._array[9];
+		return this.array[5];
 	}
 
-	public set m32(m32: number) {
-		this._array[9] = m32;
+	public set m32(val: number) {
+		this.array[5] = val;
   }
   
   public get m33() {
-		return this._array[10];
+		return this.array[8];
 	}
 
-  public set m33(m33: number) {
-		this._array[10] = m33;
+  public set m33(val: number) {
+		this.array[8] = val;
   }
 
-	public setArray(array: WritableArrayLike<number>): this {
-		if (array.length < 16) {
-			throw new MathError(`Array must be of length 16 at least.`);
+  private checkArray(array: ArrayLike<number>): void {
+		if (array.length < 9) {
+			throw new MathError(`Array must be of length 9 at least.`);
 		}
-		this._array = array;
-		return this;
 	}
 
-  public setValues(m: Matrix3Values): this {
-		const o = this._array;
-
-    o[0] = m[0];
-    o[1] = m[1];
-    o[2] = m[2];
-    o[3] = m[3];
-    o[4] = m[4];
-    o[5] = m[5];
-    o[6] = m[6];
-    o[7] = m[7];
-    o[8] = m[8];
-
-		return this;
+  public getValues(): Matrix3Values {
+		return [
+      this.array[0], this.array[1], this.array[2],
+      this.array[3], this.array[4], this.array[5],
+      this.array[6], this.array[7], this.array[8],
+    ];
 	}
 
-  public getRow(idx: number): Vector3Values {
-    const m = this._array;
-    const offset = idx * 3;
-
-    return [
-      m[offset    ],
-      m[offset + 1],
-      m[offset + 2]
-    ];
-  }
-
-  public setRow(idx: number, row: Vector3Values): this {
-    const o = this._array;
-    const offset = idx * 3;
-
-    o[offset    ] = row[0];
-    o[offset + 1] = row[1];
-    o[offset + 2] = row[2];
+	public setValues(
+    m11: number, m21: number, m31: number,
+    m12: number, m22: number, m32: number,
+    m13: number, m23: number, m33: number
+  ): this {
+    this.array[0] = m11;
+    this.array[1] = m21;
+    this.array[2] = m31;
+    this.array[3] = m12;
+    this.array[4] = m22;
+    this.array[5] = m32;
+    this.array[6] = m13;
+    this.array[7] = m23;
+    this.array[8] = m33;
 
     return this;
   }
 
-  public setCol(idx: number, col: Vector3Values): this {
-    const o = this._array;
-
-    o[     idx] = col[0];
-    o[3  + idx] = col[1];
-    o[6  + idx] = col[2];
-
-    return this;
-  }
-
-  public getCol(idx: number): Vector3Values {
-    const m = this._array;
-
-    return [
-      m[     idx],
-      m[3  + idx],
-      m[6  + idx]
-    ];
-  }
-
-  public getAt(idx: number): number {
-    return this._array[idx];
-  }
-
-  public setAt(idx: number, val: number): this {
-    this._array[idx] = val;
-
-    return this;
-  }
-
-  public getEntry(row: number, col: number): number {
-    return this._array[3 * row + col];
-  }
-
-  public setEntry(row: number, col: number, val: number): this {
-    this._array[3 * row + col] = val;
-
-    return this;
-  }
-
-	public equals(mat: Matrix3): boolean {
-    const o = this._array;
-    const m = mat.array;
-
-    return o[0] === m[0]
-      && o[1] === m[1]
-      && o[2] === m[2]
-      && o[3] === m[3]
-      && o[4] === m[4]
-      && o[5] === m[5]
-      && o[6] === m[6]
-      && o[7] === m[7]
-      && o[8] === m[8];
+	public equals(other: Matrix3): boolean {
+    const o = other.array;
+    return this.array[0] === o[0]
+      && this.array[1] === o[1]
+      && this.array[2] === o[2]
+      && this.array[3] === o[3]
+      && this.array[4] === o[4]
+      && this.array[5] === o[5]
+      && this.array[6] === o[6]
+      && this.array[7] === o[7]
+      && this.array[8] === o[8];
   }
 
   public copy(mat: Matrix3): this {
-    const o = this._array;
+    const o = this.array;
     const m = mat.array;
 
     o[0] = m[0];
@@ -386,11 +333,15 @@ class Matrix3Base {
   }
 
   public clone(): this {
-    return new Matrix3Base(this.values) as this;
+    return new Matrix3Base(
+      this.array[0], this.array[1], this.array[2],
+      this.array[3], this.array[4], this.array[5],
+      this.array[6], this.array[7], this.array[8]
+    ) as this;
   }
 
   public setIdentity(): this {
-    const o = this._array;
+    const o = this.array;
 
     o[0] = 1;
     o[1] = 0;
@@ -406,7 +357,7 @@ class Matrix3Base {
   }
 
   public setZeros(): this {
-    const o = this._array;
+    const o = this.array;
 
     o[0] = 0;
     o[1] = 0;
@@ -422,7 +373,7 @@ class Matrix3Base {
   }
 
   public det(): number {
-    const o = this._array;
+    const o = this.array;
 
     const x = o[0] * ((o[4] * o[8]) - (o[5] * o[7]));
     const y = o[1] * ((o[3] * o[8]) - (o[5] * o[6]));
@@ -432,13 +383,13 @@ class Matrix3Base {
   }
 
   public trace(): number {
-    const o = this._array;
+    const o = this.array;
     
     return o[0] + o[4] + o[8];
   }
 
   public negate(): this {
-    const o = this._array;
+    const o = this.array;
 
     o[0] = -o[0];
     o[1] = -o[1];
@@ -454,7 +405,7 @@ class Matrix3Base {
   }
 
   public transpose(): this {
-    const o = this._array;
+    const o = this.array;
 
     let t;
 
@@ -474,7 +425,7 @@ class Matrix3Base {
   }
 
   public invert(): this {
-    const o = this._array;
+    const o = this.array;
 
     const t11 = o[1 * 3 + 1] * o[2 * 3 + 2] - o[1 * 3 + 2] * o[2 * 3 + 1];
     const t12 = o[0 * 3 + 1] * o[2 * 3 + 2] - o[0 * 3 + 2] * o[2 * 3 + 1];
@@ -510,7 +461,7 @@ class Matrix3Base {
   }
 
   public add(mat: Matrix3): this {
-    const o = this._array;
+    const o = this.array;
     const m = mat.array;
 
     o[0] = o[0] + m[0];
@@ -527,8 +478,8 @@ class Matrix3Base {
   }
 
   public sub(mat: Matrix3Base): this {
-    const o = this._array;
-    const m = mat._array;
+    const o = this.array;
+    const m = mat.array;
 
     o[0] = o[0] - m[0];
     o[1] = o[1] - m[1];
@@ -544,7 +495,7 @@ class Matrix3Base {
   }
 
   public mult(mat: Matrix3): this {
-    const o = this._array;
+    const o = this.array;
     const m = mat.array;
 
     const a11 = o[0 * 3 + 0];
@@ -580,7 +531,7 @@ class Matrix3Base {
   }
 
   public multScalar(k: number): this {
-    const o = this._array;
+    const o = this.array;
 
     o[0] = o[0] * k;
     o[1] = o[1] * k;
@@ -596,7 +547,7 @@ class Matrix3Base {
   }
 
   public writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
-		const m = this._array;
+		const m = this.array;
 
 		out[offset     ] = m[ 0];
 		out[offset +  1] = m[ 1];
@@ -610,7 +561,7 @@ class Matrix3Base {
   }
     
   public readFromArray(arr: ArrayLike<number>, offset: number = 0): void {
-		const o = this._array;
+		const o = this.array;
 
 		o[ 0] = arr[offset     ];
 		o[ 1] = arr[offset +  1];
@@ -623,8 +574,71 @@ class Matrix3Base {
     o[ 8] = arr[offset +  8];
   }
 
+  public static rotationX(angle: number): Matrix3Base {
+    return new Matrix3Base().setRotationX(angle);
+  }
+
+  public setRotationX(angle: number): this {
+    const cosAngle = Math.cos(angle);
+    const sinAngle = Math.sin(angle);
+
+    this.array[0] = 1;
+    this.array[1] = 0;
+    this.array[2] = 0;
+    this.array[3] = 0;
+    this.array[4] = cosAngle;
+    this.array[5] = sinAngle;
+    this.array[6] = 0;
+    this.array[7] = -sinAngle;
+    this.array[8] = cosAngle;
+
+    return this;
+  }
+  
+  public static rotationY(angle: number): Matrix3Base {
+    return new Matrix3Base().setRotationY(angle);
+  }
+
+  public setRotationY(angle: number): this {
+    const cosAngle = Math.cos(angle);
+    const sinAngle = Math.sin(angle);
+    
+    this.array[0] = cosAngle;
+    this.array[1] = 0;
+    this.array[2] = -sinAngle;
+    this.array[3] = 0;
+    this.array[4] = 1;
+    this.array[5] = 0;
+    this.array[6] = sinAngle;
+    this.array[7] = 0;
+    this.array[8] = cosAngle;
+    
+    return this;
+  }
+
+  public static rotationZ(angle: number): Matrix3Base {
+    return new Matrix3Base().setRotationZ(angle);
+  }
+
+  public setRotationZ(angle: number): this {
+    const cosAngle = Math.cos(angle);
+    const sinAngle = Math.sin(angle);
+
+    this.array[0] = cosAngle;
+    this.array[1] = sinAngle;
+    this.array[2] = 0;
+    this.array[3] = -sinAngle;
+    this.array[4] = cosAngle;
+    this.array[5] = 0;
+    this.array[6] = 0;
+    this.array[7] = 0;
+    this.array[8] = 1;
+
+    return this;
+  }
+
   public solve(vecB: Vector3): Vector3Values {
-    const a = this._array;
+    const a = this.array;
     
     const a11 = a[0];
     const a12 = a[1];
@@ -669,7 +683,7 @@ class Matrix3Base {
   }
 
   public solve2(vecB: Vector2): Vector2Values {
-    const a = this._array;
+    const a = this.array;
 
     const a11 = a[0];
     const a12 = a[1];

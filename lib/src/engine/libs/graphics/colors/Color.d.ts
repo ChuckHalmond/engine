@@ -17,7 +17,7 @@ interface ColorConstructor {
     array(...colors: Color[]): number[];
 }
 interface Color {
-    array: ArrayLike<number>;
+    array: WritableArrayLike<number>;
     r: number;
     g: number;
     b: number;
@@ -41,7 +41,7 @@ declare class ColorBase implements Color {
     static rgb(r: number, g: number, b: number): ColorBase;
     static rgba(r: number, g: number, b: number, a: number): ColorBase;
     static array(...colors: ColorBase[]): number[];
-    get array(): ArrayLike<number>;
+    get array(): WritableArrayLike<number>;
     get r(): number;
     set r(r: number);
     get g(): number;

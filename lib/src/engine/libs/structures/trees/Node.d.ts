@@ -1,18 +1,19 @@
 export { Node };
 export { NodeBase };
-interface Node<N extends Node<any>> {
-    parent: N | null;
-    readonly children: N[];
-    traverse(func: (node: N, parent: N | null) => any): void;
+interface Node {
+    parent: Node | null;
+    readonly children: Node[];
+    removeChild(child: Node): void;
+    root(): Node | null;
 }
-declare abstract class NodeBase<N extends NodeBase<any>> implements Node<N> {
-    protected _parent: N | null;
-    protected _children: N[];
+declare abstract class NodeBase implements Node {
+    protected _parent: Node | null;
+    protected _children: Node[];
     constructor();
-    constructor(parent: N);
-    set parent(parent: N | null);
-    get parent(): N | null;
-    get children(): N[];
-    protected _removeChild(child: N): void;
-    traverse(func: (node: N, parent: N | null) => any): void;
+    constructor(parent: Node);
+    root(): Node | null;
+    set parent(parent: Node | null);
+    get parent(): Node | null;
+    get children(): Node[];
+    removeChild(child: Node): void;
 }

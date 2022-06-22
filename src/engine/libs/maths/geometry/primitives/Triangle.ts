@@ -138,40 +138,41 @@ class TriangleBase implements Triangle {
     }
 
     public getNormal(out: Vector3): Vector3  {
-		Vector3Pool.acquireTemp(1, (temp) => {
-			out.copyAndSub(this._point2, this.point1);
-			temp.copyAndSub(this._point3, this.point1);
-			out.cross(temp).normalize();
-		});
-		
+		const [temp] = Vector3Pool.acquire(1);
+		out.copyAndSub(this._point2, this.point1);
+		temp.copyAndSub(this._point3, this.point1);
+		out.cross(temp).normalize();
+		Vector3Pool.release(1);
+
         return out;
 	}
 
 	public getBarycentricCoordinates(point: Vector3, out: Vector3): Vector3 {
-		Vector3Pool.acquireTemp(3, (v1, v2, vp) => {
-			v1.copyAndSub(this._point2, this._point1),
-			v2.copyAndSub(this._point3, this._point1),
-			vp.copyAndSub(point, this._point1);
+		const [v1, v2, vp] = Vector3Pool.acquire(3);
+		
+		v1.copyAndSub(this._point2, this._point1);
+		v2.copyAndSub(this._point3, this._point1);
+		vp.copyAndSub(point, this._point1);
 
-			const dotxx = v1.dot(v1);
-			const dotxy = v1.dot(v2);
-			const dotxz = v1.dot(vp);
-			const dotyy = v2.dot(v2);
-			const dotyz = v2.dot(vp);
+		const dotxx = v1.dot(v1);
+		const dotxy = v1.dot(v2);
+		const dotxz = v1.dot(vp);
+		const dotyy = v2.dot(v2);
+		const dotyz = v2.dot(vp);
 
-			const denom = (dotxx * dotyy - dotxy * dotxy);
-			if (denom === 0) {
-				// TODO: Handle ?
-				out.setValues([-2, -1, -1]);
-				return;
-			}
+		const denom = (dotxx * dotyy - dotxy * dotxy);
+		if (denom === 0) {
+			// TODO: Handle ?
+			out.setValues([-2, -1, -1]);
+		}
 
-			const invDenom = 1 / denom;
-			const u = (dotyy * dotxz - dotxy * dotyz) * invDenom;
-			const v = (dotxx * dotyz - dotxy * dotxz) * invDenom;
+		const invDenom = 1 / denom;
+		const u = (dotyy * dotxz - dotxy * dotyz) * invDenom;
+		const v = (dotxx * dotyz - dotxy * dotxz) * invDenom;
 
-			out.setValues([1 - u - v, v, u]);
-		});
+		out.setValues([1 - u - v, v, u]);
+		
+		Vector3Pool.release(3);
 
 		return out;
 	}
@@ -191,23 +192,22 @@ class TriangleBase implements Triangle {
 	public containsPoint(point: Vector3): boolean {
 
 		let contains = false;
-		Vector3Pool.acquireTemp(1, (pointCoords) => {
-			this.getBarycentricCoordinates(point, pointCoords);
-			contains = (pointCoords.x >= 0) && (pointCoords.y >= 0) && ((pointCoords.x + pointCoords.y) <= 1);
-		});
+		const [pointCoords] = Vector3Pool.acquire(1);
+		this.getBarycentricCoordinates(point, pointCoords);
+		contains = (pointCoords.x >= 0) && (pointCoords.y >= 0) && ((pointCoords.x + pointCoords.y) <= 1);
+		Vector3Pool.release(1);
         
 		return contains;
 	}
 
 	public getUV(point: Vector3, uv1: Vector2, uv2: Vector2, uv3: Vector2, out: Vector2): Vector2 {
-		Vector3Pool.acquireTemp(1, (pointCoords) => {
-			this.getBarycentricCoordinates(point, pointCoords);
-
-			out.setZeros();
-			out.addScaled(uv1, pointCoords.x);
-			out.addScaled(uv2, pointCoords.y);
-			out.addScaled(uv3, pointCoords.z);
-		});
+		const [pointCoords] = Vector3Pool.acquire(1);
+		this.getBarycentricCoordinates(point, pointCoords);
+		out.setZeros();
+		out.addScaled(uv1, pointCoords.x);
+		out.addScaled(uv2, pointCoords.y);
+		out.addScaled(uv3, pointCoords.z);
+		Vector3Pool.release(1);
 
 		return out;
 	}
@@ -215,11 +215,11 @@ class TriangleBase implements Triangle {
 	public isFrontFacing(direction: Vector3): boolean {
 		let result = false;
 
-		Vector3Pool.acquireTemp(2, (v1, v2) => {
-			v1.copyAndSub(this._point2, this._point1),
-			v2.copyAndSub(this._point3, this._point1);
-			result = (v1.cross(v2).dot(direction) < 0);
-		});
+		const [v1, v2] = Vector3Pool.acquire(2);
+		v1.copyAndSub(this._point2, this._point1),
+		v2.copyAndSub(this._point3, this._point1);
+		result = (v1.cross(v2).dot(direction) < 0);
+		Vector3Pool.release(2);
 
 		return result;
 	}
@@ -227,17 +227,17 @@ class TriangleBase implements Triangle {
 	public getArea(): number {
 		let area = 0;
 		
-		Vector3Pool.acquireTemp(2, (v1, v2) => {
-			v1.copyAndSub(this._point2, this._point1),
-			v2.copyAndSub(this._point3, this._point1);
-			area = v1.cross(v2).len() * 0.5;
-		});
+		const [v1, v2] = Vector3Pool.acquire(2);
+		v1.copyAndSub(this._point2, this._point1),
+		v2.copyAndSub(this._point3, this._point1);
+		area = v1.cross(v2).length() * 0.5;
+		Vector3Pool.release(2);
 
 		return area;
 	}
 
 	public getMidpoint(out: Vector3): Vector3 {
-		return out.copy(this._point1).add(this._point2).add(this._point3).multScalar(1 / 3);
+		return out.copy(this._point1).add(this._point2).add(this._point3).scale(1 / 3);
 	}
 
 	public getPlane(out: Plane): Plane {
@@ -251,60 +251,65 @@ class TriangleBase implements Triangle {
 
         let v, w;
 		
-		Vector3Pool.acquireTemp(4, (vb, vc, vp, vbp) => {
-			vb.copyAndSub(point2, point1),
-			vc.copyAndSub(point3, point1),
-			vp.copyAndSub(point, point1);
+		const [vb, vc, vp, vbp] = Vector3Pool.acquire(4);
+		vb.copyAndSub(point2, point1),
+		vc.copyAndSub(point3, point1),
+		vp.copyAndSub(point, point1);
 
-			const d1 = vb.dot(vp);
-			const d2 = vc.dot(vp);
-			
-			if (d1 <= 0 && d2 <= 0) {
-				return out.copy(point1);
-			}
+		const d1 = vb.dot(vp);
+		const d2 = vc.dot(vp);
+		
+		if (d1 <= 0 && d2 <= 0) {
+			Vector3Pool.release(4);
+			return out.copy(point1);
+		}
 
-			vbp.copyAndSub(point, point2);
-			
-			const d3 = point1.dot(vbp);
-			const d4 = vc.dot(vbp);
-			
-			if (d3 >= 0 && d4 <= d3) {
-				return out.copy(point2);
-			}
+		vbp.copyAndSub(point, point2);
+		
+		const d3 = point1.dot(vbp);
+		const d4 = vc.dot(vbp);
+		
+		if (d3 >= 0 && d4 <= d3) {
+			Vector3Pool.release(4);
+			return out.copy(point2);
+		}
 
-			const dc = d1 * d4 - d3 * d2;
-			if (dc <= 0 && d1 >= 0 && d3 <= 0) {
-				v = d1 / ( d1 - d3 );
-				return out.copy(point1).addScaled(vb, v);
-			}
+		const dc = d1 * d4 - d3 * d2;
+		if (dc <= 0 && d1 >= 0 && d3 <= 0) {
+			v = d1 / ( d1 - d3 );
+			Vector3Pool.release(4);
+			return out.copy(point1).addScaled(vb, v);
+		}
 
-			vp.copyAndSub(point, point3);
-			const d5 = vb.dot(vp);
-			const d6 = vc.dot(vp);
-			if (d6 >= 0 && d5 <= d6) {
-				return out.copy(point3);
-			}
+		vp.copyAndSub(point, point3);
+		const d5 = vb.dot(vp);
+		const d6 = vc.dot(vp);
+		if (d6 >= 0 && d5 <= d6) {
+			Vector3Pool.release(4);
+			return out.copy(point3);
+		}
 
-			const db = d5 * d2 - d1 * d6;
-			if (db <= 0 && d2 >= 0 && d6 <= 0) {
-				w = d2 / (d2 - d6);
-				return out.copy(point1).addScaled(vc, w);
-			}
+		const db = d5 * d2 - d1 * d6;
+		if (db <= 0 && d2 >= 0 && d6 <= 0) {
+			w = d2 / (d2 - d6);
+			Vector3Pool.release(4);
+			return out.copy(point1).addScaled(vc, w);
+		}
 
-			const da = d3 * d6 - d5 * d4;
-			if (da <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0) {
-				vc.copyAndSub(point3, point2);
-				w = ( d4 - d3 ) / ( ( d4 - d3 ) + ( d5 - d6 ) );
-				return out.copy(point2).addScaled(vc, w);
-			}
+		const da = d3 * d6 - d5 * d4;
+		if (da <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0) {
+			vc.copyAndSub(point3, point2);
+			w = ( d4 - d3 ) / ( ( d4 - d3 ) + ( d5 - d6 ) );
+			Vector3Pool.release(4);
+			return out.copy(point2).addScaled(vc, w);
+		}
 
-			const denom = 1 / (da + db + dc );
-			v = db * denom;
-			w = dc * denom;
-			
-			out.copy(point1).addScaled(vb, v).addScaled(vc, w);
-		});
-
+		const denom = 1 / (da + db + dc );
+		v = db * denom;
+		w = dc * denom;
+		
+		out.copy(point1).addScaled(vb, v).addScaled(vc, w);
+		Vector3Pool.release(4);
 		return out;
 	}
 	
@@ -320,10 +325,10 @@ class TriangleBase implements Triangle {
         this._point3.add(vec);
     }
 
-    public transform(mat: Matrix4): void {
-        this._point1.setValues(mat.transformDirection(this._point1));
-        this._point2.setValues(mat.transformDirection(this._point2));
-        this._point3.setValues(mat.transformDirection(this._point3));
+    public transform(matrix: Matrix4): void {
+        matrix.transformDirection(this._point1);
+        matrix.transformDirection(this._point2);
+        matrix.transformDirection(this._point3);
 	}
 
 	public readFromArray(arr: ArrayLike<number>, offset: number): TriangleBase {

@@ -7,8 +7,8 @@ export { MouseButton };
 export { Input };
 
 enum Key {
-    A = 'a',
-    B = 'b',
+    A = "a",
+    B = "b",
     C = "c",
     D = "d",
     E = "e",
@@ -41,6 +41,8 @@ enum Key {
     SHIFT = "Shift"
 }
 
+const KEYS_COUNT = Object.keys(Key).length;
+
 enum KeyModifier {
     Alt = "Alt",
     Control = "Control",
@@ -57,38 +59,38 @@ function displayKeyModifier(mode: KeyModifier): string {
 }
 
 enum MouseButton {
-    LEFT = 1,
-    WHEEL = 2,
-    RIGHT = 3,
-    FORWARD = 4,
-    BACK = 5
+    LEFT = 0,
+    WHEEL = 1,
+    RIGHT = 2,
+    FORWARD = 3,
+    BACK = 4
 }
 
-const BUTTONS_MAP: Array<MouseButton> = [
-    MouseButton.LEFT, MouseButton.WHEEL, MouseButton.RIGHT, MouseButton.BACK, MouseButton.FORWARD
-];
+const MOUSE_BUTTONS_COUNT = Object.keys(MouseButton).length;
 
-const KEYS_INDICES = Object.values(Key).reduce(
-    (map, key, index) => {
-        map[key] = index;
-        return map;
-    },
-    {} as any
+const MOUSE_BUTTONS_INDICES = Object.freeze(
+    Object.values(MouseButton).reduce(
+        (map, button, index) => Object.assign(map, {[button]: index}), {} as any
+    )
 );
 
-const INPUT_EVENT: List<number> = {
-    "DOWN": 0,
-    "REPEAT": 1,
-    "UP": 2
-};
+const KEYS_INDICES = Object.freeze(
+    Object.values(Key).reduce(
+        (map, key, index) => Object.assign(map, {[key]: index}), {} as any
+    )
+);
+
+const INPUT_EVENT_UP = 0;
+const INPUT_EVENT_DOWN = 1;
+const INPUT_EVENT_REPEAT = 2;
 
 const testKeyModifier = (mod: KeyModifier, event: KeyboardEvent) => {
     switch (mod) {
-        case 'Alt':
+        case "Alt":
             return event.altKey;
-        case 'Control':
+        case "Control":
             return event.ctrlKey;
-        case 'Shift':
+        case "Shift":
             return event.shiftKey;
         default:
             return () => true;
@@ -147,71 +149,97 @@ class HotKey {
     }
 }
 
-class Input {
-    
-    private static readonly keysCount = Object.keys(Key).length;
-    private static readonly mouseButtonsCount = Object.keys(MouseButton).length;
+interface Input {
+    initialize(canvas: HTMLCanvasElement): void;
+    clear(): void;
+    getKey(key: Key): boolean;
+    getKeyUp(key: Key): boolean;
+    getKeyDown(key: Key): boolean;
+    getMouseButton(button: MouseButton): boolean;
+    getPointerPosition(): Vector2;
+    getPointerScreenPosition(): Vector2;
+    getWheelDelta(): number;
+    getMouseButtonDown(button: MouseButton): boolean;
+    getMouseButtonUp(button: MouseButton): boolean;
+}
 
-    private static readonly keyFlags = new Array<boolean>(Object.keys(INPUT_EVENT).length * Input.keysCount);
-    private static readonly mouseFlags = new Array<boolean>(Object.keys(INPUT_EVENT).length * Input.mouseButtonsCount);
+class InputBase implements Input {
+    private readonly keyFlags = new Array<boolean>(3 * KEYS_COUNT).fill(false);
+    private readonly mouseFlags = new Array<boolean>(3 * MOUSE_BUTTONS_COUNT).fill(false);
+    private readonly pointerPosition = new Vector2();
+    private wheelDelta = 0;
+    private canvas: HTMLCanvasElement | null = null;
+    private canvasRectangle: DOMRect | null = null;
 
-    private static readonly mousePos = new Vector2();
-    private static wheelDelta = 0;
+    public initialize(canvas: HTMLCanvasElement): void {
+        this.canvas = canvas;
+        this.canvasRectangle = canvas.getBoundingClientRect();
+        canvas.addEventListener("pointerdown", this);
+        canvas.addEventListener("pointerup", this);
+        canvas.addEventListener("contextmenu", this);
+        canvas.addEventListener("pointermove", this);
+        canvas.addEventListener("wheel", this);
+        canvas.addEventListener("keydown", this);
+        canvas.addEventListener("keyup", this);
+        canvas.addEventListener("focusout", this);
+    }
 
-    public static clear() {
-        this.keyFlags.fill(false);
+    public getCanvasRect(): DOMRect {
+        const rect = this.canvasRectangle;
+        if (rect === null) {
+            throw new Error(`Input manager not initialized.`);
+        }
+        return rect;
+    }
 
-        // Keeps the INPUT_EVENT.REPEAT section values
-        this.mouseFlags.fill(false, INPUT_EVENT.DOWN * this.mouseButtonsCount, INPUT_EVENT.REPEAT * this.mouseButtonsCount);
-        this.mouseFlags.fill(false, INPUT_EVENT.UP * this.mouseButtonsCount);
-
+    public clear(): void {
+        this.keyFlags.fill(false, 0, INPUT_EVENT_REPEAT * KEYS_COUNT);
+        this.mouseFlags.fill(false, 0, INPUT_EVENT_REPEAT * MOUSE_BUTTONS_COUNT);
         this.wheelDelta = 0;
     }
-
-    private static initializePointerHandlers(element: HTMLElement) {
-        element.addEventListener('pointerdown', (event: MouseEvent) => {
-            this.mouseFlags[INPUT_EVENT.DOWN * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = true;
-            this.mouseFlags[INPUT_EVENT.REPEAT * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = true;
-            /*if (document.activeElement === element) {
-                event.preventDefault();
-            }*/
-        });
-
-        element.addEventListener('pointerup', (event: MouseEvent) => {
-            this.mouseFlags[INPUT_EVENT.REPEAT * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = false;
-            this.mouseFlags[INPUT_EVENT.UP * this.mouseButtonsCount + BUTTONS_MAP[event.button]] = true;
-        });
-
-        element.addEventListener('contextmenu', (event: MouseEvent) => {
-            event.preventDefault();
-        });
-
-        element.addEventListener('pointermove', (event: MouseEvent) => {
-            this.mousePos.setValues([(event.clientX / element.clientWidth) - 0.5, (event.clientY / element.clientHeight) - 0.5]);
-        });
-
-        element.addEventListener('wheel', (event: WheelEvent) => {
-            this.wheelDelta = Math.min(event.deltaY, 1000) / 1000;
-        }, {passive: true});
+    
+    public handleEvent(event: Event): void {
+        let eventIndex = -1;
+        switch (event.type) {
+            case "pointerdown":
+                eventIndex = MOUSE_BUTTONS_INDICES[(event as MouseEvent).button as MouseButton];
+                this.mouseFlags[INPUT_EVENT_DOWN * MOUSE_BUTTONS_COUNT + eventIndex] = true;
+                this.mouseFlags[INPUT_EVENT_REPEAT * MOUSE_BUTTONS_COUNT + eventIndex] = true;
+                break;
+            case "pointerup":
+                eventIndex = MOUSE_BUTTONS_INDICES[(event as MouseEvent).button as MouseButton];
+                this.mouseFlags[INPUT_EVENT_UP * MOUSE_BUTTONS_COUNT + eventIndex] = true;
+                this.mouseFlags[INPUT_EVENT_REPEAT * MOUSE_BUTTONS_COUNT + eventIndex] = false;
+                break;
+            case "pointermove":
+                const canvasRect = this.getCanvasRect();
+                this.pointerPosition.setValues([
+                    ((event as MouseEvent).clientX - canvasRect.left),
+                    ((event as MouseEvent).clientY - canvasRect.top),
+                ]);
+                break;
+            case "wheel":
+                this.wheelDelta = (event as WheelEvent).deltaY / 100;
+                break;
+            case "keydown":
+                eventIndex = KEYS_INDICES[(event as KeyboardEvent).key as Key];
+                this.keyFlags[INPUT_EVENT_DOWN * KEYS_COUNT + eventIndex] = true;
+                this.keyFlags[INPUT_EVENT_REPEAT * KEYS_COUNT + eventIndex] = true;
+                break;
+            case "keyup":
+                eventIndex = KEYS_INDICES[(event as KeyboardEvent).key as Key];
+                this.keyFlags[INPUT_EVENT_UP * KEYS_COUNT + eventIndex] = true;
+                this.keyFlags[INPUT_EVENT_REPEAT * KEYS_COUNT + eventIndex] = false;
+                break;
+            case "focusout":
+                this.keyFlags.fill(false);
+                this.mouseFlags.fill(false);
+                this.wheelDelta = 0;
+                this.pointerPosition.setZeros();
+                break;
+        }
     }
-
-    private static initializeKeyboardHandlers(element: HTMLElement) {
-        element.addEventListener('keydown', (event: KeyboardEvent) => {
-            this.keyFlags[(!event.repeat ? INPUT_EVENT.DOWN : INPUT_EVENT.REPEAT) * this.keysCount + KEYS_INDICES[event.key as Key]] = true;
-        });
-
-        element.addEventListener('keyup', (event: KeyboardEvent) => {
-            this.keyFlags[INPUT_EVENT.UP * this.keysCount + KEYS_INDICES[event.key as Key]] = true;
-            this.keyFlags[INPUT_EVENT.DOWN * this.keysCount + KEYS_INDICES[event.key as Key]] = false;
-            this.keyFlags[INPUT_EVENT.REPEAT * this.keysCount + KEYS_INDICES[event.key as Key]] = false;
-        });
-    }
-
-    public static initialize(elem: HTMLElement) {
-        this.initializePointerHandlers(elem);
-        this.initializeKeyboardHandlers(elem);
-    }
-
+    
     /*public static getAxis(axisName: string) {
 
     }
@@ -228,35 +256,45 @@ class Input {
 
     }*/
 
-    public static getKey(key: Key): boolean {
-        return this.keyFlags[INPUT_EVENT.REPEAT * this.keysCount + KEYS_INDICES[key]];
+    public getKey(key: Key): boolean {
+        return this.keyFlags[INPUT_EVENT_REPEAT * KEYS_COUNT + KEYS_INDICES[key]];
     }
 
-    public static getKeyUp(key: Key): boolean {
-        return this.keyFlags[INPUT_EVENT.UP * this.keysCount + KEYS_INDICES[key]];
+    public getKeyUp(key: Key): boolean {
+        return this.keyFlags[INPUT_EVENT_UP * KEYS_COUNT + KEYS_INDICES[key]];
     }
 
-    public static getKeyDown(key: Key): boolean {
-        return this.keyFlags[INPUT_EVENT.DOWN * this.keysCount + KEYS_INDICES[key]];
+    public getKeyDown(key: Key): boolean {
+        return this.keyFlags[INPUT_EVENT_DOWN * KEYS_COUNT + KEYS_INDICES[key]];
     }
 
-    public static getMouseButton(button: MouseButton): boolean {
-        return this.mouseFlags[INPUT_EVENT.REPEAT * this.mouseButtonsCount + button];
+    public getMouseButton(button: MouseButton): boolean {
+        return this.mouseFlags[INPUT_EVENT_REPEAT * MOUSE_BUTTONS_COUNT + MOUSE_BUTTONS_INDICES[button]];
     }
 
-    public static getMouseButtonPosition(): Vector2 {
-        return this.mousePos;
+    public getPointerPosition(): Vector2 {
+        return this.pointerPosition.clone();
     }
 
-    public static getWheelDelta(): number {
+    public getPointerScreenPosition(): Vector2 {
+        const positionAray = this.pointerPosition.array;
+        const canvasRect = this.getCanvasRect();
+        const x = (positionAray[0] / canvasRect.width) * 2 - 1;
+        const y = (positionAray[1] / canvasRect.height) * 2 - 1;
+        return new Vector2([x, y]);
+    }
+
+    public getWheelDelta(): number {
         return this.wheelDelta;
     }
 
-    public static getMouseButtonDown(button: MouseButton): boolean {
-        return this.mouseFlags[INPUT_EVENT.DOWN * this.mouseButtonsCount + button];
+    public getMouseButtonDown(button: MouseButton): boolean {
+        return this.mouseFlags[INPUT_EVENT_DOWN * MOUSE_BUTTONS_COUNT + MOUSE_BUTTONS_INDICES[button]];
     }
 
-    public static getMouseButtonUp(button: MouseButton): boolean {
-        return this.mouseFlags[INPUT_EVENT.UP * this.mouseButtonsCount + button];
+    public getMouseButtonUp(button: MouseButton): boolean {
+        return this.mouseFlags[INPUT_EVENT_UP * MOUSE_BUTTONS_COUNT + MOUSE_BUTTONS_INDICES[button]];
     }
 }
+
+var Input: Input = new InputBase();

@@ -1,44 +1,37 @@
 import { UniformsList } from "./WebGLUniformUtilities";
-import { BufferDataUsage } from "./WebGLConstants";
-export { UniformBlockProperties };
-export { UniformBlockReference };
-export { UniformBlockBinding };
-export { UniformBlock };
-export { UniformBlockSetter };
-export { UniformBlocksBindingsContext };
-export { WebGLUniformBlockUtilities };
-declare type UniformBlockProperties = {
+import { BufferProperties, Buffer, BufferDataUsage } from "./WebGLBufferUtilities";
+import { Program } from "./WebGLProgramUtilities";
+export declare type UniformBlock = {
     name: string;
-    usage?: BufferDataUsage;
-};
-declare type UniformBlockReference = {
-    glBuffer: WebGLBuffer;
-};
-declare type UniformBlockBinding = {
+    program: Program;
+    layout: UniformBlockLayout;
+    blockSize: number;
     bindingPoint: number;
 };
-declare type UniformBlock = UniformBlockProperties & UniformBlockReference & UniformBlockBinding;
-declare type UniformBlockSetter = UniformBlock & {
-    index: number;
-    uniforms: {
-        [name: string]: {
-            offset: number;
-        };
+export declare type UniformBlockLayout = {
+    [name: string]: {
+        offset: number;
     };
-    bufferByteLength: number;
-    glProg: WebGLProgram;
 };
-declare type UniformBlocksBindingsContext = {
+export declare type UniformBuffer = Buffer & {
+    rangeOffset?: number;
+    rangeSize?: number;
+};
+export declare type UniformBufferProperties = Omit<BufferProperties, "target"> & {
+    rangeOffset?: number;
+    rangeSize?: number;
+};
+export declare type UniformBlocksBindingsContext = {
     maxBindingPoints: number;
     registeredBindingPoints: Array<boolean>;
 };
-declare class WebGLUniformBlockUtilities {
+export declare class WebGLUniformBlockUtilities {
     private constructor();
-    static createBindingsContext(gl: WebGL2RenderingContext): UniformBlocksBindingsContext;
-    static createUniformBlock(gl: WebGL2RenderingContext, ctx: UniformBlocksBindingsContext, name: string): UniformBlock | null;
-    static getUniformBlockSetter(gl: WebGL2RenderingContext, glProg: WebGLProgram, block: UniformBlock): UniformBlockSetter | null;
-    static setUniformBlockValues(gl: WebGL2RenderingContext, setter: UniformBlockSetter, uniforms: UniformsList): void;
-    static bindUniformBlock(gl: WebGL2RenderingContext, setter: UniformBlockSetter): void;
-    private static _allocateBindingPoint;
+    static createUniformBuffer(gl: WebGL2RenderingContext, program: Program, blockName: string, usage?: BufferDataUsage, byteLength?: number, rangeOffset?: number, rangeSize?: number): UniformBuffer | null;
+    static setUniformBufferValues(gl: WebGL2RenderingContext, layout: UniformBlockLayout, buffer: UniformBuffer, uniforms: UniformsList): void;
+    static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void;
+    static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null;
+    private static _bindingPoints;
     private static _freeBindingPoint;
+    private static _allocateBindingPoint;
 }

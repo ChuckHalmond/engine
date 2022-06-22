@@ -1,17 +1,17 @@
 import { Shader } from "../shaders/Shader";
-import { AttributesList, AttributesSettersList } from "../webgl/WebGLAttributeUtilities";
-import { UniformsList, UniformsSettersList } from "../webgl/WebGLUniformUtilities";
+import { VertexArray } from "../webgl/WebGLVertexArrayUtilities";
+import { UniformsList } from "../webgl/WebGLUniformUtilities";
 export declare type TRenderPacketSetters = {
-    attributes: Array<AttributesSettersList>;
-    uniforms: Array<UniformsSettersList>;
+    vertexArray: Array<VertexArray>;
+    uniforms: Array<UniformsList>;
 };
 export declare type TRenderPacketArrays = {
-    attributes: Array<AttributesList>;
+    vertexArray: Array<VertexArray>;
     uniforms: Array<UniformsList>;
 };
 export declare abstract class RenderPacket<S extends Shader = any> {
     readonly shader: S;
-    readonly attributes: Map<string, AttributesList>;
+    readonly vertexArray: Map<string, VertexArray>;
     readonly uniforms: Map<string, UniformsList>;
     readonly setters: TRenderPacketSetters;
     constructor(shader: S);

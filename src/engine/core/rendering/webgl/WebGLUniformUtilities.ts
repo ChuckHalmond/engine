@@ -1,4 +1,4 @@
-import { UniformType, UniformQuery, TextureUnits } from "./WebGLConstants";
+import { Program, WebGLProgramUtilities } from "./WebGLProgramUtilities";
 import { Texture } from "./WebGLTextureUtilities";
 
 export { UniformValue };
@@ -6,8 +6,51 @@ export { UniformProperties };
 export { Uniform };
 export { UniformsList };
 export { UniformSetter };
-export { UniformsSettersList };
+export { UniformsListSetter };
 export { WebGLUniformUtilities };
+
+export enum UniformType {
+    BOOL = 0x8B56,
+    BOOL_VEC2 = 0x8B57,	 
+    BOOL_VEC3 = 0x8B58,	 
+    BOOL_VEC4 = 0x8B59,
+    INT = 0x1404,
+    INT_VEC2 = 0x8B53,	 
+    INT_VEC3 = 0x8B54,	 
+    INT_VEC4 = 0x8B55,	 
+    INT_SAMPLER_2D = 0x8DCA,
+    INT_SAMPLER_3D = 0x8DCB,
+    INT_SAMPLER_CUBE = 0x8DCC,
+    INT_SAMPLER_2D_ARRAY = 0x8DCF,
+    UNSIGNED_INT_SAMPLER_2D = 0x8DD2,
+    UNSIGNED_INT_SAMPLER_3D = 0x8DD3,
+    UNSIGNED_INT_SAMPLER_CUBE = 0x8DD4,
+    UNSIGNED_INT_SAMPLER_2D_ARRAY = 0x8DD7,
+    UNSIGNED_INT = 0x1405,
+    UNSIGNED_INT_VEC2 = 0x8DC6,
+    UNSIGNED_INT_VEC3 = 0x8DC7,
+    UNSIGNED_INT_VEC4 = 0x8DC8,
+    FLOAT = 0x1406,
+    FLOAT_VEC2 = 0x8B50,	 
+    FLOAT_VEC3 = 0x8B51,	 
+    FLOAT_VEC4 = 0x8B52,
+    FLOAT_MAT2 = 0x8B5A,	 
+    FLOAT_MAT3 = 0x8B5B,	 
+    FLOAT_MAT4 = 0x8B5C,	 
+    FLOAT_MAT2x3 = 0x8B65,
+    FLOAT_MAT2x4 = 0x8B66,
+    FLOAT_MAT3x2 = 0x8B67,
+    FLOAT_MAT3x4 = 0x8B68,
+    FLOAT_MAT4x2 = 0x8B69,
+    FLOAT_MAT4x3 = 0x8B6A,
+    SAMPLER_2D = 0x8B5E,	 
+    SAMPLER_3D = 0x8B5F,
+    SAMPLER_CUBE = 0x8B60,
+    SAMPLER_2D_SHADOW = 0x8B62,
+    SAMPLER_2D_ARRAY = 0x8DC1,
+    SAMPLER_2D_ARRAY_SHADOW = 0x8DC4,
+    SAMPLER_CUBE_SHADOW = 0x8DC5
+}
 
 type UniformValue = number | Float32List | Uint32List | Int32List | Texture;
 
@@ -17,96 +60,64 @@ type UniformProperties = {
     transpose?: boolean;
 }
 
-type Uniform<V extends UniformValue = UniformValue> = {
-    value: V;
+type Uniform = {
+    value: UniformValue;
     props?: UniformProperties;
 }
 
-type UniformsList = List<Uniform>;
+type UniformsList = {
+    [name: string]: Uniform
+};
 
 type UniformSetter = {
     type: UniformType;
-    func: (value: any) => void;
+    set: (value: any) => void;
 }
 
-type UniformsSettersList = {
-    setters: List<UniformSetter | null>;
-    glProg: WebGLProgram;
+type UniformsListSetter = {
+    setters: {
+        [name: string]: UniformSetter | null;
+    };
+    program: Program;
 }
 
 class WebGLUniformUtilities {
 
     private constructor() {}
 
-    public static getUniformValueArrayBufferView(uniformValue: UniformValue): ArrayBufferView {
-        if (typeof uniformValue === 'number') {
-            return new Float32Array([uniformValue]);
-        }
-        else if ('unit' in uniformValue) {
-            return new Float32Array(uniformValue.unit);
-        }
-        else if (Array.isArray(uniformValue)) {
-            return new Float32Array(uniformValue);
-        }
-        else {
-            return uniformValue;
-        }
-    }
-
-    public static getUniformsListSetter(gl: WebGL2RenderingContext, glProg: WebGLProgram, list: UniformsList): UniformsSettersList {
-        const settersList = {
-            setters: {}
-        } as UniformsSettersList;
-        
-        Object.keys(list).forEach((name) => {
-            const uniform = list[name];
-            const setter = this.getUniformSetter(gl, glProg, name, uniform);
-            settersList.setters[name] = setter;
-        });
-
-        settersList.glProg = glProg;
-
-        return settersList;
-    }
-
-    public static setUniformsListValues(gl: WebGL2RenderingContext, settersList: UniformsSettersList, list: UniformsList): void {
-        Object.keys(list).forEach((name) => {
-            const uniform = list[name];
-            const setter = settersList.setters[name];
-            if (setter) {
-                setter.func(uniform.value);
+    public static getUniformValueByteLength(uniformValue: UniformValue): number {
+        if (typeof uniformValue === "object") {
+            if ("buffer" in uniformValue) {
+                return uniformValue.byteLength;
+            }
+            else if ("unit" in uniformValue) {
+                return 32;
             }
             else {
-                console.warn(`Uniform ${name} does not match with the given setters.`);
+                return uniformValue.length * 32;
             }
-        });
+        }
+        return 32;
     }
 
-    public static isTexture(uniformValue: UniformValue): boolean {
-        return (typeof uniformValue !== 'number' && 'unit' in uniformValue);
+    public static getUniformValueArrayBufferView(uniformValue: UniformValue): ArrayBufferView {
+        if (typeof uniformValue === "object") {
+            if ("buffer" in uniformValue) {
+                return uniformValue;
+            }
+            else if ("unit" in uniformValue) {
+                return new Float32Array(uniformValue.unit);
+            }
+            else {
+                return new Float32Array(uniformValue);
+            }
+        }
+        return new Float32Array([uniformValue]);
     }
 
-    public static getUniformSetter(gl: WebGL2RenderingContext,
-        glProg: WebGLProgram,
-        uniformName: string,
-        uniform: Uniform): UniformSetter | null {
-        
-        const location = gl.getUniformLocation(glProg, uniformName);
-        if (location == null) {
-            console.error(`Uniform ${uniformName} could not be located.`);
-            return null;
-        }
-
-        const uniformIndices = gl.getUniformIndices(glProg, [uniformName]);
-        if (uniformIndices == null) {
-            console.error(`Uniform ${uniformName} could not be found.`);
-            return null;
-        }
-
-        const uniformType = gl.getActiveUniforms(glProg, uniformIndices, UniformQuery.UNIFORM_TYPE)[0];
-        
-        const value = uniform.value;
-        const props = (typeof uniform.props === 'undefined') ? {
+    public static getUniformSetter(gl: WebGL2RenderingContext, uniform: Uniform, location: WebGLUniformLocation , uniformType: UniformType): UniformSetter | null { 
+        const uniformValue = uniform.value;
+        const uniformProps = (typeof uniform.props === "undefined") ? {
             srcOffset: undefined,
             srcLength: undefined,
             transpose: false
@@ -116,49 +127,36 @@ class WebGLUniformUtilities {
             transpose: uniform.props.transpose || false    
         };
 
-        const uniformTypeWarning = (uniformType: UniformType, valueType: string) => {
-            console.warn(`Uniform ${uniformName} of type ${UniformType[uniformType]} should have a value of type ${valueType}`);
-        }
-
         switch (uniformType) {
             case UniformType.FLOAT:
-                if (typeof value === 'number') {
+                if (typeof uniformValue === "number") {
                     return {
                         type: uniformType,
-                        func: (num: number) => {
+                        set: (num: number) => {
                             gl.uniform1f(location, num);
                         }
                     };
                 }
-                else {
-                    uniformTypeWarning(uniformType, 'number');
-                }
                 break;
             case UniformType.UNSIGNED_INT:
-                if (typeof value === 'number') {
+                if (typeof uniformValue === "number") {
                     return {
                         type: uniformType,
-                        func: (num: number) => {
+                        set: (num: number) => {
                             gl.uniform1ui(location, num);
                         }
                     };
                 }
-                else {
-                    uniformTypeWarning(uniformType, 'number');
-                }
                 break;
             case UniformType.BOOL:
             case UniformType.INT:
-                if (typeof value === 'number') {
+                if (typeof uniformValue === "number") {
                     return {
                         type: uniformType,
-                        func: (num: number) => {
+                        set: (num: number) => {
                             gl.uniform1i(location, num);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'number');
                 }
                 break;
             case UniformType.INT_SAMPLER_2D:
@@ -176,261 +174,257 @@ class WebGLUniformUtilities {
             case UniformType.UNSIGNED_INT_SAMPLER_3D:
             case UniformType.UNSIGNED_INT_SAMPLER_CUBE:
             case UniformType.UNSIGNED_INT_SAMPLER_2D_ARRAY:
-                if (typeof value !== 'number' && 'unit' in value) {
+                if (typeof uniformValue !== "number" && "unit" in uniformValue) {
                     return {
                         type: uniformType,
-                        func: (tex: Texture) => {
-                            gl.activeTexture(TextureUnits.TEXTURE0 + tex.unit);
-                            gl.bindTexture(tex.target, tex.glTex);
+                        set: (tex: Texture) => {
+                            gl.activeTexture(gl.TEXTURE0 + tex.unit);
+                            gl.bindTexture(tex.target, tex.internal);
                             gl.uniform1i(location, tex.unit);
                         }
                     };
                 }
-                else {
-                    uniformTypeWarning(uniformType, 'TextureSetter');
-                }
-                break;
-            case UniformType.FLOAT_VEC2:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                else if (typeof uniformValue !== "number" && "unit" in uniformValue) {
                     return {
                         type: uniformType,
-                        func: (vec: Float32List) => {
-                            gl.uniform2fv(location, vec, props.srcOffset, props.srcLength);
+                        set: (tex: Texture) => {
+                            gl.activeTexture(gl.TEXTURE0 + tex.unit);
+                            gl.bindTexture(tex.target, tex.internal);
+                            gl.uniform1i(location, tex.unit);
                         }
                     };
                 }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
+                break;
+            case UniformType.FLOAT_VEC2:
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                    return {
+                        type: uniformType,
+                        set: (list: Float32List) => {
+                            gl.uniform2fv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
+                        }
+                    };
                 }
                 break;
             case UniformType.BOOL_VEC2:
             case UniformType.INT_VEC2:
-                if (value instanceof Int32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Int32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (vec: Int32List) => {
-                            gl.uniform2iv(location, vec);
+                        set: (list: Int32List) => {
+                            gl.uniform2iv(location, list);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Int32List');
                 }
                 break;
             case UniformType.UNSIGNED_INT_VEC2:
-                if (value instanceof Uint32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Uint32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (vec: Uint32List) => {
-                            gl.uniform2uiv(location, vec, props.srcOffset, props.srcLength);
+                        set: (list: Uint32List) => {
+                            gl.uniform2uiv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Uint32List');
                 }
                 break;
             case UniformType.FLOAT_VEC3:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (vec: Float32List) => {
-                            gl.uniform3fv(location, vec, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniform3fv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.BOOL_VEC3:
             case UniformType.INT_VEC3:	
-                if (value instanceof Int32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Int32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (vec: Int32List) => {
-                            gl.uniform3iv(location, vec, props.srcOffset, props.srcLength);
+                        set: (list: Int32List) => {
+                            gl.uniform3iv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Int32List');
                 }
                 break;
             case UniformType.UNSIGNED_INT_VEC3:
-                if (value instanceof Uint32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Uint32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (vec: Uint32List) => {
-                            gl.uniform3uiv(location, vec, props.srcOffset, props.srcLength);
+                        set: (list: Uint32List) => {
+                            gl.uniform3uiv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Uint32List');
                 }
                 break;
             case UniformType.FLOAT_VEC4:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (vec: Float32List) => {
-                            gl.uniform4fv(location, vec, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniform4fv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.BOOL_VEC4:
             case UniformType.INT_VEC4:
-                if (value instanceof Int32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Int32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (vec: Int32List) => {
-                            gl.uniform4iv(location, vec, props.srcOffset, props.srcLength);
+                        set: (list: Int32List) => {
+                            gl.uniform4iv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Int32List');
                 }
                 break;
             case UniformType.UNSIGNED_INT_VEC4:
-                if (value instanceof Uint32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Uint32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (vec: Uint32List) => {
-                            gl.uniform4uiv(location, vec, props.srcOffset, props.srcLength);
+                        set: (list: Uint32List) => {
+                            gl.uniform4uiv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Uint32List');
                 }
                 break;
             case UniformType.FLOAT_MAT2:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (mat: Float32List) => {
-                            gl.uniformMatrix2fv(location, props.transpose, mat, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniformMatrix2fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.FLOAT_MAT3:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (mat: Float32List) => {
-                            gl.uniformMatrix3fv(location, props.transpose, mat, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniformMatrix3fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.FLOAT_MAT4:	
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (mat: Float32List) => {
-                            gl.uniformMatrix4fv(location, props.transpose, mat);
+                        set: (list: Float32List) => {
+                            gl.uniformMatrix4fv(location, uniformProps.transpose, list);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.FLOAT_MAT2x3:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (mat: Float32List) => {
-                            gl.uniformMatrix2x3fv(location, props.transpose, mat, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniformMatrix2x3fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.FLOAT_MAT2x4:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (mat: Float32List) => {
-                            gl.uniformMatrix2x4fv(location, props.transpose, mat, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniformMatrix2x4fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.FLOAT_MAT3x2:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (mat: Float32List) => {
-                            gl.uniformMatrix3x2fv(location, props.transpose, mat, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniformMatrix3x2fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.FLOAT_MAT3x4:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (mat: Float32List) => {
-                            gl.uniformMatrix3x4fv(location, props.transpose, mat, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniformMatrix3x4fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.FLOAT_MAT4x2:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (mat: Float32List) => {
-                            gl.uniformMatrix4x2fv(location, props.transpose, mat, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniformMatrix4x2fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
             case UniformType.FLOAT_MAT4x3:
-                if (value instanceof Float32Array || Array.isArray(value)) {
+                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
                     return {
                         type: uniformType,
-                        func: (mat: Float32List) => {
-                            gl.uniformMatrix4x3fv(location, props.transpose, mat, props.srcOffset, props.srcLength);
+                        set: (list: Float32List) => {
+                            gl.uniformMatrix4x3fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
                         }
                     };
-                }
-                else {
-                    uniformTypeWarning(uniformType, 'Float32List');
                 }
                 break;
         }
 
-        console.error(`Uniform ${uniformName} has an unknown type.`);
-
         return null;
+    }
+
+    public static getUniformsListSetter(gl: WebGL2RenderingContext, program: Program, list: UniformsList): UniformsListSetter | null {
+        const settersList = {
+            setters: {}
+        } as UniformsListSetter;
+        
+        const uniformsNames = Object.keys(list);
+        const uniformIndices = gl.getUniformIndices(program.internal, uniformsNames);
+        if (uniformIndices == null) {
+            console.error(`Uniform indices for ${uniformsNames} could not be found.`);
+            return null;
+        }
+
+        const uniformsTypes = gl.getActiveUniforms(program.internal, uniformIndices, gl.UNIFORM_TYPE);
+        uniformsNames.forEach((uniformName, uniformIndex) => {
+            const uniform = list[uniformName];
+
+            const location = gl.getUniformLocation(program.internal, uniformName);
+            if (location == null) {
+                console.error(`Uniform ${uniformName} could not be located.`);
+                return null;
+            }
+
+            settersList.setters[uniformName] = this.getUniformSetter(gl, uniform, location, uniformsTypes[uniformIndex]);
+        });
+        
+        settersList.program = program;
+
+        return settersList;
+    }
+
+    public static setUniformsListValues(gl: WebGL2RenderingContext, setter: UniformsListSetter, list: UniformsList): void {
+        WebGLProgramUtilities.useProgram(gl, setter.program);
+        
+        Object.keys(list).forEach((name) => {
+            const uniformSetter = setter.setters[name];
+            const uniform = list[name];
+            if (uniformSetter) {
+                uniformSetter.set(uniform.value);
+            }
+            else {
+                console.warn(`Uniform ${name} does not match any of the given setters.`);
+            }
+        });
     }
 }

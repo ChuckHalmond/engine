@@ -1,4 +1,4 @@
-import { AbstractPacket } from "../Packet";
+/*import { AbstractPacket } from "../Packet";
 import { TextureReference } from "../../textures/TextureReference";
 import { WorldViewUBO } from "../../ubos/lib/WorldViewUBO";
 import { LightsUBO } from "../../ubos/lib/LightsUBO";
@@ -161,4 +161,4 @@ export class MeshPhongPacket extends AbstractPacket {
 
     return packetValues;
   }
-}
+}*/

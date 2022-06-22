@@ -2,8 +2,7 @@
 import { Vector2 } from "../../../../libs/maths/algebra/vectors/Vector2";
 import { UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
 import { SingleTopicMessageSubscriber, SingleTopicMessageBroker } from "../../../../libs/patterns/messaging/brokers/SingleTopicMessageBroker";
-import { TextureTarget, PixelFormat, PixelType, TextureWrapMode, TextureMinFilter, TextureMagFilter } from "../../webgl/WebGLConstants";
-import { TexturePixels } from "../../webgl/WebGLTextureUtilities";
+import { Texture2DPixels, TextureCubeMapPixels, TextureMagFilter, TextureMinFilter, TexturePixelFormat, TexturePixelType, TextureTarget, TextureWrapMode } from "../../webgl/WebGLTextureUtilities";
 
 export { TextureProperties };
 export { ReadonlyTexture };
@@ -41,9 +40,9 @@ type TextureProperties = {
     width: number;
     height: number;
 
-    pixels: TexturePixels | List<TexturePixels>;
-    format: PixelFormat;
-    type: PixelType;
+    pixels: Texture2DPixels | TextureCubeMapPixels;
+    format: TexturePixelFormat;
+    type: TexturePixelType;
     
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
@@ -79,9 +78,9 @@ class BaseTexture implements Texture {
     public width: number;
     public height: number;
 
-    public pixels: TexturePixels | List<TexturePixels>;
-    public format: PixelFormat;
-    public type: PixelType;
+    public pixels: Texture2DPixels | TextureCubeMapPixels;
+    public format: TexturePixelFormat;
+    public type: TexturePixelType;
     
     public min?: TextureMinFilter;
     public mag?: TextureMagFilter;
@@ -171,27 +170,27 @@ export class TextureWrapper implements Texture {
         this.internal.height = height;
     }
 
-    public get pixels(): TexturePixels | List<TexturePixels> {
+    public get pixels(): Texture2DPixels | TextureCubeMapPixels {
         return this.internal.pixels;
     }
 
-    public set pixels(pixels: TexturePixels | List<TexturePixels>) {
+    public set pixels(pixels: Texture2DPixels | TextureCubeMapPixels) {
         this.internal.pixels = pixels;
     }
 
-    public get format(): PixelFormat {
+    public get format(): TexturePixelFormat {
         return this.internal.format;
     }
 
-    public set format(format: PixelFormat) {
+    public set format(format: TexturePixelFormat) {
         this.internal.format = format;
     }
 
-    public get type(): PixelType {
+    public get type(): TexturePixelType {
         return this.internal.type;
     }
 
-    public set type(type: PixelType) {
+    public set type(type: TexturePixelType) {
         this.internal.type = type;
     }
 
@@ -325,17 +324,17 @@ export class ObservableTexture extends TextureWrapper implements Texture {
         this.changes.publish(TexturePropertyKeys.height);
     }
 
-    public set pixels(pixels: TexturePixels | List<TexturePixels>) {
+    public set pixels(pixels: Texture2DPixels | TextureCubeMapPixels) {
         this.internal.pixels = pixels;
         this.changes.publish(TexturePropertyKeys.pixels);
     }
 
-    public set format(format: PixelFormat) {
+    public set format(format: TexturePixelFormat) {
         this.internal.format = format;
         this.changes.publish(TexturePropertyKeys.format);
     }
 
-    public set type(type: PixelType) {
+    public set type(type: TexturePixelType) {
         this.internal.type = type;
         this.changes.publish(TexturePropertyKeys.type);
     }

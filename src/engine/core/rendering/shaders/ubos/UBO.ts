@@ -14,9 +14,9 @@ interface UBO<L extends UniformsList = UniformsList> {
     getDeltaUniformValues(): Partial<L> | null;
 }
 
-type UBOCtor<U extends UBOBase, R extends List<Identifiable> = List<Identifiable>> = new(references: R) => U;
+type UBOCtor<U extends UBOBase, R extends {[key: string]: Identifiable} = {[key: string]: Identifiable}> = new(references: R) => U;
 
-abstract class UBOBase<R extends List<Identifiable> = List<Identifiable>, L extends UniformsList = UniformsList> implements UBO<L> {
+abstract class UBOBase<R extends {[key: string]: Identifiable} = {[key: string]: Identifiable}, L extends UniformsList = UniformsList> implements UBO<L> {
     
     public readonly name: string;
     public readonly uuid: UUID;
@@ -38,13 +38,13 @@ abstract class UBOBase<R extends List<Identifiable> = List<Identifiable>, L exte
     public abstract getUniformValues(): L;
     public abstract getDeltaUniformValues(): Partial<L> | null;
 
-    protected static getReferencesHash<R extends List<Identifiable>>(references: R) {
+    protected static getReferencesHash<R extends {[key: string]: Identifiable}>(references: R) {
         return Object.keys(references).reduce((prev: string, curr: string) => {
             return references[prev].uuid + references[curr].uuid;
         });
     }
 
-    protected static getConcreteInstance<U extends UBOBase, R extends List<Identifiable>>(ctor: UBOCtor<U, R>, references: R): U {
+    protected static getConcreteInstance<U extends UBOBase, R extends {[key: string]: Identifiable}>(ctor: UBOCtor<U, R>, references: R): U {
         const hash = UBOBase.getReferencesHash(references);
         let ref = UBOBase._dictionary.get(hash);
         if (typeof ref === 'undefined') {

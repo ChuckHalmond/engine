@@ -94,7 +94,7 @@ class RayBase implements Ray {
   }
 
   public pointAt(dist: number, out: Vector3): Vector3 {
-    return out.copy(this._direction).multScalar(dist).add(this._origin);
+    return out.copy(this._direction).scale(dist).add(this._origin);
   }
 
   public lookAt(vec: Vector3) {
@@ -111,7 +111,7 @@ class RayBase implements Ray {
       return out.copy(this._origin);
     }
 
-    return out.copy(this._direction).multScalar(directionDist).add(this._origin);
+    return out.copy(this._direction).scale(directionDist).add(this._origin);
   }
 
   public distToPoint(point: Vector3): number {
@@ -121,17 +121,17 @@ class RayBase implements Ray {
   public distSqToPoint(point: Vector3) {
     let distSq = 0;
 
-    Vector3Pool.acquireTemp(1, (temp) => {
-      const directionDist = temp.copy(point).sub(this._origin).dot(this._direction);
+    const [temp] = Vector3Pool.acquire(1);
+    const directionDist = temp.copy(point).sub(this._origin).dot(this._direction);
 
-      if (directionDist < 0) {
-        distSq = this._origin.distSq(point);
-      }
-      else {
-        temp.copy(this._direction).multScalar(directionDist).add(this._origin);
-        distSq = temp.distSq(point);
-      }
-    });
+    if (directionDist < 0) {
+      distSq = this._origin.distanceSquared(point);
+    }
+    else {
+      temp.copy(this._direction).scale(directionDist).add(this._origin);
+      distSq = temp.distanceSquared(point);
+    }
+    Vector3Pool.release(1);
 
     return distSq;
   }
@@ -157,54 +157,56 @@ class RayBase implements Ray {
   public intersectsWithQuad(quad: Quad): number | null {
     let intersects = null;
 
-    Vector3Pool.acquireTemp(4, (edge1, edge2, q, s) => {
-      edge1.copyAndSub(quad.point2, quad.point1);
-      edge2.copyAndSub(quad.point3, quad.point1);
-      q.copyAndCross(this._direction, edge2);
+    const [edge1, edge2, q, s] = Vector3Pool.acquire(4);
+    edge1.copyAndSub(quad.point2, quad.point1);
+    edge2.copyAndSub(quad.point3, quad.point1);
+    q.copyAndCross(this._direction, edge2);
 
-      let a, f, v, u;
+    let a, f, v, u;
 
-      a = edge1.dot(q);
+    a = edge1.dot(q);
 
-      if (!(a > -Number.EPSILON && a < Number.EPSILON)) {
-        f = 1 / a;
+    if (!(a > -Number.EPSILON && a < Number.EPSILON)) {
+      f = 1 / a;
 
-        s.copyAndSub(this._origin, quad.point1);
-        u = f * (s.dot(q));
+      s.copyAndSub(this._origin, quad.point1);
+      u = f * (s.dot(q));
 
-        if (u >= 0.0) {
-          q.copyAndCross(s, edge1);
-          v = f * (this._direction.dot(q));
+      if (u >= 0.0) {
+        q.copyAndCross(s, edge1);
+        v = f * (this._direction.dot(q));
 
-          if (!(v < -Number.EPSILON || u + v > 1.0 + Number.EPSILON)) {
-            intersects = f * (edge2.dot(q));
-            return;
-          }
+        if (!(v < -Number.EPSILON || u + v > 1.0 + Number.EPSILON)) {
+          intersects = f * (edge2.dot(q));
+          Vector3Pool.release(4);
+          return null;
         }
       }
+    }
 
-      edge1.copyAndSub(quad.point1, quad.point4);
-      edge2.copyAndSub(quad.point3, quad.point4);
+    edge1.copyAndSub(quad.point1, quad.point4);
+    edge2.copyAndSub(quad.point3, quad.point4);
 
-      q.copyAndCross(this._direction, edge2);
-      a = edge1.dot(q);
+    q.copyAndCross(this._direction, edge2);
+    a = edge1.dot(q);
 
-      if (!(a > -Number.EPSILON && a < Number.EPSILON)) {
-        f = 1 / a;
-        s.copy(this._origin).sub(quad.point4);
-        u = f * (s.dot(q));
+    if (!(a > -Number.EPSILON && a < Number.EPSILON)) {
+      f = 1 / a;
+      s.copy(this._origin).sub(quad.point4);
+      u = f * (s.dot(q));
 
-        if (u >= 0.0) {
-          q.copyAndCross(s, edge1);
-          v = f * (this._direction.dot(q));
+      if (u >= 0.0) {
+        q.copyAndCross(s, edge1);
+        v = f * (this._direction.dot(q));
 
-          if (!(v < -Number.EPSILON || u + v > 1.0 + Number.EPSILON)) {
-            intersects = f * (edge2.dot(q));
-            return;
-          }
+        if (!(v < -Number.EPSILON || u + v > 1.0 + Number.EPSILON)) {
+          intersects = f * (edge2.dot(q));
+          Vector3Pool.release(4);
+          return null;
         }
       }
-    });
+    }
+    Vector3Pool.release(4);
 
     return intersects;
   }
@@ -215,36 +217,38 @@ class RayBase implements Ray {
   public intersectsWithTriangle(triangle: Triangle): number | null {
     let intersects = null;
 
-    Vector3Pool.acquireTemp(4, (edge1, edge2, q, s) => {
-      edge1.copyAndSub(triangle.point2, triangle.point1);
-      edge2.copyAndSub(triangle.point3, triangle.point1);
-      q.copyAndCross(this._direction, edge2);
+    const [edge1, edge2, q, s] = Vector3Pool.acquire(4);
+    edge1.copyAndSub(triangle.point2, triangle.point1);
+    edge2.copyAndSub(triangle.point3, triangle.point1);
+    q.copyAndCross(this._direction, edge2);
 
-      let a, f, u, v;
+    let a, f, u, v;
 
-      a = edge2.dot(q);
-    
-      if (a > -Number.EPSILON && a < Number.EPSILON) {
-        return;
-      }
-    
-      f = 1 / a;
-      s.copyAndSub(this._origin, triangle.point1);
-      u = f * (s.dot(q));
-    
-      if (u < 0.0) {
-        return;
-      }
-    
-      q.copyAndCross(s, edge1);
-      v = f * (this._direction.dot(q));
-    
-      if (v < -Number.EPSILON || u + v > 1.0 + Number.EPSILON) {
-        return;
-      }
-      
-      intersects = f * (edge2.dot(q));
-    });
+    a = edge2.dot(q);
+  
+    if (a > -Number.EPSILON && a < Number.EPSILON) {
+      Vector3Pool.release(4);
+      return null;
+    }
+  
+    f = 1 / a;
+    s.copyAndSub(this._origin, triangle.point1);
+    u = f * (s.dot(q));
+  
+    if (u < 0) {
+      Vector3Pool.release(4);
+      return null;
+    }
+  
+    q.copyAndCross(s, edge1);
+    v = f * (this._direction.dot(q));
+  
+    if (v < -Number.EPSILON || u + v > 1.0 + Number.EPSILON) {
+      Vector3Pool.release(4);
+      return null;
+    }
+    intersects = f * (edge2.dot(q));
+    Vector3Pool.release(4);
 
     return intersects;
   }
@@ -266,9 +270,9 @@ class RayBase implements Ray {
   public intersectsWithBox(box: BoundingBox): boolean {
     let intersects = false;
     
-    Vector3Pool.acquireTemp(1, (temp) => {
-      intersects = this.intersectionWithBox(box, temp) !== null;
-    });
+    const [temp] = Vector3Pool.acquire(1);
+    intersects = this.intersectionWithBox(box, temp) !== null;
+    Vector3Pool.release(1);
 
     return intersects;
   }
@@ -281,15 +285,17 @@ class RayBase implements Ray {
     const d2 = out.dot(out) - tca * tca;
     const radius2 = sphere.radius * sphere.radius;
 
-    if (d2 > radius2)
+    if (d2 > radius2) {
       return null;
+    }
     
     const thc = Math.sqrt(radius2 - d2);
     const t0 = tca - thc;
     const t1 = tca + thc;
 
-    if (t0 < 0 && t1 < 0)
+    if (t0 < 0 && t1 < 0) {
       return null;
+    }
 
     if (t0 < 0) return this.pointAt(t1, out);
 
@@ -361,9 +367,9 @@ class RayBase implements Ray {
     return this.pointAt(distMinX >= 0 ? distMinX : distMaxX, out);
   }
 
-  public transform(mat: Matrix4): void {
-    this._origin.setValues(mat.transformPoint(this._origin));
-    this._direction.setValues(mat.transformDirection(this._direction));
+  public transform(matrix: Matrix4): void {
+    matrix.transformPoint(this._origin);
+    matrix.transformDirection(this._direction);
   }
 }
 

@@ -1,17 +1,18 @@
 import { UUID, UUIDGenerator } from "../../libs/maths/statistics/random/UUIDGenerator";
-import { EntityDesc, Entity, EntityBase } from "./Entity";
+import { Entity, EntityDescription } from "./Entity";
 
+export { SceneDescription };
 export { Scene };
 export { SceneBase };
 
-type SceneDesc = {
-    [key: string]: EntityDesc;
+type SceneDescription = {
+    [key: string]: EntityDescription;
 }
 
 interface Scene {
     readonly uuid: UUID;
     readonly root: Entity;
-    build(desc: SceneDesc): void;
+    build(desc: SceneDescription): void;
 }
 
 interface SceneConstructor {
@@ -25,38 +26,35 @@ class SceneBase implements Scene {
 
     constructor() {
         this.uuid = UUIDGenerator.newUUID();
-        this.root = new EntityBase('root', undefined);
+        this.root = new Entity("root");
     }
 
-    private parseEntityRecursive(name: string, desc: EntityDesc, parent: Entity): Entity {
-        const entity = new EntityBase(name, parent);
+    private _buildEntityRecursive(name: string, parent: Entity, desc: EntityDescription): Entity {
+        const entity = new Entity(name, parent);
 
-        // Parsing children
         if (desc.children !== undefined) {
-            for (const childName in desc.children) {
-                const childDesc = desc.children[childName];
-                const childEntity = this.parseEntityRecursive(childName, childDesc, entity);
-                childEntity.parent = entity;
-                entity.children.push(childEntity);
-            }
+            desc.children.forEach((child) => {
+                const childEntity = this._buildEntityRecursive(child.name, entity, child);
+                childEntity.setParent(entity);
+            });
         }
-        // Parsing components
+        
         if (desc.components !== undefined) {
             for (const componentName in desc.components) {
-                const component = entity.addComponent(componentName, desc.components[componentName]);
+                entity.addComponent(componentName, desc.components[componentName]);
             }
         }
 
         return entity;
     }
 
-    public build(desc: SceneDesc, root?: Entity): void {
+    public build(desc: SceneDescription, root?: Entity): void {
         if (root === undefined) {
             root = this.root;
         }
 
         for (const key in desc) {
-            const entity = this.parseEntityRecursive(key, desc[key], this.root);
+            const entity = this._buildEntityRecursive(key, this.root, desc[key]);
             root.children.push(entity);
         }
     }

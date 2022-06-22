@@ -1,30 +1,24 @@
 import { DataType, BufferTarget, BufferDataUsage, BufferIndexType } from "./WebGLConstants";
-export { AttributeArray };
-export { AttributeIndicesArray };
-export { AttributeNumComponents };
-export { AttributeProperties };
 export { Attribute };
 export { AttributesList };
 export { AttributeSetter };
 export { AttributesListProperties };
 export { AttributesSettersList };
 export { WebGLAttributeUtilities };
-declare type AttributeArray = TypedArray;
-declare type AttributeIndicesArray = Uint8Array | Uint16Array | Uint32Array;
-declare type AttributeNumComponents = 1 | 2 | 3 | 4;
-declare type AttributeProperties<N extends AttributeNumComponents = AttributeNumComponents> = {
-    numComponents: N;
-    normalized?: boolean;
-    srcOffset?: number;
-    srcLength?: number;
-};
-declare type Attribute<A extends AttributeArray = AttributeArray, N extends AttributeNumComponents = AttributeNumComponents> = {
-    array: A;
-    props: AttributeProperties<N>;
+declare type Attribute = {
+    array: Float64Array | Float32Array | Int32Array | Uint32Array | Int16Array | Uint16Array | Int8Array | Uint8Array | Uint8ClampedArray;
+    props: {
+        numComponents: 1 | 2 | 3 | 4;
+        normalized?: boolean;
+        srcOffset?: number;
+        srcLength?: number;
+    };
 };
 declare type AttributesList = {
-    list: List<Attribute>;
-    indices?: AttributeIndicesArray;
+    list: {
+        [name: string]: Attribute;
+    };
+    indices?: Uint8Array | Uint16Array | Uint32Array;
     props?: Partial<AttributesListProperties>;
 };
 declare type AttributeSetter = {
@@ -38,24 +32,27 @@ declare type AttributesListProperties = {
     usage: BufferDataUsage;
 };
 declare type AttributesSettersList = {
-    setters: List<AttributeSetter>;
+    setters: {
+        [name: string]: AttributeSetter;
+    };
     props: AttributesListProperties;
     bufferByteLength: number;
     numElements: number;
     hasIndices: boolean;
     indexType: BufferIndexType;
-    glVao: WebGLVertexArrayObject;
+    glVertexArray: WebGLVertexArrayObject;
     glBuffer: WebGLBuffer;
     glIndicesBuffer: WebGLBuffer;
-    glProg: WebGLProgram;
+    glProgram: WebGLProgram;
 };
 declare class WebGLAttributeUtilities {
-    static getAttributesListSetter(gl: WebGL2RenderingContext, glProg: WebGLProgram, list: AttributesList): AttributesSettersList | null;
-    static setAttributesListValues(gl: WebGL2RenderingContext, settersList: AttributesSettersList, list: AttributesList): void;
+    static getAttributesListSetter(gl: WebGL2RenderingContext, glProgram: WebGLProgram, attributes: AttributesList): AttributesSettersList | null;
+    static deleteAttributesList(gl: WebGL2RenderingContext, settersList: AttributesSettersList): void;
+    static setAttributesListValues(gl: WebGL2RenderingContext, settersList: AttributesSettersList, attributes: AttributesList): void;
     static bindAttributesList(gl: WebGL2RenderingContext, settersList: AttributesSettersList): void;
     static unbindAttributesList(gl: WebGL2RenderingContext): void;
-    static getAttributeArrayDataType(array: AttributeArray): DataType;
+    static getAttributeArrayDataType(array: Float64Array | Float32Array | Int32Array | Uint32Array | Int16Array | Uint16Array | Int8Array | Uint8Array | Uint8ClampedArray): DataType;
     static getDataTypeByteLength(dataType: DataType): number;
-    static getAttributeIndicesBufferType(indices: AttributeIndicesArray): BufferIndexType;
+    static getAttributeIndicesBufferType(indices: Uint8Array | Uint16Array | Uint32Array): BufferIndexType;
     private static getAttributesListNumElements;
 }

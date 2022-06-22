@@ -1,25 +1,11 @@
-import { TypedVector3 } from "../../extensions/typed/TypedVector3";
-/**
- *     y axis
- * 	      ^   z axis
- *     UP |   ^  FORWARD
- *        | /
- *        +------> x axis
- *         RIGHT
- *
- *  left-handed coordinates system
- *
- */
-export { Space };
-declare class Space {
+import { Vector3 } from "../../algebra/vectors/Vector3";
+export declare class Space {
     private constructor();
-    static readonly xAxis: TypedVector3<Uint8Array>;
-    static readonly yAxis: TypedVector3<Uint8Array>;
-    static readonly zAxis: TypedVector3<Uint8Array>;
-    static readonly right: TypedVector3<Uint8Array>;
-    static readonly left: TypedVector3<Uint8Array>;
-    static readonly up: TypedVector3<Uint8Array>;
-    static readonly down: TypedVector3<Uint8Array>;
-    static readonly forward: TypedVector3<Uint8Array>;
-    static readonly backward: TypedVector3<Uint8Array>;
+    static readonly origin: Vector3;
+    static readonly right: Vector3;
+    static readonly left: Vector3;
+    static readonly up: Vector3;
+    static readonly down: Vector3;
+    static readonly forward: Vector3;
+    static readonly backward: Vector3;
 }

@@ -32,24 +32,21 @@ class WorldViewUBO extends UBOBase<WorldViewUBOReferences> implements WorldViewU
     }
 
     public getUniformValues(): UniformsList {
-
         let values: UniformsList = {};
-        Matrix4Pool.acquireTemp(4, (worldInverseTranspose: Matrix4, worldViewProjection: Matrix4, cameraWorld: Matrix4, meshWorld: Matrix4) => {
-            
-            cameraWorld.copy(this._references.camera.transform.globalMatrix);
-            meshWorld.copy(this._references.meshTransform.globalMatrix);
-            worldInverseTranspose.copy(meshWorld).invert().transpose();
+        const [worldInverseTranspose, worldViewProjection, cameraWorld, meshWorld] = Matrix4Pool.acquire(4);
+        cameraWorld.copy(this._references.camera.transform.matrix);
+        meshWorld.copy(this._references.meshTransform.matrix);
+        worldInverseTranspose.copy(meshWorld).invert().transpose();
 
-            this._references.camera.getProjection(worldViewProjection).mult(cameraWorld).mult(meshWorld);
+        worldViewProjection.copy(this._references.camera.projection).mult(cameraWorld).mult(meshWorld);
 
-            values = {
-                u_world: { value: new Float32Array(meshWorld.array) },
-                u_worldInverseTranspose: { value: new Float32Array(worldInverseTranspose.array) },
-                u_viewInverse: { value: new Float32Array(cameraWorld.array) },
-                u_worldViewProjection: { value: new Float32Array(worldViewProjection.array) }
-            };
-
-        });
+        values = {
+            u_world: { value: new Float32Array(meshWorld.array) },
+            u_worldInverseTranspose: { value: new Float32Array(worldInverseTranspose.array) },
+            u_viewInverse: { value: new Float32Array(cameraWorld.array) },
+            u_worldViewProjection: { value: new Float32Array(worldViewProjection.array) }
+        };
+        Matrix4Pool.release(4);
         
         return values;
     }

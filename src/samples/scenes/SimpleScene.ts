@@ -1,385 +1,492 @@
-import { ArcBallControl } from "../../engine/core/controls/ArcBallControl";
+import { ArcballCameraControl } from "../../engine/core/controls/ArcballCameraControl";
+import { FreeCameraControl } from "../../engine/core/controls/FreeCameraControl";
 import { Transform } from "../../engine/core/general/Transform";
-import { Input, MouseButton } from "../../engine/core/input/Input";
+import { Input } from "../../engine/core/input/Input";
 import { PerspectiveCamera } from "../../engine/core/rendering/scenes/cameras/PerspectiveCamera";
+import { GeometryBuffer } from "../../engine/core/rendering/scenes/geometries/GeometryBuffer";
 import { CubeGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry";
-import { IcosahedronGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry";
 import { QuadGeometry } from "../../engine/core/rendering/scenes/geometries/lib/QuadGeometry";
-import { TextureWrapMode, TextureMagFilter, TextureMinFilter, BufferDataUsage, FramebufferTextureTarget, FramebufferAttachment, Parameter, PixelFormat, Capabilities, BufferMaskBit, TestFunction } from "../../engine/core/rendering/webgl/WebGLConstants";
-import { WebGLFramebufferUtilities } from "../../engine/core/rendering/webgl/WebGLFramebufferUtilities";
-import { WebGLPacketUtilities, Packet } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
-import { WebGLProgramUtilties } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
-import { WebGLRenderbufferUtilities } from "../../engine/core/rendering/webgl/WebGLRenderbuffersUtilities";
-import { WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
-import { WebGLTextureUtilities } from "../../engine/core/rendering/webgl/WebGLTextureUtilities";
+import { FramebufferAttachment, FramebufferTextureTarget, RenderbufferPixelFormat, WebGLFramebufferUtilities } from "../../engine/core/rendering/webgl/WebGLFramebufferUtilities";
+import { WebGLPacketUtilities, PacketProperties } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
+import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
+import { BufferMask, Capabilities, TestFunction, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
+import { TexturePixelFormat, TexturePixelType, TextureMagFilter, TextureMinFilter, TextureTarget, TextureWrapMode, WebGLTextureUtilities, TextureInternalPixelFormat } from "../../engine/core/rendering/webgl/WebGLTextureUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
-import { EulerAngles } from "../../engine/libs/maths/algebra/angles/EulerAngles";
-import { Matrix3 } from "../../engine/libs/maths/algebra/matrices/Matrix3";
 import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
 import { Quaternion } from "../../engine/libs/maths/algebra/quaternions/Quaternion";
-import { Vector2 } from "../../engine/libs/maths/algebra/vectors/Vector2";
 import { Vector3, Vector3Values } from "../../engine/libs/maths/algebra/vectors/Vector3";
-import { Vector4, Vector4Values } from "../../engine/libs/maths/algebra/vectors/Vector4";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
-import { clamp } from "../../engine/libs/maths/Snippets";
-import { Resources } from "../../engine/resources/Resources";
+import { addWidgets, createPositionWidgets, createRelativePositionWidgets, createRotationWidgets } from "./Common";
 
 const simpleSceneDOM = /*template*/`
-<link rel="stylesheet" href="../css/main.css"/>
+<!--<link rel="stylesheet" href="./css/main.css"/>-->
   <div class="flex-auto flex-cols">
     <main class="flex-rows flex-auto">
         <section class="centered padded">
           <div id="ui" class="flex-cols">
-            <div class="flex-auto"><span class="blue">"RigidBuddy FTW!"</span> <span class="yellow">:-)</span></div>
-            <div class="flex-none">FPS: <span id="canvas-fps">-.-</span></div>
+            <div class="flex-none">FPS: <span id="canvas-fps">-.-</span><button id="playpause">Pause</button></div>
           </div>
-          <canvas id="canvas" tabindex="0" tooltip="mon-canvas"></canvas>
+          <div id="widgets"></div>
+          <canvas id="canvas" tabindex="0" tooltip="mon-canvas" oncontextmenu="return false;"></canvas>
         </section>
     </main>
   </div>`;
 
 export async function start() {
-
-  const template = document.createElement('template');
-
+  const template = document.createElement("template");
   template.innerHTML = simpleSceneDOM;
   document.body.insertBefore(template.content, document.body.firstChild);
-
-  /*const imports = Array.from(document.getElementsByTagName('e-import'));
-  Promise.all(imports.map((imp) => {
-    return new Promise((resolve) => {
-      imp.addEventListener('loaded', () => {
-        resolve(true);
-      }, {once: true});
-    })
-  })).then(function(){ */
-    //editor.setup().then(() => {
-      launchScene();
-    //});
-  //});
+  try {
+    launchScene();
+  }
+  catch (e) {
+    console.trace(e);
+  }
 }
-/*
-function test() {
-  const data = [
-    {
-      name: 'John Doe',
-      age: 25
-    },
-    {
-      name: 'Jane Doe',
-      age: 24
-    }
-  ];
-
-  const table = HTMLTableTemplate({
-    headerCells: Object.keys(data[0]),
-    bodyCells: data.map(data => {
-      return [{type: 'header', content: data.name}, data.age.toString()];
-    }),
-    footerCells: [
-      {type: 'header', content: 'Total age'},
-      data.reduce((acc, curr) => {
-        return (acc + curr.age);
-      }, 0).toString()
-    ]
-  });
-
-  document.querySelector('#play-panel')!.append(table);
-}*/
 
 export async function launchScene() {
   let frameRequest: number;
   let render: (time: number) => void;
   let fps: number = 0;
+  let paused = false;
 
-  const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+  const playPause = document.getElementById('playpause') as HTMLButtonElement;
+  if (playPause !== null) {
+    playPause.onclick = () => {
+      paused = !paused;
+      playPause.textContent = paused ? "Play" : "Pause";
+      if (!paused) {
+        render(0);
+      }
+    };
+  }
 
+  const fpsElement = document.getElementById('canvas-fps') as HTMLSpanElement;
+  if (!fpsElement) {
+    return;
+  }
+
+  const canvas = document.getElementById("canvas") as HTMLCanvasElement;
   if (!canvas) {
     return;
   }
   
-  canvas.width = 1200;
-  canvas.height = 800;
+  const canvasWidth = 800;
+  const canvasHeight = 600;
+  const supersamplingRatio = 1;
+  canvas.width = canvasWidth * supersamplingRatio;
+  canvas.height = canvasHeight * supersamplingRatio;
+  canvas.style.width = `${canvasWidth}px`;
+  canvas.style.height = `${canvasHeight}px`;
   
-  
-  const gl = canvas.getContext('webgl2');
+  const gl = canvas.getContext("webgl2"/*, {antialias: true}*//*, {preserveDrawingBuffer: true}*/);
   if (!gl) {
     return;
   }
 
-  const assets = new Resources('assets/engine/');
-  await assets.loadList('resources.json');
-
   // Shaders
-  const phongVert = assets.get<string>('shaders/common/phong.vert')!;
-  const phongFrag = assets.get<string>('shaders/common/phong.frag')!;
+  const phongVert = await fetch("assets/engine/shaders/common/phong.vert.glsl").then(resp => resp.text());
+  const phongFrag = await fetch("assets/engine/shaders/common/phong.frag.glsl").then(resp => resp.text());
+  const phongGlProgram = WebGLProgramUtilities.createProgram(gl, phongVert, phongFrag)!;
 
-  const skyboxVert = assets.get<string>('shaders/common/skybox.vert')!;
-  const skyboxFrag = assets.get<string>('shaders/common/skybox.frag')!;
+  const skyboxVert = await fetch("assets/engine/shaders/common/skybox.vert").then(resp => resp.text());
+  const skyboxFrag = await fetch("assets/engine/shaders/common/skybox.frag").then(resp => resp.text());
+  const skyboxGlProgram = WebGLProgramUtilities.createProgram(gl, skyboxVert, skyboxFrag)!;
+  
+  const textureVert = await fetch("assets/engine/shaders/common/texture.vert").then(resp => resp.text());
+  const textureFrag = await fetch("assets/engine/shaders/common/texture.frag").then(resp => resp.text());
+  const texGlProgram = WebGLProgramUtilities.createProgram(gl, textureVert, textureFrag)!;
 
-  const textureVert = assets.get<string>('shaders/common/texture.vert')!;
-  const textureFrag = assets.get<string>('shaders/common/texture.frag')!;
+  const basicVert = await fetch("assets/engine/shaders/common/basic.vert.glsl").then(resp => resp.text());
+  const basicFrag = await fetch("assets/engine/shaders/common/basic.frag.glsl").then(resp => resp.text());
+  const basicGlProgram = WebGLProgramUtilities.createProgram(gl, basicVert, basicFrag)!;
+  
+  const depthVert = await fetch("assets/engine/shaders/common/depth.vert.glsl").then(resp => resp.text());
+  const depthFrag = await fetch("assets/engine/shaders/common/depth.frag.glsl").then(resp => resp.text());
+  const depthGlProgram = WebGLProgramUtilities.createProgram(gl, depthVert, depthFrag)!;
 
-  const primitiveVert = assets.get<string>('shaders/common/primitive.vert')!;
-  const primitiveFrag = assets.get<string>('shaders/common/primitive.frag')!;
-
+  async function fetchImage(url: string) {
+    return fetch(url).then((resp) => {
+      if (resp.ok) {
+        return new Promise<HTMLImageElement>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            resolve(img);
+          };
+          img.src = url;
+        })
+      }
+      else {
+        throw new Error(`Image '${url}' not found.`);
+      }
+    });
+  }
   // Images
-  const albedoMapImg = assets.get<HTMLImageElement>('img/brickwall.jpg')!;
-  const normalMapImg = assets.get<HTMLImageElement>('img/brickwall_normal.jpg')!;
-  const skyboxXPosImg = assets.get<HTMLImageElement>('img/skybox_x_pos.png')!;
-  const skyboxXNegImg = assets.get<HTMLImageElement>('img/skybox_x_neg.png')!;
-  const skyboxYPosImg = assets.get<HTMLImageElement>('img/skybox_y_pos.png')!;
-  const skyboxYNegImg = assets.get<HTMLImageElement>('img/skybox_y_neg.png')!;
-  const skyboxZPosImg = assets.get<HTMLImageElement>('img/skybox_z_pos.png')!;
-  const skyboxZNegImg = assets.get<HTMLImageElement>('img/skybox_z_neg.png')!;
-  const wavesNormalImg = assets.get<HTMLImageElement>('img/waves_normal.png')!;
+  const albedoMapImg = await fetchImage("assets/engine/img/brickwall.jpg");
+  const normalMapImg = await fetchImage("assets/engine/img/NormalMap_0.png");
+  const heightMapImg = await fetchImage("assets/engine/img/HeightMap_0.png");
+  const skyboxXPosImg = await fetchImage("assets/engine/img/skybox_x_pos.png");
+  const skyboxXNegImg = await fetchImage("assets/engine/img/skybox_x_neg.png");
+  const skyboxYPosImg = await fetchImage("assets/engine/img/skybox_y_pos.png");
+  const skyboxYNegImg = await fetchImage("assets/engine/img/skybox_y_neg.png");
+  const skyboxZPosImg = await fetchImage("assets/engine/img/skybox_z_pos.png");
+  const skyboxZNegImg = await fetchImage("assets/engine/img/skybox_z_neg.png");
 
-  const phongGlProg = WebGLProgramUtilties.createProgramFromSources(gl, phongVert, phongFrag)!;
-  const skyboxGlProg = WebGLProgramUtilties.createProgramFromSources(gl, skyboxVert, skyboxFrag)!;
-  const texGlProg = WebGLProgramUtilties.createProgramFromSources(gl, textureVert, textureFrag)!;
-  const primitiveGlProg = WebGLProgramUtilties.createProgramFromSources(gl, primitiveVert, primitiveFrag)!;
+  const norm16Extension = gl.getExtension("EXT_texture_norm16");
+  if (norm16Extension) {
+    console.log(`Extension EXT_texture_norm16 activated.`);
+  }
 
-  const cube = new CubeGeometry();
-  const icosahedron = new IcosahedronGeometry();
-  const quad = new QuadGeometry();
-  
-  const packetBindings = WebGLPacketUtilities.createPacketBindings(gl, {
-    texturesProps: {
-      albedoMap: WebGLTextureUtilities.guessTextureProperties({pixels: albedoMapImg}),
-      normalMap: WebGLTextureUtilities.guessTextureProperties({pixels: normalMapImg}),
-      skybox: 
-        WebGLTextureUtilities.guessTextureProperties({
-          pixels: {
-            xPos: skyboxXPosImg, xNeg: skyboxXNegImg,
-            yPos: skyboxYPosImg, yNeg: skyboxYNegImg,
-            zPos: skyboxZPosImg, zNeg: skyboxZNegImg
-          },
-          wrapS: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapT: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapR: TextureWrapMode.CLAMP_TO_EDGE,
-          mag: TextureMagFilter.LINEAR,
-          min: TextureMinFilter.LINEAR
-        }),
-      fbColorTex:
-        WebGLTextureUtilities.guessTextureProperties({
-          width: canvas.width, height: canvas.height, pixels: null,
-          wrapS: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapT: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapR: TextureWrapMode.CLAMP_TO_EDGE,
-          mag: TextureMagFilter.LINEAR,
-          min: TextureMinFilter.LINEAR
-        }),
-    },
-    blocksProps: {
-      worldViewBlock: {name: 'WorldViewBlock', usage: BufferDataUsage.DYNAMIC_COPY },
-      lightsBlock: {name: 'LightsBlock', usage: BufferDataUsage.STATIC_READ },
-      phongBlock: {name: 'PhongBlock', usage: BufferDataUsage.STATIC_READ }
-    }
-  })!;
-  
-  const worldViewBlock = packetBindings.blocks.worldViewBlock;
-  const lightsBlock = packetBindings.blocks.lightsBlock;
-  const phongBlock = packetBindings.blocks.phongBlock;
-
-  const albedoMap = packetBindings.textures.albedoMap;
-  const normalMap = packetBindings.textures.normalMap;
-  const skybox = packetBindings.textures.skybox;
-
-  const fbColorTex = packetBindings.textures.fbColorTex;
-
-  const fov = 30 * Math.PI / 180;
-  const aspect = gl.canvas.width / gl.canvas.height;
-  const zNear = 1;
-  const zFar = 100;
-  const projection = new Matrix4().asPerspective(fov, aspect, zNear, zFar);
-
-  //const cam = new PerspectiveCamera(fov, aspect, zNear, zFar);
-
-  const eye: Vector3 = new Vector3([3, 3, 0]);
-  const target: Vector3 = new Vector3([0, 0, 0]);
-  const up: Vector3 = new Vector3([0, 1, 0]);
-  const camera = new Matrix4().lookAt(eye, target, up);
-  
-  //const cameraTransform = new Transform();
-
-  const viewInverse = camera.clone();
-  const view = camera.clone().invert();
-  const viewProjection = projection.clone().mult(view);
-  const viewProjectionInverse = viewProjection.clone().invert();
-
-  /*const cubeTransform = new Transform();
-  const quadTransform = new Transform();*/
-  
-  const cubeWorldArr = new Float32Array(16);
-  const cubeWorld = new Matrix4().setArray(cubeWorldArr).setIdentity().scaleScalar(0.5);
-  const quadWorld = new Matrix4().setIdentity().scaleScalar(2);
-
-  /*const vectorInput = document.createElement('e-vector3-input') as Vector3InputElement;
-  vectorInput.vector.setArray(cubeWorldArr.subarray(12, 15));
-  
-  document.querySelector('#panel-3 section')!.append(vectorInput);*/
-
-  const phongCubePacketValues: Packet = {
-
-    attributes: {
-        list: {
-          a_position: { array: new Float32Array(cube.vertices.array), props: { numComponents: 3 } },
-          a_normal: { array: new Float32Array(cube.verticesNormals.array), props: { numComponents: 3 } },
-          a_tangent: { array: new Float32Array(cube.tangents.array), props: { numComponents: 3 } },
-          a_bitangent: { array: new Float32Array(cube.bitangents.array), props: { numComponents: 3 } },
-          a_color: { array:
-              new Float32Array(Color.array(
-                ...Array(cube.indices.length).fill(Color.BLUE)
-              )), props: { numComponents: 4, normalized: true }
-          },
-          a_uv: { array: new Float32Array(cube.uvs.array), props: { numComponents: 2 } },
+  const phongPacketBindings = WebGLPacketUtilities.createBindings(gl, {
+    textures: {
+      albedoMap: {
+        pixels: albedoMapImg,
+        width: albedoMapImg.width, height: albedoMapImg.height,
+        target: TextureTarget.TEXTURE_2D,
+        type: TexturePixelType.UNSIGNED_BYTE,
+        format: TexturePixelFormat.RGBA,
+        internalFormat: TextureInternalPixelFormat.RGBA8
       },
-      indices: new Uint16Array(cube.indices),
-    },
-
-    uniformBlocks: {
-      worldViewBlock: {
-        block: worldViewBlock,
-        list: {
-          u_world: { value: new Float32Array(cubeWorld.array) },
-          u_viewInverse: { value: new Float32Array(camera.array) },
-          u_worldInverseTranspose: { value: new Float32Array(cubeWorld.clone().invert().transpose().array) },
-          u_worldViewProjection: { value: new Float32Array(viewProjection.clone().mult(cubeWorld).array) }
-        }
+      normalMap: {
+        pixels: normalMapImg,
+        width: normalMapImg.width, height: normalMapImg.height,
+        target: TextureTarget.TEXTURE_2D,
+        type: TexturePixelType.UNSIGNED_BYTE,
+        format: TexturePixelFormat.RGB,
+        internalFormat: TextureInternalPixelFormat.RGB8,
+        min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
+        mag: TextureMagFilter.LINEAR
       },
-      lightsBlock: {
-        block: lightsBlock,
-        list: {
-          u_lightWorldPos: { value: [1, 6, -6] },
-          u_lightColor: { value: [1, 0.8, 0.8, 1] },
-          u_ambient: { value: [0, 0, 0, 1] },
-        }
+      heightMap: {
+        pixels: heightMapImg,
+        width: heightMapImg.width, height: heightMapImg.height,
+        target: TextureTarget.TEXTURE_2D,
+        type: TexturePixelType.UNSIGNED_BYTE,
+        format: TexturePixelFormat.RGBA,
+        internalFormat: TextureInternalPixelFormat.RGBA8
       },
-      phongBlock: {
-        block: phongBlock,
-        list: {
-          u_specular: { value: [1, 1, 1, 1] },
-          u_shininess: { value: 50 },
-          u_specularFactor: { value: 1 }
-        }
+      skybox: {
+        pixels: {
+          xPos: skyboxXPosImg, xNeg: skyboxXNegImg,
+          yPos: skyboxYPosImg, yNeg: skyboxYNegImg,
+          zPos: skyboxZPosImg, zNeg: skyboxZNegImg
+        },
+        width: skyboxXPosImg.width, height: skyboxXPosImg.height,
+        target: TextureTarget.TEXTURE_CUBE_MAP,
+        type: TexturePixelType.UNSIGNED_BYTE,
+        format: TexturePixelFormat.RGBA,
+        internalFormat: TextureInternalPixelFormat.RGBA8
+      },
+      fbColorTex: {
+        width: canvas.width, height: canvas.height,
+        pixels: null,
+        target: TextureTarget.TEXTURE_2D,
+        type: TexturePixelType.UNSIGNED_BYTE,
+        format: TexturePixelFormat.RGBA,
+        internalFormat: TextureInternalPixelFormat.RGBA8,
+        wrapS: TextureWrapMode.CLAMP_TO_EDGE,
+        wrapT: TextureWrapMode.CLAMP_TO_EDGE,
+        wrapR: TextureWrapMode.CLAMP_TO_EDGE,
+        mag: TextureMagFilter.LINEAR,
+        min: TextureMinFilter.LINEAR,
+      },
+      depthTex: {
+        width: canvas.width, height: canvas.height,
+        pixels: null,
+        target: TextureTarget.TEXTURE_2D,
+        type: TexturePixelType.UNSIGNED_INT,
+        format: TexturePixelFormat.DEPTH_COMPONENT,
+        internalFormat: TextureInternalPixelFormat.DEPTH_COMPONENT24,
+        wrapS: TextureWrapMode.CLAMP_TO_EDGE,
+        wrapT: TextureWrapMode.CLAMP_TO_EDGE,
+        wrapR: TextureWrapMode.CLAMP_TO_EDGE,
+        mag: TextureMagFilter.NEAREST,
+        min: TextureMinFilter.NEAREST,
       }
     },
+    program: phongGlProgram,
+    uniformBlocks: ["worldViewBlock", "lightsBlock", "phongBlock"]
+  })!;
 
+  const basicPacketBindings = WebGLPacketUtilities.createBindings(gl, {
+    program: basicGlProgram,
+    uniformBlocks: ["basicBlock"]
+  })!;
+
+  const worldViewBlock = phongPacketBindings.uniformBlocks.worldViewBlock;
+  const lightsBlock = phongPacketBindings.uniformBlocks.lightsBlock;
+  const phongBlock = phongPacketBindings.uniformBlocks.phongBlock;
+  const basicBlock = basicPacketBindings.uniformBlocks.basicBlock;
+
+  const albedoMap = phongPacketBindings.textures.albedoMap;
+  const normalMap = phongPacketBindings.textures.normalMap;
+  const heightMap = phongPacketBindings.textures.heightMap;
+  const skybox = phongPacketBindings.textures.skybox;
+  const fbColorTex = phongPacketBindings.textures.fbColorTex;
+  const depthTex = phongPacketBindings.textures.depthTex;
+
+  const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
+  if (anisotropicExtension) {
+    console.log(`Extension EXT_texture_filter_anisotropic activated.`);
+    const maxFiltering = gl.getParameter(anisotropicExtension.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+    const textures = [albedoMap, normalMap];
+    textures.forEach((texture) => {
+      gl.activeTexture(gl.TEXTURE0 + texture.unit);
+      gl.bindTexture(texture.target, texture.internal);
+      gl.texParameterf(gl.TEXTURE_2D, anisotropicExtension.TEXTURE_MAX_ANISOTROPY_EXT, maxFiltering);
+    });
+  }
+
+  const cubeGeometry = new CubeGeometry({widthSegment: 2}/*{height: 0.5, width: 2}*/);
+  const cubeGeometryBuilder = cubeGeometry.toBuilder();
+  const quad = new QuadGeometry();
+  const quadGeometryBuilder = quad.toBuilder();
+  const cube = new Transform();
+
+  const fov = (1 / 3) * Math.PI;
+  const aspect = gl.canvas.width / gl.canvas.height;
+  const zNear = 0.1;
+  const zFar = 100;
+
+  const camera = new PerspectiveCamera(fov, aspect, zNear, zFar);
+
+  const lightTransform = new Transform();
+  lightTransform.setTranslation(new Vector3([0, 2, 2]));
+  lightTransform.setScaling(new Vector3([0.2, 0.2, 0.2]));
+
+  camera.transform.setTranslation(lightTransform.getTranslation(new Vector3()));
+  camera.transform.lookAt(new Vector3([0, 0, 0]), Space.up);
+
+  const viewDirectionProjectionInverse = camera.projection.clone().mult(new Matrix4().setIdentity().setRotation(camera.view.getRotation())).invert();
+
+  addWidgets([
+    ...createRotationWidgets(cube, "Cube"),
+    ...createPositionWidgets(cube, "Cube"),
+    ...createRelativePositionWidgets(cube, "Cube"),
+    ...createRelativePositionWidgets(camera.transform, "Camera"),
+  ]);
+
+  const cubeVertices = cubeGeometryBuilder.verticesArray();
+  const cubeIndices = cubeGeometryBuilder.indicesArray();
+  const cubeNormals = cubeGeometryBuilder.verticesNormalsArray();
+  const cubeUVs = cubeGeometryBuilder.uvsArray();
+  const cubeTangents = cubeGeometryBuilder.tangentsArray();
+  const cubeGeometryBuffer = new GeometryBuffer({
+    a_position: { array: cubeVertices, numComponents: 3 },
+    a_normal: { array: cubeNormals, numComponents: 3 },
+    a_tangent: { array: cubeTangents, numComponents: 3 },
+    a_uv: { array: cubeUVs, numComponents: 2 },
+    indices: { array: cubeIndices, numComponents: 1 },
+  }, true);
+  /*cubeGeometryBuilder.faces.forEach((face) => {
+    console.log(face);
+    console.log(face.normal.values());
+    console.log(face.tangent.values());
+  });*/
+
+  const phongCubePacketProperties: PacketProperties = {
+    vertexArray: {
+      attributes: {
+        a_position: { array: cubeVertices, numComponents: 3 },
+        a_normal: { array: cubeNormals, numComponents: 3 },
+        a_tangent: { array: cubeTangents, numComponents: 3 },
+        a_uv: { array: cubeUVs, numComponents: 2 },
+      },
+      indices: cubeIndices,
+      numElements: cubeIndices.length
+    },
+    uniformBlocks: [
+      {
+        block: worldViewBlock,
+        uniforms: {
+          u_model: { value: cube.matrix.array },
+          u_modelView: { value: camera.view.mult(cube.matrix).array },
+          u_normal: { value: camera.view.mult(cube.matrix).invert().transpose().array },
+          u_view: { value: camera.view.array },
+          u_camera: { value: camera.transform.matrix.array },
+          u_projection: { value: camera.projection.array },
+        }
+      },
+      {
+        block: lightsBlock,
+        uniforms: {
+          u_lightWorldPos: { value: Array.from(lightTransform.getTranslation(new Vector3())) },
+          u_lightColor: { value: [1, 0.8, 0.8] },
+        }
+      },
+      {
+        block: phongBlock,
+        uniforms: {
+          u_ambientColor: { value: [0.1, 0.1, 0.1] },
+          u_diffuseColor: { value: [0.8, 0, 0] },
+          u_specularColor: { value: [1, 1, 1] },
+          u_ambientFactor: { value: 1 },
+          u_diffuseFactor: { value: 1 },
+          u_specularFactor: { value: 1 },
+          u_shininess: { value: 36 },
+        }
+      }
+    ],
     uniforms: {
-      u_diffuseMap: { value: albedoMap },
-      u_normalMap: { value: normalMap }
+      u_albedo: { value: albedoMap },
+      u_normalMap: { value: normalMap },
+      u_heightMap: { value: heightMap }
     }
   };
 
-  const skyboxPacketValues: Packet = {
-
-    attributes: {
-        list: {
-          a_position: { array: new Float32Array(quad.vertices.array), props: { numComponents: 3 } },
+  const basicPacketProperties: PacketProperties = {
+    vertexArray: {
+      attributes: {
+        a_position: { array: cubeVertices, numComponents: 3 },
       },
-      indices: new Uint16Array(quad.indices),
+      indices: cubeIndices,
+      numElements: cubeIndices.length
     },
-    
+    uniformBlocks: [
+      {
+        block: basicBlock,
+        uniforms: {
+          u_model: { value: Array.from(lightTransform.matrix.array) },
+          u_viewProjection: { value: Array.from(camera.viewProjection.array) },
+          u_color: { value: [1, 1, 0] },
+        }
+      }
+    ]
+  };
+
+  const quadIndices = quadGeometryBuilder.indicesArray();
+  const quadVertices = quadGeometryBuilder.verticesArray();
+  const quadUVs = quadGeometryBuilder.uvsArray();
+  const quadWorld = new Matrix4().setIdentity();
+
+  const skyboxPacketProperties: PacketProperties = {
+    vertexArray: {
+      attributes: {
+        a_position: { array: quadVertices, numComponents: 3 },
+      },
+      indices: quadIndices,
+      numElements: quadIndices.length
+    },
     uniforms: {
-      u_world: { value: new Float32Array(quadWorld.array) },
-      u_viewDirectionProjectionInverse: { value: new Float32Array(viewProjectionInverse.array) }, 
+      u_world: { value: quadWorld.array },
+      u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }, 
       u_skybox: { value: skybox },
     }
   };
 
-  const texPacketValues: Packet = {
-    attributes: {
-        list: {
-          a_position: { array: new Float32Array(quad.vertices.array), props: { numComponents: 3 } },
-          a_uv: { array: new Float32Array(quad.uvs.array), props: { numComponents: 2 } },
+  const depthPacketProperties: PacketProperties = {
+    vertexArray: {
+      attributes: {
+        a_position: { array: quadVertices, numComponents: 3 },
+        a_uv: { array: quadUVs, numComponents: 2 },
       },
-      indices: new Uint16Array(quad.indices),
+      indices: quadIndices,
+      numElements: quadIndices.length
     },
-
     uniforms: {
-      u_world: { value: new Float32Array(new Matrix4().setIdentity().values) },
+      u_world: { value: quadWorld.array },
+      u_tex: { value: depthTex }
+    }
+  };
+
+  const texPacketProperties: PacketProperties = {
+    vertexArray: {
+      attributes: {
+        a_position: { array: quadVertices, numComponents: 3 },
+        a_uv: { array: quadUVs, numComponents: 2 },
+      },
+      indices: quadIndices,
+      numElements: quadIndices.length
+    },
+    uniforms: {
+      u_world: { value: quadWorld.array },
       u_tex: { value: fbColorTex }
     }
   };
 
+  const basicPacket = WebGLPacketUtilities.createPacket(gl, basicGlProgram, basicPacketProperties)!;
+  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongGlProgram, phongCubePacketProperties)!;
+  const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxGlProgram, skyboxPacketProperties)!;
+  const depthPacket = WebGLPacketUtilities.createPacket(gl, depthGlProgram, depthPacketProperties)!;
+  const texPacket = WebGLPacketUtilities.createPacket(gl, texGlProgram, texPacketProperties)!;
 
-  WebGLProgramUtilties.useProgram(gl, phongGlProg);
-  const phongCubePacketSetter = WebGLPacketUtilities.getPacketSetter(gl, phongGlProg, phongCubePacketValues)!;
-  WebGLPacketUtilities.setPacketValues(gl, phongCubePacketSetter, phongCubePacketValues);
-
-
-  WebGLProgramUtilties.useProgram(gl, skyboxGlProg);
-  const skyboxPacketSetter = WebGLPacketUtilities.getPacketSetter(gl, skyboxGlProg, skyboxPacketValues)!;
-  WebGLPacketUtilities.setPacketValues(gl, skyboxPacketSetter, skyboxPacketValues);
-
-  const fb = WebGLFramebufferUtilities.createFramebuffer(gl)!;
-
-  WebGLFramebufferUtilities.attachTexture(
-    gl, fb, 
-      {
-        texTarget: FramebufferTextureTarget.TEXTURE_2D,
-        glTex: fbColorTex.glTex,
-        attachment: FramebufferAttachment.COLOR_ATTACHMENT0
-      }
-  );
-
-  const maxSamples = WebGLRendererUtilities.getParameter(gl, Parameter.MAX_SAMPLES);
+  const framebuffer = WebGLFramebufferUtilities.createFramebuffer(gl)!;
+  const maxSamples = WebGLRendererUtilities.getMaxSamples(gl);
   
-  const stencilRb = WebGLRenderbufferUtilities.createRenderbuffer(gl, {
-    internalFormat: PixelFormat.DEPTH24_STENCIL8,
-    width: canvas.width,
-    height: canvas.height,
-    samples: maxSamples
-  })!;
-
-  const antialiasRb = WebGLRenderbufferUtilities.createRenderbuffer(gl, {
-    internalFormat: PixelFormat.RGBA8,
-    width: canvas.width,
-    height: canvas.height,
-    samples: maxSamples
-  })!;
-
-  WebGLFramebufferUtilities.attachRenderbuffers(
-    gl, fb,
-      [{
-        glRb: stencilRb.glRb,
-        attachment: FramebufferAttachment.DEPTH_STENCIL_ATTACHMENT
-      },
-      {
-        glRb: antialiasRb.glRb,
-        attachment: FramebufferAttachment.COLOR_ATTACHMENT0,
-      }]
+  WebGLFramebufferUtilities.attachRenderbuffer(
+    gl, framebuffer,
+    {
+      renderbuffer: WebGLFramebufferUtilities.createRenderbuffer(gl, {
+        internalFormat: RenderbufferPixelFormat.DEPTH_COMPONENT24,
+        width: canvas.width,
+        height: canvas.height,
+        samples: maxSamples
+      })!,
+      attachment: FramebufferAttachment.DEPTH_ATTACHMENT
+    },
+    {
+      renderbuffer: WebGLFramebufferUtilities.createRenderbuffer(gl, {
+        internalFormat: RenderbufferPixelFormat.RGBA8,
+        width: canvas.width,
+        height: canvas.height,
+        samples: maxSamples
+      })!,
+      attachment: FramebufferAttachment.COLOR_ATTACHMENT0,
+    }
   );
 
-  const postFb = WebGLFramebufferUtilities.createFramebuffer(gl)!;
+  const postFramebuffer = WebGLFramebufferUtilities.createFramebuffer(gl)!;
 
   WebGLFramebufferUtilities.attachTexture(
-    gl, postFb, 
-      {
-        texTarget: FramebufferTextureTarget.TEXTURE_2D,
-        glTex: fbColorTex.glTex,
-        attachment: FramebufferAttachment.COLOR_ATTACHMENT0
-      }
+    gl, postFramebuffer, 
+    {
+      textureTarget: FramebufferTextureTarget.TEXTURE_2D,
+      texture: fbColorTex,
+      attachment: FramebufferAttachment.COLOR_ATTACHMENT0
+    },
+    {
+      textureTarget: FramebufferTextureTarget.TEXTURE_2D,
+      texture: depthTex,
+      attachment: FramebufferAttachment.DEPTH_ATTACHMENT
+    }
   );
 
+  WebGLRendererUtilities.viewport(gl, 0, 0, gl.canvas.width, gl.canvas.height);
 
-  WebGLProgramUtilties.useProgram(gl, texGlProg);
-  const texPacketSetter = WebGLPacketUtilities.getPacketSetter(gl, texGlProg, texPacketValues)!;
-  WebGLPacketUtilities.setPacketValues(gl, texPacketSetter, texPacketValues);
-
-
-  WebGLRendererUtilities.setViewport(gl, 0, 0, gl.canvas.width, gl.canvas.height);
-
+  //WebGLRendererUtilities.frontFace(gl, WindingOrder.CW);
   WebGLRendererUtilities.enable(gl, Capabilities.DEPTH_TEST);
   WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
-
   
   let lastFrameTime = 0;
   let deltaTime = 0;
-    
-  await Input.initialize(document.body);
+
+  let t = 0;
+  let direction = 1;
   
+  let initRotation = cube.getRotation(new Quaternion());
+  let initPosition = cube.getTranslation(new Vector3());
+
+  const targetPosition = new Vector3([2, -2, -2]);
+  const targetRotation = Quaternion.fromAxisAngle(Space.down, Math.PI / 3)/*.mult(Quaternion.fromAxisAngle(Space.forward, Math.PI / 3))*/;
+  
+  function animate(transform: Transform, initPosition: Vector3, initRotation: Quaternion, targetPosition: Vector3, targetRotation: Quaternion, t: number) {
+    /*transform.globalPosition = transform.globalPosition
+      .lerp(initPosition, targetPosition, t);*/
+    transform.setRotation(transform.getRotation(new Quaternion()).slerp(initRotation, targetRotation, t));
+  }
+
+  Input.initialize(gl.canvas);
+  
+  WebGLFramebufferUtilities.unbindFramebuffer(gl);
+
+  const cameraControl = new FreeCameraControl(camera);
+
+  let frame = 0;
   render = function(frameTime: number) {
+    ++frame;
+    if (paused) {
+      return;
+    }
     
     frameTime *= 0.001;
 
@@ -387,183 +494,112 @@ export async function launchScene() {
     lastFrameTime = frameTime;
     fps = 1 / deltaTime;
 
-    //canvasFPS!.innerHTML = fps.toFixed(2);
-    
-    WebGLRendererUtilities.clearColor(gl, Color.GREEN.valuesNormalized());
-    WebGLRendererUtilities.clear(gl, BufferMaskBit.COLOR_BUFFER_BIT | BufferMaskBit.DEPTH_BUFFER_BIT);
+    fpsElement.textContent = fps.toFixed(2);
 
-    updateCamera(camera, target, up);
+    cameraControl.update(deltaTime);
 
-    viewInverse.copy(camera);
-    view.copy(viewInverse).invert();
-    viewProjection.copy(projection).mult(view);
-    viewProjectionInverse.copy(viewProjection).invert();
-
-    //cubeWorld.rotateY(deltaTime);
-    //viewProjectionInverse.rotateY(deltaTime / 2);
-    //viewProjectionInverse.rotateX(deltaTime);
-
-
-
-
-    // Framebuffer
-
-    WebGLFramebufferUtilities.bindFramebuffer(gl, fb);
-
-    // Framebuffer
-
-    WebGLRendererUtilities.clear(gl, BufferMaskBit.COLOR_BUFFER_BIT | BufferMaskBit.DEPTH_BUFFER_BIT);
-    
-
-    WebGLProgramUtilties.useProgram(gl, phongGlProg);
-    WebGLPacketUtilities.setPacketValues(gl, phongCubePacketSetter, {
-      uniformBlocks: {
-        worldViewBlock: {
-          block: worldViewBlock,
-          list: {
-            u_world: { value: new Float32Array(cubeWorld.array) },
-            u_viewInverse: { value: new Float32Array(viewInverse.array) },
-            u_worldInverseTranspose: { value: new Float32Array(cubeWorld.clone().invert().transpose().array) },
-            u_worldViewProjection: { value: new Float32Array(viewProjection.clone().mult(cubeWorld).array) }
-          }
-        }
-      }
-    });
-    WebGLRendererUtilities.depthFunc(gl, TestFunction.LESS);
-    WebGLPacketUtilities.drawPacket(gl, phongCubePacketSetter);
-
-
-    WebGLProgramUtilties.useProgram(gl, skyboxGlProg);
-    WebGLPacketUtilities.setPacketValues(gl, skyboxPacketSetter, {
-      uniforms: {
-        u_world: { value: new Float32Array(quadWorld.array) },
-        u_viewDirectionProjectionInverse: { value: new Float32Array(viewProjectionInverse.array) }
-      }
-    });
-
-    WebGLRendererUtilities.depthFunc(gl, TestFunction.LEQUAL);
-    WebGLPacketUtilities.drawPacket(gl, skyboxPacketSetter);
-
-    
-    // Framebuffer
-
-    WebGLFramebufferUtilities.blit(gl, fb, postFb,
-      [0, 0, canvas.width, canvas.height],
-      [0, 0, canvas.width, canvas.height],
-      BufferMaskBit.COLOR_BUFFER_BIT,
-      TextureMagFilter.LINEAR
+    animate(
+      cube,
+      initPosition, initRotation,
+      initPosition, targetRotation,
+      t
     );
     
-    WebGLFramebufferUtilities.unbindFramebuffer(gl);
-
-    WebGLProgramUtilties.useProgram(gl, texGlProg);
-    WebGLRendererUtilities.depthFunc(gl, TestFunction.LEQUAL);
-    WebGLPacketUtilities.drawPacket(gl, texPacketSetter);
+    t += deltaTime * direction * 0.5;
+    
+    WebGLRendererUtilities.clearColor(gl, Color.GREEN.valuesNormalized());
+    WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
+    
+    viewDirectionProjectionInverse.copy(camera.projection).mult(new Matrix4().setIdentity().setRotation(camera.view.getRotation())).invert();
 
     // Framebuffer
+    //WebGLFramebufferUtilities.bindFramebuffer(gl, depthFramebuffer);
+    WebGLFramebufferUtilities.bindFramebuffer(gl, framebuffer);
+
+    WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
+    WebGLRendererUtilities.depthFunction(gl, TestFunction.LESS);
+
+    WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, {
+      uniformBlocks: [{
+          block: worldViewBlock,
+          buffer: phongCubePacket.uniformBlocks!.worldViewBlock.buffer,
+          uniforms: {
+            u_model: { value: cube.matrix.array },
+            u_modelView: { value: camera.view.mult(cube.matrix).array },
+            u_camera: { value: camera.transform.matrix.array },
+            u_view: { value: camera.view.array },
+            u_normal: { value: camera.view.mult(cube.matrix).invert().transpose().array },
+            u_projection: { value: camera.projection.array },
+          }
+      }]
+    });
+
+    WebGLPacketUtilities.drawPacket(gl, phongCubePacket);
+
+    WebGLPacketUtilities.setPacketValues(gl, basicPacket, {
+      uniformBlocks: [
+        {
+          block: basicBlock,
+          buffer: basicPacket.uniformBlocks!.basicBlock.buffer,
+          uniforms: {
+            u_viewProjection: { value: camera.viewProjection.array },
+          }
+        }
+      ]
+    });
+    WebGLPacketUtilities.drawPacket(gl, basicPacket);
+    
+    WebGLPacketUtilities.setPacketValues(gl, skyboxPacket, {
+      uniforms: {
+        u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }
+      }
+    });
+    WebGLRendererUtilities.depthFunction(gl, TestFunction.LEQUAL);
+    WebGLPacketUtilities.drawPacket(gl, skyboxPacket);
+    
+    // Framebuffer
+    WebGLFramebufferUtilities.blit(gl, framebuffer, postFramebuffer,
+      [0, 0, canvas.width, canvas.height],
+      [0, 0, canvas.width, canvas.height],
+      BufferMask.COLOR_BUFFER_BIT,
+      TextureMagFilter.LINEAR
+    );
+    WebGLFramebufferUtilities.blit(gl, framebuffer, postFramebuffer,
+      [0, 0, canvas.width, canvas.height],
+      [0, 0, canvas.width, canvas.height],
+      BufferMask.DEPTH_BUFFER_BIT,
+      TextureMagFilter.NEAREST
+    );
+
+    WebGLFramebufferUtilities.unbindFramebuffer(gl);
+    WebGLPacketUtilities.drawPacket(gl, depthPacket);
+
+    // WebGLFramebufferUtilities.unbindFramebuffer(gl);
+    // WebGLPacketUtilities.drawPacket(gl, texPacket);
 
     Input.clear();
 
-    //frameRequest = requestAnimationFrame(render);
+    frameRequest = requestAnimationFrame(render);
   }
 
+  /*const stream = gl.canvas.captureStream(60);
+  const rec = new MediaRecorder(stream, {
+    mimeType: "video/webm; codecs=vp9",
+    audioBitsPerSecond: 0,
+    videoBitsPerSecond: canvas.width * canvas.height * 24 * 60
+  });
+
+  const chunks: BlobPart[] = [];
+  rec.addEventListener("dataavailable", (event) => {
+    chunks.push(event.data);
+  });
+  rec.addEventListener("stop", () => {
+    const blob = new Blob(chunks, {type: "video/webm; codecs=vp9"});
+    const anchor = document.createElement("a");
+    anchor.download = "recorded.webm";
+    anchor.href = URL.createObjectURL(blob);
+    anchor.click();
+  });
+  rec.start();*/
   render(0);
-}
-
-let lastPos = new Vector2();
-function updateCamera(camera: Matrix4, target: Vector3, up: Vector3) {
-  if (Input.getMouseButtonDown(MouseButton.RIGHT)) {
-    lastPos.copy(Input.getMouseButtonPosition());
-  }
-
-  if (Input.getMouseButton(MouseButton.RIGHT)) {
-    const newPos = Input.getMouseButtonPosition();
-    
-    if (!newPos.equals(lastPos)) {
-
-      const angleX = (newPos.x - lastPos.x);
-      const angleY = (newPos.y - lastPos.y);
-
-      //console.log(eye.values);
-
-      //const euler = EulerAngles.fromMatrix(new Matrix3(camera.getUpper33()));
-
-      /*const viewVector = new Vector3([
-        Math.cos(euler.yaw) * Math.cos(euler.pitch),
-        Math.sin(euler.pitch),
-        -Math.sin(euler.yaw) * Math.cos(euler.pitch)
-      ]);
-
-      const rightVector = viewVector.clone().cross(new Vector3([0, 1, 0]));
-      const upVector = viewVector.clone().cross(rightVector);
-
-      const quaternion = new Quaternion([viewVector.x, viewVector.y, viewVector.z, 0]);*/
-
-      
-      
-      /*const eye = new Vector3([camera.m41, camera.m42, camera.m43]);
-      const radius = eye.clone().sub(target);
-
-      const cameraRight = new Vector3([camera.m11, camera.m12, camera.m13]).normalize();
-
-      const quat = Quaternion.fromMatrix(new Matrix3(camera.getUpper33())).normalize();
-      //const xRot = new Quaternion().setFromAxisAngle(cameraRight, angleX);
-      //const yRot = new Quaternion().setFromAxisAngle(Space.up, angleY);
-
-      //const newQuat = yRot.clone().mult(xRot.clone().mult(quat).mult(xRot.clone().conjugate())).mult(yRot.clone().conjugate());
-      //const newPosition = yRot.clone().mult(xRot.clone().mult(Quaternion.fromVector(eye)).mult(xRot.clone().conjugate())).mult(yRot.clone().conjugate()).toVector();
-
-      const newMat = quat.toMatrix();
-
-      camera.m41 = eye.x;
-      camera.m42 = eye.y;
-      camera.m43 = eye.z;
-      camera.setUpper33(newMat.values);*/
-
-      //camera.lookAt(newPosition, target, up);
-
-      /*const cameraRight = new Vector3([camera.m11, camera.m12, camera.m13]).normalize();
-      const cameraUp = new Vector3([camera.m21, camera.m22, camera.m23]).normalize();
-
-      const rotatedX = new Matrix4().setIdentity().rotateAxis(cameraUp, -angleX);
-      const rotatedY = new Matrix4().setIdentity().rotateAxis(cameraRight, -angleY);
-
-      camera.copy(
-        Matrix4.translation(
-          radius.clone().negate()
-        ).mult(
-          rotatedX
-        ).mult(
-          rotatedY
-        ).mult(
-          Matrix4.translation(
-            target.clone().negate()
-          )
-        )
-      );
-      
-      //camera.lookAt(viewVector, target, upVector);
-
-      /*const cameraRight = new Vector3([camera.m11, camera.m12, camera.m13]);
-      const cameraUp = new Vector3([camera.m21, camera.m22, camera.m23]);
-
-      eye.copy(
-        Vector3.mult(
-          new Matrix3(new Matrix4().setIdentity().rotateAxis(cameraUp, angleX).getUpper33()),
-          eye.clone().sub(target)
-        ).add(target)
-      );
-
-      eye.copy(
-        Vector3.mult(
-          new Matrix3(new Matrix4().setIdentity().rotateAxis(cameraRight, angleY).getUpper33()),
-          eye.clone().sub(target)
-        ).add(target)
-      );
-      
-      camera.lookAt(eye, target, up);*/
-
-      lastPos.copy(newPos);
-    }
-  }
 }

@@ -5,7 +5,7 @@ type TypedArray =
     Int16Array | Uint16Array | 
     Int8Array | Uint8Array | Uint8ClampedArray;
 
-type WritableArrayLike<T> = {
+interface WritableArrayLike<T> {
     [index: number]: T;
     readonly length: number;
 };

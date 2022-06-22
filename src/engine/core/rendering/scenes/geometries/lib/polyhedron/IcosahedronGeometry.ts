@@ -1,7 +1,7 @@
 import { buildArrayFromIndexedArrays } from "../../../../../../utils/Snippets";
 import { GeometryBase } from "../../Geometry";
 import { GOLDEN_RATIO as p } from "../../../../../../libs/maths/geometry/GeometryConstants";
-
+/*
 export { IcosahedronGeometry };
 
 class IcosahedronGeometry extends GeometryBase {
@@ -13,7 +13,7 @@ class IcosahedronGeometry extends GeometryBase {
 			indices: new Uint8Array(icosahedronIndices)
 		})
 	}
-}
+}*/
 
 /**
  * 
@@ -74,25 +74,25 @@ const IcosahedronUVsSet = [
 const icosahedronVertices = buildArrayFromIndexedArrays(
 	icosahedronVerticesSet,
 	[
-			0,  1,  2, // f0
-			0,  2,  3, // f1
-			0,  3,  4, // f2
-			0,  4,  5, // f3
-			0,  5,  1, // f4
-			1,  6,  2, // f5
-			2,  6,  7, // f6
-			2,  7,  3, // f7
-			3,  7,  8, // f8
-			3,  8,  4, // f9
-			4,  8,  9, // f10
-			4,  9,  5, // f11
-			5,  9, 10, // f12
-			5, 10,  1, // f13
-			1, 10,  6, // f14
-			6, 11,  7, // f15
-			7, 11,  8, // f16
-			8, 11,  9, // f17
-			9, 11, 10, // f18
+		0,  1,  2, // f0
+		0,  2,  3, // f1
+		0,  3,  4, // f2
+		0,  4,  5, // f3
+		0,  5,  1, // f4
+		1,  6,  2, // f5
+		2,  6,  7, // f6
+		2,  7,  3, // f7
+		3,  7,  8, // f8
+		3,  8,  4, // f9
+		4,  8,  9, // f10
+		4,  9,  5, // f11
+		5,  9, 10, // f12
+		5, 10,  1, // f13
+		1, 10,  6, // f14
+		6, 11,  7, // f15
+		7, 11,  8, // f16
+		8, 11,  9, // f17
+		9, 11, 10, // f18
 		10, 11,  6, // f19
 	]
 );

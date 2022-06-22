@@ -5,7 +5,6 @@ import { Object3D, Object3DBase } from "../Object3D";
 
 export { LightProperties };
 export { Light };
-export { isLight };
 export { LightBase };
 
 enum LightProperties {
@@ -16,11 +15,6 @@ interface Light extends Object3D {
     readonly isLight: true;
     color: Color;
     isLightingOn(mesh: Mesh): boolean;
-}
-
-function isLight(obj: any): obj is Light {
-    const light = (obj as Light);
-    return light.isObject3D && light.isLight;
 }
 
 abstract class LightBase extends Object3DBase {

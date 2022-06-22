@@ -6,7 +6,7 @@ export { Vector2List };
 export { Vector2ListBase };
 
 interface Vector2List {
-    readonly array: ArrayLike<number>;
+    readonly array: WritableArrayLike<number>;
     readonly count: number;
 
     setArray(array: WritableArrayLike<number>): this;
@@ -35,7 +35,7 @@ class Vector2ListBase implements Vector2List {
         this._array = array || [];
     }
 
-    public get array(): ArrayLike<number> {
+    public get array(): WritableArrayLike<number> {
         return this._array;
     }
 
@@ -60,14 +60,14 @@ class Vector2ListBase implements Vector2List {
 
         let idxObj = idxFrom;
 
-        Vector2Pool.acquireTemp(1, (vector) => {
-            while (idxObj < count) {
-                this.get(idxObj, vector);
-                func(vector, idxObj);
+        const [vector] = Vector2Pool.acquire(1);
+        while (idxObj < count) {
+            this.get(idxObj, vector);
+            func(vector, idxObj);
 
-                idxObj += 1;
-            }
-        });
+            idxObj += 1;
+        }
+        Vector2Pool.release(1);
     }
 
     public indexOf(vec: Vector2): number {
@@ -77,18 +77,18 @@ class Vector2ListBase implements Vector2List {
             idxObj = 0,
             indexOf = -1;
         
-            Vector2Pool.acquireTemp(1, (vector) => {
-            while (idxBuf < count) {
-                vector.readFromArray(this._array, idxBuf);
-                if (vector.equals(vec)) {
-                    
-                    indexOf = idxObj;
-                    break;
-                }
-                idxObj += 1;
-                idxBuf += 2;
+        const [vector] = Vector2Pool.acquire(1);
+        while (idxBuf < count) {
+            vector.readFromArray(this._array, idxBuf);
+            if (vector.equals(vec)) {
+                
+                indexOf = idxObj;
+                break;
             }
-        });
+            idxObj += 1;
+            idxBuf += 2;
+        }
+        Vector2Pool.release(1);
 
         return indexOf;
     }

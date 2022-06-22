@@ -17,13 +17,15 @@ type Matrix2Values = [
 interface Matrix2Constructor {
 	readonly prototype: Matrix2;
 	new(): Matrix2;
-	new(values: Matrix2Values): Matrix2;
-	new(values?: Matrix2Values): Matrix2;
+	new(
+    m11: number, m12: number,
+    m21: number, m22: number
+  ): Matrix2;
+  new(array: ArrayLike<number>): Matrix2;
 }
 
 interface Matrix2 {
-  readonly array: ArrayLike<number>;
-  values: Matrix2Values;
+  readonly array: Float32Array;
   row1: Vector2Values;
   row2: Vector2Values;
   col1: Vector2Values;
@@ -32,17 +34,11 @@ interface Matrix2 {
   m12: number;
   m21: number;
   m22: number;
-  setArray(array: WritableArrayLike<number>): this;
-  setValues(m: Matrix2Values): void;
-  getAt(idx: number): number;
-  setAt(idx: number, val: number): this;
-  getEntry(row: number, col: number): number;
-  setEntry(row: number, col: number, val: number): this;
-  getRow(idx: number): Vector2Values;
-  setRow(idx: number, row: Vector2Values): this;
-  getCol(idx: number): Vector2Values;
-  setCol(idx: number, col: Vector2Values): this;
-    
+  getValues(): Matrix2Values;
+  setValues(
+    m11: number, m12: number,
+    m21: number, m22: number
+  ): this;
   equals(mat: Matrix2): boolean;
   copy(mat: Matrix2): this;
   clone(): this;
@@ -62,198 +58,151 @@ interface Matrix2 {
   readFromArray(arr: ArrayLike<number>, offset?: number): this;
 }
 
-class Matrix2Base {
-  protected _array: WritableArrayLike<number>;
+class Matrix2Base implements Matrix2 {
+  public readonly array: Float32Array;
 
 	constructor()
-	constructor(values: Matrix2Values)
-	constructor(values?: Matrix2Values) {
-		this._array = (values) ? [
-      values[0], values[1],
-      values[2], values[3],
-		] : [
-      0, 0,
-      0, 0
-    ];
-  }
-
-  public get array(): ArrayLike<number> {
-    return this._array;
+  constructor(array: ArrayLike<number>)
+	constructor(
+    m11: number, m12: number,
+    m21: number, m22: number,
+  )
+	constructor(
+    ...args: any[]
+  ) {
+		if (typeof args[0] === "number") {
+			this.array = new Float32Array([
+        args[0], args[2],
+        args[1], args[3],
+      ]);
+		}
+		else if (typeof args[0] === "object") {
+      const array = args[0];
+      this.checkArray(array);
+      if (array instanceof Float32Array) {
+        this.array = array;
+      }
+      else {
+        this.array = new Float32Array(array);
+      }
+		}
+		else {
+			this.array = new Float32Array([
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0
+      ]);
+		}
   }
   
-  public get values(): Matrix2Values {
+  public getValues(): Matrix2Values {
 		return [
-      this._array[0], this._array[1],
-      this._array[2], this._array[3]
+      this.array[0], this.array[1],
+      this.array[2], this.array[3]
     ];
 	}
 
-	public set values(values: Matrix2Values) {
-    this._array[0] = values[0];
-    this._array[1] = values[1];
-    this._array[2] = values[2];
-    this._array[3] = values[3];
+  public setValues(
+    m11: number, m12: number,
+    m21: number, m22: number
+  ): this {
+
+    this.array[0] = m11;
+    this.array[1] = m21;
+    this.array[2] = m12;
+    this.array[3] = m22;
+
+    return this;
   }
 
   public get row1(): Vector2Values {
 		return [
-      this._array[0],
-      this._array[1]
+      this.array[0],
+      this.array[2]
     ];
 	}
 
-	public set row1(row1: Vector2Values) {
-    this._array[0] = row1[0];
-    this._array[1] = row1[1];
+	public set row1(row: Vector2Values) {
+    this.array[0] = row[0];
+    this.array[2] = row[1];
   }
 
   public get row2(): Vector2Values {
 		return [
-      this._array[2],
-      this._array[3]
+      this.array[1],
+      this.array[3]
     ];
 	}
 
-	public set row2(row2: Vector2Values) {
-    this._array[2] = row2[0];
-    this._array[3] = row2[1];
+	public set row2(row: Vector2Values) {
+    this.array[1] = row[0];
+    this.array[3] = row[1];
   }
 
   public get col1(): Vector2Values {
 		return [
-      this._array[0],
-      this._array[2]
+      this.array[0],
+      this.array[2]
     ];
 	}
 
-	public set col1(col1: Vector2Values) {
-    this._array[0] = col1[0];
-    this._array[2] = col1[1];
+	public set col1(col: Vector2Values) {
+    this.array[0] = col[0];
+    this.array[1] = col[1];
   }
 
   public get col2(): Vector2Values {
 		return [
-      this._array[1],
-      this._array[3]
+      this.array[2],
+      this.array[3]
     ];
 	}
 
-	public set col2(col2: Vector2Values) {
-    this._array[1] = col2[0];
-    this._array[3] = col2[1];
+	public set col2(col: Vector2Values) {
+    this.array[2] = col[0];
+    this.array[3] = col[1];
   }
 
   public get m11() {
-		return this._array[0];
+		return this.array[0];
 	}
 
-	public set m11(m11: number) {
-		this._array[0] = m11;
+	public set m11(val: number) {
+		this.array[0] = val;
   }
   
   public get m12() {
-		return this._array[1];
+		return this.array[2];
 	}
 
-	public set m12(m12: number) {
-		this._array[1] = m12;
+	public set m12(val: number) {
+		this.array[2] = val;
   }
   
   public get m21() {
-		return this._array[4];
+		return this.array[1];
 	}
 
-	public set m21(m21: number) {
-		this._array[4] = m21;
+	public set m21(val: number) {
+		this.array[1] = val;
   }
   
   public get m22() {
-		return this._array[5];
+		return this.array[3];
 	}
 
-	public set m22(m22: number) {
-		this._array[5] = m22;
+	public set m22(val: number) {
+		this.array[3] = val;
   }
 
-	public setArray(array: WritableArrayLike<number>): this {
-		if (array.length < 16) {
-			throw new MathError(`Array must be of length 16 at least.`);
+  private checkArray(array: ArrayLike<number>): void {
+		if (array.length < 4) {
+			throw new MathError(`Array must be of length 4 at least.`);
 		}
-		this._array = array;
-		return this;
 	}
 
-  public setValues(m: Matrix2Values): this {
-		const o = this._array;
-
-    o[0] = m[0];
-    o[1] = m[1];
-    o[2] = m[2];
-    o[3] = m[3];
-
-		return this;
-	}
-
-  public getRow(idx: number): Vector2Values {
-    const m = this._array;
-    const offset = idx * 2;
-
-    return [
-      m[offset    ],
-      m[offset + 1]
-    ];
-  }
-
-  public setRow(idx: number, row: Vector2Values): this {
-    const o = this._array;
-    const offset = idx * 2;
-
-    o[offset    ] = row[0];
-    o[offset + 1] = row[1];
-
-    return this;
-  }
-
-  public setCol(idx: number, col: Vector2Values): this {
-    const o = this._array;
-
-    o[     idx] = col[0];
-    o[2  + idx] = col[1];
-
-    return this;
-  }
-
-  public getCol(idx: number): Vector2Values {
-    const m = this._array;
-
-    return [
-      m[     idx],
-      m[2  + idx]
-    ];
-  }
-
-  public getAt(idx: number): number {
-    return this._array[idx];
-  }
-
-  public setAt(idx: number, val: number): this {
-    this._array[idx] = val;
-
-    return this;
-  }
-
-  public getEntry(row: number, col: number): number {
-    return this._array[2 * row + col];
-  }
-
-  public setEntry(row: number, col: number, val: number): this {
-    this._array[2 * row + col] = val;
-
-    return this;
-  }
-  
 	public equals(mat: Matrix2) {
-    const o = this._array;
+    const o = this.array;
     const m = mat.array;
 
     return o[0] === m[0]
@@ -262,17 +211,8 @@ class Matrix2Base {
       && o[3] === m[3];
   }
 
-  public getValues(): Matrix2Values {
-		const m = this._array;
-
-    return [
-      m[ 0], m[ 1],
-      m[ 2], m[ 3]
-    ];
-	}
-
   public copy(mat: Matrix2): this {
-    const o = this._array;
+    const o = this.array;
     const m = mat.array;
 
     o[0] = m[0];
@@ -284,23 +224,23 @@ class Matrix2Base {
   }
 
   public clone(): this {
-    return new Matrix2Base(this.values) as this;
+    return new Matrix2Base(this.getValues()) as this;
   }
 
   public det(): number {
-    const o = this._array;
+    const o = this.array;
 
     return o[0] * o[3] - o[1] * o[2];
   }
 
   public trace(): number {
-    const o = this._array;
+    const o = this.array;
     
     return o[0] + o[3];
   }
 
   public setIdentity(): this {
-    const o = this._array;
+    const o = this.array;
   
     o[0] = 1;
     o[1] = 0;
@@ -311,7 +251,7 @@ class Matrix2Base {
   }
 
   public setZeros(): this {
-    const o = this._array;
+    const o = this.array;
   
     o[0] = 0;
     o[1] = 0;
@@ -322,7 +262,7 @@ class Matrix2Base {
   }
 
   public negate(): this {
-    const o = this._array;
+    const o = this.array;
 
     o[0] = -o[0];
     o[1] = -o[1];
@@ -333,7 +273,7 @@ class Matrix2Base {
   }
 
   public transpose(): this {
-    const o = this._array;
+    const o = this.array;
 
     let t;
 
@@ -345,7 +285,7 @@ class Matrix2Base {
   }
 
   public invert(): this {
-    const o = this._array;
+    const o = this.array;
 
     const d = 1.0 / (o[0] * o[3] - o[1] * o[2]);
 
@@ -362,7 +302,7 @@ class Matrix2Base {
   }
 
   public add(mat: Matrix2): this {
-    const o = this._array;
+    const o = this.array;
     const m = mat.array;
 
     o[0] = o[0] + m[0];
@@ -374,7 +314,7 @@ class Matrix2Base {
   }
 
   public sub(mat: Matrix2): this {
-    const o = this._array;
+    const o = this.array;
     const m = mat.array;
 
     o[0] = o[0] - m[0];
@@ -386,7 +326,7 @@ class Matrix2Base {
   }
 
   public mult(mat: Matrix2): this {
-    const o = this._array;
+    const o = this.array;
     const m = mat.array;
 
     const a00 = o[0 * 3 + 0];
@@ -407,7 +347,7 @@ class Matrix2Base {
   }
 
   public multScalar(k: number): this {
-    const o = this._array;
+    const o = this.array;
 
     o[0] = o[0] * k;
     o[1] = o[1] * k;
@@ -418,7 +358,7 @@ class Matrix2Base {
   }
 
   public writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
-		const m = this._array;
+		const m = this.array;
 
 		out[offset     ] = m[ 0];
 		out[offset +  1] = m[ 1];
@@ -427,7 +367,7 @@ class Matrix2Base {
   }
     
   public readFromArray(arr: ArrayLike<number>, offset: number = 0): this {
-		const o = this._array;
+		const o = this.array;
 
 		o[ 0] = arr[offset     ];
 		o[ 1] = arr[offset +  1];
@@ -438,7 +378,7 @@ class Matrix2Base {
   }
 
   public solve(vecB: Vector2): Vector2Values {
-    const a = this._array;
+    const a = this.array;
 
     const a11 = a[0];
     const a12 = a[1];
