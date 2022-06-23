@@ -6,9 +6,9 @@ interface GeometryBufferConstructor {
     }, interleaved?: boolean): GeometryBuffer;
 }
 interface GeometryBuffer {
-    interleaved: boolean;
-    buffer: ArrayBuffer;
-    attributes: {
+    readonly interleaved: boolean;
+    readonly buffer: ArrayBuffer;
+    readonly attributes: {
         [name: string]: {
             byteOffset: number;
             numComponents: 1 | 2 | 3 | 4;

@@ -217,7 +217,7 @@ export class WebGLTextureUtilities {
             return null;
         }
 
-        const unit = this._allocateUnit(gl);
+        const unit = this.#allocateUnit(gl);
         if (unit < 0) {
             console.error(`Could not allocate another texture unit. Max (${gl.MAX_TEXTURE_IMAGE_UNITS}) was reached.`);
             return null;
@@ -238,7 +238,7 @@ export class WebGLTextureUtilities {
         if (gl.isTexture(texture.internal)) {
             gl.deleteTexture(texture.internal);
         }
-        this._freeUnit(gl, texture.unit);
+        this.#freeUnit(gl, texture.unit);
     }
 
     static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, props: TextureProperties): void {
@@ -336,10 +336,10 @@ export class WebGLTextureUtilities {
         });
     }
     
-    private static _units: Map<WebGL2RenderingContext, boolean[]> = new Map();
+    static #units: Map<WebGL2RenderingContext, boolean[]> = new Map();
 
-    private static _freeUnit(gl: WebGL2RenderingContext, unit: number): number | null {
-        const units = this._units.get(gl);
+    static #freeUnit(gl: WebGL2RenderingContext, unit: number): number | null {
+        const units = this.#units.get(gl);
         if (typeof units !== "undefined") {
             if (units.length < 0) {
                 units[unit] = false;
@@ -348,12 +348,12 @@ export class WebGLTextureUtilities {
         return null;
     }
 
-    private static _allocateUnit(gl: WebGL2RenderingContext): number {
+    static #allocateUnit(gl: WebGL2RenderingContext): number {
         const maxUnits = gl.MAX_TEXTURE_IMAGE_UNITS;
-        let units = this._units.get(gl);
+        let units = this.#units.get(gl);
         if (typeof units === "undefined") {
             units = new Array(maxUnits);
-            this._units.set(gl, units);
+            this.#units.set(gl, units);
         }
         for (let i = 1; i < maxUnits; i++) {
             if (!units[i]) {

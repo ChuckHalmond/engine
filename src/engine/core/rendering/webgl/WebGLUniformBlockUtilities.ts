@@ -69,9 +69,10 @@ export class WebGLUniformBlockUtilities {
     }
 
     static setUniformBufferValues(gl: WebGL2RenderingContext, layout: UniformBlockLayout, buffer: UniformBuffer, uniforms: UniformsList): void {
+        const {internal} = buffer;
         const currentUniformBuffer = gl.getParameter(gl.UNIFORM_BUFFER_BINDING);
-        if (currentUniformBuffer !== buffer.internal) {
-            gl.bindBuffer(gl.UNIFORM_BUFFER, buffer.internal);
+        if (currentUniformBuffer !== internal) {
+            gl.bindBuffer(gl.UNIFORM_BUFFER, internal);
         }
         
         Object.keys(uniforms).forEach((uniformName) => {
@@ -83,9 +84,9 @@ export class WebGLUniformBlockUtilities {
 
     static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void {
         const rangeOffset = buffer.rangeOffset || 0;
-        const rangeSize = buffer.rangeSize || (buffer.byteLength - (rangeOffset || 0));
+        const rangeSize = buffer.rangeSize || (buffer.byteLength - rangeOffset);
         
-        if (typeof buffer.rangeOffset !== "undefined" || typeof buffer.rangeSize !== "undefined") {
+        if (rangeOffset !== 0 || typeof buffer.rangeSize !== "undefined") {
             gl.bindBufferRange(gl.UNIFORM_BUFFER, block.bindingPoint, buffer.internal, rangeOffset, rangeSize);
         }
         else {
@@ -94,7 +95,7 @@ export class WebGLUniformBlockUtilities {
     }
 
     static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null {
-        const bindingPoint = this._allocateBindingPoint(gl);
+        const bindingPoint = this.#allocateBindingPoint(gl);
         if (bindingPoint === null) {
             console.error(`Could not bind another uniform buffer object. Max (${gl.MAX_UNIFORM_BUFFER_BINDINGS}) was reached.`);
             return null;
@@ -146,10 +147,10 @@ export class WebGLUniformBlockUtilities {
         };
     }
 
-    private static _bindingPoints: Map<WebGL2RenderingContext, boolean[]> = new Map();
+    static #bindingPoints: Map<WebGL2RenderingContext, boolean[]> = new Map();
 
-    private static _freeBindingPoint(gl: WebGL2RenderingContext, bindingPoint: number): number | null {
-        const maxBindings = this._bindingPoints.get(gl);
+    static #freeBindingPoint(gl: WebGL2RenderingContext, bindingPoint: number): number | null {
+        const maxBindings = this.#bindingPoints.get(gl);
         if (typeof maxBindings !== "undefined") {
             if (maxBindings.length < 0) {
                 maxBindings[bindingPoint] = false;
@@ -158,12 +159,12 @@ export class WebGLUniformBlockUtilities {
         return null;
     }
 
-    private static _allocateBindingPoint(gl: WebGL2RenderingContext): number {
+    static #allocateBindingPoint(gl: WebGL2RenderingContext): number {
         const maxBindings = gl.MAX_UNIFORM_BUFFER_BINDINGS;
-        let bindingPoints = this._bindingPoints.get(gl);
+        let bindingPoints = this.#bindingPoints.get(gl);
         if (typeof bindingPoints === "undefined") {
             bindingPoints = new Array(maxBindings);
-            this._bindingPoints.set(gl, bindingPoints);
+            this.#bindingPoints.set(gl, bindingPoints);
         }
         for (let i = 1; i < maxBindings; i++) {
             if (!bindingPoints[i]) {

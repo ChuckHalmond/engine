@@ -79,22 +79,21 @@ export class WebGLPacketUtilities {
             [key: string]: UniformBlock
         } = {};
 
-        const texturesInfo = props.textures;
-        const uniformBlocksInfo = props.uniformBlocks;
+        const {textures: texturesProps, uniformBlocks: uniformBlocksProps, program} = props;
         
-        if (typeof texturesInfo !== "undefined") {
-            Object.entries(texturesInfo).forEach(([textureName, textureInfo]) => {
-                const texture = WebGLTextureUtilities.createTexture(gl, textureInfo);
+        if (typeof texturesProps !== "undefined") {
+            Object.entries(texturesProps).forEach(([textureName, textureProps]) => {
+                const texture = WebGLTextureUtilities.createTexture(gl, textureProps);
                 if (texture !== null) {
                     textures[textureName] = texture;
                 }
             });
         }
 
-        if (typeof uniformBlocksInfo !== "undefined") {
-            uniformBlocksInfo.forEach((blockName) => {
+        if (typeof uniformBlocksProps !== "undefined") {
+            uniformBlocksProps.forEach((blockName) => {
                 const uniformBlock = WebGLUniformBlockUtilities.createUniformBlock(
-                    gl, props.program, blockName
+                    gl, program, blockName
                 );
                 if (uniformBlock !== null) {
                     uniformBlocks[blockName] = uniformBlock;
@@ -109,24 +108,25 @@ export class WebGLPacketUtilities {
     }
 
     static createPacket(gl: WebGL2RenderingContext, program: Program, packet: PacketProperties): Packet | null {
-        const drawMode = packet.options?.drawMode || DrawMode.TRIANGLES;
-        const instanceCount = packet.options?.instanceCount;
+        const {options, vertexArray: vertexArrayProps, uniforms: uniformsProps, uniformBlocks: uniformBlocksProps, textures: texturesProps} = packet;
+        const drawMode = options?.drawMode || DrawMode.TRIANGLES;
+        const instanceCount = options?.instanceCount;
 
         let vertexArray: VertexArray | null | undefined = void 0;
-        if (typeof packet.vertexArray !== "undefined") {
-            vertexArray = WebGLVertexArrayUtilities.createVertexArray(gl, program, packet.vertexArray);
+        if (typeof vertexArrayProps !== "undefined") {
+            vertexArray = WebGLVertexArrayUtilities.createVertexArray(gl, program, vertexArrayProps);
             if (vertexArray == null) {
                 return null;
             }
         }
       
         let uniformsSetter: UniformsListSetter | null | undefined = void 0;
-        if (typeof packet.uniforms !== "undefined") {
-            uniformsSetter = WebGLUniformUtilities.getUniformsListSetter(gl, program, packet.uniforms);
+        if (typeof uniformsProps !== "undefined") {
+            uniformsSetter = WebGLUniformUtilities.getUniformsListSetter(gl, program, uniformsProps);
             if (uniformsSetter == null) {
                 return null;
             }
-            WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, packet.uniforms);
+            WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, uniformsProps);
         }
 
         let uniformBlocks: {
@@ -136,28 +136,30 @@ export class WebGLPacketUtilities {
             }
         } | null | undefined = void 0;
 
-        if (typeof packet.uniformBlocks !== "undefined") {
+        if (typeof uniformBlocksProps !== "undefined") {
             uniformBlocks = {};
-            packet.uniformBlocks.forEach((uniformBlock) => {
-                const block = uniformBlock.block;
+            uniformBlocksProps.forEach((uniformBlock) => {
+                const {block, buffer: bufferProps, uniforms} = uniformBlock;
+                const {name: blockName} = block;
                 let buffer: UniformBuffer | null = null;
-                if (typeof uniformBlock.buffer === "undefined") {
-                    buffer = WebGLUniformBlockUtilities.createUniformBuffer(gl, program, block.name);
+                if (typeof bufferProps === "undefined") {
+                    buffer = WebGLUniformBlockUtilities.createUniformBuffer(gl, program, blockName);
                 }
-                else if (!("internal" in uniformBlock.buffer)) {
-                    const bufferProps = uniformBlock.buffer;
-                    buffer = WebGLUniformBlockUtilities.createUniformBuffer(gl, program, block.name,
-                        bufferProps.usage, bufferProps.byteLength, bufferProps.rangeOffset, bufferProps.rangeSize
+                else if (!("internal" in bufferProps)) {
+                    const {usage, byteLength, rangeOffset, rangeSize} = bufferProps;
+                    buffer = WebGLUniformBlockUtilities.createUniformBuffer(gl, program, blockName,
+                        usage, byteLength, rangeOffset, rangeSize
                     );
                 }
                 else {
-                    buffer = uniformBlock.buffer;
+                    buffer = bufferProps;
                 }
                 if (buffer === null) {
                     return null;
                 }
-                if (typeof uniformBlock.uniforms !== "undefined") {
-                    WebGLUniformBlockUtilities.setUniformBufferValues(gl, block.layout, buffer, uniformBlock.uniforms);
+                if (typeof uniforms !== "undefined") {
+                    const {layout} = block;
+                    WebGLUniformBlockUtilities.setUniformBufferValues(gl, layout, buffer, uniforms);
                 }
                 WebGLUniformBlockUtilities.bindUniformBuffer(gl, block, buffer);
                 uniformBlocks![block.name] = {
@@ -167,13 +169,14 @@ export class WebGLPacketUtilities {
             });
         }
 
-        if (typeof packet.textures !== "undefined") {
-            packet.textures.forEach((texture) => {
-                if (typeof texture.props !== "undefined") {
-                    WebGLTextureUtilities.setTextureProperties(gl, texture.texture, texture.props);
+        if (typeof texturesProps !== "undefined") {
+            texturesProps.forEach((textureProps) => {
+                const {props, params, texture} = textureProps;
+                if (typeof props !== "undefined") {
+                    WebGLTextureUtilities.setTextureProperties(gl, texture, props);
                 }
-                if (typeof texture.params !== "undefined") {
-                    WebGLTextureUtilities.setTextureParameters(gl, texture.texture, texture.params);
+                if (typeof params !== "undefined") {
+                    WebGLTextureUtilities.setTextureParameters(gl, texture, params);
                 }
             });
         }
@@ -188,45 +191,51 @@ export class WebGLPacketUtilities {
     }
 
     static setPacketValues(gl: WebGL2RenderingContext, packet: Packet, values: PacketValues): void {
+        const {vertexArray: vertexArrayValues, uniforms: uniformsValues, uniformBlocks: uniformBlocksValues, textures: texturesValues} = values;
+        const {vertexArray, uniformsSetter} = packet;
 
-        if (typeof values.vertexArray !== "undefined" && typeof packet.vertexArray !== "undefined") {
-            WebGLVertexArrayUtilities.setVertexArrayValues(gl, packet.vertexArray, values.vertexArray);
+        if (typeof vertexArrayValues !== "undefined" && typeof vertexArray !== "undefined") {
+            WebGLVertexArrayUtilities.setVertexArrayValues(gl, vertexArray, vertexArrayValues);
         }
 
-        if (typeof values.uniforms !== "undefined" && typeof packet.uniformsSetter !== "undefined") {
-            WebGLUniformUtilities.setUniformsListValues(gl, packet.uniformsSetter, values.uniforms);
+        if (typeof uniformsValues !== "undefined" && typeof uniformsSetter !== "undefined") {
+            WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, uniformsValues);
         }
 
-        if (typeof values.uniformBlocks !== "undefined") {
-            values.uniformBlocks.forEach((uniformBlock) => {
-                WebGLUniformBlockUtilities.setUniformBufferValues(gl, uniformBlock.block.layout, uniformBlock.buffer, uniformBlock.uniforms);
+        if (typeof uniformBlocksValues !== "undefined") {
+            uniformBlocksValues.forEach((uniformBlock_i) => {
+                const {block, buffer, uniforms} = uniformBlock_i;
+                const {layout} = block;
+                WebGLUniformBlockUtilities.setUniformBufferValues(gl, layout, buffer, uniforms);
             });
         }
 
-        if (typeof values.textures !== "undefined") {
-            values.textures.forEach((texture) => {
-                if (typeof texture.props !== "undefined") {
-                    WebGLTextureUtilities.setTextureProperties(gl, texture.texture, texture.props);
+        if (typeof texturesValues !== "undefined") {
+            texturesValues.forEach((texture_i) => {
+                const {props, params, texture} = texture_i;
+                if (typeof props !== "undefined") {
+                    WebGLTextureUtilities.setTextureProperties(gl, texture, props);
                 }
-                if (typeof texture.params !== "undefined") {
-                    WebGLTextureUtilities.setTextureParameters(gl, texture.texture, texture.params);
+                if (typeof params !== "undefined") {
+                    WebGLTextureUtilities.setTextureParameters(gl, texture, params);
                 }
             });
         }
     }
 
     static drawPacket(gl: WebGL2RenderingContext, packet: Packet): void {
-        const vertexArray = packet.vertexArray;
-        const uniformBlocks = packet.uniformBlocks;
+        const {vertexArray, uniformBlocks} = packet;
 
         if (typeof uniformBlocks !== "undefined") {
             Object.values(uniformBlocks).forEach((uniformBlock) => {
-                WebGLUniformBlockUtilities.bindUniformBuffer(gl, uniformBlock.block, uniformBlock.buffer);
+                const {block, buffer} = uniformBlock;
+                WebGLUniformBlockUtilities.bindUniformBuffer(gl, block, buffer);
             });
         }
 
         if (typeof vertexArray !== "undefined") {
-            WebGLVertexArrayUtilities.drawVertexArray(gl, vertexArray, packet.drawMode, packet.instanceCount);
+            const {drawMode, instanceCount} = packet;
+            WebGLVertexArrayUtilities.drawVertexArray(gl, vertexArray, drawMode, instanceCount);
         }
         else {
             console.error("No vertex array to draw.");

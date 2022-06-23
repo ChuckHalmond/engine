@@ -2,9 +2,9 @@ import { Geometry } from "./Geometry";
 export { GeometryBuilder };
 export { GeometryBuilderBase };
 interface GeometryBuilder<G extends PartialGeometry = PartialGeometry> {
-    halfEdges: Array<HalfEdge>;
-    vertices: Array<Vertex>;
-    faces: Array<Face>;
+    readonly halfEdges: Array<HalfEdge>;
+    readonly vertices: Array<Vertex>;
+    readonly faces: Array<Face>;
     verticesArray(): Float32Array;
     uvsArray(): Float32Array;
     indicesArray(): Uint8Array | Uint16Array | Uint32Array;
@@ -35,9 +35,9 @@ interface GeometryBuilderConstructor {
 interface PartialGeometry extends Partial<Geometry> {
 }
 declare class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<G> {
-    halfEdges: Array<HalfEdge>;
-    vertices: Array<Vertex>;
-    faces: Array<Face>;
+    readonly halfEdges: Array<HalfEdge>;
+    readonly vertices: Array<Vertex>;
+    readonly faces: Array<Face>;
     constructor();
     linesArray(): Float32Array;
     verticesArray(): Float32Array;
@@ -85,8 +85,7 @@ export declare type Vertex = {
     };
 };
 export declare class FaceHalfEdgesIterator {
-    private _face;
-    private _halfEdge;
+    #private;
     constructor(face: Face);
     reset(): void;
     current(): HalfEdge | null;
@@ -94,8 +93,7 @@ export declare class FaceHalfEdgesIterator {
     [Symbol.iterator](): Iterator<HalfEdge>;
 }
 export declare class FaceVerticesIterator {
-    private _face;
-    private _halfEdge;
+    #private;
     constructor(face: Face);
     reset(): void;
     current(): Vertex | null;
@@ -103,8 +101,7 @@ export declare class FaceVerticesIterator {
     [Symbol.iterator](): Iterator<Vertex>;
 }
 export declare class VertexFacesIterator {
-    private _halfEdge;
-    private _vertex;
+    #private;
     constructor(vertex: Vertex);
     reset(): void;
     current(): Face | null;

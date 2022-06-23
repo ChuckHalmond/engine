@@ -6,9 +6,9 @@ interface GeometryBufferConstructor {
 }
 
 interface GeometryBuffer {
-    interleaved: boolean;
-    buffer: ArrayBuffer;
-    attributes: {
+    readonly interleaved: boolean;
+    readonly buffer: ArrayBuffer;
+    readonly attributes: {
         [name: string]: {
             byteOffset: number;
             numComponents: 1 | 2 | 3 | 4;
@@ -25,8 +25,8 @@ interface GeometryBufferAttribute {
 }
 
 class GeometryBufferBase implements GeometryBuffer {
-    buffer: ArrayBuffer;
-    attributes: {
+    readonly buffer: ArrayBuffer;
+    readonly attributes: {
         [name: string]: {
             arrayType: GeometryBufferAttributeArrayConstructor;
             byteOffset: number;
@@ -34,8 +34,8 @@ class GeometryBufferBase implements GeometryBuffer {
             numComponents: 1 | 2 | 3 | 4;
         }
     };
-    interleaved: boolean;
-    stride: number;
+    readonly interleaved: boolean;
+    readonly stride: number;
 
     constructor(
         attributes: {
@@ -59,14 +59,13 @@ class GeometryBufferBase implements GeometryBuffer {
         this.buffer = buffer;
         
         let byteOffset = 0;
-        Object.entries(attributes).forEach(([name, attribute]) => {
-            const {array, numComponents} = attribute;
-            const arrayType = array.constructor as GeometryBufferAttributeArrayConstructor;
-            const byteLength = array.byteLength;
-            const bytesPerElement = array.BYTES_PER_ELEMENT;
-            const bufferArray = new arrayType(buffer, byteOffset);
-            if (interleaved) {
-                const arrayStrideOffset = (bufferStride / bytesPerElement);
+        if (interleaved) {
+            Object.entries(attributes).forEach(([name, attribute]) => {
+                const {array, numComponents} = attribute;
+                const arrayType = array.constructor as GeometryBufferAttributeArrayConstructor;
+                const {byteLength, BYTES_PER_ELEMENT} = array;
+                const bufferArray = new arrayType(buffer, byteOffset);
+                const arrayStrideOffset = bufferStride / BYTES_PER_ELEMENT;
                 for (let i = 0; i < bufferSlices; i++) {
                     let arraySliceIndex = i * numComponents;
                     bufferArray.set(
@@ -77,47 +76,60 @@ class GeometryBufferBase implements GeometryBuffer {
                         i * arrayStrideOffset
                     );
                 }
-            }
-            else {
+                this.attributes[name] = {
+                    byteOffset: byteOffset,
+                    byteLength: byteLength,
+                    arrayType: arrayType,
+                    numComponents: numComponents
+                };
+                byteOffset += numComponents * BYTES_PER_ELEMENT;
+            });
+        }
+        else {
+            Object.entries(attributes).forEach(([name, attribute]) => {
+                const {array, numComponents} = attribute;
+                const arrayType = array.constructor as GeometryBufferAttributeArrayConstructor;
+                const {byteLength} = array;
+                const bufferArray = new arrayType(buffer, byteOffset);
                 bufferArray.set(array);
-            }
-            this.attributes[name] = {
-                byteOffset: byteOffset,
-                byteLength: byteLength,
-                arrayType: arrayType,
-                numComponents: numComponents
-            };
-            byteOffset += (interleaved) ? 
-                (numComponents * bytesPerElement) : byteLength;
-        });
+                this.attributes[name] = {
+                    byteOffset: byteOffset,
+                    byteLength: byteLength,
+                    arrayType: arrayType,
+                    numComponents: numComponents
+                };
+                byteOffset += byteLength;
+            });
+        }
     }
-
 
     getAttribute(name: string): GeometryBufferAttribute | null {
         const attribute = this.attributes[name];
         if (attribute) {
             const {arrayType, byteLength, byteOffset, numComponents} = attribute;
-            const bufferArray = new arrayType(this.buffer, byteOffset);
             const bufferByteLength = this.buffer.byteLength;
             const interleaved = this.interleaved;
-            const bufferStride = this.stride;
-            const bufferSlices = Math.trunc(bufferByteLength / bufferStride);
-            const bytesPerElement = arrayType.BYTES_PER_ELEMENT;
-            const attributeArray = new arrayType(byteLength / bytesPerElement);
+            const {BYTES_PER_ELEMENT} = arrayType;
+            const arrayLength = byteLength / BYTES_PER_ELEMENT;
+            const attributeArray = new arrayType(arrayLength);
             if (interleaved) {
-                const arrayStrideOffset = (bufferStride / bytesPerElement);
+                const bufferArray = new arrayType(this.buffer, byteOffset);
+                const bufferStride = this.stride;
+                const bufferSlices = Math.trunc(bufferByteLength / bufferStride);
+                const arrayStrideOffset = bufferStride / BYTES_PER_ELEMENT;
                 for (let i = 0; i < bufferSlices; i++) {
-                    let arraySliceIndex = arrayStrideOffset * i;
+                    let bufferArraySliceIndex = arrayStrideOffset * i;
                     attributeArray.set(
                         bufferArray.slice(
-                            arraySliceIndex,
-                            arraySliceIndex + numComponents
+                            bufferArraySliceIndex,
+                            bufferArraySliceIndex + numComponents
                         ),
                         numComponents * i
                     );
                 }
             }
             else {
+                const bufferArray = new arrayType(this.buffer, byteOffset, arrayLength);
                 attributeArray.set(bufferArray);
             }
             return {

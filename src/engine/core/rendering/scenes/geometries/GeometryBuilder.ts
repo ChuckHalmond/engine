@@ -4,9 +4,9 @@ export { GeometryBuilder };
 export { GeometryBuilderBase };
 
 interface GeometryBuilder<G extends PartialGeometry = PartialGeometry> {
-    halfEdges: Array<HalfEdge>;
-    vertices: Array<Vertex>;
-    faces: Array<Face>;
+    readonly halfEdges: Array<HalfEdge>;
+    readonly vertices: Array<Vertex>;
+    readonly faces: Array<Face>;
     
     verticesArray(): Float32Array;
     uvsArray(): Float32Array;
@@ -42,9 +42,9 @@ interface GeometryBuilderConstructor {
 interface PartialGeometry extends Partial<Geometry> {};
 
 class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<G> {
-    halfEdges: Array<HalfEdge>;
-    vertices: Array<Vertex>;
-    faces: Array<Face>;
+    readonly halfEdges: Array<HalfEdge>;
+    readonly vertices: Array<Vertex>;
+    readonly faces: Array<Face>;
 
     constructor() {
         this.halfEdges = [];
@@ -296,37 +296,37 @@ export type Vertex = {
 }
 
 export class FaceHalfEdgesIterator {
-    private _face: Face;
-    private _halfEdge: HalfEdge | null;
+    #face: Face;
+    #halfEdge: HalfEdge | null;
 
     constructor(face: Face) {
-        this._face = face;
-        this._halfEdge = null;
+        this.#face = face;
+        this.#halfEdge = null;
     }
 
     reset(): void {
-        this._halfEdge = null;
+        this.#halfEdge = null;
     }
 
     current(): HalfEdge | null {
-        return this._halfEdge;
+        return this.#halfEdge;
     }
 
     next(): IteratorResult<HalfEdge> {
-        if (this._halfEdge == null) {
-            const firstHalfEdge = this._face.halfEdge ?? null;
-            const nextHalfEdge = this._face.halfEdge?.next ?? null;
-            this._halfEdge = nextHalfEdge;
+        if (this.#halfEdge == null) {
+            const firstHalfEdge = this.#face.halfEdge ?? null;
+            const nextHalfEdge = this.#face.halfEdge?.next ?? null;
+            this.#halfEdge = nextHalfEdge;
             if (firstHalfEdge !== null) {
                 return {
                     value: firstHalfEdge, done: nextHalfEdge == null
                 };
             }
         }
-        else if (this._halfEdge !== this._face.halfEdge) {
-            const halfEdge = this._halfEdge;
+        else if (this.#halfEdge !== this.#face.halfEdge) {
+            const halfEdge = this.#halfEdge;
             const nextHalfEdge = halfEdge.next ?? null;
-            this._halfEdge = nextHalfEdge;
+            this.#halfEdge = nextHalfEdge;
             if (halfEdge !== null) {
                 return {
                     value: halfEdge, done: nextHalfEdge == null
@@ -339,43 +339,43 @@ export class FaceHalfEdgesIterator {
     }
 
     [Symbol.iterator](): Iterator<HalfEdge> {
-        this._halfEdge = null;
+        this.#halfEdge = null;
         return this;
     }
 }
 
 export class FaceVerticesIterator {
-    private _face: Face;
-    private _halfEdge: HalfEdge | null;
+    #face: Face;
+    #halfEdge: HalfEdge | null;
 
     constructor(face: Face) {
-        this._face = face;
-        this._halfEdge = null;
+        this.#face = face;
+        this.#halfEdge = null;
     }
 
     reset(): void {
-        this._halfEdge = null;
+        this.#halfEdge = null;
     }
 
     current(): Vertex | null {
-        return this._halfEdge?.prev?.target ?? null;
+        return this.#halfEdge?.prev?.target ?? null;
     }
 
     next(): IteratorResult<Vertex> {
-        if (this._halfEdge == null) {
-            const firstVertex = this._face.halfEdge?.prev?.target ?? null;
-            const nextHalfEdge = this._face.halfEdge?.next ?? null;
-            this._halfEdge = nextHalfEdge;
+        if (this.#halfEdge == null) {
+            const firstVertex = this.#face.halfEdge?.prev?.target ?? null;
+            const nextHalfEdge = this.#face.halfEdge?.next ?? null;
+            this.#halfEdge = nextHalfEdge;
             if (firstVertex !== null) {
                 return {
                     value: firstVertex, done: nextHalfEdge == null
                 };
             }
         }
-        else if (this._halfEdge !== this._face.halfEdge) {
-            const vertex = this._halfEdge.prev?.target ?? null;
-            const nextHalfEdge = this._halfEdge.next ?? null;
-            this._halfEdge = nextHalfEdge;
+        else if (this.#halfEdge !== this.#face.halfEdge) {
+            const vertex = this.#halfEdge.prev?.target ?? null;
+            const nextHalfEdge = this.#halfEdge.next ?? null;
+            this.#halfEdge = nextHalfEdge;
             if (vertex !== null) {
                 return {
                     value: vertex, done: nextHalfEdge == null
@@ -388,43 +388,43 @@ export class FaceVerticesIterator {
     }
 
     [Symbol.iterator](): Iterator<Vertex> {
-        this._halfEdge = null;
+        this.#halfEdge = null;
         return this;
     }
 }
 
 export class VertexFacesIterator {
-    private _halfEdge: HalfEdge | null;
-    private _vertex: Vertex;
+    #halfEdge: HalfEdge | null;
+    #vertex: Vertex;
 
     constructor(vertex: Vertex) {
-        this._vertex = vertex;
-        this._halfEdge = null;
+        this.#vertex = vertex;
+        this.#halfEdge = null;
     }
 
     reset(): void {
-        this._halfEdge = null;
+        this.#halfEdge = null;
     }
 
     current(): Face | null {
-        return this._halfEdge?.face ?? null;
+        return this.#halfEdge?.face ?? null;
     }
 
     next(): IteratorResult<Face>  {
-        if (this._halfEdge == null) {
-            const face = this._vertex.halfEdge?.face ?? null;
-            const nextHalfEdge = this._vertex.halfEdge?.prev?.twin ?? null;
-            this._halfEdge = nextHalfEdge;
+        if (this.#halfEdge == null) {
+            const face = this.#vertex.halfEdge?.face ?? null;
+            const nextHalfEdge = this.#vertex.halfEdge?.prev?.twin ?? null;
+            this.#halfEdge = nextHalfEdge;
             if (face !== null) {
                 return {
                     value: face, done: nextHalfEdge == null
                 };
             }
         }
-        else if (this._halfEdge !== this._vertex.halfEdge) {
-            const face = this._halfEdge.face ?? null;
-            const nextHalfEdge = this._halfEdge?.prev?.twin ?? null;
-            this._halfEdge = nextHalfEdge;
+        else if (this.#halfEdge !== this.#vertex.halfEdge) {
+            const face = this.#halfEdge.face ?? null;
+            const nextHalfEdge = this.#halfEdge?.prev?.twin ?? null;
+            this.#halfEdge = nextHalfEdge;
             if (face !== null) {
                 return {
                     value: face, done: nextHalfEdge == null
@@ -437,7 +437,7 @@ export class VertexFacesIterator {
     }
 
     [Symbol.iterator](): Iterator<Face> {
-        this._halfEdge = null;
+        this.#halfEdge = null;
         return this;
     }
 }

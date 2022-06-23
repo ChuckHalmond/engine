@@ -103,53 +103,57 @@ type VertexArray = {
 class WebGLVertexArrayUtilities {
 
     static getAttributeDataType(attribute: VertexArrayAttributeProperties): ArrayDataType {
-        if (attribute.array instanceof Float32Array || attribute.array instanceof Int32Array || attribute.array instanceof Uint32Array) {
+        const {array} = attribute;
+        if (array instanceof Float32Array || array instanceof Int32Array || array instanceof Uint32Array) {
             return ArrayDataType.FLOAT;
         }
-        else if (attribute.array instanceof Int16Array) {
+        else if (array instanceof Int16Array) {
             return ArrayDataType.SHORT;
         }
-        else if (attribute.array instanceof Uint16Array) {
+        else if (array instanceof Uint16Array) {
             return ArrayDataType.UNSIGNED_SHORT;
         }
-        else if (attribute.array instanceof Int8Array) {
+        else if (array instanceof Int8Array) {
             return ArrayDataType.BYTE;
         }
-        else if (attribute.array instanceof Uint8Array) {
+        else if (array instanceof Uint8Array) {
             return ArrayDataType.UNSIGNED_BYTE;
         }
-        console.error(`Unsupported attribute array ${attribute.array.constructor.name}.`);
+        console.error(`Unsupported attribute array ${array.constructor.name}.`);
         return -1;
     };
 
     static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null {
-        
-        const _vertexArray = gl.createVertexArray();
-        if (_vertexArray === null) {
+        const {attributes, indices, numElements} = vertexArray;
+
+        const internal = gl.createVertexArray();
+        if (internal === null) {
             console.error("Could not create WebGLVertexArrayObject.");
             return null;
         }
 
-        gl.bindVertexArray(_vertexArray);
+        gl.bindVertexArray(internal);
 
-        const attributesEntries = Object.entries(vertexArray.attributes);
+        const attributesEntries = Object.entries(attributes);
 
         const buffersProps: {
             usage: BufferDataUsage;
             byteLength: number;
         }[] = [];
         attributesEntries.forEach(([_, attribute]) => {
-            const bufferUsage = attribute.usage || gl.STATIC_DRAW;
+            const {usage, array} = attribute;
+            const {byteLength} = array;
+            const bufferUsage = usage || gl.STATIC_DRAW;
             const bufferIndex = buffersProps.findIndex(bufferProps => bufferProps.usage === bufferUsage);
 
             if (bufferIndex < 0) {
                 buffersProps.push({
                     usage: bufferUsage,
-                    byteLength: attribute.array.byteLength
+                    byteLength: byteLength
                 });
             }
             else {
-                buffersProps[bufferIndex].byteLength += attribute.array.byteLength;
+                buffersProps[bufferIndex].byteLength += byteLength;
             }
         });
 
@@ -158,6 +162,8 @@ class WebGLVertexArrayUtilities {
         } = {};
         const buffers: VertexArray["verticesBuffers"] = [];
         buffersProps.forEach((bufferProps, bufferIndex) => {
+            const {byteLength, usage} = bufferProps;
+
             const buffer = gl.createBuffer();
             if (buffer == null) {
                 console.error("Could not create WebGLBuffer.");
@@ -165,15 +171,15 @@ class WebGLVertexArrayUtilities {
             }
 
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, bufferProps.byteLength, bufferProps.usage);
+            gl.bufferData(gl.ARRAY_BUFFER, byteLength, usage);
 
             let bufferBytesOffset = 0;
             attributesEntries
-                .filter(([_, attribute]) => (attribute.usage || gl.STATIC_DRAW) === bufferProps.usage)
+                .filter(([_, attribute]) => (attribute.usage || gl.STATIC_DRAW) === usage)
                 .forEach(([attributeName, attribute]) => {
 
                 const constant = attribute.constant ?? false;
-                const array = attribute.array;
+                const {array} = attribute;
 
                 if ("buffer" in array && !constant) {
                     const srcOffset = (typeof attribute.srcOffset === "undefined") ? 0 : attribute.srcOffset;
@@ -230,29 +236,29 @@ class WebGLVertexArrayUtilities {
                     bufferBytesOffset: bufferBytesOffset
                 };
     
-                bufferBytesOffset += attribute.array.byteLength;
+                bufferBytesOffset += array.byteLength;
             });
 
             buffers.push({
                 internal: buffer,
                 target: gl.ARRAY_BUFFER,
-                usage: bufferProps.usage,
-                byteLength: bufferProps.byteLength
+                usage: usage,
+                byteLength: byteLength
             });
         });
 
         let indicesBuffer: WebGLBuffer | null | undefined = void 0;
         let indexType: ElementArrayDataType | undefined = void 0;
 
-        if (typeof vertexArray.indices !== "undefined") {
-            indexType = this.getElementArrayBufferType(vertexArray.indices);
+        if (typeof indices !== "undefined") {
+            indexType = this.getElementArrayBufferType(indices);
             indicesBuffer = gl.createBuffer();
             if (indicesBuffer == null) {
                 console.error("Could not create WebGLBuffer.");
                 return null;
             }
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, vertexArray.indices, gl.STATIC_DRAW);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
         }
 
         return {
@@ -260,77 +266,92 @@ class WebGLVertexArrayUtilities {
             verticesBuffers: buffers,
             indicesBuffer: indicesBuffer,
             program: program,
-            internal: _vertexArray,
-            numElements: vertexArray.numElements,
+            internal: internal,
+            numElements: numElements,
             indexType: indexType
         };
     }
 
     static deleteVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray): void {
-        if (gl.isVertexArray(vertexArray.internal)) {
-            gl.deleteVertexArray(vertexArray.internal);
+        const {internal} = vertexArray;
+        if (gl.isVertexArray(internal)) {
+            gl.deleteVertexArray(internal);
         }
     }
 
     static drawVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray, mode: DrawMode, instanceCount?: number): void {
-        
-        WebGLProgramUtilities.useProgram(gl, vertexArray.program);
+        const {program, internal, indexType, numElements} = vertexArray;
+
+        WebGLProgramUtilities.useProgram(gl, program);
         
         const currentVertexArray = gl.getParameter(gl.VERTEX_ARRAY_BINDING);
-        if (currentVertexArray !== vertexArray.internal) {
-            gl.bindVertexArray(vertexArray.internal);
+        if (currentVertexArray !== internal) {
+            gl.bindVertexArray(internal);
         }
         
-        if (typeof vertexArray.indexType !== "undefined") {
+        if (typeof indexType !== "undefined") {
             if (typeof instanceCount !== "undefined") {
-                gl.drawElementsInstanced(mode, vertexArray.numElements, vertexArray.indexType, 0, instanceCount);
+                gl.drawElementsInstanced(mode, numElements, indexType, 0, instanceCount);
             }
             else {
-                gl.drawElements(mode, vertexArray.numElements, vertexArray.indexType, 0);
+                gl.drawElements(mode, numElements, indexType, 0);
             }
         }
         else {
             if (typeof instanceCount !== "undefined") {
-                gl.drawArraysInstanced(mode, 0, vertexArray.numElements, instanceCount);
+                gl.drawArraysInstanced(mode, 0, numElements, instanceCount);
             }
             else {
-                gl.drawArrays(mode, 0, vertexArray.numElements);
+                gl.drawArrays(mode, 0, numElements);
             }
         }
     }
 
-    static setVertexArrayValues(gl: WebGL2RenderingContext, vertexArray: VertexArray, values: VertexArrayValues): void {
-        const currentVertexArray = gl.getParameter(gl.VERTEX_ARRAY_BINDING);
-        if (currentVertexArray !== vertexArray.internal) {
-            gl.bindVertexArray(vertexArray.internal);
+    static setVertexArrayAttributeValue(gl: WebGL2RenderingContext, vertexArray: VertexArray, attributeName: string, value: VertexArrayAttributeValue) {
+        const {attributeSetters, verticesBuffers} = vertexArray;
+        const {array} = value;
+        
+        const attributeSetter = attributeSetters[attributeName];
+        const verticesBuffer = verticesBuffers[attributeSetter.bufferIndex];
+
+        const {internal: internalBuffer} = verticesBuffer;
+        const currentArrayBufferBinding = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
+        if (currentArrayBufferBinding !== internalBuffer) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, internalBuffer);
         }
 
-        Object.entries(values.attributes).forEach(([attributeName, attribute]) => {
-            const attributeSetter = vertexArray.attributeSetters[attributeName];
-            const verticesBuffer = vertexArray.verticesBuffers[attributeSetter.bufferIndex];
+        let {srcOffset, srcLength} = value;
+        srcOffset = srcOffset ?? 0;
+        srcLength = srcLength ?? array.length;
 
-            const currentArrayBufferBinding = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
-            if (currentArrayBufferBinding !== verticesBuffer.internal) {
-                gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer.internal);
-            }
+        if (typeof attributeSetter !== "undefined") {
+            const {bufferBytesOffset} = attributeSetter;
+            gl.bufferSubData(gl.ARRAY_BUFFER, bufferBytesOffset, array, srcOffset, srcLength);
+        }
+        else {
+            console.warn(`Attribute ${attributeName} does not exist in the setters.`);
+        }
+    }
 
-            const srcOffset = (typeof attribute.srcOffset === "undefined") ? 0 : attribute.srcOffset;
-            const srcLength = (typeof attribute.srcLength === "undefined") ? attribute.array.length : attribute.srcLength;
+    static setVertexArrayValues(gl: WebGL2RenderingContext, vertexArray: VertexArray, values: VertexArrayValues): void {
+        const {internal, indicesBuffer} = vertexArray;
+        const {attributes, indices} = values;
 
-            if (typeof vertexArray !== "undefined") {
-                gl.bufferSubData(gl.ARRAY_BUFFER, attributeSetter.bufferBytesOffset, attribute.array, srcOffset, srcLength);
-            }
-            else {
-                console.warn(`Attribute ${attributeName} does not exist in the setters.`);
-            }
+        const currentVertexArray = gl.getParameter(gl.VERTEX_ARRAY_BINDING);
+        if (currentVertexArray !== internal) {
+            gl.bindVertexArray(internal);
+        }
+
+        Object.entries(attributes).forEach(([attributeName, attribute]) => {
+            this.setVertexArrayAttributeValue(gl, vertexArray, attributeName, attribute);
         });
 
-        if (typeof values.indices !== "undefined" && typeof vertexArray.indicesBuffer !== "undefined") {
+        if (typeof indices !== "undefined" && typeof indicesBuffer !== "undefined") {
             const currentElementArrayBufferBinding = gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING);
-            if (currentElementArrayBufferBinding !== vertexArray.indicesBuffer) {
-                gl.bindBuffer(BufferTarget.ELEMENT_ARRAY_BUFFER, vertexArray.indicesBuffer);
+            if (currentElementArrayBufferBinding !== indicesBuffer) {
+                gl.bindBuffer(BufferTarget.ELEMENT_ARRAY_BUFFER, indicesBuffer);
             }
-            gl.bufferSubData(BufferTarget.ELEMENT_ARRAY_BUFFER, 0, values.indices);
+            gl.bufferSubData(BufferTarget.ELEMENT_ARRAY_BUFFER, 0, indices);
         }
     }
 

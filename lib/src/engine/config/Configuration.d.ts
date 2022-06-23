@@ -8,8 +8,8 @@ interface IConfiguration {
     options: IConfigurationOptions;
 }
 declare class SConfiguration implements IConfiguration {
-    private static _instance;
+    #private;
     static get instance(): IConfiguration;
-    private constructor();
+    constructor();
     readonly options: IConfigurationOptions;
 }

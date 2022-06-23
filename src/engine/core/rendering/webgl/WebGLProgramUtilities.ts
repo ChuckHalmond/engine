@@ -48,8 +48,9 @@ export class WebGLProgramUtilities {
     }
 
     static deleteShader(gl: WebGL2RenderingContext, shader: Shader): void {
-        if (gl.isShader(shader.internal)) {
-            gl.deleteShader(shader.internal);
+        const {internal} = shader;
+        if (gl.isShader(internal)) {
+            gl.deleteShader(internal);
         }
     }
     
@@ -71,7 +72,7 @@ export class WebGLProgramUtilities {
             console.error("Could not create WebGLProgram.");
             return null;
         }
-
+        
         gl.attachShader(program, vertexShader.internal);
         gl.attachShader(program, fragmentShader.internal);
         gl.linkProgram(program);
@@ -100,21 +101,23 @@ export class WebGLProgramUtilities {
     }
     
     static deleteProgram(gl: WebGL2RenderingContext, program: Program) {
-        if (gl.isShader(program.vertexShader)) {
-            gl.deleteShader(program.vertexShader);
+        const {vertexShader, fragmentShader, internal} = program;
+        if (gl.isShader(vertexShader)) {
+            gl.deleteShader(vertexShader);
         }
-        if (gl.isShader(program.fragmentShader)) {
-            gl.deleteShader(program.fragmentShader);
+        if (gl.isShader(fragmentShader)) {
+            gl.deleteShader(fragmentShader);
         }
-        if (gl.isProgram(program.internal)) {
-            gl.deleteProgram(program.internal);
+        if (gl.isProgram(internal)) {
+            gl.deleteProgram(internal);
         }
     }
 
     static useProgram(gl: WebGL2RenderingContext, program: Program) {
+        const {internal} = program;
         const currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
-        if (currentProgram !== program.internal) {
-            gl.useProgram(program.internal);
+        if (currentProgram !== internal) {
+            gl.useProgram(internal);
         }
     }
 }

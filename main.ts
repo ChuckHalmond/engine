@@ -59,6 +59,7 @@ export async function main() {
     //wireframe();
     start();
     //startMaps();
+
     // const button = document.createElement("button");
     // button.textContent = "Get bin";
     // document.body.insertAdjacentElement("beforebegin", button);
@@ -70,6 +71,7 @@ export async function main() {
     //     anchor.href = URL.createObjectURL(myBlob);
     //     anchor.click();
     // };
+    
     // const input = document.createElement("input");
     // input.type = "file";
     // input.oninput = () => {

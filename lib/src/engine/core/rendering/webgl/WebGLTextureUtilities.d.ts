@@ -185,11 +185,9 @@ export declare type Texture = TextureProperties & TextureParameters & {
     internal: WebGLTexture;
 };
 export declare class WebGLTextureUtilities {
+    #private;
     static createTexture(gl: WebGL2RenderingContext, props: TextureProperties & TextureParameters): Texture | null;
     static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void;
     static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, props: TextureProperties): void;
     static setTextureParameters(gl: WebGL2RenderingContext, texture: Texture, param: TextureParameters): void;
-    private static _units;
-    private static _freeUnit;
-    private static _allocateUnit;
 }

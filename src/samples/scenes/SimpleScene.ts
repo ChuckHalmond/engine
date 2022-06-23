@@ -276,21 +276,14 @@ export async function launchScene() {
     a_normal: { array: cubeNormals, numComponents: 3 },
     a_tangent: { array: cubeTangents, numComponents: 3 },
     a_uv: { array: cubeUVs, numComponents: 2 },
-    indices: { array: cubeIndices, numComponents: 1 },
   }, true);
-  /*cubeGeometryBuilder.faces.forEach((face) => {
-    console.log(face);
-    console.log(face.normal.values());
-    console.log(face.tangent.values());
-  });*/
-
   const phongCubePacketProperties: PacketProperties = {
     vertexArray: {
       attributes: {
-        a_position: { array: cubeVertices, numComponents: 3 },
-        a_normal: { array: cubeNormals, numComponents: 3 },
-        a_tangent: { array: cubeTangents, numComponents: 3 },
-        a_uv: { array: cubeUVs, numComponents: 2 },
+        a_position: cubeGeometryBuffer.getAttribute("a_position")!,
+        a_normal: cubeGeometryBuffer.getAttribute("a_normal")!,
+        a_tangent: cubeGeometryBuffer.getAttribute("a_tangent")!,
+        a_uv: cubeGeometryBuffer.getAttribute("a_uv")!
       },
       indices: cubeIndices,
       numElements: cubeIndices.length
@@ -494,7 +487,7 @@ export async function launchScene() {
     lastFrameTime = frameTime;
     fps = 1 / deltaTime;
 
-    fpsElement.textContent = fps.toFixed(2);
+    fpsElement.textContent = fps.toFixed(0);
 
     cameraControl.update(deltaTime);
 
