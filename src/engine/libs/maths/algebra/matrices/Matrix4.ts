@@ -149,7 +149,7 @@ interface Matrix4 {
 }
 
 class Matrix4Base implements Matrix4 {
-  public readonly array: Float32Array;
+  readonly array: Float32Array;
 
 	constructor()
   constructor(
@@ -185,7 +185,7 @@ class Matrix4Base implements Matrix4 {
 		}
   }
 
-  public static fromValues(
+  static fromValues(
     m11: number, m21: number, m31: number, m41: number,
     m12: number, m22: number, m32: number, m42: number,
     m13: number, m23: number, m33: number, m43: number,
@@ -199,14 +199,14 @@ class Matrix4Base implements Matrix4 {
     );
   }
 
-  public static fromArray(array: ArrayLike<number>): Matrix4Base {
+  static fromArray(array: ArrayLike<number>): Matrix4Base {
     if (array.length < 16) {
       throw new Error(`Matrix4 needs an array of size 16 at least.`);
     }
     return new Matrix4Base(array);
   }
 
-  public getValues(): Matrix4Values {
+  getValues(): Matrix4Values {
     const thisArray = this.array;
 		return [
       thisArray[ 0], thisArray[ 1], thisArray[ 2], thisArray[ 3],
@@ -216,7 +216,7 @@ class Matrix4Base implements Matrix4 {
     ];
 	}
 
-	public setValues(
+	setValues(
     m11: number, m21: number, m31: number, m41: number,
     m12: number, m22: number, m32: number, m42: number,
     m13: number, m23: number, m33: number, m43: number,
@@ -243,131 +243,131 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
   
-  public get m11(): number {
+  get m11(): number {
 		return this.array[0];
 	}
 
-	public set m11(val: number) {
+	set m11(val: number) {
 		this.array[0] = val;
   }
   
-  public get m12() {
+  get m12() {
 		return this.array[4];
 	}
 
-	public set m12(val: number) {
+	set m12(val: number) {
 		this.array[4] = val;
   }
   
-  public get m13() {
+  get m13() {
 		return this.array[8];
 	}
 
-	public set m13(val: number) {
+	set m13(val: number) {
 		this.array[8] = val;
   }
   
-  public get m14() {
+  get m14() {
 		return this.array[12];
 	}
 
-	public set m14(val: number) {
+	set m14(val: number) {
 		this.array[12] = val;
   }
   
-  public get m21() {
+  get m21() {
 		return this.array[1];
 	}
 
-	public set m21(val: number) {
+	set m21(val: number) {
 		this.array[1] = val;
   }
   
-  public get m22() {
+  get m22() {
 		return this.array[5];
 	}
 
-	public set m22(val: number) {
+	set m22(val: number) {
 		this.array[5] = val;
   }
   
-  public get m23() {
+  get m23() {
 		return this.array[9];
 	}
 
-	public set m23(val: number) {
+	set m23(val: number) {
 		this.array[9] = val;
   }
   
-  public get m24() {
+  get m24() {
 		return this.array[13];
 	}
 
-	public set m24(val: number) {
+	set m24(val: number) {
 		this.array[13] = val;
   }
   
-  public get m31() {
+  get m31() {
 		return this.array[2];
 	}
 
-  public set m31(val: number) {
+  set m31(val: number) {
 		this.array[2] = val;
   }
   
-  public get m32() {
+  get m32() {
 		return this.array[6];
 	}
 
-	public set m32(val: number) {
+	set m32(val: number) {
 		this.array[6] = val;
   }
   
-  public get m33() {
+  get m33() {
 		return this.array[10];
 	}
 
-  public set m33(val: number) {
+  set m33(val: number) {
 		this.array[10] = val;
   }
   
-  public get m34() {
+  get m34() {
 		return this.array[14];
 	}
 
-	public set m34(m34: number) {
+	set m34(m34: number) {
 		this.array[14] = m34;
   }
   
-  public get m41() {
+  get m41() {
 		return this.array[3];
 	}
 
-	public set m41(val: number) {
+	set m41(val: number) {
 		this.array[3] = val;
   }
   
-  public get m42() {
+  get m42() {
 		return this.array[7];
 	}
 
-	public set m42(val: number) {
+	set m42(val: number) {
 		this.array[7] = val;
   }
   
-  public get m43() {
+  get m43() {
 		return this.array[11];
 	}
 
-	public set m43(val: number) {
+	set m43(val: number) {
 		this.array[11] = val;
   }
   
-  public get m44() {
+  get m44() {
 		return this.array[15];
 	}
 
-	public set m44(m44: number) {
+	set m44(m44: number) {
 		this.array[15] = m44;
   }
 
@@ -377,13 +377,13 @@ class Matrix4Base implements Matrix4 {
 		}
 	}
 
-	// public setArray(array: WritableArrayLike<number>): this {
+	// setArray(array: WritableArrayLike<number>): this {
 	// 	this._checkArray(array);
 	// 	thisArray = array;
 	// 	return this;
 	// }
 
-  public getRotation(): Quaternion {
+  getRotation(): Quaternion {
     const thisArray = this.array;
     const m11 = thisArray[0], m12 = thisArray[4], m13 = thisArray[ 8],
           m21 = thisArray[1], m22 = thisArray[5], m23 = thisArray[ 9],
@@ -427,7 +427,7 @@ class Matrix4Base implements Matrix4 {
     return new Quaternion(x, y, z, w);
   }
 
-  public setTRS(translation: Vector3, rotation: Quaternion, scaling: Vector3): this {
+  setTRS(translation: Vector3, rotation: Quaternion, scaling: Vector3): this {
     const thisArray = this.array;
     const rotationArray = rotation.array;
     const translationArray = translation.array;
@@ -475,7 +475,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
   
-  public setRotation(quaternion: Quaternion): this {
+  setRotation(quaternion: Quaternion): this {
     const thisArray = this.array;
     const quaternionArray = quaternion.array;
 		const quaternionLengthSquared = quaternion.lengthSquared();
@@ -525,7 +525,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public equals(mat: Matrix4): boolean {
+  equals(mat: Matrix4): boolean {
     const thisArray = this.array;
     const matArray = mat.array;
     return thisArray[ 0] === matArray[ 0]
@@ -546,7 +546,7 @@ class Matrix4Base implements Matrix4 {
       && thisArray[15] === matArray[15];
   }
 
-  public copy(mat: Matrix4): this {
+  copy(mat: Matrix4): this {
     const thisArray = this.array;
     const matArray = mat.array;
 
@@ -570,7 +570,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public clone(): this {
+  clone(): this {
     const thisArray = this.array;
     return new Matrix4Base(
       thisArray[ 0], thisArray[ 1], thisArray[ 2], thisArray[ 3],
@@ -580,7 +580,7 @@ class Matrix4Base implements Matrix4 {
     ) as this;
   }
 
-  public static identity(): Matrix4Base {
+  static identity(): Matrix4Base {
     return new Matrix4Base(
       1, 0, 0, 0,
       0, 1, 0, 0,
@@ -589,7 +589,7 @@ class Matrix4Base implements Matrix4 {
     );
   }
 
-  public setIdentity(): this {
+  setIdentity(): this {
     const thisArray = this.array;
     thisArray[ 0] = 1;
     thisArray[ 1] = 0;
@@ -611,7 +611,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public static zeros(): Matrix4Base {
+  static zeros(): Matrix4Base {
     return new Matrix4Base(
       0, 0, 0, 0,
       0, 0, 0, 0,
@@ -620,7 +620,7 @@ class Matrix4Base implements Matrix4 {
     );
   }
 
-  public setZeros(): this {
+  setZeros(): this {
     const thisArray = this.array;
     thisArray[ 0] = 0;
     thisArray[ 1] = 0;
@@ -642,7 +642,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public det(): number {
+  det(): number {
     const thisArray = this.array;
     const det2_01_01 = thisArray[0] * thisArray[5] - thisArray[1] * thisArray[4];
     const det2_01_02 = thisArray[0] * thisArray[6] - thisArray[2] * thisArray[4];
@@ -659,12 +659,12 @@ class Matrix4Base implements Matrix4 {
       - det3_201_013 * thisArray[14] + det3_201_012 * thisArray[15];
   }
 
-  public trace(): number {
+  trace(): number {
     const thisArray = this.array;
     return thisArray[0] + thisArray[5] + thisArray[10] + thisArray[15];
   }
 
-  public static negate(A: Matrix4, out: Matrix4): Matrix4 {
+  static negate(A: Matrix4, out: Matrix4): Matrix4 {
     const a = A.array;
     const o = out.array;
 
@@ -688,11 +688,11 @@ class Matrix4Base implements Matrix4 {
     return out;
   }
 
-  public negate(): this {
+  negate(): this {
     return Matrix4Base.negate(this, this) as this;
   }
 
-  public static transpose(A: Matrix4, out: Matrix4): Matrix4 {
+  static transpose(A: Matrix4, out: Matrix4): Matrix4 {
     const a = A.array;
     const o = out.array;
 
@@ -733,11 +733,11 @@ class Matrix4Base implements Matrix4 {
     return out;
   }
 
-  public transpose(): this {
+  transpose(): this {
     return Matrix4Base.transpose(this, this) as this;
   }
 
-  public static invert(A: Matrix4, out: Matrix4): Matrix4 {
+  static invert(A: Matrix4, out: Matrix4): Matrix4 {
     const a = A.array;
     const o = out.array;
 
@@ -799,11 +799,11 @@ class Matrix4Base implements Matrix4 {
     return out;
   }
 
-  public invert(): this {
+  invert(): this {
     return Matrix4Base.invert(this, this) as this;
   }
 
-  public static add(A: Matrix4, B: Matrix4, out: Matrix4): Matrix4 {
+  static add(A: Matrix4, B: Matrix4, out: Matrix4): Matrix4 {
     const a = A.array;
     const b = B.array;
     const o = out.array;
@@ -828,11 +828,11 @@ class Matrix4Base implements Matrix4 {
     return out;
   }
 
-  public add(matrix: Matrix4): this {
+  add(matrix: Matrix4): this {
     return Matrix4Base.add(this, matrix, this) as this;
   }
 
-  public static sub(A: Matrix4, B: Matrix4, out: Matrix4): Matrix4 {
+  static sub(A: Matrix4, B: Matrix4, out: Matrix4): Matrix4 {
     const a = A.array;
     const b = B.array;
     const o = out.array;
@@ -857,11 +857,11 @@ class Matrix4Base implements Matrix4 {
     return out;
   }
 
-  public sub(matrix: Matrix4): this {
+  sub(matrix: Matrix4): this {
     return Matrix4Base.sub(this, matrix, this) as this;
   }
 
-  public static mult(A: Matrix4, B: Matrix4, out: Matrix4): Matrix4 {
+  static mult(A: Matrix4, B: Matrix4, out: Matrix4): Matrix4 {
     const a = A.array;
     const b = B.array;
     const o = out.array;
@@ -920,11 +920,11 @@ class Matrix4Base implements Matrix4 {
     return out;
   }
 
-  public mult(matrix: Matrix4): this {
+  mult(matrix: Matrix4): this {
     return Matrix4Base.mult(this, matrix, this) as this;
   }
 
-	public getMaxScaleOnAxis(): number {
+	getMaxScaleOnAxis(): number {
     const thisArray = this.array;
     const scaleXSq = thisArray[ 0] * thisArray[ 0] + thisArray[ 1] * thisArray[ 1] + thisArray[ 2] * thisArray[ 2];
     const scaleYSq = thisArray[ 4] * thisArray[ 4] + thisArray[ 5] * thisArray[ 5] + thisArray[ 6] * thisArray[ 6];
@@ -933,7 +933,7 @@ class Matrix4Base implements Matrix4 {
     return Math.sqrt(Math.max(scaleXSq, scaleYSq, scaleZSq));
   }
 
-  public writeIntoArray(array: WritableArrayLike<number>, offset: number = 0): void {
+  writeIntoArray(array: WritableArrayLike<number>, offset: number = 0): void {
     const thisArray = this.array;
 		array[offset     ] = thisArray[ 0];
 		array[offset +  1] = thisArray[ 1];
@@ -953,7 +953,7 @@ class Matrix4Base implements Matrix4 {
     array[offset + 15] = thisArray[15];
   }
     
-  public readFromArray(array: ArrayLike<number>, offset: number = 0): this {
+  readFromArray(array: ArrayLike<number>, offset: number = 0): this {
     const thisArray = this.array;
     thisArray[ 0] = array[offset     ];
     thisArray[ 1] = array[offset +  1];
@@ -975,7 +975,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public solve(vecB: Vector4): Vector4Values {
+  solve(vecB: Vector4): Vector4Values {
     const a = this.array;
 
     const a11 = a[ 0];
@@ -1044,7 +1044,7 @@ class Matrix4Base implements Matrix4 {
     ];
   }
 
-  public solve2(vecB: Vector2): Vector2Values {
+  solve2(vecB: Vector2): Vector2Values {
     const a = this.array;
 
     const a11 = a[0];
@@ -1068,7 +1068,7 @@ class Matrix4Base implements Matrix4 {
     ];
   }
 
-  public solve3(vecB: Vector3): Vector3Values {
+  solve3(vecB: Vector3): Vector3Values {
     const a = this.array;
 
     const a11 = a[ 0];
@@ -1112,11 +1112,11 @@ class Matrix4Base implements Matrix4 {
     ];
   }
 
-  public static translation(vector: Vector3): Matrix4Base {
+  static translation(vector: Vector3): Matrix4Base {
     return new Matrix4Base().setTranslation(vector);
   }
 
-  public setTranslation(vec: Vector3): this {
+  setTranslation(vec: Vector3): this {
     const thisArray = this.array;
     const vecArray = vec.array;
 
@@ -1144,7 +1144,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public translate(vector: Vector3): this {
+  translate(vector: Vector3): this {
     const thisArray = this.array;
     const vectorArray = vector.array;
 
@@ -1166,11 +1166,11 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public static rotationX(angle: number): Matrix4Base {
+  static rotationX(angle: number): Matrix4Base {
     return new Matrix4Base().setRotationX(angle);
   }
 
-  public setRotationX(angle: number): this {
+  setRotationX(angle: number): this {
     const thisArray = this.array;
     const cosAngle = Math.cos(angle);
     const sinAngle = Math.sin(angle);
@@ -1195,7 +1195,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public rotateX(angle: number): this {
+  rotateX(angle: number): this {
     const thisArray = this.array;
     const cosAngle = Math.cos(angle);
     const sinAngle = Math.sin(angle);
@@ -1221,11 +1221,11 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public static rotationY(angle: number): Matrix4Base {
+  static rotationY(angle: number): Matrix4Base {
     return new Matrix4Base().setRotationY(angle);
   }
 
-  public setRotationY(angle: number): this {
+  setRotationY(angle: number): this {
     const thisArray = this.array;
     const cosAngle = Math.cos(angle);
     const sinAngle = Math.sin(angle);
@@ -1250,7 +1250,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public rotateY(angle: number): this {
+  rotateY(angle: number): this {
     const thisArray = this.array;
     const cosAngle = Math.cos(angle);
     const sinAngle = Math.sin(angle);
@@ -1276,11 +1276,11 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public static rotationZ(angle: number): Matrix4Base {
+  static rotationZ(angle: number): Matrix4Base {
     return new Matrix4Base().setRotationZ(angle);
   }
 
-  public setRotationZ(angle: number): this {
+  setRotationZ(angle: number): this {
     const thisArray = this.array;
     const cosAngle = Math.cos(angle);
     const sinAngles = Math.sin(angle);
@@ -1305,7 +1305,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public rotateZ(angle: number): this {
+  rotateZ(angle: number): this {
     const thisArray = this.array;
     const cosAngle = Math.cos(angle);
     const sinAngle = Math.sin(angle);
@@ -1331,11 +1331,11 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public static rotation(matrix: Matrix3): Matrix4Base {
+  static rotation(matrix: Matrix3): Matrix4Base {
     return new Matrix4Base().rotation(matrix);
   }
 
-  public rotation(matrix: Matrix3): this {
+  rotation(matrix: Matrix3): this {
     const thisArray = this.array;
     const matArray = matrix.array;
 
@@ -1352,7 +1352,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public rotate(axis: Vector3, angle: number): this {
+  rotate(axis: Vector3, angle: number): this {
     const thisArray = this.array;
     const axisArray = axis.array;
     const axisLength = axis.length();
@@ -1399,11 +1399,11 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public static scaling(vec: Vector3): Matrix4Base {
+  static scaling(vec: Vector3): Matrix4Base {
     return new Matrix4Base().setScaling(vec);
   }
 
-  public setScaling(vec: Vector3): this {
+  setScaling(vec: Vector3): this {
     const thisArray = this.array;
     const vecArray = vec.array;
     const sx = vecArray[0];
@@ -1431,7 +1431,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public scale(vec: Vector3): this {
+  scale(vec: Vector3): this {
     const thisArray = this.array;
     const vecArray = vec.array;
     const sx = vecArray[0];
@@ -1459,7 +1459,7 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public static lookAt(eye: Vector3, target: Vector3, up: Vector3, out: Matrix4): Matrix4 {
+  static lookAt(eye: Vector3, target: Vector3, up: Vector3, out: Matrix4): Matrix4 {
     const eyeArray = eye.array;
     const upArray = up.array;
     const targetArray = target.array;
@@ -1528,11 +1528,11 @@ class Matrix4Base implements Matrix4 {
     return out;
   }
 
-  public lookAt(eye: Vector3, target: Vector3, up: Vector3): this {
+  lookAt(eye: Vector3, target: Vector3, up: Vector3): this {
     return Matrix4Base.lookAt(eye, target, up, this) as this;
   }
 
-  public transformPoint(point: Vector3): Vector3 {
+  transformPoint(point: Vector3): Vector3 {
     const thisArray = this.array;
     const pointArray = point.array;
 
@@ -1551,7 +1551,7 @@ class Matrix4Base implements Matrix4 {
     return point;
   }
 
-  public transformDirection(direction: Vector3): Vector3 {
+  transformDirection(direction: Vector3): Vector3 {
     const thisArray = this.array;
     const directionArray = direction.array;
 
@@ -1568,7 +1568,7 @@ class Matrix4Base implements Matrix4 {
     return direction;
   }
 
-  public transformNormal(normal: Vector3): Vector3 {
+  transformNormal(normal: Vector3): Vector3 {
     const normalArray = normal.array;
 
     const thisInvArray = this.invert().array;
@@ -1588,11 +1588,11 @@ class Matrix4Base implements Matrix4 {
     return normal;
   }
 
-  public static perspective(fov: number, aspect: number, zNear: number, zFar: number): Matrix4Base {
+  static perspective(fov: number, aspect: number, zNear: number, zFar: number): Matrix4Base {
     return new Matrix4Base().setPerspective(fov, aspect, zNear, zFar);
   }
 
-  public setPerspective(fov: number, aspect: number, zNear: number, zFar: number): this {
+  setPerspective(fov: number, aspect: number, zNear: number, zFar: number): this {
     const thisArray = this.array;
     const width = Math.tan(Math.PI * 0.5 - 0.5 * fov);
     const height = width / aspect;
@@ -1618,11 +1618,11 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public static orthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4Base {
+  static orthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4Base {
     return new Matrix4Base().setOrthographic(left, right, bottom, top, near, far);
   }
 
-  public setOrthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): this {
+  setOrthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): this {
     const thisArray = this.array;
     thisArray[ 0] = 2 / (right - left);
     thisArray[ 1] = 0;
@@ -1644,11 +1644,11 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  public static frustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4Base {
+  static frustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4Base {
     return new Matrix4Base().setFrustrum(left, right, bottom, top, near, far);
   }
 
-  public setFrustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): this {
+  setFrustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): this {
     const thisArray = this.array;
     const invWidth = 1 / (right - left);
     const invHeight = 1 / (top - bottom);

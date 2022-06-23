@@ -73,7 +73,6 @@ declare type UniformsListSetter = {
     program: Program;
 };
 declare class WebGLUniformUtilities {
-    private constructor();
     static getUniformValueByteLength(uniformValue: UniformValue): number;
     static getUniformValueArrayBufferView(uniformValue: UniformValue): ArrayBufferView;
     static getUniformSetter(gl: WebGL2RenderingContext, uniform: Uniform, location: WebGLUniformLocation, uniformType: UniformType): UniformSetter | null;

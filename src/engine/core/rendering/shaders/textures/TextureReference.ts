@@ -10,7 +10,7 @@ export interface ITextureReference {
 }
 
 export class TextureReference {
-    public readonly texture: Texture;
+    readonly texture: Texture;
     
     private constructor(texture: Texture) {
         this.texture = texture;
@@ -18,7 +18,7 @@ export class TextureReference {
 
     private static _instances: Map<string, TextureReference> = new Map<string, TextureReference>();
 
-    public static getInstance(texture: Texture): TextureReference {
+    static getInstance(texture: Texture): TextureReference {
         let reference = TextureReference._instances.get(texture.uuid);
         if (typeof reference !== 'undefined') {
             return reference;

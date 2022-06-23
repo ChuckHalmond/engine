@@ -31,11 +31,11 @@ class PhongUBO extends UBOBase<PhongUBOReferences, PhongUBOValues> {
         super('PhongUBO', references);
     }
 
-    public static getInstance(references: PhongUBOReferences): PhongUBO {
+    static getInstance(references: PhongUBOReferences): PhongUBO {
         return UBOBase.getConcreteInstance(PhongUBO, references);
     }
     
-    public subscribeReferences(): void {
+    subscribeReferences(): void {
 
         const deltaFlags = this._deltaFlags = new Flags();
         const subscriptions = this._subscriptions = new Array<(message: any) => void>(1);
@@ -54,13 +54,13 @@ class PhongUBO extends UBOBase<PhongUBOReferences, PhongUBOValues> {
         });
     }
 
-    public unsubscribeReferences(): void {
+    unsubscribeReferences(): void {
         if (typeof this._subscriptions !== 'undefined') {
             this._references.material.changes.unsubscribe(this._subscriptions[0]);
         }
     }
     
-    public getUniformValues(): PhongUBOValues {
+    getUniformValues(): PhongUBOValues {
         const material = this._references.material;
 
         let values = {} as PhongUBOValues;
@@ -80,7 +80,7 @@ class PhongUBO extends UBOBase<PhongUBOReferences, PhongUBOValues> {
         return values;
     }
 
-    public getDeltaUniformValues(): Partial<PhongUBOValues> | null {
+    getDeltaUniformValues(): Partial<PhongUBOValues> | null {
         let hasValues = false;
         const material = this._references.material;
 

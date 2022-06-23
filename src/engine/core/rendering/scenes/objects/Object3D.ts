@@ -8,7 +8,7 @@ interface Object3D {
 }
 
 class Object3DBase implements Object3D {
-    public readonly transform: Transform;
+    readonly transform: Transform;
 
     constructor() {
         this.transform = new TransformBase(this);

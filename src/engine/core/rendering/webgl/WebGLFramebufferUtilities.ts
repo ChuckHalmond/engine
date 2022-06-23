@@ -110,9 +110,7 @@ type FramebufferRenderbufferAttachment = FramebufferRenderbufferAttachmentProper
 
 export class WebGLFramebufferUtilities {
 
-    private constructor() {}
-
-    public static createFramebuffer(gl: WebGL2RenderingContext): Framebuffer | null {
+    static createFramebuffer(gl: WebGL2RenderingContext): Framebuffer | null {
         const framebuffer = gl.createFramebuffer();
     
         if (framebuffer === null) {
@@ -125,7 +123,7 @@ export class WebGLFramebufferUtilities {
         };
     }
 
-    public static createRenderbuffer(gl: WebGL2RenderingContext, props: RenderbufferProperties): Renderbuffer | null {
+    static createRenderbuffer(gl: WebGL2RenderingContext, props: RenderbufferProperties): Renderbuffer | null {
         const renderbuffer = gl.createRenderbuffer();
         
         if (renderbuffer == null) {
@@ -149,7 +147,7 @@ export class WebGLFramebufferUtilities {
         };
     }
 
-    public static attachTexture(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...props: FramebufferTextureAttachmentProperties[]): FramebufferTextureAttachment[] {
+    static attachTexture(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...props: FramebufferTextureAttachmentProperties[]): FramebufferTextureAttachment[] {
         const currentFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
         if (currentFramebuffer !== framebuffer.internal) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.internal);
@@ -171,7 +169,7 @@ export class WebGLFramebufferUtilities {
         return attachments;
     }
 
-    public static attachRenderbuffer(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...props: FramebufferRenderbufferAttachmentProperties[]): FramebufferRenderbufferAttachment[] {
+    static attachRenderbuffer(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...props: FramebufferRenderbufferAttachmentProperties[]): FramebufferRenderbufferAttachment[] {
         const currentFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
         if (currentFramebuffer !== framebuffer.internal) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.internal);
@@ -193,7 +191,7 @@ export class WebGLFramebufferUtilities {
         return attachments;
     }
 
-    public static blit(gl: WebGL2RenderingContext, readFramebuffer: Framebuffer | null, drawFramebuffer: Framebuffer | null, readRectangle: number[], drawRectangle: number[], mask: BufferMask, filter: TextureMagFilter): void {
+    static blit(gl: WebGL2RenderingContext, readFramebuffer: Framebuffer | null, drawFramebuffer: Framebuffer | null, readRectangle: number[], drawRectangle: number[], mask: BufferMask, filter: TextureMagFilter): void {
         
         const currentReadFramebuffer = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);
         if (currentReadFramebuffer !== readFramebuffer) {
@@ -208,25 +206,25 @@ export class WebGLFramebufferUtilities {
         gl.blitFramebuffer(readRectangle[0], readRectangle[1], readRectangle[2], readRectangle[3], drawRectangle[0], drawRectangle[1], drawRectangle[2], drawRectangle[3], mask, filter);
     }
 
-    public static readPixels(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number, format: TexturePixelFormat, type: TexturePixelType, pixels: ArrayBufferView): void {
+    static readPixels(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number, format: TexturePixelFormat, type: TexturePixelType, pixels: ArrayBufferView): void {
         gl.readPixels(x, y, width, height, format, type, pixels);
     }
 
-    public static bindFramebuffer(gl: WebGL2RenderingContext, framebuffer: Framebuffer): void {
+    static bindFramebuffer(gl: WebGL2RenderingContext, framebuffer: Framebuffer): void {
         gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.internal);
     }
 
-    public static unbindFramebuffer(gl: WebGL2RenderingContext): void {
+    static unbindFramebuffer(gl: WebGL2RenderingContext): void {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
-    public static deleteFramebuffer(gl: WebGL2RenderingContext, framebuffer: Framebuffer): void {
+    static deleteFramebuffer(gl: WebGL2RenderingContext, framebuffer: Framebuffer): void {
         if (gl.isFramebuffer(framebuffer.internal)) {
             gl.deleteFramebuffer(framebuffer.internal);
         }
     }
 
-    public static deleteRenderbuffer(gl: WebGL2RenderingContext, renderbuffer: Renderbuffer): void {
+    static deleteRenderbuffer(gl: WebGL2RenderingContext, renderbuffer: Renderbuffer): void {
         if (gl.isRenderbuffer(renderbuffer.internal)) {
             gl.deleteRenderbuffer(renderbuffer.internal);
         }

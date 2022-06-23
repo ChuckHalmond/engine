@@ -24,16 +24,16 @@ interface SingleSubscriptionMessageBrokerConstructor {
 class SingleSubscriptionMessageBrokerBase<M extends unknown = any> implements SingleSubscriptionMessageBroker<M> {
     private _subscription?: (message: any) => void;
     
-    public hasSubscription(): boolean {
+    hasSubscription(): boolean {
         return (typeof this._subscription !== 'undefined');
     }
 
-    public subscribe(subscription: (message: any) => void): (message: any) => void {
+    subscribe(subscription: (message: any) => void): (message: any) => void {
         this._subscription = subscription;
         return subscription;
     }
 
-    public unsubscribe(subscription: (message: any) => void): number {
+    unsubscribe(subscription: (message: any) => void): number {
         if (this._subscription === subscription) {
             delete this._subscription;
             return 0;
@@ -41,7 +41,7 @@ class SingleSubscriptionMessageBrokerBase<M extends unknown = any> implements Si
         return -1;
     }
 
-    public publish(message?: any): void {
+    publish(message?: any): void {
         if (typeof this._subscription !== 'undefined') {
             this._subscription(message);
         }

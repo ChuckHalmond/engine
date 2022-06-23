@@ -20,14 +20,14 @@ class QuadGeometry extends GeometryBase {
 		this.heightSegment = properties?.heightSegment ?? 1;
 	}
 	
-	public toBuilder(): GeometryBuilder {
+	toBuilder(): GeometryBuilder {
 		const builder = new class extends GeometryBuilder {
-			public tangentsArray(): Float32Array {
+			tangentsArray(): Float32Array {
 				console.log("tangents");
 				return new Float32Array([0, 1, 0]);
 			}
 		
-			public verticesNormalsArray(): Float32Array {
+			verticesNormalsArray(): Float32Array {
 				console.log("verticesNormalsArray");
 				return new Float32Array([0, 0, 1]);
 			}

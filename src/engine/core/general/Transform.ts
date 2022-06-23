@@ -53,13 +53,13 @@ interface Transform {
 }
 
 class TransformBase implements Transform {
-    public readonly localArray: Float32Array;
-    public readonly array: Float32Array;
-    public readonly uuid: UUID;
-    public readonly owner: Object3D | null;
+    readonly localArray: Float32Array;
+    readonly array: Float32Array;
+    readonly uuid: UUID;
+    readonly owner: Object3D | null;
 
-    public readonly matrix: Matrix4;
-    public readonly localMatrix: Matrix4;
+    readonly matrix: Matrix4;
+    readonly localMatrix: Matrix4;
 
     private _hasChanged: boolean;
 
@@ -76,7 +76,7 @@ class TransformBase implements Transform {
         this._hasChanged = false;
     }
 
-    public getMatrix(matrix: Matrix4): Matrix4 {
+    getMatrix(matrix: Matrix4): Matrix4 {
         const thisArray = this.array;
         const matrixArray = matrix.array;
         matrixArray[ 0] = thisArray[ 0];
@@ -99,7 +99,7 @@ class TransformBase implements Transform {
         return matrix;
     }
 
-    public setMatrix(matrix: Matrix4): this {
+    setMatrix(matrix: Matrix4): this {
         const thisArray = this.array;
         const matrixArray = matrix.array;
         thisArray[ 0] = matrixArray[ 0];
@@ -122,7 +122,7 @@ class TransformBase implements Transform {
         return this;
     }
 
-    public getLocalMatrix(matrix: Matrix4): Matrix4 {
+    getLocalMatrix(matrix: Matrix4): Matrix4 {
         const thisLocalArray = this.localArray;
         const matrixArray = matrix.array;
         matrixArray[ 0] = thisLocalArray[ 0];
@@ -145,7 +145,7 @@ class TransformBase implements Transform {
         return matrix;
     }
 
-    public setLocalMatrix(matrix: Matrix4): this {
+    setLocalMatrix(matrix: Matrix4): this {
         const thisLocalArray = this.localArray;
         const matrixArray = matrix.array;
         thisLocalArray[ 0] = matrixArray[ 0];
@@ -168,7 +168,7 @@ class TransformBase implements Transform {
         return this;
     }
 
-    public getRight(vector: Vector3): Vector3 {
+    getRight(vector: Vector3): Vector3 {
         const thisArray = this.array;
         const vectorArray = vector.array;
         vectorArray[0] = thisArray[0];
@@ -177,7 +177,7 @@ class TransformBase implements Transform {
         return vector;
     }
 
-    public getLeft(vector: Vector3): Vector3 {
+    getLeft(vector: Vector3): Vector3 {
         const thisArray = this.array;
         const vectorArray = vector.array;
         vectorArray[0] = -thisArray[0];
@@ -186,7 +186,7 @@ class TransformBase implements Transform {
         return vector;
     }
 
-    public getUp(vector: Vector3): Vector3 {
+    getUp(vector: Vector3): Vector3 {
         const thisArray = this.array;
         const vectorArray = vector.array;
         vectorArray[0] = thisArray[4];
@@ -195,7 +195,7 @@ class TransformBase implements Transform {
         return vector;
     }
 
-    public getDown(vector: Vector3): Vector3 {
+    getDown(vector: Vector3): Vector3 {
         const thisArray = this.array;
         const vectorArray = vector.array;
         vectorArray[0] = -thisArray[4];
@@ -204,7 +204,7 @@ class TransformBase implements Transform {
         return vector;
     }
 
-    public getForward(vector: Vector3): Vector3 {
+    getForward(vector: Vector3): Vector3 {
         const thisArray = this.array;
         const vectorArray = vector.array;
         vectorArray[0] = thisArray[ 8];
@@ -213,7 +213,7 @@ class TransformBase implements Transform {
         return vector;
     }
 
-    public getBackward(vector: Vector3): Vector3 {
+    getBackward(vector: Vector3): Vector3 {
         const thisArray = this.array;
         const vectorArray = vector.array;
         vectorArray[0] = -thisArray[ 8];
@@ -222,11 +222,11 @@ class TransformBase implements Transform {
         return vector;
     }
 
-    public get hasChanged() {
+    get hasChanged() {
         return this._hasChanged;
     }
 
-    public getTranslation(vector: Vector3): Vector3 {
+    getTranslation(vector: Vector3): Vector3 {
         const thisArray = this.array;
         const vectorArray = vector.array;
         vectorArray[0] = thisArray[12];
@@ -235,7 +235,7 @@ class TransformBase implements Transform {
         return vector;
     }
 
-    public setTranslation(vector: Vector3): this {
+    setTranslation(vector: Vector3): this {
         const thisArray = this.array;
         const vectorArray = vector.array;
         thisArray[12] = vectorArray[0];
@@ -244,7 +244,7 @@ class TransformBase implements Transform {
         return this;
     }
 
-    public translate(vector: Vector3): this {
+    translate(vector: Vector3): this {
         const thisArray = this.array;
         const vectorArray = vector.array;
         thisArray[12] += vectorArray[0];
@@ -253,7 +253,7 @@ class TransformBase implements Transform {
         return this;
     }
 
-    public getScaling(vector: Vector3): Vector3 {
+    getScaling(vector: Vector3): Vector3 {
         const thisArray = this.array;
         const vectorArray = vector.array;
         vectorArray[0] = thisArray[ 0];
@@ -262,7 +262,7 @@ class TransformBase implements Transform {
         return vector;
     }
 
-    public setScaling(vector: Vector3): this {
+    setScaling(vector: Vector3): this {
         const thisArray = this.array;
         const vectorArray = vector.array;
         thisArray[ 0] = vectorArray[0];
@@ -271,7 +271,7 @@ class TransformBase implements Transform {
         return this;
     }
 
-    public scale(vector: Vector3): this {
+    scale(vector: Vector3): this {
         const thisArray = this.array;
         const vectorArray = vector.array;
         thisArray[ 0] *= vectorArray[0];
@@ -280,36 +280,36 @@ class TransformBase implements Transform {
         return this;
     }
 
-    public getRotation(rotation: Quaternion): Quaternion {
+    getRotation(rotation: Quaternion): Quaternion {
         rotation.setMatrix(this.matrix);
         return rotation;
     }
     
-    public setRotation(rotation: Quaternion): this {
+    setRotation(rotation: Quaternion): this {
         this.matrix.setRotation(rotation);
         return this;
     }
 
-    public rotate(rotation: Quaternion): this {
+    rotate(rotation: Quaternion): this {
         const thisRotation = this.getRotation(QuaternionPool.acquire(1)[0]);
         this.matrix.setRotation(thisRotation.mult(rotation));
         QuaternionPool.release(1);
         return this;
     }
 
-    public transformPoint(point: Vector3): Vector3 {
+    transformPoint(point: Vector3): Vector3 {
         return point;
     }
 
-    public transformDirection(direction: Vector3): Vector3 {
+    transformDirection(direction: Vector3): Vector3 {
         return direction;
     }
 
-    public transformVector(vector: Vector3): Vector3 {
+    transformVector(vector: Vector3): Vector3 {
         return vector;
     }
 
-    public lookAt(target: Vector3, up: Vector3): this {
+    lookAt(target: Vector3, up: Vector3): this {
         const thisPosition = this.getTranslation(Vector3Pool.acquire(1)[0]);
         this.matrix.lookAt(thisPosition, target, up);
         Vector3Pool.release(1);

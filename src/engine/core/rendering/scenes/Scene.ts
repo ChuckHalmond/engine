@@ -30,7 +30,7 @@ class BaseScene implements Scene {
         this.layers = [];
     }
 
-    public parseObjectRecursive(transform: Transform): void {
+    parseObjectRecursive(transform: Transform): void {
 
         /*for (const child of transform.children) {
             this.parseObjectRecursive(child);
@@ -46,7 +46,7 @@ class BaseScene implements Scene {
         }*/
     }
 
-    public *lightsOn(mesh: Mesh): IterableIterator<Light> {
+    *lightsOn(mesh: Mesh): IterableIterator<Light> {
         for (const light of this.lights) {
             if (light.isLightingOn(mesh)) {
                 yield light;

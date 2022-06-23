@@ -28,15 +28,15 @@ abstract class PoolBase<O extends object = object> implements Pool<O> {
         this._autoExtendTicks = 0;
     }
 
-    public get ctor(): Constructor<O> {
+    get ctor(): Constructor<O> {
         return this._ctor;
     }
 
-    public get autoExtendPolicy(): PoolAutoExtendPolicy {
+    get autoExtendPolicy(): PoolAutoExtendPolicy {
         return this._autoExtendPolicy;
     }
 
-    public autoExtend(): void {
+    autoExtend(): void {
         switch (this._autoExtendPolicy) {
             case PoolAutoExtendPolicy.AUTO_EXTEND_ONE:
                 this.extend(1);
@@ -48,8 +48,8 @@ abstract class PoolBase<O extends object = object> implements Pool<O> {
         this._autoExtendTicks++;
     }
 
-    public abstract acquire(count: number): O[];
-    public abstract release(count: number): void;
-    public abstract extend(count: number): void;
-    public abstract clear(): void;
+    abstract acquire(count: number): O[];
+    abstract release(count: number): void;
+    abstract extend(count: number): void;
+    abstract clear(): void;
 }

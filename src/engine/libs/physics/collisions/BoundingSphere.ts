@@ -45,41 +45,41 @@ class BoundingSphereBase implements BoundingSphere {
         this._radius = 0;
 	}
 
-	public get center(): Vector3 {
+	get center(): Vector3 {
 		return this._center;
 	}
 
-	public set center(center: Vector3) {
+	set center(center: Vector3) {
 		this._center = center;
 	}
 
-	public get radius(): number {
+	get radius(): number {
 		return this._radius;
 	}
 
-	public set radius(radius: number) {
+	set radius(radius: number) {
 		this._radius = radius;
 	}
 
-	public set(center: Vector3, radius: number): BoundingSphereBase {
+	set(center: Vector3, radius: number): BoundingSphereBase {
 		this._center.copy(center);
 		this._radius = radius;
 
 		return this;
 	}
 
-	public copy(sphere: BoundingSphereBase): BoundingSphereBase {
+	copy(sphere: BoundingSphereBase): BoundingSphereBase {
 		this._center.copy(sphere._center);
 		this._radius = sphere._radius;
 		
 		return this;
 	}
 
-	public clone(): BoundingSphereBase {
+	clone(): BoundingSphereBase {
 		return new BoundingSphereBase().copy(this);
 	}
 	
-	public setFromPoints(points: Vector3List, center?: Vector3): BoundingSphereBase {
+	setFromPoints(points: Vector3List, center?: Vector3): BoundingSphereBase {
 
 		if (center !== undefined) {
 			this._center.copy(center);
@@ -101,44 +101,44 @@ class BoundingSphereBase implements BoundingSphere {
 		return this;
     }
 
-	public isEmpty(): boolean {
+	isEmpty(): boolean {
 		return (this._radius < 0);
 	}
 
-	public makeEmpty(): BoundingSphereBase {
+	makeEmpty(): BoundingSphereBase {
 		this._center.setZeros();
 		this._radius = -1;
 
 		return this;
 	}
 
-	public containsPoint(point: Vector3): boolean {
+	containsPoint(point: Vector3): boolean {
 		return (point.distanceSquared(this._center) <= (this._radius * this._radius));
 	}
 
-	public dist(point: Vector3): number {
+	dist(point: Vector3): number {
 		return (point.distance(this._center) - this._radius);
 	}
 
-	public distToPlane(plane: Plane): number {
+	distToPlane(plane: Plane): number {
 		return plane.distanceToPoint(this._center) - this._radius;
 	}
 
-	public intersectsSphere(sphere: BoundingSphereBase): boolean {
+	intersectsSphere(sphere: BoundingSphereBase): boolean {
         const radiusSum = this._radius + sphere._radius;
         
 		return this._center.distanceSquared(sphere._center) <= (radiusSum * radiusSum);
 	}
 
-	public intersectsBox(box: BoundingBox): boolean {
+	intersectsBox(box: BoundingBox): boolean {
 		return box.intersectsSphere(this);
 	}
 
-	public intersectsPlane(plane: Plane): boolean {
+	intersectsPlane(plane: Plane): boolean {
 		return Math.abs(plane.distanceToPoint(this._center)) <= this._radius;
 	}
 
-	public clampPoint(point: Vector3, out: Vector3): Vector3 {
+	clampPoint(point: Vector3, out: Vector3): Vector3 {
 		const deltaLenSq = this._center.distanceSquared(point);
 
 		out.copy(point);
@@ -151,7 +151,7 @@ class BoundingSphereBase implements BoundingSphere {
 		return out;
 	}
 
-	public getBoundingBox(out: BoundingBox): BoundingBox {
+	getBoundingBox(out: BoundingBox): BoundingBox {
 
 		if (this.isEmpty()) {
 			out.makeEmpty();
@@ -164,12 +164,12 @@ class BoundingSphereBase implements BoundingSphere {
 		return out;
 	}
 
-	public transform(matrix: Matrix4): void {
+	transform(matrix: Matrix4): void {
 		matrix.transformPoint(this._center);
 		this._radius = this._radius * matrix.getMaxScaleOnAxis();
 	}
 
-	public translate(offset: Vector3): void {
+	translate(offset: Vector3): void {
 		this._center.add(offset);
 	}
 }

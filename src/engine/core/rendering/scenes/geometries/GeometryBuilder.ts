@@ -52,7 +52,7 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         this.faces = [];
     }
 
-    public linesArray(): Float32Array {
+    linesArray(): Float32Array {
         return new Float32Array(this.faces.flatMap((face) => {
             const faceVertices = Array.from(new FaceVerticesIterator(face));
             if (faceVertices.length === 4) {
@@ -80,7 +80,7 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         }));
     }
 
-    public verticesArray(): Float32Array {
+    verticesArray(): Float32Array {
         return new Float32Array(this.faces.flatMap((face) => {
             return Array.from(new FaceVerticesIterator(face)).flatMap((vertex) => {
                 return Array.from(vertex.point);
@@ -88,7 +88,7 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         }));
     }
 
-    public tangentsArray(): Float32Array {
+    tangentsArray(): Float32Array {
         return new Float32Array(this.faces.flatMap((face) => {
             const faceVertices = Array.from(new FaceVerticesIterator(face));
             const faceUvs = face.uv as Array<Array<number>>;
@@ -113,7 +113,7 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         }));
     }
 
-    public verticesNormalsArray(): Float32Array {
+    verticesNormalsArray(): Float32Array {
         return new Float32Array(this.faces.flatMap((face) => {
             const faceVertices = Array.from(new FaceVerticesIterator(face));
             const p0 = faceVertices[0].point;
@@ -136,13 +136,13 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         }));
     }
 
-    public uvsArray(): Float32Array {
+    uvsArray(): Float32Array {
         return new Float32Array(this.faces.flatMap((face) => {
             return face.uv.flat(1);
         }));
     }
 
-    public indicesArray(): Uint8Array | Uint16Array | Uint32Array {
+    indicesArray(): Uint8Array | Uint16Array | Uint32Array {
         const count = this.faces.reduce((verticesCount, face) => {
             return verticesCount + Array.from(new FaceVerticesIterator(face)).length;
         }, 0);
@@ -156,7 +156,7 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         }, [[], 0] as [number[], number])[0]);
     }
 
-    public addFaceVertices(vertices: number[][], properties?: {[key: string]: any;}): void {
+    addFaceVertices(vertices: number[][], properties?: {[key: string]: any;}): void {
         const addedVertices = vertices.map((vertex) => {
             return this.vertices
                 .find(vert => vert.point.length === vertex.length && vert.point.every((value, index) => vertex[index] === value)) ?? this.addVertex(vertex);
@@ -164,7 +164,7 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         this.addFace(addedVertices, properties);
     }
 
-    public addTriangleFaceVertices(
+    addTriangleFaceVertices(
         v0: number[] | Float32Array | Float64Array,
         v1: number[] | Float32Array | Float64Array,
         v2: number[] | Float32Array | Float64Array,
@@ -177,11 +177,11 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         this.addTriangleFace(_v0, _v1, _v2, properties);
     }
 
-    public addTriangleFace(v0: Vertex, v1: Vertex, v2: Vertex, properties?: {[key: string]: any;}): void {
+    addTriangleFace(v0: Vertex, v1: Vertex, v2: Vertex, properties?: {[key: string]: any;}): void {
         this.addFace([v0, v1, v2], properties);
     }
 
-    public addQuadFaceVertices(
+    addQuadFaceVertices(
         v0: number[] | Float32Array | Float64Array,
         v1: number[] | Float32Array | Float64Array,
         v2: number[] | Float32Array | Float64Array,
@@ -195,11 +195,11 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         this.addQuadFace(_v0, _v1, _v2, _v3, properties);
     }
 
-    public addQuadFace(v0: Vertex, v1: Vertex, v2: Vertex, v3: Vertex, properties?: {[key: string]: any;}): void {
+    addQuadFace(v0: Vertex, v1: Vertex, v2: Vertex, v3: Vertex, properties?: {[key: string]: any;}): void {
         this.addFace([v0, v1, v2, v3], properties);
     }
     
-    public addVertex(vertex: number[] | Float32Array | Float64Array): Vertex {
+    addVertex(vertex: number[] | Float32Array | Float64Array): Vertex {
         const vert: Vertex = {
             point: vertex,
             halfEdge: null
@@ -208,7 +208,7 @@ class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<
         return vert;
     }
 
-    public addFace(vertices: Vertex[], properties?: {[key: string]: any;}): void {
+    addFace(vertices: Vertex[], properties?: {[key: string]: any;}): void {
         if (vertices.length < 2) {
             console.warn(`At least 2 vertices are required to create a face.`);
             return;
@@ -304,15 +304,15 @@ export class FaceHalfEdgesIterator {
         this._halfEdge = null;
     }
 
-    public reset(): void {
+    reset(): void {
         this._halfEdge = null;
     }
 
-    public current(): HalfEdge | null {
+    current(): HalfEdge | null {
         return this._halfEdge;
     }
 
-    public next(): IteratorResult<HalfEdge> {
+    next(): IteratorResult<HalfEdge> {
         if (this._halfEdge == null) {
             const firstHalfEdge = this._face.halfEdge ?? null;
             const nextHalfEdge = this._face.halfEdge?.next ?? null;
@@ -353,15 +353,15 @@ export class FaceVerticesIterator {
         this._halfEdge = null;
     }
 
-    public reset(): void {
+    reset(): void {
         this._halfEdge = null;
     }
 
-    public current(): Vertex | null {
+    current(): Vertex | null {
         return this._halfEdge?.prev?.target ?? null;
     }
 
-    public next(): IteratorResult<Vertex> {
+    next(): IteratorResult<Vertex> {
         if (this._halfEdge == null) {
             const firstVertex = this._face.halfEdge?.prev?.target ?? null;
             const nextHalfEdge = this._face.halfEdge?.next ?? null;
@@ -402,15 +402,15 @@ export class VertexFacesIterator {
         this._halfEdge = null;
     }
 
-    public reset(): void {
+    reset(): void {
         this._halfEdge = null;
     }
 
-    public current(): Face | null {
+    current(): Face | null {
         return this._halfEdge?.face ?? null;
     }
 
-    public next(): IteratorResult<Face>  {
+    next(): IteratorResult<Face>  {
         if (this._halfEdge == null) {
             const face = this._vertex.halfEdge?.face ?? null;
             const nextHalfEdge = this._vertex.halfEdge?.prev?.twin ?? null;

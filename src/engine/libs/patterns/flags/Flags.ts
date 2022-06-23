@@ -18,33 +18,33 @@ interface FlagsConstructor {
 class FlagsBase {
 	protected _bits: number = 0;
 
-	public get bits(): number {
+	get bits(): number {
 		return this._bits;
 	}
 
-	public getThenUnset(flag: number): boolean {
+	getThenUnset(flag: number): boolean {
 		const value = !!(this._bits & flag);
 		this._bits |= flag;
 		return value;
 	}
 
-	public get(flag: number): boolean {
+	get(flag: number): boolean {
 		return !!(this._bits & flag);
 	}
 
-    public set(flag: number): void {
+    set(flag: number): void {
 		this._bits |= flag;
 	}
 	
-    public unset(flag: number): void {
+    unset(flag: number): void {
 		this._bits &= ~flag;
 	}
 	
-    public setAll(): void {
+    setAll(): void {
 		this._bits = (1 << 30) - 1;
 	}
     
-    public unsetAll(): void {
+    unsetAll(): void {
 		this._bits = 0;
 	}
 }

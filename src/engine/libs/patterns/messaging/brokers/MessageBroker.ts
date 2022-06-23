@@ -27,11 +27,11 @@ class MessageBrokerBase<S extends string = string, M extends unknown = any> impl
         this._subscriptions = new Map();
     }
 
-    public hasSubscriptions(): boolean {
+    hasSubscriptions(): boolean {
         return this._subscriptions.size > 0;
     }
 
-    public subscribe(topic: string, subscription: (message: any) => void): (message: any) => void {
+    subscribe(topic: string, subscription: (message: any) => void): (message: any) => void {
         let subscriptions = this._subscriptions.get(topic);
 
         if (typeof subscriptions === 'undefined') {
@@ -44,7 +44,7 @@ class MessageBrokerBase<S extends string = string, M extends unknown = any> impl
         return subscription;
     }
 
-    public unsubscribe(topic: string, subscription: (message: any) => void): number {
+    unsubscribe(topic: string, subscription: (message: any) => void): number {
         let subscriptions = this._subscriptions.get(topic);
 
         if (typeof subscriptions === 'undefined') {
@@ -65,7 +65,7 @@ class MessageBrokerBase<S extends string = string, M extends unknown = any> impl
         return count;
     }
 
-    public publish(topic: string, message?: any): void {
+    publish(topic: string, message?: any): void {
         let subscriptions = this._subscriptions.get(topic);
 
         if (typeof subscriptions !== 'undefined') {

@@ -85,7 +85,7 @@ interface Quaternion {
 class QuaternionBase {
 	private _array: WritableArrayLike<number>;
 
-	public get array(): WritableArrayLike<number> {
+	get array(): WritableArrayLike<number> {
 		return this._array;
 	}
 
@@ -107,39 +107,39 @@ class QuaternionBase {
 		}
 	}
 
-	public get x(): number {
+	get x(): number {
         return this._array[0];
     }
 
-    public set x(x: number) {
+    set x(x: number) {
 		this._array[0] = x;
     }
 
-    public get y(): number {
+    get y(): number {
         return this._array[1];
     }
 
-    public set y(y: number) {
+    set y(y: number) {
 		this._array[1] = y;
     }
 
-    public set z(z: number) {
+    set z(z: number) {
 		this._array[2] = z;
 	}
 	
-    public get z(): number {
+    get z(): number {
 		return this._array[2];
     }
 
-    public set w(w: number) {
+    set w(w: number) {
 		this._array[3] = w;
 	}
 
-    public get w(): number {
+    get w(): number {
 		return this._array[3];
 	}
 	
-	public get pitch(): number {
+	get pitch(): number {
 		const array = this.array;
 		const x = array[0];
 		const y = array[1];
@@ -154,7 +154,7 @@ class QuaternionBase {
         }
 	}
 
-	public get yaw(): number {
+	get yaw(): number {
 		const array = this.array;
 		const x = array[0];
 		const y = array[1];
@@ -165,7 +165,7 @@ class QuaternionBase {
 		return Math.atan2(sinYawCosPitch, cosYawCosPitch);
 	}
 
-	public get roll(): number {
+	get roll(): number {
 		const array = this.array;
 		const x = array[0];
 		const y = array[1];
@@ -176,7 +176,7 @@ class QuaternionBase {
 		return Math.atan2(sinRollCosPitch, cosRollCosPitch);
 	}
 
-	public getValues(): QuaternionValues {
+	getValues(): QuaternionValues {
 		return [
 			this._array[0],
 			this._array[1],
@@ -185,7 +185,7 @@ class QuaternionBase {
 		];
 	}
 
-	public setValues(x: number, y: number, z: number, w: number): this {
+	setValues(x: number, y: number, z: number, w: number): this {
 		this._array[0] = x;
 		this._array[1] = y;
 		this._array[2] = z;
@@ -200,29 +200,29 @@ class QuaternionBase {
 		}
 	}
 
-	/*public setArray(array: WritableArrayLike<number>): this {
+	/*setArray(array: WritableArrayLike<number>): this {
 		this._checkArray(array);
 		this._array = array;
 		return this;
 	}*/
 
-	public static fromArray(array: WritableArrayLike<number>): QuaternionBase {
+	static fromArray(array: WritableArrayLike<number>): QuaternionBase {
 		return new QuaternionBase(array);
 	}
 
-	public static fromAxisAngle(axis: Vector3, angle: number): QuaternionBase {
+	static fromAxisAngle(axis: Vector3, angle: number): QuaternionBase {
 		return new QuaternionBase().setAxisAngle(axis, angle);
 	}
 
-	public static fromVector(vector: Vector3): QuaternionBase {
+	static fromVector(vector: Vector3): QuaternionBase {
 		return new QuaternionBase(vector.x, vector.y, vector.z, 1);
 	}
 	
-	public static fromEuler(yaw: number, pitch: number, roll: number): QuaternionBase {
+	static fromEuler(yaw: number, pitch: number, roll: number): QuaternionBase {
 		return new QuaternionBase().setEuler(yaw, pitch, roll);
 	}
 
-	public copy(quat: Quaternion): this {
+	copy(quat: Quaternion): this {
 		const o = this._array;
 		const q = quat.array;
 
@@ -234,11 +234,11 @@ class QuaternionBase {
 		return this;
 	}
 
-	public clone(): this {
+	clone(): this {
 		return new QuaternionBase(this.x, this.y, this.z, this.w) as this;
 	}
 
-	public equals(quat: Quaternion): boolean {
+	equals(quat: Quaternion): boolean {
 		const thisArray = this.array;
 		const quatArray = quat.array;
 
@@ -248,7 +248,7 @@ class QuaternionBase {
 			&& (thisArray[3] === quatArray[3]);
 	}
 
-	public getAxis(out: Vector3): Vector3 {
+	getAxis(out: Vector3): Vector3 {
 		const thisArray = this.array;
 		const outArray = out.array;
 
@@ -267,7 +267,7 @@ class QuaternionBase {
 		return out;
 	}
 
-	public getMatrix(): Matrix3 {
+	getMatrix(): Matrix3 {
 		const thisArray = this.array;
 		const thisLengthSquared = this.lengthSquared();
 		const s = 2.0 / thisLengthSquared;
@@ -300,7 +300,7 @@ class QuaternionBase {
 		]);
 	}
 
-	public rotate(vector: Vector3): Vector3 {
+	rotate(vector: Vector3): Vector3 {
 		const thisArray = this.array;
 		const vectorArray = vector.array;
 
@@ -325,13 +325,13 @@ class QuaternionBase {
 		return vector;
 	}
 
-	public toVector(): Vector3 {
+	toVector(): Vector3 {
 		return new Vector3([
 			this.x, this.y, this.z
 		]);
 	}
 	
-	public setEuler(pitch: number, yaw: number, roll: number): this {
+	setEuler(pitch: number, yaw: number, roll: number): this {
 		const cosYaw = Math.cos(yaw * 0.5);
 		const sinYaw = Math.sin(yaw * 0.5);
 		const cosPitch = Math.cos(pitch * 0.5);
@@ -348,7 +348,7 @@ class QuaternionBase {
 		return this;
 	}
 
-	public setAxisAngle(axis: Vector3, angle: number = 0): this {
+	setAxisAngle(axis: Vector3, angle: number = 0): this {
 		const axisLength = axis.length();
 		if (axisLength === 0) {
 		  return this;
@@ -364,9 +364,9 @@ class QuaternionBase {
 		return this;
 	}
 
-	public setMatrix(matrix: Matrix3): this
-	public setMatrix(matrix: Matrix4): this
-	public setMatrix(matrix: Matrix3 | Matrix4): this {
+	setMatrix(matrix: Matrix3): this
+	setMatrix(matrix: Matrix4): this
+	setMatrix(matrix: Matrix3 | Matrix4): this {
 		const matrixArray = matrix.array;
 		let m11 = 0, m12 = 0, m13 = 0,
 			m21 = 0, m22 = 0, m23 = 0,
@@ -418,7 +418,7 @@ class QuaternionBase {
 		return this;
 	}
 
-	public lookAt(source: Vector3, dest: Vector3): Quaternion {
+	lookAt(source: Vector3, dest: Vector3): Quaternion {
 		const forward = dest.clone().sub(source).normalize();
 
 		const axis = Space.forward.clone().cross(forward);
@@ -427,11 +427,11 @@ class QuaternionBase {
 		return new Quaternion(axis.x, axis.y, axis.z, dot + 1).normalize();
 	}
 
-	public static fromMatrix(matrix: Matrix3): QuaternionBase {
+	static fromMatrix(matrix: Matrix3): QuaternionBase {
 		return new QuaternionBase().setMatrix(matrix);
 	}
 
-	public setVectors(from: Vector3, to: Vector3): this {
+	setVectors(from: Vector3, to: Vector3): this {
 		const dot = from.dot(to);
 		const cross = from.cross(to);
 		const crossArray = cross.array;
@@ -449,27 +449,27 @@ class QuaternionBase {
 		return this.normalize();
 	}
 
-	public dot(quat: Quaternion): number {
+	dot(quat: Quaternion): number {
 		const thisArray = this.array;
 		const quatArray = quat.array;
 		return thisArray[0] * quatArray[0] + thisArray[1] * quatArray[1] + thisArray[2] * quatArray[2] + thisArray[3] * quatArray[3];
 	}
 
-	public lengthSquared(): number {
+	lengthSquared(): number {
 		const thisArray = this.array;
 		return thisArray[0] ** 2 + thisArray[1] ** 2 + thisArray[2] ** 2 + thisArray[3] ** 2;
 	}
 
-	public length(): number {
+	length(): number {
 		const thisArray = this.array;
 		return Math.hypot(thisArray[0], thisArray[1], thisArray[2], thisArray[3]);
 	}
 
-	public angleTo(rotation: Quaternion): number {
+	angleTo(rotation: Quaternion): number {
 		return 2 * Math.acos(Math.abs(Math.max(-1, Math.min(1, this.dot(rotation)))));
 	}
 
-	public rotateTowards(rotation: Quaternion): this {
+	rotateTowards(rotation: Quaternion): this {
 		const angle = this.angleTo(rotation);
 
 		if (angle === 0) {
@@ -482,11 +482,11 @@ class QuaternionBase {
 		return this;
 	}
 
-	public invert(): this {
+	invert(): this {
 		return this.conjugate();
 	}
 	
-	public conjugate(): this {
+	conjugate(): this {
 		const thisArray = this.array;
 
 		thisArray[0] *= -1;
@@ -496,7 +496,7 @@ class QuaternionBase {
 		return this;
 	}
 
-	public normalize(): this {
+	normalize(): this {
 		const thisArray = this.array;
 		let length = this.length();
 
@@ -517,7 +517,7 @@ class QuaternionBase {
 		return this;
 	}
 	
-	public add(quat: Quaternion): this {
+	add(quat: Quaternion): this {
 		const thisArray = this.array;
 		const quatArray = quat.array;
 		thisArray[0] += quatArray[0];
@@ -528,7 +528,7 @@ class QuaternionBase {
 		return this;
 	}
 
-	public sub(quat: Quaternion): this {
+	sub(quat: Quaternion): this {
 		const thisArray = this.array;
 		const quatArray = quat.array;
 		thisArray[0] -= quatArray[0];
@@ -539,7 +539,7 @@ class QuaternionBase {
 		return this;
 	}
 
-	public mult(quat: Quaternion): this {
+	mult(quat: Quaternion): this {
 		const thisArray = this.array;
 		const quatArray = quat.array;
 
@@ -554,7 +554,7 @@ class QuaternionBase {
 		return this;
 	}
 
-	public scale(scalar: number): this {
+	scale(scalar: number): this {
 		const thisArray = this.array;
 		thisArray[0] *= scalar;
 		thisArray[1] *= scalar;
@@ -564,9 +564,9 @@ class QuaternionBase {
 		return this;
 	}
 
-	public static slerp(from: Quaternion, to: Quaternion, t: number): Quaternion
-	public static slerp(from: Quaternion, to: Quaternion, t: number, out: Quaternion): Quaternion
-	public static slerp(from: Quaternion, to: Quaternion, t: number, out?: Quaternion): Quaternion {
+	static slerp(from: Quaternion, to: Quaternion, t: number): Quaternion
+	static slerp(from: Quaternion, to: Quaternion, t: number, out: Quaternion): Quaternion
+	static slerp(from: Quaternion, to: Quaternion, t: number, out?: Quaternion): Quaternion {
 		if (!(out instanceof Quaternion)) {
 			out = new Quaternion();
 		}
@@ -611,11 +611,11 @@ class QuaternionBase {
 	/**
 	 * https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
 	 */
-	public slerp(from: Quaternion, to: Quaternion, t: number): this {
+	slerp(from: Quaternion, to: Quaternion, t: number): this {
 		return Quaternion.slerp(from, to, t, this) as this;
 	}
 
-	public copyIntoArray(array: WritableArrayLike<number>, offset: number = 0): void {
+	copyIntoArray(array: WritableArrayLike<number>, offset: number = 0): void {
 		const thisArray = this.array;
 
 		array[offset    ] = thisArray[0];
@@ -624,7 +624,7 @@ class QuaternionBase {
 		array[offset + 3] = thisArray[3];
     }
     
-    public readFromArray(array: ArrayLike<number>, offset: number = 0): void {
+    readFromArray(array: ArrayLike<number>, offset: number = 0): void {
 		const thisArray = this.array;
 
 		thisArray[0] = array[offset    ];

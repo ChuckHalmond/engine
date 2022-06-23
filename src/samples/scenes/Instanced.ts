@@ -50,8 +50,8 @@ function scene(canvas: HTMLCanvasElement) {
             };
             
             void main() {
-                v_color = vec4(/*my_data[gl_InstanceID].rgb*/a_color.rgb, 1);
-                gl_Position = vec4(a_position, 1.0);
+                v_color = vec4(my_data[gl_InstanceID].rgb, 1);
+                gl_Position = vec4(a_position + a_translation, 1.0);
             }
         `,
         glsl`
@@ -82,40 +82,33 @@ function scene(canvas: HTMLCanvasElement) {
         console.error("bindings null.");
         return;
     }
-    
-    const numComponents = 3;
-    const numElements = 3;
-
-    const positions = [
-        -0.5, 0, 0,
-        0, 0.5, 0,
-        0, 0, 0
-    ];
-
-    const colors = [
-        255, 0, 0,
-        0, 255, 0,
-        255, 0, 0
-    ];
 
     const packetProperties: PacketProperties = {
         vertexArray: {
             attributes: {
-                /*a_translation: {
+                a_translation: {
                     array: new Float32Array([
                         0, 0, 0,
                         0.5, 0.5, 0.5,
                     ]),
                     divisor: 1,
                     numComponents: 3,
-                },*/
+                },
                 a_position: {
-                    array: new Float32Array(positions),
-                    numComponents: numComponents,
+                    array: new Float32Array([
+                        -0.5, 0, 0,
+                        0, 0.5, 0,
+                        0, 0, 0
+                    ]),
+                    numComponents: 3,
                 },
                 a_color: {
-                    array: new Float32Array(colors),
-                    numComponents: numComponents,
+                    array: new Float32Array([
+                        255, 0, 0,
+                        0, 255, 0,
+                        255, 0, 0
+                    ]),
+                    numComponents: 3,
                     normalize: true
                 },
                 /*a_position: {
@@ -137,7 +130,7 @@ function scene(canvas: HTMLCanvasElement) {
                     normalize: true
                 }*/
             },
-            numElements: numElements
+            numElements: 3
         },
         uniformBlocks: [
             {
@@ -151,11 +144,10 @@ function scene(canvas: HTMLCanvasElement) {
         ],
         options: {
             drawMode: DrawMode.TRIANGLES,
-            //instanceCount: 2
+            instanceCount: 2
         }
     };
-
-    //WebGLRendererUtilities.setClearColor(gl, [0.5, 0.5, 0, 0]);
+    
     WebGLRendererUtilities.frontFace(gl, WindingOrder.CW);
     WebGLRendererUtilities.viewport(gl, 0, 0, gl.canvas.width, gl.canvas.height);
     WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
@@ -165,25 +157,6 @@ function scene(canvas: HTMLCanvasElement) {
         console.error("packet null.");
         return;
     }
-
-    const internalBuffer = packet.vertexArray?.verticesBuffers[0].internal!;
-    const buffer = new ArrayBuffer((numComponents * 2) * numElements * Float32Array.BYTES_PER_ELEMENT);
-    const view = new DataView(buffer);
-
-    function setFloat32List(view: DataView, list: ArrayLike<number>, numComp: number, offset: number, stride: number) {
-        Array.from(list).forEach((item, index) => {
-            view.setFloat32((offset + index * Float32Array.BYTES_PER_ELEMENT), item, true);
-            if ((index + 1) % numComp === 0) {
-                offset += stride;
-            }
-        });
-    }
-
-    /*setFloat32List(view, positions, numComponents, 0, numComponents * Float32Array.BYTES_PER_ELEMENT);
-    setFloat32List(view, colors, numComponents, numComponents * Float32Array.BYTES_PER_ELEMENT, numComponents * Float32Array.BYTES_PER_ELEMENT);
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, internalBuffer);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, view.buffer);*/
 
     function render() {
         WebGLRendererUtilities.clear(gl!, BufferMask.COLOR_BUFFER_BIT);

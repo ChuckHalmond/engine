@@ -64,8 +64,7 @@ export declare type Packet = {
     instanceCount?: number;
 };
 export declare class WebGLPacketUtilities {
-    private constructor();
-    static createBindings(gl: WebGL2RenderingContext, props: PacketBindingsProperties): PacketBindings | null;
+    static createBindings(gl: WebGL2RenderingContext, props: PacketBindingsProperties): PacketBindings;
     static createPacket(gl: WebGL2RenderingContext, program: Program, packet: PacketProperties): Packet | null;
     static setPacketValues(gl: WebGL2RenderingContext, packet: Packet, values: PacketValues): void;
     static drawPacket(gl: WebGL2RenderingContext, packet: Packet): void;

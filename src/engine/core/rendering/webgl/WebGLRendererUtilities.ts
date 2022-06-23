@@ -77,69 +77,67 @@ export enum WindingOrder {
 
 export class WebGLRendererUtilities {
 
-    private constructor() {}
-
-    public static frontFace(gl: WebGL2RenderingContext, winding: WindingOrder): void {
+    static frontFace(gl: WebGL2RenderingContext, winding: WindingOrder): void {
         gl.frontFace(winding);
     }
 
-    public static scissor(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void {
+    static scissor(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void {
         gl.scissor(x, y, width, height);
     }
 
-    public static viewport(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void {
+    static viewport(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void {
         gl.viewport(x, y, width, height);
     }
 
-    public static clearColor(gl: WebGL2RenderingContext, color: [number, ...number[]] & { length: 4 }): void {
+    static clearColor(gl: WebGL2RenderingContext, color: [number, ...number[]] & { length: 4 }): void {
         gl.clearColor(color[0], color[1], color[2], color[3]);
     }
 
-    public static depthFunction(gl: WebGL2RenderingContext, func: TestFunction): void {
+    static depthFunction(gl: WebGL2RenderingContext, func: TestFunction): void {
         gl.depthFunc(func);
     }
 
-    public static blendEquation(gl: WebGL2RenderingContext, equ: BlendingEquation): void {
+    static blendEquation(gl: WebGL2RenderingContext, equ: BlendingEquation): void {
         gl.blendEquation(equ);
     }
 
-    public static blendFunction(gl: WebGL2RenderingContext, srcFunc: BlendingMode, dstFunc: BlendingMode): void {
+    static blendFunction(gl: WebGL2RenderingContext, srcFunc: BlendingMode, dstFunc: BlendingMode): void {
         gl.blendFunc(srcFunc, dstFunc);
     }
 
-    public static stencilFunction(gl: WebGL2RenderingContext, func: TestFunction, ref: number, mask: number, face: Face): void {
+    static stencilFunction(gl: WebGL2RenderingContext, func: TestFunction, ref: number, mask: number, face: Face): void {
         gl.stencilFuncSeparate(face, func, ref, mask);
     }
 
-    public static stencilOperations(gl: WebGL2RenderingContext, fail: StencilAction, zFail: StencilAction, zPass: StencilAction, face: Face) {
+    static stencilOperations(gl: WebGL2RenderingContext, fail: StencilAction, zFail: StencilAction, zPass: StencilAction, face: Face) {
         gl.stencilOpSeparate(face, fail, zFail, zPass);
     }
 
-    public static stencilMask(gl: WebGL2RenderingContext, mask: number, face: Face) {
+    static stencilMask(gl: WebGL2RenderingContext, mask: number, face: Face) {
         gl.stencilMaskSeparate(face, mask);
     }
 
-    public static colorMask(gl: WebGL2RenderingContext, red: boolean, green: boolean, blue: boolean, alpha: boolean) {
+    static colorMask(gl: WebGL2RenderingContext, red: boolean, green: boolean, blue: boolean, alpha: boolean) {
         gl.colorMask(red, green, blue, alpha);
     }
 
-    public static enable(gl: WebGL2RenderingContext, capability: Capabilities): void {
+    static enable(gl: WebGL2RenderingContext, capability: Capabilities): void {
         gl.enable(capability);
     }
 
-    public static disable(gl: WebGL2RenderingContext, capability: Capabilities): void {
+    static disable(gl: WebGL2RenderingContext, capability: Capabilities): void {
         gl.disable(capability);
     }
 
-    public static clear(gl: WebGL2RenderingContext, buffer: BufferMask): void {
+    static clear(gl: WebGL2RenderingContext, buffer: BufferMask): void {
         gl.clear(buffer);
     }
 
-    public static getViewport(gl: WebGL2RenderingContext): Int32Array {
+    static getViewport(gl: WebGL2RenderingContext): Int32Array {
         return gl.getParameter(gl.VIEWPORT) as Int32Array;
     }
 
-    public static getMaxSamples(gl: WebGL2RenderingContext): number {
+    static getMaxSamples(gl: WebGL2RenderingContext): number {
         return gl.getParameter(gl.MAX_SAMPLES) as number;
     }
 }

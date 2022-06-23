@@ -83,9 +83,7 @@ type UniformsListSetter = {
 
 class WebGLUniformUtilities {
 
-    private constructor() {}
-
-    public static getUniformValueByteLength(uniformValue: UniformValue): number {
+    static getUniformValueByteLength(uniformValue: UniformValue): number {
         if (typeof uniformValue === "object") {
             if ("buffer" in uniformValue) {
                 return uniformValue.byteLength;
@@ -100,7 +98,7 @@ class WebGLUniformUtilities {
         return 32;
     }
 
-    public static getUniformValueArrayBufferView(uniformValue: UniformValue): ArrayBufferView {
+    static getUniformValueArrayBufferView(uniformValue: UniformValue): ArrayBufferView {
         if (typeof uniformValue === "object") {
             if ("buffer" in uniformValue) {
                 return uniformValue;
@@ -115,7 +113,7 @@ class WebGLUniformUtilities {
         return new Float32Array([uniformValue]);
     }
 
-    public static getUniformSetter(gl: WebGL2RenderingContext, uniform: Uniform, location: WebGLUniformLocation , uniformType: UniformType): UniformSetter | null { 
+    static getUniformSetter(gl: WebGL2RenderingContext, uniform: Uniform, location: WebGLUniformLocation , uniformType: UniformType): UniformSetter | null { 
         const uniformValue = uniform.value;
         const uniformProps = (typeof uniform.props === "undefined") ? {
             srcOffset: undefined,
@@ -383,7 +381,7 @@ class WebGLUniformUtilities {
         return null;
     }
 
-    public static getUniformsListSetter(gl: WebGL2RenderingContext, program: Program, list: UniformsList): UniformsListSetter | null {
+    static getUniformsListSetter(gl: WebGL2RenderingContext, program: Program, list: UniformsList): UniformsListSetter | null {
         const settersList = {
             setters: {}
         } as UniformsListSetter;
@@ -413,7 +411,7 @@ class WebGLUniformUtilities {
         return settersList;
     }
 
-    public static setUniformsListValues(gl: WebGL2RenderingContext, setter: UniformsListSetter, list: UniformsList): void {
+    static setUniformsListValues(gl: WebGL2RenderingContext, setter: UniformsListSetter, list: UniformsList): void {
         WebGLProgramUtilities.useProgram(gl, setter.program);
         
         Object.keys(list).forEach((name) => {

@@ -12,7 +12,7 @@ export class PerspectiveCamera extends CameraBase {
         super(Matrix4.perspective(fov, aspect, zNear, zFar));
     }
 
-    public setValues(
+    setValues(
         fov: number,
         aspect: number,
         zNear: number,

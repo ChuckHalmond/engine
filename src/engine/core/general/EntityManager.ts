@@ -14,7 +14,7 @@ class EntityManagerBase implements EntityManager {
         
     }
 
-    public readonly instance: EntityManagerBase = new EntityManagerBase();
+    readonly instance: EntityManagerBase = new EntityManagerBase();
 }
 
 var EntityManager: EntityManagerConstructor = EntityManagerBase;

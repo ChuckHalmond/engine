@@ -21,7 +21,7 @@ class UUIDGeneratorBase {
         this._count = 0
     }
 
-    public newUUID(): UUID {
+    newUUID(): UUID {
         return (++this._count).toString(16);
     }
 }

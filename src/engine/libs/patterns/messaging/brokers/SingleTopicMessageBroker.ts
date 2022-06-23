@@ -28,11 +28,11 @@ class SingleTopicMessageBrokerBase<M extends unknown = any> implements SingleTop
         this._subscriptions = [];
     }
     
-    public hasSubscriptions(): boolean {
+    hasSubscriptions(): boolean {
         return this._subscriptions.length > 0;
     }
 
-    public subscribe(subscription: (message: M) => void): (message: M) => void {
+    subscribe(subscription: (message: M) => void): (message: M) => void {
         const index = this._subscriptions.indexOf(subscription);
         if (index < 0) {
             this._subscriptions.push(subscription);
@@ -41,7 +41,7 @@ class SingleTopicMessageBrokerBase<M extends unknown = any> implements SingleTop
         return subscription;
     }
 
-    public unsubscribe(subscription: (message: M) => void): number {
+    unsubscribe(subscription: (message: M) => void): number {
         const index = this._subscriptions.indexOf(subscription);
         if (index > -1) {
             this._subscriptions.splice(index, 1);
@@ -49,7 +49,7 @@ class SingleTopicMessageBrokerBase<M extends unknown = any> implements SingleTop
         return this._subscriptions.length;
     }
 
-    public publish(message: M): void {
+    publish(message: M): void {
         for (const subscription of this._subscriptions) {
             subscription(message);
         }

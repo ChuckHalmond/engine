@@ -43,7 +43,7 @@ type BufferAttributesInfo = [keyof PhongVAOAttributesList, Attribute["array"], A
 
 class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements PhongVAO {
     
-    public readonly buffersAttributes: BufferAttributesInfo[];
+    readonly buffersAttributes: BufferAttributesInfo[];
     
     constructor(references: PhongVAOReferences) {
         super('PhongVAO', references);
@@ -59,11 +59,11 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
         ];
     }
 
-    public static getInstance(references: PhongVAOReferences): PhongVAO {
+    static getInstance(references: PhongVAOReferences): PhongVAO {
         return VAOBase.getConcreteInstance(PhongVAO, references);
     }
     
-    public getAttributeValues(): PhongVAOValues {
+    getAttributeValues(): PhongVAOValues {
         const geometry = this._references.geometry;
         
         this._values = {
@@ -80,7 +80,7 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
         return this._values;
     }
 
-    public enableDeltaSubscriptions(): void {
+    enableDeltaSubscriptions(): void {
 
         const geometry = this._references.geometry;
         const subscriptions = this._deltaSubscriptions = new Array<(message: any) => void>(1);
@@ -98,14 +98,14 @@ class PhongVAO extends VAOBase<PhongVAOReferences, PhongVAOValues> implements Ph
         });
     }
 
-    public disableDeltaSubscriptions(): void {
+    disableDeltaSubscriptions(): void {
         const geometry = this._references.geometry;
         if (typeof this._deltaSubscriptions !== 'undefined') {
             geometry.changes.unsubscribe(this._deltaSubscriptions[0]);
         }
     }
     
-    public getDeltaAttributeValues(): RecursivePartial<PhongVAOValues> | null {
+    getDeltaAttributeValues(): RecursivePartial<PhongVAOValues> | null {
 
         let hasValues: boolean = false;
         let deltaValues: PartialPhongVAOValues = {

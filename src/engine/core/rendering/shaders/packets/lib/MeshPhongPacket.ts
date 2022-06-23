@@ -57,7 +57,7 @@ export class MeshPhongPacket extends AbstractPacket {
     }
   }
   
-  public getPacketBindingsProperties(): PacketBindingsProperties {
+  getPacketBindingsProperties(): PacketBindingsProperties {
 
     const packetBindingsProps: List = {
       texturesProps: {},
@@ -79,7 +79,7 @@ export class MeshPhongPacket extends AbstractPacket {
     return packetBindingsProps;
   }
 
-  public getPacketValues(bindings: PacketBindings): Packet {
+  getPacketValues(bindings: PacketBindings): Packet {
     
     const packetValues: Packet = {
 
@@ -109,15 +109,15 @@ export class MeshPhongPacket extends AbstractPacket {
     return packetValues;
   }
 
-  public enableDelta(): void {
+  enableDelta(): void {
     throw new Error("Method not implemented.");
   }
-  public disableDelta(): void {
+  disableDelta(): void {
     throw new Error("Method not implemented.");
   }
 
 
-  public getDeltaPacketValues(bindings: PacketBindings): Packet {
+  getDeltaPacketValues(bindings: PacketBindings): Packet {
 
     const phongAttributesDelta = this.phongVAO.getDeltaAttributeValues();
     const worldViewDelta = this.worldViewUBO.getDeltaUniformValues();

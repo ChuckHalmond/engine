@@ -564,18 +564,18 @@ export async function launchScene() {
       BufferMask.COLOR_BUFFER_BIT,
       TextureMagFilter.LINEAR
     );
-    WebGLFramebufferUtilities.blit(gl, framebuffer, postFramebuffer,
-      [0, 0, canvas.width, canvas.height],
-      [0, 0, canvas.width, canvas.height],
-      BufferMask.DEPTH_BUFFER_BIT,
-      TextureMagFilter.NEAREST
-    );
-
-    WebGLFramebufferUtilities.unbindFramebuffer(gl);
-    WebGLPacketUtilities.drawPacket(gl, depthPacket);
+    // WebGLFramebufferUtilities.blit(gl, framebuffer, postFramebuffer,
+    //   [0, 0, canvas.width, canvas.height],
+    //   [0, 0, canvas.width, canvas.height],
+    //   BufferMask.DEPTH_BUFFER_BIT,
+    //   TextureMagFilter.NEAREST
+    // );
 
     // WebGLFramebufferUtilities.unbindFramebuffer(gl);
-    // WebGLPacketUtilities.drawPacket(gl, texPacket);
+    // WebGLPacketUtilities.drawPacket(gl, depthPacket);
+
+    WebGLFramebufferUtilities.unbindFramebuffer(gl);
+    WebGLPacketUtilities.drawPacket(gl, texPacket);
 
     Input.clear();
 

@@ -9,13 +9,13 @@ interface Tree<N extends Node<any>> {
 }
 
 class BaseTree<N extends Node<any>> {
-    public readonly root: N;
+    readonly root: N;
 
     constructor(root: N) {
         this.root = root;
     }
 
-    public traverse(func: (...args: any) => any): void {
+    traverse(func: (...args: any) => any): void {
         this.root.traverse(func);
     }
 }*/

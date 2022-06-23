@@ -50,7 +50,7 @@ interface Vector4 {
 }
 
 class Vector4Base {
-	public readonly array: Float32Array;
+	readonly array: Float32Array;
 
 	constructor()
 	constructor(values: Vector4Values)
@@ -60,7 +60,7 @@ class Vector4Base {
 		]) : new Float32Array([0, 0, 0, 0]);
 	}
 	
-	public get values(): Vector4Values {
+	get values(): Vector4Values {
 		return [
 			this.array[0],
 			this.array[1],
@@ -69,78 +69,78 @@ class Vector4Base {
 		];
 	}
 
-	public set values(values: Vector4Values) {
+	set values(values: Vector4Values) {
 		this.array[0] = values[0];
 		this.array[1] = values[1];
 		this.array[2] = values[2];
 		this.array[3] = values[3];
 	}
 
-	public get 0() {
+	get 0() {
 		return this.array[0];
 	}
 
-	public set 0(x: number) {
+	set 0(x: number) {
 		this.array[0] = x;
 	}
 
-	public get 1() {
+	get 1() {
 		return this.array[1];
 	}
 
-	public set 1(y: number) {
+	set 1(y: number) {
 		this.array[1] = y;
 	}
 
-	public get 2() {
+	get 2() {
 		return this.array[2];
 	}
 
-	public set 2(z: number) {
+	set 2(z: number) {
 		this.array[2] = z;
 	}
 
-	public get 3() {
+	get 3() {
 		return this.array[3];
 	}
 
-	public set 3(w: number) {
+	set 3(w: number) {
 		this.array[3] = w;
 	}
 
-	public get x() {
+	get x() {
 		return this.array[0];
 	}
 
-	public set x(x: number) {
+	set x(x: number) {
 		this.array[0] = x;
 	}
 
-	public get y(): number {
+	get y(): number {
 		return this.array[1];
 	}
 
-	public set y(y: number) {
+	set y(y: number) {
 		this.array[1] = y;
 	}
 
-	public get z(): number {
+	get z(): number {
 		return this.array[2];
 	}
 
-	public set z(z: number) {
+	set z(z: number) {
 		this.array[2] = z;
     }
     
-	public get w(): number {
+	get w(): number {
 		return this.array[3];
 	}
 
-	public set w(w: number) {
+	set w(w: number) {
 		this.array[3] = w;
 	}
 
-	public setValues(v: Vector4Values): this {
+	setValues(v: Vector4Values): this {
 		const o = this.array;
 		
 		o[0] = v[0];
@@ -151,7 +151,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public copy(vec: Vector4): this {
+	copy(vec: Vector4): this {
 		const o = this.array;
 		const v = vec.array;
 
@@ -163,11 +163,11 @@ class Vector4Base {
 		return this;
 	}
 
-	public clone(): this {
+	clone(): this {
 		return new Vector4Base(this.values) as this;
 	}
 
-	public equals(vec: Vector4): boolean {
+	equals(vec: Vector4): boolean {
 		const o = this.array;
 		const v = vec.array;
 		
@@ -177,7 +177,7 @@ class Vector4Base {
 			&& v[3] === o[3];
 	}
 
-	public setZeros(): this {
+	setZeros(): this {
 		const o = this.array;
 
 		o[0] = 0;
@@ -188,7 +188,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public setUnit(): this {
+	setUnit(): this {
 		const o = this.array;
 
 		o[0] = 1;
@@ -199,7 +199,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public add(vec: Vector4): this {
+	add(vec: Vector4): this {
 		const o = this.array;
 		const v = vec.array;
 
@@ -211,7 +211,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public addScalar(k: number): this {
+	addScalar(k: number): this {
 		const o = this.array;
 
 		o[0] = o[0] + k;
@@ -222,7 +222,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public sub(vec: Vector4): this {
+	sub(vec: Vector4): this {
 		const v = vec.array;
 		const o = this.array;
 
@@ -234,7 +234,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public lerp(vec: Vector4, t: number): this {
+	lerp(vec: Vector4, t: number): this {
 		const o = this.array;
 		const v = vec.array;
 
@@ -246,7 +246,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public clamp(min: Vector4, max: Vector4): this {
+	clamp(min: Vector4, max: Vector4): this {
 		const o = this.array;
 		const l = min.array;
 		const g = max.array;
@@ -259,7 +259,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public multScalar(k: number): this {
+	multScalar(k: number): this {
 		const o = this.array;
 
 		o[0] = o[0] * k;
@@ -270,26 +270,26 @@ class Vector4Base {
 		return this;
 	}
 
-	public dot(vec: Vector4): number {
+	dot(vec: Vector4): number {
 		const a = this.array;
 		const b = vec.array;
 
 		return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]) + (a[3] * b[3]);
 	}
 
-	public length(): number {
+	length(): number {
 		const v = this.array;
 
 		return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]);
 	}
 
-	public lengthSquared(): number {
+	lengthSquared(): number {
 		const v = this.array;
 
 		return v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3];
 	}
 
-	public dist(vec: Vector4): number {
+	dist(vec: Vector4): number {
 		const a = this.array;
 		const b = vec.array;
 		
@@ -301,7 +301,7 @@ class Vector4Base {
 		return Math.sqrt(dx * dx + dy * dy + dz * dz + dw * dw);
 	}
 
-	public distSquared(vec: Vector4): number {
+	distSquared(vec: Vector4): number {
 		const a = this.array;
 		const b = vec.array;
 
@@ -313,7 +313,7 @@ class Vector4Base {
 		return dx * dx + dy * dy + dz * dz + dw * dw;
 	}
 
-	public normalize(): this {
+	normalize(): this {
 		const o = this.array;
 
 		const lenSq = o[0] * o[0] + o[1] * o[1] + o[2] * o[2] + o[3] * o[3];
@@ -334,7 +334,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public negate(): this {
+	negate(): this {
 		const o = this.array;
 
 		o[0] = -o[0];
@@ -345,7 +345,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public mult(vec: Vector4): this {
+	mult(vec: Vector4): this {
 		const o = this.array;
 		const v = vec.array;
 
@@ -357,7 +357,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public static mult(mat: Matrix4, vec: Vector4): Vector4 {
+	static mult(mat: Matrix4, vec: Vector4): Vector4 {
 		const m = mat.array;
 		const v = vec.array;
 
@@ -369,7 +369,7 @@ class Vector4Base {
 		]);
 	}
 
-	public addScaled(vec: Vector4, k: number): this {
+	addScaled(vec: Vector4, k: number): this {
 		const v = vec.array;
 		const o = this.array;
 
@@ -381,7 +381,7 @@ class Vector4Base {
 		return this;
 	}
 
-	public writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
+	writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
 		const v = this.array;
 
 		out[offset    ] = v[0];
@@ -390,7 +390,7 @@ class Vector4Base {
 		out[offset + 3] = v[3];
     }
     
-    public readFromArray(arr: ArrayLike<number>, offset: number = 0): this {
+    readFromArray(arr: ArrayLike<number>, offset: number = 0): this {
 		const o = this.array;
 
 		o[0] = arr[offset    ];

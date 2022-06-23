@@ -14,7 +14,7 @@ export class OrthographicCamera extends CameraBase {
         super(Matrix4.orthographic(left, right, bottom, top, near, far));
     }
 
-    public setValues(
+    setValues(
         left: number,
         right: number,
         bottom: number,

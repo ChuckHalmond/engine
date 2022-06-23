@@ -24,11 +24,11 @@ class InjectorBase<C extends Constructor<any> = Constructor<any>> implements Inj
     private _defaultCtor: C;
     private _onDefaultOverride: (constructor: C) => void;
 
-    public get defaultCtor(): C {
+    get defaultCtor(): C {
         return this._defaultCtor;
     }
 
-    public overrideDefaultCtor(constructor: C): void {
+    overrideDefaultCtor(constructor: C): void {
         this._defaultCtor = constructor;
         this._onDefaultOverride(constructor);
     }
@@ -39,15 +39,15 @@ class InjectorBase<C extends Constructor<any> = Constructor<any>> implements Inj
         this._constructors = new Map();
     }
 
-    public forceQualifier(qualifier: string): void {
+    forceQualifier(qualifier: string): void {
         this._forcedQualifier = qualifier;
     }
 
-    public unforceQualifier(): void {
+    unforceQualifier(): void {
         delete this._forcedQualifier;
     }
 
-    public getConstructor(qualifier?: string): C {
+    getConstructor(qualifier?: string): C {
         const qualifierValue = this._forcedQualifier || qualifier;
         if (typeof qualifierValue === 'undefined') {
             return this._defaultCtor;
@@ -59,7 +59,7 @@ class InjectorBase<C extends Constructor<any> = Constructor<any>> implements Inj
         return constructor;
     }
 
-    public inject(args?: { qualifier?: string, args?: ConstructorParameters<C> }): InstanceType<C> {
+    inject(args?: { qualifier?: string, args?: ConstructorParameters<C> }): InstanceType<C> {
         const constructor = this.getConstructor(args?.qualifier);
         if (args?.args) {
             const parameters = Array.from(args.args);
@@ -68,7 +68,7 @@ class InjectorBase<C extends Constructor<any> = Constructor<any>> implements Inj
         return new constructor();
     }
 
-    public register(constructor: C, qualifier: string): void {
+    register(constructor: C, qualifier: string): void {
         if (!this._constructors.has(qualifier)) {
             this._constructors.set(qualifier, constructor);
         }

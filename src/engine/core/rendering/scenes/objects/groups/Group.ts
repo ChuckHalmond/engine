@@ -9,14 +9,14 @@ interface Group {
 }
 
 class GroupBase extends Object3DBase implements Group {
-    public readonly objects: Object3D[];
+    readonly objects: Object3D[];
 
     constructor() {
         super();
         this.objects = [];
     }
 
-    public add(object: Object3D): Group {
+    add(object: Object3D): Group {
         this.objects.push(object);
         return this;
     }

@@ -32,7 +32,7 @@ export class CubeGeometry extends GeometryBase {
 		this.depthSegment = properties?.depthSegment ?? 1;
 	}
 	
-	public toBuilder(): GeometryBuilder {
+	toBuilder(): GeometryBuilder {
 		const builder = new GeometryBuilder();
 		const directions = [Space.left, Space.right, Space.up, Space.down, Space.forward, Space.backward];
 		const transform = new Transform();

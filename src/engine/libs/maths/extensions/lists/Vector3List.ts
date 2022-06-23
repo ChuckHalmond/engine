@@ -37,20 +37,20 @@ class Vector3ListBase implements Vector3List {
         this._array = array || [];
     }
 
-    public get array(): WritableArrayLike<number> {
+    get array(): WritableArrayLike<number> {
         return this._array;
     }
 
-    public get count(): number {
+    get count(): number {
         return Math.floor(this._array.length / 3);
     }
 
-    public setArray(array: WritableArrayLike<number>): this {
+    setArray(array: WritableArrayLike<number>): this {
 		this._array = array;
 		return this;
     }
 
-    public forEach(func: (vec: Vector3, idx: number) => void,
+    forEach(func: (vec: Vector3, idx: number) => void,
         options: {
             idxFrom: number;
             idxTo: number;
@@ -68,7 +68,7 @@ class Vector3ListBase implements Vector3List {
         }
     }
 
-    public forEachFromIndices(func: (vec: Vector3, idx: number, indice: number) => void, indices: ArrayLike<number>,
+    forEachFromIndices(func: (vec: Vector3, idx: number, indice: number) => void, indices: ArrayLike<number>,
         options: {
             idxFrom: number;
             idxTo: number;
@@ -87,7 +87,7 @@ class Vector3ListBase implements Vector3List {
         }
     }
 
-    public indexOf(vec: Vector3): number {
+    indexOf(vec: Vector3): number {
         const count = this.count;
 
         let idxBuf = 0,
@@ -109,14 +109,14 @@ class Vector3ListBase implements Vector3List {
         return indexOf;
     }
 
-    public get(idx: number, vec: Vector3): Vector3 {
+    get(idx: number, vec: Vector3): Vector3 {
         if (idx >= this.count) {
             throw new Error(`Index ${idx} out of bounds.`);
         }
         return vec.readFromArray(this._array, idx * 3);
     }
 
-    public set(idx: number, vec: Vector3): void {
+    set(idx: number, vec: Vector3): void {
         if (idx >= this.count) {
             throw new Error(`Index ${idx} out of bounds.`);
         }

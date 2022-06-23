@@ -19,8 +19,8 @@ interface VAO<L extends VertexArray = VertexArray> {
 
 abstract class VAOBase<R extends {[key: string]: Identifiable} = {[key: string]: Identifiable}, L extends VertexArray = VertexArray> implements VAO<L> {
 
-    public readonly uuid: UUID;
-    public readonly name: string;
+    readonly uuid: UUID;
+    readonly name: string;
     
     protected _references: R;
     protected _values: L;
@@ -34,11 +34,11 @@ abstract class VAOBase<R extends {[key: string]: Identifiable} = {[key: string]:
         this._values = {} as L;
     }
 
-    public abstract getAttributeValues(): L;
-    public abstract getDeltaAttributeValues(): RecursivePartial<L> | null;
+    abstract getAttributeValues(): L;
+    abstract getDeltaAttributeValues(): RecursivePartial<L> | null;
 
-    public abstract enableDeltaSubscriptions(): void;
-    public abstract disableDeltaSubscriptions(): void;
+    abstract enableDeltaSubscriptions(): void;
+    abstract disableDeltaSubscriptions(): void;
 
     private static _dictionary: Map<string, VAOBase<any>> = new Map<string, VAOBase<any>>();
     
@@ -48,7 +48,7 @@ abstract class VAOBase<R extends {[key: string]: Identifiable} = {[key: string]:
         });
     }
 
-    public static getConcreteInstance<V extends VAOBase, R extends {[key: string]: Identifiable}>(ctor: VAOCtor<V, R>, references: R): V {
+    static getConcreteInstance<V extends VAOBase, R extends {[key: string]: Identifiable}>(ctor: VAOCtor<V, R>, references: R): V {
         const hash = VAOBase.getReferencesHash(references);
         let ref = VAOBase._dictionary.get(hash);
         if (typeof ref === 'undefined') {

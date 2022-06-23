@@ -102,7 +102,7 @@ type VertexArray = {
 
 class WebGLVertexArrayUtilities {
 
-    public static getAttributeDataType(attribute: VertexArrayAttributeProperties): ArrayDataType {
+    static getAttributeDataType(attribute: VertexArrayAttributeProperties): ArrayDataType {
         if (attribute.array instanceof Float32Array || attribute.array instanceof Int32Array || attribute.array instanceof Uint32Array) {
             return ArrayDataType.FLOAT;
         }
@@ -122,7 +122,7 @@ class WebGLVertexArrayUtilities {
         return -1;
     };
 
-    public static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null {
+    static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null {
         
         const _vertexArray = gl.createVertexArray();
         if (_vertexArray === null) {
@@ -266,13 +266,13 @@ class WebGLVertexArrayUtilities {
         };
     }
 
-    public static deleteVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray): void {
+    static deleteVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray): void {
         if (gl.isVertexArray(vertexArray.internal)) {
             gl.deleteVertexArray(vertexArray.internal);
         }
     }
 
-    public static drawVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray, mode: DrawMode, instanceCount?: number): void {
+    static drawVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray, mode: DrawMode, instanceCount?: number): void {
         
         WebGLProgramUtilities.useProgram(gl, vertexArray.program);
         
@@ -299,7 +299,7 @@ class WebGLVertexArrayUtilities {
         }
     }
 
-    public static setVertexArrayValues(gl: WebGL2RenderingContext, vertexArray: VertexArray, values: VertexArrayValues): void {
+    static setVertexArrayValues(gl: WebGL2RenderingContext, vertexArray: VertexArray, values: VertexArrayValues): void {
         const currentVertexArray = gl.getParameter(gl.VERTEX_ARRAY_BINDING);
         if (currentVertexArray !== vertexArray.internal) {
             gl.bindVertexArray(vertexArray.internal);
@@ -334,11 +334,11 @@ class WebGLVertexArrayUtilities {
         }
     }
 
-    public static unbindVertexArray(gl: WebGL2RenderingContext): void {
+    static unbindVertexArray(gl: WebGL2RenderingContext): void {
         gl.bindVertexArray(null);
     }
 
-    public static getElementArrayBufferType(indices: Uint8Array | Uint16Array | Uint32Array): ElementArrayDataType {
+    static getElementArrayBufferType(indices: Uint8Array | Uint16Array | Uint32Array): ElementArrayDataType {
         if (indices instanceof Uint8Array) {
             return ElementArrayDataType.UNSIGNED_BYTE;
         }

@@ -18,7 +18,7 @@ interface Camera extends Object3D {
 }
 
 class CameraBase extends Object3DBase {
-    public readonly uuid: UUID;
+    readonly uuid: UUID;
     protected _projection: Matrix4;
     private _frustrum: Frustrum;
   
@@ -31,19 +31,19 @@ class CameraBase extends Object3DBase {
       this._frustrum = new Frustrum().setFromPerspectiveMatrix(this._projection);
     }
 
-    public get projection(): Matrix4 {
+    get projection(): Matrix4 {
       return this._projection.clone();
     }
 
-    public get view(): Matrix4 {
+    get view(): Matrix4 {
       return this.transform.matrix.clone().invert();
     }
 
-    public get viewProjection(): Matrix4 {
+    get viewProjection(): Matrix4 {
       return this.projection.clone().mult(this.view);
     }
 
-    public isViewing(mesh: Mesh): boolean {
+    isViewing(mesh: Mesh): boolean {
       /*if (typeof mesh.geometry.boundingBox === 'undefined') {
         const boundingBox = mesh.geometry.computeBoundingBox();
         return this._frustrum.intersectsBox(boundingBox);

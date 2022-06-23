@@ -53,55 +53,55 @@ class FrustrumBase implements Frustrum {
         this._rightPlane = new planeCtor();
     }
     
-    public get nearPlane(): Plane {
+    get nearPlane(): Plane {
         return this._nearPlane;
     }
 
-    public set nearPlane(nearPlane: Plane) {
+    set nearPlane(nearPlane: Plane) {
         this._nearPlane = nearPlane;
     }
 
-    public get farPlane(): Plane {
+    get farPlane(): Plane {
         return this._farPlane;
     }
 
-    public set farPlane(farPlane: Plane) {
+    set farPlane(farPlane: Plane) {
         this._farPlane = farPlane;
     }
 
-    public get topPlane(): Plane {
+    get topPlane(): Plane {
         return this._topPlane;
     }
 
-    public set topPlane(topPlane: Plane) {
+    set topPlane(topPlane: Plane) {
         this._topPlane = topPlane;
     }
 
-    public get bottomPlane(): Plane {
+    get bottomPlane(): Plane {
         return this._bottomPlane;
     }
 
-    public set bottomPlane(bottomPlane: Plane) {
+    set bottomPlane(bottomPlane: Plane) {
         this._bottomPlane = bottomPlane;
     }
 
-    public get leftPlane(): Plane {
+    get leftPlane(): Plane {
         return this._leftPlane;
     }
 
-    public set leftPlane(leftPlane: Plane) {
+    set leftPlane(leftPlane: Plane) {
         this._leftPlane = leftPlane;
     }
 
-    public get rightPlane(): Plane {
+    get rightPlane(): Plane {
         return this._rightPlane;
     }
 
-    public set rightPlane(rightPlane: Plane) {
+    set rightPlane(rightPlane: Plane) {
         this._rightPlane = rightPlane;
     }
 
-    public set(
+    set(
         nearPlane: Plane, farPlane: Plane,
         topPlane: Plane, bottomPlane: Plane,
         leftPlane: Plane, rightPlane: Plane): Frustrum {
@@ -116,7 +116,7 @@ class FrustrumBase implements Frustrum {
 		return this;
 	}
 
-    public copy(frustrum: FrustrumBase): FrustrumBase {
+    copy(frustrum: FrustrumBase): FrustrumBase {
         this.set(
             frustrum._nearPlane,
             frustrum._farPlane,
@@ -129,11 +129,11 @@ class FrustrumBase implements Frustrum {
         return this;
     }
 
-	public clone(): FrustrumBase {
+	clone(): FrustrumBase {
 		return new FrustrumBase().copy(this);
     }
     
-	public setFromPerspectiveMatrix(matrix: Matrix4): FrustrumBase {
+	setFromPerspectiveMatrix(matrix: Matrix4): FrustrumBase {
         const m11 = matrix.m11;
         const m12 = matrix.m12;
         const m13 = matrix.m13;
@@ -161,7 +161,7 @@ class FrustrumBase implements Frustrum {
 		return this;
     }
     
-	public intersectsSphere(sphere: BoundingSphere): boolean {
+	intersectsSphere(sphere: BoundingSphere): boolean {
         const center = sphere.center;
         const radius = sphere.radius;
         return center.dot(this._nearPlane.normal) + this._nearPlane.constant + radius <= 0 ||
@@ -172,7 +172,7 @@ class FrustrumBase implements Frustrum {
             center.dot(this._rightPlane.normal) + this._rightPlane.constant + radius <= 0;
 	}
 
-	public intersectsBox(box: BoundingBox): boolean {
+	intersectsBox(box: BoundingBox): boolean {
         let intersects = true;
 
         const boxMax = box.max;
@@ -215,7 +215,7 @@ class FrustrumBase implements Frustrum {
 		return intersects;
 	}
 
-	public containsPoint(point: Vector3): boolean {
+	containsPoint(point: Vector3): boolean {
         return this._nearPlane.distanceToPoint(point) >= 0 &&
             this._farPlane.distanceToPoint(point) >= 0 &&
             this._bottomPlane.distanceToPoint(point) >= 0 &&

@@ -26,7 +26,6 @@ export declare type UniformBlocksBindingsContext = {
     registeredBindingPoints: Array<boolean>;
 };
 export declare class WebGLUniformBlockUtilities {
-    private constructor();
     static createUniformBuffer(gl: WebGL2RenderingContext, program: Program, blockName: string, usage?: BufferDataUsage, byteLength?: number, rangeOffset?: number, rangeSize?: number): UniformBuffer | null;
     static setUniformBufferValues(gl: WebGL2RenderingContext, layout: UniformBlockLayout, buffer: UniformBuffer, uniforms: UniformsList): void;
     static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void;

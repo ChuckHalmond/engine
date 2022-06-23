@@ -31,7 +31,7 @@ class ArcballCameraControlBase {
     scrollSpeed: number;
     minRadius: number;
 
-    lastPointerPosition: Vector2;
+    #lastPointerPosition: Vector2;
     
     constructor(camera: Camera, target: Transform, params?: {
         rotationSpeed?: number,
@@ -47,10 +47,10 @@ class ArcballCameraControlBase {
         this.translationSpeed = params?.translationSpeed ?? 100;
         this.scrollSpeed = params?.scrollSpeed ?? 100;
         this.minRadius = params?.minRadius ?? 1;
-        this.lastPointerPosition = new Vector2();
+        this.#lastPointerPosition = new Vector2();
     }
 
-    public update(deltaTime: number) {
+    update(deltaTime: number) {
         const scrollSpeed = this.scrollSpeed;
         const rotationSpeed = this.rotationSpeed;
         const translation = this.translation;
@@ -60,7 +60,7 @@ class ArcballCameraControlBase {
         const cameraPosition = cameraTransform.getTranslation(new Vector3());
         const targetTransform = this.target;
         const targetPosition = targetTransform.getTranslation(new Vector3());
-        const lastPointerPosition = this.lastPointerPosition;
+        const lastPointerPosition = this.#lastPointerPosition;
         let cameraUpSign = cameraTransform.getUp(new Vector3()).dot(Space.up);
         
         const wheelDelta = Input.getWheelDelta();

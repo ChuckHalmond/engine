@@ -57,7 +57,7 @@ interface Vector3 extends Iterable<number> {
 }
 
 class Vector3Base {
-	public readonly array: Float32Array;
+	readonly array: Float32Array;
 
 	constructor()
 	constructor(values: Vector3Values)
@@ -67,16 +67,16 @@ class Vector3Base {
 		]) : new Float32Array([0, 0, 0]);
 	}
 
-	public toString(): string {
+	toString(): string {
 		return `Vector3([${Array.from(this.array).join(", ")}])`;
 	}
 
-	public static angle(vectorA: Vector3, vectorB: Vector3): number {
+	static angle(vectorA: Vector3, vectorB: Vector3): number {
 		const temp = new Vector3();
 		return Math.acos(temp.copy(vectorA).dot(vectorB) / (Math.sqrt(temp.copy(vectorA).dot(vectorA)) * Math.sqrt(temp.copy(vectorB).dot(vectorB))));
 	}
 
-	public get values(): Vector3Values {
+	get values(): Vector3Values {
 		return [
 			this.array[0],
 			this.array[1],
@@ -84,37 +84,37 @@ class Vector3Base {
 		];
 	}
 
-	public set values(values: Vector3Values) {
+	set values(values: Vector3Values) {
 		this.array[0] = values[0];
 		this.array[1] = values[1];
 		this.array[2] = values[2];
 	}
 
-	public get x() {
+	get x() {
 		return this.array[0];
 	}
 
-	public set x(x: number) {
+	set x(x: number) {
 		this.array[0] = x;
 	}
 
-	public get y() {
+	get y() {
 		return this.array[1];
 	}
 
-	public set y(y: number) {
+	set y(y: number) {
 		this.array[1] = y;
 	}
 
-	public get z() {
+	get z() {
 		return this.array[2];
 	}
 
-	public set z(z: number) {
+	set z(z: number) {
 		this.array[2] = z;
 	}
 
-	public setValues(v: Vector3Values): this {
+	setValues(v: Vector3Values): this {
 		this.array[0] = v[0];
 		this.array[1] = v[1];
 		this.array[2] = v[2];
@@ -122,7 +122,7 @@ class Vector3Base {
 		return this;
 	}
 	
-	public copy(vec: Vector3): this {
+	copy(vec: Vector3): this {
 		const v = vec.array;
 
 		this.array[0] = v[0];
@@ -132,17 +132,17 @@ class Vector3Base {
 		return this;
 	}
 
-	public clone(): this {
+	clone(): this {
 		return new Vector3Base(this.values) as this;
 	}
 
-	public equals(vector: Vector3): boolean {
+	equals(vector: Vector3): boolean {
 		return vector.array[0] === this.array[0]
 			&& vector.array[1] === this.array[1]
 			&& vector.array[2] === this.array[2];
 	}
 
-	public setZeros(): this {
+	setZeros(): this {
 		this.array[0] = 0;
 		this.array[1] = 0;
 		this.array[2] = 0;
@@ -150,7 +150,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public setUnit(): this {
+	setUnit(): this {
 		this.array[0] = 1;
 		this.array[1] = 1;
 		this.array[2] = 1;
@@ -158,7 +158,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public add(vector: Vector3): this {
+	add(vector: Vector3): this {
 		this.array[0] = this.array[0] + vector.array[0];
 		this.array[1] = this.array[1] + vector.array[1];
 		this.array[2] = this.array[2] + vector.array[2];
@@ -166,7 +166,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public addScalar(k: number): this {
+	addScalar(k: number): this {
 		this.array[0] = this.array[0] + k;
 		this.array[1] = this.array[1] + k;
 		this.array[2] = this.array[2] + k;
@@ -174,7 +174,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public sub(vector: Vector3): this {
+	sub(vector: Vector3): this {
 		this.array[0] = this.array[0] - vector.array[0];
 		this.array[1] = this.array[1] - vector.array[1];
 		this.array[2] = this.array[2] - vector.array[2];
@@ -182,7 +182,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public lerp(from: Vector3, to: Vector3, t: number): this {
+	lerp(from: Vector3, to: Vector3, t: number): this {
 		
 		this.array[0] = (1 - t) * from.x + t * (to.x - from.x);
 		this.array[1] = (1 - t) * from.y + t * (to.y - from.y);
@@ -191,7 +191,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public max(vectorB: Vector3): this {
+	max(vectorB: Vector3): this {
 		this.array[0] = Math.max(this.array[0], vectorB.array[0]);
 		this.array[1] = Math.max(this.array[1], vectorB.array[1]);
 		this.array[2] = Math.max(this.array[2], vectorB.array[2]);
@@ -199,7 +199,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public min(vectorB: Vector3): this {
+	min(vectorB: Vector3): this {
 		this.array[0] = Math.min(this.array[0], vectorB.array[0]);
 		this.array[1] = Math.min(this.array[1], vectorB.array[1]);
 		this.array[2] = Math.min(this.array[2], vectorB.array[2]);
@@ -207,7 +207,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public clamp(min: Vector3, max: Vector3): this {
+	clamp(min: Vector3, max: Vector3): this {
 		this.array[0] = Math.min(max.array[0], Math.max(this.array[0], min.array[0]));
 		this.array[1] = Math.min(max.array[1], Math.max(this.array[1], min.array[1]));
 		this.array[2] = Math.min(max.array[2], Math.max(this.array[2], min.array[2]));
@@ -215,7 +215,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public scale(k: number): this {
+	scale(k: number): this {
 		this.array[0] = this.array[0] * k;
 		this.array[1] = this.array[1] * k;
 		this.array[2] = this.array[2] * k;
@@ -223,7 +223,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public cross(vector: Vector3): this {
+	cross(vector: Vector3): this {
 		const t0 = this.array[1] * vector.array[2] - this.array[2] * vector.array[1];
 		const t1 = this.array[2] * vector.array[0] - this.array[0] * vector.array[2];
 		const t2 = this.array[0] * vector.array[1] - this.array[1] * vector.array[0];
@@ -235,26 +235,26 @@ class Vector3Base {
 		return this;
 	}
 
-	public dot(vec: Vector3): number {
+	dot(vec: Vector3): number {
 		const a = this.array;
 		const b = vec.array;
 
 		return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]);
 	}
 
-	public length(): number {
+	length(): number {
 		const a = this.array;
 
 		return Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
 	}
 
-	public lengthSquared(): number {
+	lengthSquared(): number {
 		const a = this.array;
 		
 		return a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
 	}
 
-	public distance(vec: Vector3): number {
+	distance(vec: Vector3): number {
 		const a = this.array;
 		const b = vec.array;
 
@@ -265,7 +265,7 @@ class Vector3Base {
 		return Math.hypot(dx, dy, dz);
 	}
 
-	public distanceSquared(vec: Vector3): number {
+	distanceSquared(vec: Vector3): number {
 		const a = this.array;
 		const b = vec.array;
 
@@ -276,7 +276,7 @@ class Vector3Base {
 		return dx * dx + dy * dy + dz * dz;
 	}
 
-	public normalize(): this {
+	normalize(): this {
 		const length = this.length();
 		if (length > Number.EPSILON) {
 			this.array[0] /= length;
@@ -292,7 +292,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public negate(): this {
+	negate(): this {
 		this.array[0] *= -1;
 		this.array[1] *= -1;
 		this.array[2] *= -1;
@@ -300,9 +300,9 @@ class Vector3Base {
 		return this;
 	}
 
-	public mult(mat: Matrix3): this
-	public mult(vec: Vector3): this
-	public mult(arg0: Matrix3 | Vector3): this {
+	mult(mat: Matrix3): this
+	mult(vec: Vector3): this
+	mult(arg0: Matrix3 | Vector3): this {
 		if (arg0 instanceof Vector3) {
 			const v = arg0.array;
 
@@ -327,7 +327,7 @@ class Vector3Base {
 		}
 	}
 
-	public toSpherical(center: Vector3): this {
+	toSpherical(center: Vector3): this {
         const thisArray = this.array;
         const centerArray = center.array;
 
@@ -345,7 +345,7 @@ class Vector3Base {
 		return this;
     }
 
-    public toCartesian(center: Vector3): this {
+    toCartesian(center: Vector3): this {
         const thisArray = this.array;
         const centerArray = center.array;
 
@@ -363,7 +363,7 @@ class Vector3Base {
 		return this;
     }
 
-	public static mult(mat: Matrix3, vec: Vector3): Vector3 {
+	static mult(mat: Matrix3, vec: Vector3): Vector3 {
 		const m = mat.array;
 		const v = vec.array;
 
@@ -374,7 +374,7 @@ class Vector3Base {
 		]);
 	}
 
-	public writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
+	writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
 		const v = this.array;
 
 		out[offset    ] = v[0];
@@ -382,7 +382,7 @@ class Vector3Base {
 		out[offset + 2] = v[2];
     }
     
-    public readFromArray(arr: ArrayLike<number>, offset: number = 0): this {
+    readFromArray(arr: ArrayLike<number>, offset: number = 0): this {
 		this.array[0] = arr[offset    ];
 		this.array[1] = arr[offset + 1];
 		this.array[2] = arr[offset + 2];
@@ -390,7 +390,7 @@ class Vector3Base {
 		return this;
     }
 
-	public addScaled(vector: Vector3, k: number): this {
+	addScaled(vector: Vector3, k: number): this {
 		this.array[0] = this.array[0] + vector.array[0] * k;
 		this.array[1] = this.array[1] + vector.array[1] * k;
 		this.array[2] = this.array[2] + vector.array[2] * k;
@@ -398,7 +398,7 @@ class Vector3Base {
 		return this;
 	}
 	
-	public copyAndSub(vecA: Vector3, vecB: Vector3): this {
+	copyAndSub(vecA: Vector3, vecB: Vector3): this {
 		const a = vecA.array;
 		const b = vecB.array;
 	
@@ -409,7 +409,7 @@ class Vector3Base {
 		return this;
 	}
 
-	public copyAndCross(vecA: Vector3, vecB: Vector3): this {
+	copyAndCross(vecA: Vector3, vecB: Vector3): this {
 		const a = vecA.array;
 		const b = vecB.array;
 		

@@ -209,9 +209,7 @@ export type Texture = TextureProperties & TextureParameters & {
 
 export class WebGLTextureUtilities {
 
-    private constructor() {}
-
-    public static createTexture(gl: WebGL2RenderingContext, props: TextureProperties & TextureParameters): Texture | null {
+    static createTexture(gl: WebGL2RenderingContext, props: TextureProperties & TextureParameters): Texture | null {
         const texture = gl.createTexture();
         
         if (texture === null) {
@@ -236,14 +234,14 @@ export class WebGLTextureUtilities {
         return tex;
     }
 
-    public static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void {
+    static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void {
         if (gl.isTexture(texture.internal)) {
             gl.deleteTexture(texture.internal);
         }
         this._freeUnit(gl, texture.unit);
     }
 
-    public static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, props: TextureProperties): void {
+    static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, props: TextureProperties): void {
 
         const activeTexture = gl.getParameter(gl.ACTIVE_TEXTURE);
         if (activeTexture !== texture.unit) {
@@ -292,7 +290,7 @@ export class WebGLTextureUtilities {
         });
     }
 
-    public static setTextureParameters(gl: WebGL2RenderingContext, texture: Texture, param: TextureParameters): void {
+    static setTextureParameters(gl: WebGL2RenderingContext, texture: Texture, param: TextureParameters): void {
 
         const activeTexture = gl.getParameter(gl.ACTIVE_TEXTURE);
         if (activeTexture !== texture.unit) {

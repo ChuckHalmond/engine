@@ -11,8 +11,8 @@ interface PhongMesh extends Mesh {
 }
 
 class PhongMeshBase extends MeshBase implements PhongMesh {
-    public readonly geometry!: PhongGeometry;
-    public readonly material!: PhongMaterial;
+    readonly geometry!: PhongGeometry;
+    readonly material!: PhongMaterial;
 
     constructor(geometry: PhongGeometry, material: PhongMaterial) {
         super(geometry, material);

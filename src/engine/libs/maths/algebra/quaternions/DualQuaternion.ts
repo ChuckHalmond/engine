@@ -16,10 +16,10 @@ interface DualQuaternionConstructor {
 }
 
 class DualQuaternionBase implements DualQuaternion {
-	public real: Quaternion;
-	public dual: Quaternion;
+	real: Quaternion;
+	dual: Quaternion;
 
-	public static zero(): DualQuaternion {
+	static zero(): DualQuaternion {
         return new DualQuaternionBase(
             new Quaternion([0, 0, 0, 0]),
             new Quaternion([0, 0, 0, 0])
@@ -33,26 +33,26 @@ class DualQuaternionBase implements DualQuaternion {
         this.dual = dual || new Quaternion();
     }
 
-    public static fromRotation(rotation: Quaternion): DualQuaternionBase {
+    static fromRotation(rotation: Quaternion): DualQuaternionBase {
 		const q1 = new DualQuaternionBase(new Quaternion([0, 0, 0, 1]), new Quaternion([0, 0, 0, 0]));
 		const q2 = new DualQuaternionBase(rotation, new Quaternion([0, 0, 0, 0]));
 		return q1.mult(q2);
     }
 
-    public clone(): this {
+    clone(): this {
         return new DualQuaternionBase(
             this.real.clone(),
             this.dual.clone()
         ) as this;
     }
 
-	public add(b: DualQuaternion): this {
+	add(b: DualQuaternion): this {
 		this.real.add(b.real);
 		this.dual.add(b.dual);
 		return this;
 	}
 
-	public mult(b: DualQuaternion): this {
+	mult(b: DualQuaternion): this {
 		this.real.mult(b.real);
 		this.dual.mult(b.real).add(
 			b.dual.clone().mult(this.real)
@@ -60,20 +60,20 @@ class DualQuaternionBase implements DualQuaternion {
 		return this;
 	}
 
-	public multScalar(scalar: number): this {
+	multScalar(scalar: number): this {
 		this.real = this.real.scale(scalar);
 		this.dual = this.dual.scale(scalar);
 
 		return this;
 	}
 
-	public normalize(): DualQuaternion {
+	normalize(): DualQuaternion {
 		const norm = 1 / Math.sqrt(this.real.clone().dot(this.real));
 		this.multScalar(norm);
 		return this;
 	}
 
-	public toMatrix(): Matrix4 {
+	toMatrix(): Matrix4 {
 		const quat = this.clone().normalize();
 		const mat = new Matrix4();
 

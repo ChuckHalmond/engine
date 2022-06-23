@@ -57,8 +57,8 @@ export async function main() {
     //console.clear();
     //instanced();
     //wireframe();
-    //start();
-    startMaps();
+    start();
+    //startMaps();
     // const button = document.createElement("button");
     // button.textContent = "Get bin";
     // document.body.insertAdjacentElement("beforebegin", button);

@@ -1,9 +1,9 @@
 import { PacketBindingsProperties, PacketBindings, Packet } from "../../webgl/WebGLPacketUtilities";
 
 export abstract class AbstractPacket {
-    public abstract getPacketBindingsProperties(...args: any): PacketBindingsProperties;
-    public abstract enableDelta(): void;
-    public abstract disableDelta(): void;
-    public abstract getPacketValues(bindings: PacketBindings, ...args: any): Packet;
-    public abstract getDeltaPacketValues(bindings: PacketBindings, ...args: any): Packet;
+    abstract getPacketBindingsProperties(...args: any): PacketBindingsProperties;
+    abstract enableDelta(): void;
+    abstract disableDelta(): void;
+    abstract getPacketValues(bindings: PacketBindings, ...args: any): Packet;
+    abstract getDeltaPacketValues(bindings: PacketBindings, ...args: any): Packet;
 }

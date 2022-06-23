@@ -40,11 +40,11 @@ interface EntityConstructor {
 }
 
 class EntityBase implements Entity {
-    public readonly uuid: UUID;
+    readonly uuid: UUID;
 
     private _parent: Entity | null;
 
-    public get parent(): Entity | null {
+    get parent(): Entity | null {
         return this._parent;
     }
 
@@ -54,7 +54,7 @@ class EntityBase implements Entity {
 
     private _active: boolean;
 
-    public get active(): boolean {
+    get active(): boolean {
         return this._active;
     }
 
@@ -71,18 +71,18 @@ class EntityBase implements Entity {
         this.components = new Map<string, Component>();
     }
 
-    public setActive(active: boolean): void {
+    setActive(active: boolean): void {
         this._active = active;
     }
 
-    public root(): Entity | null {
+    root(): Entity | null {
         if (this._parent !== null) {
             return this._parent.parent;
         }
         return this;
     }
 
-    public setParent(parent: Entity | null) {
+    setParent(parent: Entity | null) {
         if (this._parent != null) {
             const childIdx = this._parent.children.indexOf(this);
             if (childIdx > -1) {
@@ -98,7 +98,7 @@ class EntityBase implements Entity {
         }
     }
 
-    public addChild(child: Entity, index: number): void {
+    addChild(child: Entity, index: number): void {
         if (index > -1) {
             this.children.length += 1;
             this.children.copyWithin(index + 1, index, this.children.length);
@@ -106,7 +106,7 @@ class EntityBase implements Entity {
         }
     }
 
-    public removeChild(child: Entity): void {
+    removeChild(child: Entity): void {
         const childIdx = this.children.indexOf(child);
         if (childIdx > -1) {
             const last = this.children.pop();
@@ -116,11 +116,11 @@ class EntityBase implements Entity {
         }
     }
 
-    public getComponent<T extends Component>(name: string): T | undefined {
+    getComponent<T extends Component>(name: string): T | undefined {
         return this.components.get(name) as T;
     }
 
-    public addComponent<T extends Component>(name: string, ...args: any[]): T {
+    addComponent<T extends Component>(name: string, ...args: any[]): T {
         const component = ComponentsRegistry.instance.create(name, this, ...args) as T;
         this.components.set(name, component);
         return component;

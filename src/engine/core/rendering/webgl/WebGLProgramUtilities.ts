@@ -20,9 +20,7 @@ export type ProgramProperties = {
 
 export class WebGLProgramUtilities {
 
-    private constructor() {}
-
-    public static createShader(gl: WebGL2RenderingContext, type: ShaderType, source: string): Shader | null {
+    static createShader(gl: WebGL2RenderingContext, type: ShaderType, source: string): Shader | null {
         const shader = gl.createShader(type);
         
         if (shader == null) {
@@ -49,13 +47,13 @@ export class WebGLProgramUtilities {
         return null;
     }
 
-    public static deleteShader(gl: WebGL2RenderingContext, shader: Shader): void {
+    static deleteShader(gl: WebGL2RenderingContext, shader: Shader): void {
         if (gl.isShader(shader.internal)) {
             gl.deleteShader(shader.internal);
         }
     }
     
-    public static createProgram(gl: WebGL2RenderingContext, vertexSource: string, fragmentSource: string): Program | null {
+    static createProgram(gl: WebGL2RenderingContext, vertexSource: string, fragmentSource: string): Program | null {
 
         const vertexShader = this.createShader(gl, ShaderType.VERTEX_SHADER, vertexSource);
         if (vertexShader == null) {
@@ -101,7 +99,7 @@ export class WebGLProgramUtilities {
         return null;
     }
     
-    public static deleteProgram(gl: WebGL2RenderingContext, program: Program) {
+    static deleteProgram(gl: WebGL2RenderingContext, program: Program) {
         if (gl.isShader(program.vertexShader)) {
             gl.deleteShader(program.vertexShader);
         }
@@ -113,7 +111,7 @@ export class WebGLProgramUtilities {
         }
     }
 
-    public static useProgram(gl: WebGL2RenderingContext, program: Program) {
+    static useProgram(gl: WebGL2RenderingContext, program: Program) {
         const currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
         if (currentProgram !== program.internal) {
             gl.useProgram(program.internal);

@@ -7,11 +7,11 @@ interface IEngine {
 
 class Engine implements IEngine {
 
-    public async boot() {
+    async boot() {
         this.run();
     }
 
-    public run(): void {
+    run(): void {
         
     }
 }

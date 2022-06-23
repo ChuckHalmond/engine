@@ -71,9 +71,7 @@ export type Packet = {
 
 export class WebGLPacketUtilities {
 
-    private constructor() {}
-
-    public static createBindings(gl: WebGL2RenderingContext, props: PacketBindingsProperties): PacketBindings | null {
+    static createBindings(gl: WebGL2RenderingContext, props: PacketBindingsProperties): PacketBindings {
         const textures: {
             [key: string]: Texture
         } = {};
@@ -87,10 +85,9 @@ export class WebGLPacketUtilities {
         if (typeof texturesInfo !== "undefined") {
             Object.entries(texturesInfo).forEach(([textureName, textureInfo]) => {
                 const texture = WebGLTextureUtilities.createTexture(gl, textureInfo);
-                if (texture == null) {
-                    return null;
+                if (texture !== null) {
+                    textures[textureName] = texture;
                 }
-                textures[textureName] = texture;
             });
         }
 
@@ -99,10 +96,9 @@ export class WebGLPacketUtilities {
                 const uniformBlock = WebGLUniformBlockUtilities.createUniformBlock(
                     gl, props.program, blockName
                 );
-                if (uniformBlock == null) {
-                    return null;
+                if (uniformBlock !== null) {
+                    uniformBlocks[blockName] = uniformBlock;
                 }
-                uniformBlocks[blockName] = uniformBlock;
             });
         }
 
@@ -112,7 +108,7 @@ export class WebGLPacketUtilities {
         };
     }
 
-    public static createPacket(gl: WebGL2RenderingContext, program: Program, packet: PacketProperties): Packet | null {
+    static createPacket(gl: WebGL2RenderingContext, program: Program, packet: PacketProperties): Packet | null {
         const drawMode = packet.options?.drawMode || DrawMode.TRIANGLES;
         const instanceCount = packet.options?.instanceCount;
 
@@ -191,7 +187,7 @@ export class WebGLPacketUtilities {
         };
     }
 
-    public static setPacketValues(gl: WebGL2RenderingContext, packet: Packet, values: PacketValues): void {
+    static setPacketValues(gl: WebGL2RenderingContext, packet: Packet, values: PacketValues): void {
 
         if (typeof values.vertexArray !== "undefined" && typeof packet.vertexArray !== "undefined") {
             WebGLVertexArrayUtilities.setVertexArrayValues(gl, packet.vertexArray, values.vertexArray);
@@ -219,7 +215,7 @@ export class WebGLPacketUtilities {
         }
     }
 
-    public static drawPacket(gl: WebGL2RenderingContext, packet: Packet): void {
+    static drawPacket(gl: WebGL2RenderingContext, packet: Packet): void {
         const vertexArray = packet.vertexArray;
         const uniformBlocks = packet.uniformBlocks;
 

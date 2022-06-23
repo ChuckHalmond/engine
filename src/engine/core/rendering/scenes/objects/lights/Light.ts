@@ -18,7 +18,7 @@ interface Light extends Object3D {
 }
 
 abstract class LightBase extends Object3DBase {
-    public readonly isLight: true;
+    readonly isLight: true;
     private _color: Color;
     
     constructor(color: Color) {
@@ -27,13 +27,13 @@ abstract class LightBase extends Object3DBase {
         this._color = color.clone();
     }
 
-    public get color(): Color {
+    get color(): Color {
         return this._color;
     }
     
-    public set color(color: Color) {
+    set color(color: Color) {
         this._color = color;
     }
 
-    public abstract isLightingOn(mesh: Mesh): boolean;
+    abstract isLightingOn(mesh: Mesh): boolean;
 }

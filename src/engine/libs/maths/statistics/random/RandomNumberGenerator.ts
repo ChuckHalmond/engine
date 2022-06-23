@@ -17,12 +17,12 @@ class RandomNumberGenerator {
         this.i = 0;
     }
 
-    public reset(): void {
+    reset(): void {
         this.xi = this.seed;
         this.i = this.i + 1;
     }
 
-    public random(): number {
+    random(): number {
         this.xi = (this.a * this.xi + this.c) % this.m;
         this.i = this.i + 1;
 
@@ -30,7 +30,7 @@ class RandomNumberGenerator {
         return normalizedXi;
     }
 
-    public randomInRange(min: number, max: number): number {
+    randomInRange(min: number, max: number): number {
         return this.random() * (max - min) + min;
     }
 }

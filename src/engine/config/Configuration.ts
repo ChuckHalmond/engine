@@ -11,20 +11,20 @@ interface IConfiguration {
 }
 
 class SConfiguration implements IConfiguration {
-    private static _instance: SConfiguration;
+    static #instance: SConfiguration;
 
-    public static get instance(): IConfiguration {
-        if (this._instance === undefined) {
-            this._instance = new SConfiguration();
+    static get instance(): IConfiguration {
+        if (this.#instance === undefined) {
+            this.#instance = new SConfiguration();
         }
-        return this._instance;
+        return this.#instance;
     }
 
-    private constructor() {
+    constructor() {
         this.options = {
             renderingCanvasId: 'canvas'
         };
     }
 
-    public readonly options: IConfigurationOptions;
+    readonly options: IConfigurationOptions;
 }

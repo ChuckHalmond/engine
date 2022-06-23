@@ -185,7 +185,6 @@ export declare type Texture = TextureProperties & TextureParameters & {
     internal: WebGLTexture;
 };
 export declare class WebGLTextureUtilities {
-    private constructor();
     static createTexture(gl: WebGL2RenderingContext, props: TextureProperties & TextureParameters): Texture | null;
     static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void;
     static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, props: TextureProperties): void;

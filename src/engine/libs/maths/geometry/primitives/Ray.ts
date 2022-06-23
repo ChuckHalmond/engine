@@ -54,34 +54,34 @@ class RayBase implements Ray {
     this._direction = direction || new Vector3([0, 0, 0]);
   }
 
-  public get origin(): Vector3 {
+  get origin(): Vector3 {
 		return this._origin;
   }
     
-  public set origin(origin: Vector3) {
+  set origin(origin: Vector3) {
 		this._origin = origin;
 	}
 
-	public get direction(): Vector3 {
+	get direction(): Vector3 {
 		return this._direction;
 	}
 
-	public set direction(direction: Vector3) {
+	set direction(direction: Vector3) {
 		this._direction = direction;
   }
   
-  public set(origin: Vector3, direction: Vector3): RayBase {
+  set(origin: Vector3, direction: Vector3): RayBase {
     this._origin.copy(origin);
     this._direction.copy(direction);
 
     return this;
   }
 
-  public equals(ray: RayBase) {
+  equals(ray: RayBase) {
     return ray._origin.equals(this._origin) && ray._direction.equals(this._direction);
   }
 
-  public copy(ray: RayBase): RayBase {
+  copy(ray: RayBase): RayBase {
 
     this._origin.copy(ray._origin);
     this._direction.copy(ray._direction);
@@ -89,21 +89,21 @@ class RayBase implements Ray {
     return this;
   }
 
-  public clone(): RayBase {
+  clone(): RayBase {
     return new RayBase().set(this._origin, this._direction);
   }
 
-  public pointAt(dist: number, out: Vector3): Vector3 {
+  pointAt(dist: number, out: Vector3): Vector3 {
     return out.copy(this._direction).scale(dist).add(this._origin);
   }
 
-  public lookAt(vec: Vector3) {
+  lookAt(vec: Vector3) {
     this._direction.copy(vec).sub(this._origin).normalize();
 
     return this;
   }
 
-  public closestPointTo(point: Vector3, out: Vector3): Vector3 {
+  closestPointTo(point: Vector3, out: Vector3): Vector3 {
     out.copy(point).sub(this._origin);
     const directionDist = out.dot(this._direction);
 
@@ -114,11 +114,11 @@ class RayBase implements Ray {
     return out.copy(this._direction).scale(directionDist).add(this._origin);
   }
 
-  public distToPoint(point: Vector3): number {
+  distToPoint(point: Vector3): number {
     return Math.sqrt(this.distSqToPoint(point));
   }
 
-  public distSqToPoint(point: Vector3) {
+  distSqToPoint(point: Vector3) {
     let distSq = 0;
 
     const [temp] = Vector3Pool.acquire(1);
@@ -136,7 +136,7 @@ class RayBase implements Ray {
     return distSq;
   }
 
-  public distToPlane(plane: Plane): number | null {
+  distToPlane(plane: Plane): number | null {
     const denominator = plane.normal.dot(this._direction);
 
     if (denominator === 0) {
@@ -150,11 +150,11 @@ class RayBase implements Ray {
     return dist >= 0 ? dist : null;
   }
 
-  public intersectsWithSphere(sphere: BoundingSphere): boolean {
+  intersectsWithSphere(sphere: BoundingSphere): boolean {
     return this.distSqToPoint(sphere.center) <= (sphere.radius * sphere.radius);
   }
 
-  public intersectsWithQuad(quad: Quad): number | null {
+  intersectsWithQuad(quad: Quad): number | null {
     let intersects = null;
 
     const [edge1, edge2, q, s] = Vector3Pool.acquire(4);
@@ -214,7 +214,7 @@ class RayBase implements Ray {
   /**
    * Möller–Trumbore intersection algorithm
    */
-  public intersectsWithTriangle(triangle: Triangle): number | null {
+  intersectsWithTriangle(triangle: Triangle): number | null {
     let intersects = null;
 
     const [edge1, edge2, q, s] = Vector3Pool.acquire(4);
@@ -253,7 +253,7 @@ class RayBase implements Ray {
     return intersects;
   }
 
-  public intersectsWithPlane(plane: Plane): boolean {
+  intersectsWithPlane(plane: Plane): boolean {
     const distToPoint = plane.distanceToPoint(this._origin);
 
     if (distToPoint === 0) {
@@ -267,7 +267,7 @@ class RayBase implements Ray {
     return false;
   }
 
-  public intersectsWithBox(box: BoundingBox): boolean {
+  intersectsWithBox(box: BoundingBox): boolean {
     let intersects = false;
     
     const [temp] = Vector3Pool.acquire(1);
@@ -277,7 +277,7 @@ class RayBase implements Ray {
     return intersects;
   }
 
-  public intersectionWithSphere(sphere: BoundingSphere, out: Vector3): Vector3 | null {
+  intersectionWithSphere(sphere: BoundingSphere, out: Vector3): Vector3 | null {
 
     out.copyAndSub(sphere.center, this._origin);
     
@@ -302,7 +302,7 @@ class RayBase implements Ray {
     return this.pointAt(t0, out);
   }
 
-  public intersectionWithPlane(plane: Plane, out: Vector3): Vector3 | null {
+  intersectionWithPlane(plane: Plane, out: Vector3): Vector3 | null {
 
     const dist = this.distToPlane(plane);
     if (dist === null) {
@@ -312,7 +312,7 @@ class RayBase implements Ray {
     return this.pointAt(dist, out);
   }
 
-  public intersectionWithBox(box: BoundingBox, out: Vector3): Vector3 | null {
+  intersectionWithBox(box: BoundingBox, out: Vector3): Vector3 | null {
 
     let distMinX, distMaxX, distMinY, distMaxY, distMinZ, distMaxZ;
 
@@ -367,7 +367,7 @@ class RayBase implements Ray {
     return this.pointAt(distMinX >= 0 ? distMinX : distMaxX, out);
   }
 
-  public transform(matrix: Matrix4): void {
+  transform(matrix: Matrix4): void {
     matrix.transformPoint(this._origin);
     matrix.transformDirection(this._direction);
   }

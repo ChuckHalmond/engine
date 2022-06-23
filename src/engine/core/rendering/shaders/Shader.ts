@@ -28,12 +28,12 @@ interface Shader {
 }
 
 class DefaultShader implements Shader {
-    public readonly name: string;
+    readonly name: string;
     private readonly __vertex: string;
     private readonly __fragment: string;
 
-    public _vertex: string;
-    public _fragment: string;
+    _vertex: string;
+    _fragment: string;
 
     private static _dictionnary = new Map<string, Shader>();
 
@@ -44,19 +44,19 @@ class DefaultShader implements Shader {
         DefaultShader._dictionnary.set(this.name, this);
     }
 
-    public get vertex(): string {
+    get vertex(): string {
         return this._vertex;
     }
 
-    public get fragment(): string {
+    get fragment(): string {
         return this._fragment;
     }  
 
-    public static get(name: string): Shader | undefined {
+    static get(name: string): Shader | undefined {
         return DefaultShader._dictionnary.get(name);
     }
 
-    public setDefinition(shader: DefaultShader, sourceType: ShaderType, definitionName: string, definitionValue: number): DefaultShader {
+    setDefinition(shader: DefaultShader, sourceType: ShaderType, definitionName: string, definitionValue: number): DefaultShader {
         const definitionPattern = new RegExp(`#define ${definitionName} (.*?)\n`, 'gms');
         const shaderSource = shader.getSource(sourceType);
 
@@ -73,7 +73,7 @@ class DefaultShader implements Shader {
         return this;
     }
 
-    public resolveIncludes(shader: DefaultShader, sourceType: ShaderType, resources: Resources): void {
+    resolveIncludes(shader: DefaultShader, sourceType: ShaderType, resources: Resources): void {
         const includePattern = new RegExp('\/\/include+<(.*)+>', 'gm');
         const shaderSource = shader.getSource(sourceType);
 
@@ -96,7 +96,7 @@ class DefaultShader implements Shader {
         }
     }
 
-    public getUniformBlockIndex(shader: DefaultShader, sourceType: ShaderType, blockName: string): number | null {
+    getUniformBlockIndex(shader: DefaultShader, sourceType: ShaderType, blockName: string): number | null {
         const uniformBlockPattern = new RegExp(`uniform ${blockName}`, 'gms');
         const shaderSource = shader.getSource(sourceType);
 
@@ -111,17 +111,17 @@ class DefaultShader implements Shader {
         return null;
     }
 
-    public replaceInSource(shader: DefaultShader, sourceType: ShaderType, oldStr: string, newStr: string): void {
+    replaceInSource(shader: DefaultShader, sourceType: ShaderType, oldStr: string, newStr: string): void {
         const shaderSource = shader.getSource(sourceType);
         shader._setSource(sourceType, shaderSource.replace(oldStr, newStr));
     }
 
-    public prependToSource(shader: DefaultShader, sourceType: ShaderType, str: string): void {
+    prependToSource(shader: DefaultShader, sourceType: ShaderType, str: string): void {
         const shaderSource = shader.getSource(sourceType);
         shader._setSource(sourceType, str.concat(shaderSource));
     }
 
-    public getSource(type: ShaderType): string {
+    getSource(type: ShaderType): string {
         if (type == ShaderType.VERTEX_SHADER) {
             return this._vertex;
         }

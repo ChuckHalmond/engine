@@ -99,9 +99,9 @@ const testKeyModifier = (mod: KeyModifier, event: KeyboardEvent) => {
 
 class HotKey {
 
-    public readonly key: Key;
-    public readonly mod1?: KeyModifier;
-    public readonly mod2?: KeyModifier;
+    readonly key: Key;
+    readonly mod1?: KeyModifier;
+    readonly mod2?: KeyModifier;
 
     constructor(key: Key, mod1?: KeyModifier, mod2?: KeyModifier) {
         this.key = key;
@@ -109,11 +109,11 @@ class HotKey {
         this.mod2 = mod2;
     }
 
-    public toString(): string {
+    toString(): string {
         return `${this.mod1 ? `${displayKeyModifier(this.mod1)}+` : ''}${this.mod2 ? `${displayKeyModifier(this.mod2)}+` : ''}${(this.key.length === 1) ? this.key.toUpperCase() : this.key}`;
     }
 
-    /*public static fromString(str: string): HotKey | null {
+    /*static fromString(str: string): HotKey | null {
         const keys = Object.values(Key);
         const keyModifiers = Object.values(KeyModifier);
 
@@ -144,7 +144,7 @@ class HotKey {
         return null;
     }*/
 
-    public test(event: KeyboardEvent): boolean {
+    test(event: KeyboardEvent): boolean {
         return ((!this.mod1 || testKeyModifier(this.mod1, event)) && (!this.mod2 || testKeyModifier(this.mod2, event)) && event.key === this.key);
     }
 }
@@ -171,7 +171,7 @@ class InputBase implements Input {
     private canvas: HTMLCanvasElement | null = null;
     private canvasRectangle: DOMRect | null = null;
 
-    public initialize(canvas: HTMLCanvasElement): void {
+    initialize(canvas: HTMLCanvasElement): void {
         this.canvas = canvas;
         this.canvasRectangle = canvas.getBoundingClientRect();
         canvas.addEventListener("pointerdown", this);
@@ -184,7 +184,7 @@ class InputBase implements Input {
         canvas.addEventListener("focusout", this);
     }
 
-    public getCanvasRect(): DOMRect {
+    getCanvasRect(): DOMRect {
         const rect = this.canvasRectangle;
         if (rect === null) {
             throw new Error(`Input manager not initialized.`);
@@ -192,13 +192,13 @@ class InputBase implements Input {
         return rect;
     }
 
-    public clear(): void {
+    clear(): void {
         this.keyFlags.fill(false, 0, INPUT_EVENT_REPEAT * KEYS_COUNT);
         this.mouseFlags.fill(false, 0, INPUT_EVENT_REPEAT * MOUSE_BUTTONS_COUNT);
         this.wheelDelta = 0;
     }
     
-    public handleEvent(event: Event): void {
+    handleEvent(event: Event): void {
         let eventIndex = -1;
         switch (event.type) {
             case "pointerdown":
@@ -240,43 +240,43 @@ class InputBase implements Input {
         }
     }
     
-    /*public static getAxis(axisName: string) {
+    /*static getAxis(axisName: string) {
 
     }
 
-    public static getButton(buttonName: string) {
+    static getButton(buttonName: string) {
 
     }
 
-    public static getButtonUp(buttonName: string) {
+    static getButtonUp(buttonName: string) {
 
     }
 
-    public static getButtonDown(buttonName: string) {
+    static getButtonDown(buttonName: string) {
 
     }*/
 
-    public getKey(key: Key): boolean {
+    getKey(key: Key): boolean {
         return this.keyFlags[INPUT_EVENT_REPEAT * KEYS_COUNT + KEYS_INDICES[key]];
     }
 
-    public getKeyUp(key: Key): boolean {
+    getKeyUp(key: Key): boolean {
         return this.keyFlags[INPUT_EVENT_UP * KEYS_COUNT + KEYS_INDICES[key]];
     }
 
-    public getKeyDown(key: Key): boolean {
+    getKeyDown(key: Key): boolean {
         return this.keyFlags[INPUT_EVENT_DOWN * KEYS_COUNT + KEYS_INDICES[key]];
     }
 
-    public getMouseButton(button: MouseButton): boolean {
+    getMouseButton(button: MouseButton): boolean {
         return this.mouseFlags[INPUT_EVENT_REPEAT * MOUSE_BUTTONS_COUNT + MOUSE_BUTTONS_INDICES[button]];
     }
 
-    public getPointerPosition(): Vector2 {
+    getPointerPosition(): Vector2 {
         return this.pointerPosition.clone();
     }
 
-    public getPointerScreenPosition(): Vector2 {
+    getPointerScreenPosition(): Vector2 {
         const positionAray = this.pointerPosition.array;
         const canvasRect = this.getCanvasRect();
         const x = (positionAray[0] / canvasRect.width) * 2 - 1;
@@ -284,15 +284,15 @@ class InputBase implements Input {
         return new Vector2([x, y]);
     }
 
-    public getWheelDelta(): number {
+    getWheelDelta(): number {
         return this.wheelDelta;
     }
 
-    public getMouseButtonDown(button: MouseButton): boolean {
+    getMouseButtonDown(button: MouseButton): boolean {
         return this.mouseFlags[INPUT_EVENT_DOWN * MOUSE_BUTTONS_COUNT + MOUSE_BUTTONS_INDICES[button]];
     }
 
-    public getMouseButtonUp(button: MouseButton): boolean {
+    getMouseButtonUp(button: MouseButton): boolean {
         return this.mouseFlags[INPUT_EVENT_UP * MOUSE_BUTTONS_COUNT + MOUSE_BUTTONS_INDICES[button]];
     }
 }

@@ -33,9 +33,7 @@ export type UniformBlocksBindingsContext = {
 
 export class WebGLUniformBlockUtilities {
     
-    private constructor() {}
-    
-    public static createUniformBuffer(gl: WebGL2RenderingContext, program: Program, blockName: string, usage?: BufferDataUsage, byteLength?: number, rangeOffset?: number, rangeSize?: number): UniformBuffer | null {
+    static createUniformBuffer(gl: WebGL2RenderingContext, program: Program, blockName: string, usage?: BufferDataUsage, byteLength?: number, rangeOffset?: number, rangeSize?: number): UniformBuffer | null {
         const buffer = gl.createBuffer();
         if (buffer == null) {
             console.error("Could not create WebGLBuffer.");
@@ -70,7 +68,7 @@ export class WebGLUniformBlockUtilities {
         };
     }
 
-    public static setUniformBufferValues(gl: WebGL2RenderingContext, layout: UniformBlockLayout, buffer: UniformBuffer, uniforms: UniformsList): void {
+    static setUniformBufferValues(gl: WebGL2RenderingContext, layout: UniformBlockLayout, buffer: UniformBuffer, uniforms: UniformsList): void {
         const currentUniformBuffer = gl.getParameter(gl.UNIFORM_BUFFER_BINDING);
         if (currentUniformBuffer !== buffer.internal) {
             gl.bindBuffer(gl.UNIFORM_BUFFER, buffer.internal);
@@ -83,7 +81,7 @@ export class WebGLUniformBlockUtilities {
         });
     }
 
-    public static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void {
+    static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void {
         const rangeOffset = buffer.rangeOffset || 0;
         const rangeSize = buffer.rangeSize || (buffer.byteLength - (rangeOffset || 0));
         
@@ -95,7 +93,7 @@ export class WebGLUniformBlockUtilities {
         }
     }
 
-    public static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null {
+    static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null {
         const bindingPoint = this._allocateBindingPoint(gl);
         if (bindingPoint === null) {
             console.error(`Could not bind another uniform buffer object. Max (${gl.MAX_UNIFORM_BUFFER_BINDINGS}) was reached.`);

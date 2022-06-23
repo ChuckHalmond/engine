@@ -43,27 +43,27 @@ class TriangleListBase implements TriangleList {
         this._array = array || [];
     }
     
-    public get array(): WritableArrayLike<number> {
+    get array(): WritableArrayLike<number> {
         return this._array;
     }
 
-    public get count(): number {
+    get count(): number {
         return Math.floor(this._array.length / 9);
     }
 
-    public setArray(array: WritableArrayLike<number>): this {
+    setArray(array: WritableArrayLike<number>): this {
 		this._array = array;
 		return this;
     }
 
-    public get(idx: number, tri: Triangle): Triangle {
+    get(idx: number, tri: Triangle): Triangle {
         if (idx >= this.count) {
             throw new Error(`Index ${idx} out of bounds.`);
         }
         return tri.readFromArray(this._array, idx * 9);
     }
 
-    public set(idx: number, tri: Triangle): void {
+    set(idx: number, tri: Triangle): void {
         if (idx >= this.count) {
             throw new Error(`Index ${idx} out of bounds.`);
 
@@ -71,7 +71,7 @@ class TriangleListBase implements TriangleList {
         tri.writeIntoArray(this._array, idx * 9);
     }
     
-    public indexOf(tri: Triangle): number {
+    indexOf(tri: Triangle): number {
         const count = this.count;
 
         let idxBuf = 0,
@@ -94,7 +94,7 @@ class TriangleListBase implements TriangleList {
         return indexOf;
     }
 
-    public forEach(func: (triangle: Triangle, idx: number, ...args: any) => void,
+    forEach(func: (triangle: Triangle, idx: number, ...args: any) => void,
         options: {
             idxFrom: number;
             idxTo: number;
@@ -114,13 +114,13 @@ class TriangleListBase implements TriangleList {
         TrianglePool.release(1);
     }
 
-    public getIndexedPoints(indices: Vector3Values, tri: Triangle): void {
+    getIndexedPoints(indices: Vector3Values, tri: Triangle): void {
         tri.point1.readFromArray(this._array, indices[0]);
         tri.point2.readFromArray(this._array, indices[1]);
         tri.point3.readFromArray(this._array, indices[2]);
     }
 
-    public forIndexedPoints(func: (tri: Triangle, idx: number, pointsIndices: Vector3Values) => void, indices: ArrayLike<number>,
+    forIndexedPoints(func: (tri: Triangle, idx: number, pointsIndices: Vector3Values) => void, indices: ArrayLike<number>,
         options: {
             idxFrom: number;
             idxTo: number;

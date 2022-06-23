@@ -9,10 +9,9 @@ interface ComponentsRegistry {
     create<T extends Component>(name: string, owner: Entity, ...args: any[]): T | undefined;
 }
 export declare class ComponentsRegistryBase {
-    private static _instance;
+    #private;
     static get instance(): ComponentsRegistry;
-    private _dictionary;
-    private constructor();
+    constructor();
     register<T extends Component>(name: string, ctor: new (owner: Entity, ...args: any[]) => T): void;
     create<T extends Component>(name: string, owner: Entity, ...args: any[]): T | undefined;
 }

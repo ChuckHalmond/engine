@@ -27,7 +27,7 @@ interface ResourcesConstructor {
 
 class ResourcesBase implements Resources {
 
-  public readonly folder: string;
+  readonly folder: string;
   private readonly resources: Map<string, any>;
 
   constructor(folder?: string) {
@@ -35,7 +35,7 @@ class ResourcesBase implements Resources {
     this.resources = new Map<string, any>();
   }
 
-  public get<T>(file: string): T | null {
+  get<T>(file: string): T | null {
     const resource = this.resources.get(file);
 
     if (typeof resource === 'undefined') {
@@ -46,11 +46,11 @@ class ResourcesBase implements Resources {
     return resource as T;
   }
 
-  public toString(): string {
+  toString(): string {
     return `[\n\t\'${Array.from(this.resources.keys()).join("\',\n\t\'")}\'\n]`;
   }
 
-  public async load(path: string): Promise<void> {
+  async load(path: string): Promise<void> {
     let url = this.folder.concat(path);
     const fetchResource = async function(path: string, url: string, map: Map<string, any>) {
       const fileExt = extractExtension(path);
@@ -72,7 +72,7 @@ class ResourcesBase implements Resources {
     await fetchResource(path, url, this.resources);
   }
 
-  public async loadList(path: string): Promise<void> {
+  async loadList(path: string): Promise<void> {
     let url = this.folder.concat(path);
     let resources;
     try {

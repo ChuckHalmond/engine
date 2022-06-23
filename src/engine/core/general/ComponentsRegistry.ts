@@ -13,29 +13,29 @@ interface ComponentsRegistry {
 }
 
 export class ComponentsRegistryBase {
-    private static _instance: ComponentsRegistry;
+    static #instance: ComponentsRegistry;
 
-    public static get instance(): ComponentsRegistry {
-        if (this._instance === undefined) {
-            this._instance = new ComponentsRegistryBase();
+    static get instance(): ComponentsRegistry {
+        if (this.#instance === undefined) {
+            this.#instance = new ComponentsRegistryBase();
         }
-        return this._instance;
+        return this.#instance;
     }
 
-    private _dictionary: Map<string, new(owner: Entity, ...args: any[]) => Component>;
+    #dictionary: Map<string, new(owner: Entity, ...args: any[]) => Component>;
 
-    private constructor() {
-        this._dictionary = new Map();
+    constructor() {
+        this.#dictionary = new Map();
     }
 
-    public register<T extends Component>(name: string, ctor: new(owner: Entity, ...args: any[]) => T): void {
-        if (!this._dictionary.has(name)) {
-            this._dictionary.set(name, ctor);
+    register<T extends Component>(name: string, ctor: new(owner: Entity, ...args: any[]) => T): void {
+        if (!this.#dictionary.has(name)) {
+            this.#dictionary.set(name, ctor);
         }
     }
 
-    public create<T extends Component>(name: string, owner: Entity, ...args: any[]): T | undefined {
-        const ctor = this._dictionary.get(name);
+    create<T extends Component>(name: string, owner: Entity, ...args: any[]): T | undefined {
+        const ctor = this.#dictionary.get(name);
         if (ctor !== undefined) {
             return new ctor(owner, ...args) as T;
         }

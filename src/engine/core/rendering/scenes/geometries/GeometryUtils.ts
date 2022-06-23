@@ -8,7 +8,7 @@ export { GeometryUtils };
 
 class GeometryUtils {
 
-    public static computeTangentsAndBitangents<C extends new(length: number) => WritableArrayLike<number>>(
+    static computeTangentsAndBitangents<C extends new(length: number) => WritableArrayLike<number>>(
         verticesArray: ArrayLike<number>, uvsArray: ArrayLike<number>, indicesArray: ArrayLike<number>, type: C): {
         tangentsArray: InstanceType<C>,
         bitangentsArray: InstanceType<C>
@@ -85,7 +85,7 @@ class GeometryUtils {
         };
     }
 
-    public static computeFacesNormals<C extends new(length: number) => WritableArrayLike<number>>(verticesArray: ArrayLike<number>, indicesArray: ArrayLike<number>, type: C): InstanceType<C> {
+    static computeFacesNormals<C extends new(length: number) => WritableArrayLike<number>>(verticesArray: ArrayLike<number>, indicesArray: ArrayLike<number>, type: C): InstanceType<C> {
         
         const facesNormalsArray = new type(indicesArray.length);
 
@@ -108,7 +108,7 @@ class GeometryUtils {
         return facesNormalsArray as InstanceType<C>;
     }
 
-    public static computeBarycentrics<C extends new(length: number) => WritableArrayLike<number>>(verticesArray: ArrayLike<number>, type: C): InstanceType<C> {
+    static computeBarycentrics<C extends new(length: number) => WritableArrayLike<number>>(verticesArray: ArrayLike<number>, type: C): InstanceType<C> {
         const barycentricsArray = new type(verticesArray.length * (2 / 3));
 
         for (let i = 0; i < barycentricsArray.length; i += 6) {
@@ -119,7 +119,7 @@ class GeometryUtils {
         return barycentricsArray as InstanceType<C>;
     }
 
-    public static computeDistances<C extends new(length: number) => WritableArrayLike<number>>(facesArray: ArrayLike<number>, indicesArray: ArrayLike<number>, type: C): InstanceType<C> {
+    static computeDistances<C extends new(length: number) => WritableArrayLike<number>>(facesArray: ArrayLike<number>, indicesArray: ArrayLike<number>, type: C): InstanceType<C> {
         const [faces] = TriangleListPool.acquire(1);
         faces.setArray(facesArray);
 
@@ -140,7 +140,7 @@ class GeometryUtils {
         return distancesArray as InstanceType<C>;
     }
     
-    public static computeVerticesNormals<C extends new(length: number) => WritableArrayLike<number>>(
+    static computeVerticesNormals<C extends new(length: number) => WritableArrayLike<number>>(
         verticesArray: ArrayLike<number>, indicesArray: ArrayLike<number>, weighted: boolean, type: C, facesNormalsArray?: ArrayLike<number>): InstanceType<C> {
         
         const verticesNormalsArray = new type(verticesArray.length);

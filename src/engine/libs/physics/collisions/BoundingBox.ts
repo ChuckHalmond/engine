@@ -52,65 +52,65 @@ class BoundingBoxBase implements BoundingBox {
         this._max = new Vector3([+Infinity, +Infinity, +Infinity]);
     }
 	
-	public get min(): Vector3 {
+	get min(): Vector3 {
 		return this._min;
 	}
 
-	public set min(min: Vector3) {
+	set min(min: Vector3) {
 		this._min = min;
 	}
 
-	public get max(): Vector3 {
+	get max(): Vector3 {
 		return this._max;
 	}
 
-	public set max(max: Vector3) {
+	set max(max: Vector3) {
 		this._max = max;
 	}
 
-	public set(min: Vector3, max: Vector3): void {
+	set(min: Vector3, max: Vector3): void {
         this._min.copy(min);
         this._max.copy(max);
     }
 
-    public copy(box: BoundingBoxBase): BoundingBoxBase {
+    copy(box: BoundingBoxBase): BoundingBoxBase {
         this._min = box._min;
         this._max = box._max;
 
         return this;
     }
 
-    public clone(box: BoundingBoxBase): BoundingBoxBase {
+    clone(box: BoundingBoxBase): BoundingBoxBase {
         return new BoundingBoxBase().copy(box);
     }
 
-    public makeEmpty(): void {
+    makeEmpty(): void {
         this._min.setValues([Infinity, Infinity, Infinity]);
         this._max.setValues([+Infinity, +Infinity, +Infinity]);
     }
 
-    public isEmpty(): boolean {
+    isEmpty(): boolean {
         return (this._max.x < this._min.x) || (this._max.y < this._min.y) || (this._max.z < this._min.z);
     }
 
-	public getCenter(out: Vector3): Vector3 {
+	getCenter(out: Vector3): Vector3 {
 		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._min).add(this._max).scale(0.5);
 		return out;
 	}
     
-	public getSize(out: Vector3): Vector3 {
+	getSize(out: Vector3): Vector3 {
 		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._max).sub(this._min);
 		return out;
 	}
 
-    public setFromLengths(center: Vector3, length: number, width: number, height: number): BoundingBoxBase {
+    setFromLengths(center: Vector3, length: number, width: number, height: number): BoundingBoxBase {
         this._min.setValues([center.x - length / 2, center.y - width / 2, center.z - height / 2]);
         this._max.setValues([center.x + length / 2, center.y + width / 2, center.z + height / 2]);
 
         return this;
     }
 
-	public setFromPoints(points: Vector3List): BoundingBoxBase {
+	setFromPoints(points: Vector3List): BoundingBoxBase {
         this.makeEmpty();
 		
         points.forEach((vec: Vector3) => {
@@ -120,32 +120,32 @@ class BoundingBoxBase implements BoundingBox {
         return this;
     }
     
-	public expandByPoint(point: Vector3): BoundingBoxBase {
+	expandByPoint(point: Vector3): BoundingBoxBase {
 		this._min.min(point);
         this._max.min(point);
         
         return this;
     }
 
-	public expandByVector(vector: Vector3): BoundingBoxBase {
+	expandByVector(vector: Vector3): BoundingBoxBase {
 		this._min.sub(vector);
         this._max.add(vector);
         
 		return this;
 	}
 
-	public expandByScalar(k: number) {
+	expandByScalar(k: number) {
 		this._min.addScalar(-k);
 		this._max.addScalar(k);
 
 		return this;
     }
     
-	public clampPoint(point: Vector3, out: Vector3): Vector3 {
+	clampPoint(point: Vector3, out: Vector3): Vector3 {
 		return out.copy(point).clamp(this._min, this._max);
 	}
 
-	public distanceToPoint(point: Vector3): number {
+	distanceToPoint(point: Vector3): number {
 		let dist = 0;
 		const [temp] = Vector3Pool.acquire(1);
 		const clampedPoint = temp.copy(point).clamp(this._min, this._max);
@@ -154,7 +154,7 @@ class BoundingBoxBase implements BoundingBox {
         return dist;
 	}
 
-	public intersectsPlane(plane: Plane): boolean {
+	intersectsPlane(plane: Plane): boolean {
 		let min = 0, max = 0;
 
 		if (plane.normal.x > 0) {
@@ -187,7 +187,7 @@ class BoundingBoxBase implements BoundingBox {
 		return (min <= -plane.constant && max >= -plane.constant);
     }
 
-	public intersectsSphere(sphere: BoundingSphere): boolean {
+	intersectsSphere(sphere: BoundingSphere): boolean {
         let intersects = false;
 
         const [clamped] = Vector3Pool.acquire(1);
@@ -198,7 +198,7 @@ class BoundingBoxBase implements BoundingBox {
 		return intersects;
 	}
 
-    public intersectsBox(box: BoundingBoxBase): boolean {
+    intersectsBox(box: BoundingBoxBase): boolean {
 		return !(
             box._max.x < this._min.x || box._min.x > this._max.x ||
 			box._max.y < this._min.y || box._min.y > this._max.y ||
@@ -206,14 +206,14 @@ class BoundingBoxBase implements BoundingBox {
         );
     }
 
-	public getBoundingSphere(out: BoundingSphere): BoundingSphere {
+	getBoundingSphere(out: BoundingSphere): BoundingSphere {
 		out.radius = this.getSize(out.center).length() * 0.5;
 		this.getCenter(out.center);
 
 		return out;
     }
     
-    public intersectsTriangle(triangle: Triangle): boolean {
+    intersectsTriangle(triangle: Triangle): boolean {
 
 		if (this.isEmpty()) {
 			return false;

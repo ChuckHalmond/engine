@@ -41,63 +41,63 @@ class PlaneBase implements Plane {
         this._constant = constant || 0;
     }
 
-    public static fromNormalAndConstant(normal: Vector3, constant: number): Plane {
+    static fromNormalAndConstant(normal: Vector3, constant: number): Plane {
         return new PlaneBase().setFromNormalAndConstant(normal, constant);
     }
 
-	public static fromNormalAndCoplanarPoint(normal: Vector3, point: Vector3): Plane {
+	static fromNormalAndCoplanarPoint(normal: Vector3, point: Vector3): Plane {
 		return new PlaneBase().setFromNormalAndCoplanarPoint(normal, point);
 	}
 
-	public static fromCoplanarPoints(a: Vector3, b: Vector3, c: Vector3): Plane {
+	static fromCoplanarPoints(a: Vector3, b: Vector3, c: Vector3): Plane {
         return new PlaneBase().setFromCoplanarPoints(a, b, c);
     }
 
-    public get normal(): Vector3 {
+    get normal(): Vector3 {
 		return this._normal;
 	}
 
-	public set normal(normal: Vector3) {
+	set normal(normal: Vector3) {
 		this._normal = normal;
 	}
 
-	public get constant(): number {
+	get constant(): number {
 		return this._constant;
 	}
 
-	public set constant(constant: number) {
+	set constant(constant: number) {
 		this._constant = constant;
 	}
 
-    public copy(plane: PlaneBase): PlaneBase {
+    copy(plane: PlaneBase): PlaneBase {
         this._normal = plane._normal.clone();
         this._constant = plane._constant;
 
         return this;
     }
 
-    public set(x: number, y: number, z: number, constant: number): PlaneBase {
+    set(x: number, y: number, z: number, constant: number): PlaneBase {
         this._normal.setValues([x, y, z]);
         this._constant = constant;
 
         return this;
     }
 
-    public setFromNormalAndConstant(normal: Vector3, constant: number): PlaneBase {
+    setFromNormalAndConstant(normal: Vector3, constant: number): PlaneBase {
         this._normal.copy(normal);
         this._constant = constant;
 
         return this;
     }
 
-	public setFromNormalAndCoplanarPoint(normal: Vector3, point: Vector3): PlaneBase {
+	setFromNormalAndCoplanarPoint(normal: Vector3, point: Vector3): PlaneBase {
 		this._normal.copy(normal);
         this._constant = -point.dot(this._normal);
         
         return this;
 	}
 
-	public setFromCoplanarPoints(point1: Vector3, point2: Vector3, point3: Vector3): PlaneBase {
+	setFromCoplanarPoints(point1: Vector3, point2: Vector3, point3: Vector3): PlaneBase {
         const normal = point3.clone();
         const [temp] = Vector3Pool.acquire(1);
         temp.copy(point1);
@@ -107,11 +107,11 @@ class PlaneBase implements Plane {
 		return this;
     }
 
-	public distanceToPoint(point: Vector3): number {
+	distanceToPoint(point: Vector3): number {
 		return this._normal.dot(point) + this._constant;
 	}
     
-    public normalized(): PlaneBase {
+    normalized(): PlaneBase {
         const inverseNormalLength = 1.0 / this._normal.length();
         
         this._normal.scale(inverseNormalLength);

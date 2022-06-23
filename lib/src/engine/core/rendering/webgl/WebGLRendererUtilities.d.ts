@@ -68,7 +68,6 @@ export declare enum WindingOrder {
     CCW = 2305
 }
 export declare class WebGLRendererUtilities {
-    private constructor();
     static frontFace(gl: WebGL2RenderingContext, winding: WindingOrder): void;
     static scissor(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void;
     static viewport(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void;

@@ -93,7 +93,7 @@ class GeometryBufferBase implements GeometryBuffer {
     }
 
 
-    public getAttribute(name: string): GeometryBufferAttribute | null {
+    getAttribute(name: string): GeometryBufferAttribute | null {
         const attribute = this.attributes[name];
         if (attribute) {
             const {arrayType, byteLength, byteOffset, numComponents} = attribute;

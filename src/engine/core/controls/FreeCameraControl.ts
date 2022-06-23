@@ -20,21 +20,21 @@ class FreeCameraControlBase {
     rotationSpeed: number;
     translationSpeed: number;
 
-    lastPointerPosition: Vector2;
+    #lastPointerPosition: Vector2;
 
     constructor(camera: Camera, params?: {rotationSpeed?: number, translationSpeed?: number}) {
         this.camera = camera;
         this.rotationSpeed = params?.rotationSpeed ?? 50;
         this.translationSpeed = params?.translationSpeed ?? 8;
-        this.lastPointerPosition = new Vector2();
+        this.#lastPointerPosition = new Vector2();
     }
 
-    public update(deltaTime: number) {
+    update(deltaTime: number) {
         const cameraTransform = this.camera.transform;
         const cameraPosition = cameraTransform.getTranslation(new Vector3());
         const cameraForward = cameraTransform.getBackward(new Vector3());
         const cameraForwardArray = cameraForward.array;
-        const lastPointerPosition = this.lastPointerPosition;
+        const lastPointerPosition = this.#lastPointerPosition;
         const rotationSpeed = this.rotationSpeed;
         const translationSpeed = this.translationSpeed;
         let cameraUpSign = cameraTransform.getUp(new Vector3()).dot(Space.up);

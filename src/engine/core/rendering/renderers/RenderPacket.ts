@@ -13,12 +13,12 @@ export type TRenderPacketArrays = {
 };
 
 export abstract class RenderPacket<S extends Shader = any> {
-    public readonly shader: S;
+    readonly shader: S;
     
-    public readonly vertexArray: Map<string, VertexArray>;
-    public readonly uniforms: Map<string, UniformsList>;
+    readonly vertexArray: Map<string, VertexArray>;
+    readonly uniforms: Map<string, UniformsList>;
 
-    public readonly setters!: TRenderPacketSetters;
+    readonly setters!: TRenderPacketSetters;
     //TODO: Setters common to all instances (for example MeshPhong)
     // but arrays/values specific per instance
     
@@ -28,6 +28,6 @@ export abstract class RenderPacket<S extends Shader = any> {
         this.uniforms = new Map<string, UniformsList>();
     }
 
-    public abstract prepare(...args: any): void;
-    public abstract update(...args: any): void;
+    abstract prepare(...args: any): void;
+    abstract update(...args: any): void;
 }

@@ -14,23 +14,23 @@ class LightsUBO extends UBOBase<LightsUBOReferences> implements LightsUBO {
         super('LightsUBO', references);
     }
     
-    public static getInstance(references: LightsUBOReferences): LightsUBO {
+    static getInstance(references: LightsUBOReferences): LightsUBO {
         return UBOBase.getConcreteInstance(LightsUBO, references);
     }
 
-    public subscribeReferences(): void {
+    subscribeReferences(): void {
         throw new Error("Method not implemented.");
     }
 
-    public unsubscribeReferences(): void {
+    unsubscribeReferences(): void {
         throw new Error("Method not implemented.");
     }
 
-    public getUniformValues(): UniformsList {
+    getUniformValues(): UniformsList {
         throw new Error("Method not implemented.");
     }
 
-    public getDeltaUniformValues(): UniformsList | null {
+    getDeltaUniformValues(): UniformsList | null {
         throw new Error("Method not implemented.");
     }
 }

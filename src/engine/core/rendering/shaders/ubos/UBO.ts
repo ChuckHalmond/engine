@@ -18,8 +18,8 @@ type UBOCtor<U extends UBOBase, R extends {[key: string]: Identifiable} = {[key:
 
 abstract class UBOBase<R extends {[key: string]: Identifiable} = {[key: string]: Identifiable}, L extends UniformsList = UniformsList> implements UBO<L> {
     
-    public readonly name: string;
-    public readonly uuid: UUID;
+    readonly name: string;
+    readonly uuid: UUID;
     
     protected _references: R;
     protected _subscriptions?: Array<(message: any) => void>;
@@ -33,10 +33,10 @@ abstract class UBOBase<R extends {[key: string]: Identifiable} = {[key: string]:
 
     private static _dictionary: Map<string, UBOBase<any>> = new Map<string, UBOBase<any>>();
 
-    public abstract subscribeReferences(): void;
-    public abstract unsubscribeReferences(): void;
-    public abstract getUniformValues(): L;
-    public abstract getDeltaUniformValues(): Partial<L> | null;
+    abstract subscribeReferences(): void;
+    abstract unsubscribeReferences(): void;
+    abstract getUniformValues(): L;
+    abstract getDeltaUniformValues(): Partial<L> | null;
 
     protected static getReferencesHash<R extends {[key: string]: Identifiable}>(references: R) {
         return Object.keys(references).reduce((prev: string, curr: string) => {

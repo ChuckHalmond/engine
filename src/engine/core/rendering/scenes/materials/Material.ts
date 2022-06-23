@@ -17,9 +17,9 @@ function isMaterial(obj: any): obj is Material {
 }
 
 abstract class MaterialBase<T extends List = List> implements Material<T> {
-    public readonly isMaterial: true;
-    public readonly uuid: UUID;
-    public readonly name: string;
+    readonly isMaterial: true;
+    readonly uuid: UUID;
+    readonly name: string;
 
     protected _subscriptions!: Array<(message: any) => void>;
 
@@ -29,6 +29,6 @@ abstract class MaterialBase<T extends List = List> implements Material<T> {
         this.name = name;
     }
 
-    public abstract copy(instance: Material<T>): Material<T>;
-    public abstract clone(): Material<T>;
+    abstract copy(instance: Material<T>): Material<T>;
+    abstract clone(): Material<T>;
 }

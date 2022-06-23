@@ -29,35 +29,35 @@ class LoggerBase implements Logger {
 
     constructor() {}
 
-    public log(message: string): void {
+    log(message: string): void {
         const level = LogLevel.LOG;
         message = this.formatMessage(level, message);
         console.log(message);
         this._onLog(level, message);
     }
 
-    public info(message: string): void {
+    info(message: string): void {
         const level = LogLevel.INFO;
         message = this.formatMessage(level, message);
         console.info(message);
         this._onLog(level, message);
     }
 
-    public warn(message: string): void {
+    warn(message: string): void {
         const level = LogLevel.WARN;
         message = this.formatMessage(level, message);
         console.warn(message);
         this._onLog(level, message);
     }
 
-    public debug(message: string): void {
+    debug(message: string): void {
         const level = LogLevel.DEBUG;
         message = this.formatMessage(level, message);
         console.debug(message);
         this._onLog(level, message);
     }
 
-    public error(message: string): void {
+    error(message: string): void {
         const level = LogLevel.ERROR;
         message = this.formatMessage(level, message);
         console.error(message);
@@ -70,11 +70,11 @@ class LoggerBase implements Logger {
 
     private _broker = new SingleTopicMessageBroker();
 
-    public subscribe(subscription: (message: LoggerMessage) => void): (message: LoggerMessage) => void {
+    subscribe(subscription: (message: LoggerMessage) => void): (message: LoggerMessage) => void {
         return this._broker.subscribe(subscription);
     }
 
-    public unsubscribe(subscription: (message: LoggerMessage) => void): number {
+    unsubscribe(subscription: (message: LoggerMessage) => void): number {
         return this._broker.unsubscribe(subscription);
     }
 

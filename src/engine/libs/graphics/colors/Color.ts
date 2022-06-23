@@ -42,25 +42,25 @@ class ColorBase implements Color {
 		this._array = new (type || Uint8Array)(9);
     }
     
-    public static readonly BLACK = ColorBase.rgb(0, 0, 0);
-    public static readonly RED = ColorBase.rgb(255, 0, 0);
-    public static readonly GREEN = ColorBase.rgb(0, 255, 0);
-    public static readonly BLUE = ColorBase.rgb(0, 0, 255);
-    public static readonly WHITE = ColorBase.rgb(255, 255, 255);
+    static readonly BLACK = ColorBase.rgb(0, 0, 0);
+    static readonly RED = ColorBase.rgb(255, 0, 0);
+    static readonly GREEN = ColorBase.rgb(0, 255, 0);
+    static readonly BLUE = ColorBase.rgb(0, 0, 255);
+    static readonly WHITE = ColorBase.rgb(255, 255, 255);
 
-    public static rgb(r: number, g: number, b: number): ColorBase {
+    static rgb(r: number, g: number, b: number): ColorBase {
         const color =  new ColorBase()
         color.setValues([r, g, b, 255]);
         return color;
     }
 
-    public static rgba(r: number, g: number, b: number, a: number): ColorBase {
+    static rgba(r: number, g: number, b: number, a: number): ColorBase {
         const color =  new ColorBase()
         color.setValues([r, g, b, a]);
         return color;
     }
 
-    public static array(...colors: ColorBase[]): number[] {
+    static array(...colors: ColorBase[]): number[] {
         const a = new Array<number>(colors.length * 4);
         let c;
         let i = 0;
@@ -75,43 +75,43 @@ class ColorBase implements Color {
         return a;
     }
 
-    public get array(): WritableArrayLike<number> {
+    get array(): WritableArrayLike<number> {
         return this._array;
     }
 
-    public get r(): number {
+    get r(): number {
         return this._array[0];
     }
 
-    public set r(r: number) {
+    set r(r: number) {
         this._array[0] = r;
     }
 
-    public get g(): number {
+    get g(): number {
         return this._array[1];
     }
 
-    public set g(g: number) {
+    set g(g: number) {
         this._array[1] = g;
     }
 
-    public get b(): number {
+    get b(): number {
         return this._array[2];
     }
 
-    public set b(b: number) {
+    set b(b: number) {
         this._array[2] = b;
     }
 
-    public get a(): number {
+    get a(): number {
         return this._array[3];
     }
 
-    public set a(a: number) {
+    set a(a: number) {
         this._array[3] = a;
     }
 
-    public setValues(c: ColorValues): ColorBase {
+    setValues(c: ColorValues): ColorBase {
 		const o = this._array;
 
 		o[0] = c[0];
@@ -122,7 +122,7 @@ class ColorBase implements Color {
 		return this;
     }
     
-    public getValues(): ColorValues {
+    getValues(): ColorValues {
 		const c = this._array;
 		
 		return [
@@ -130,7 +130,7 @@ class ColorBase implements Color {
 		];
 	}
     
-    public copy(color: ColorBase): ColorBase {
+    copy(color: ColorBase): ColorBase {
         const o = this._array;
 
         o[0] = color.r;
@@ -141,11 +141,11 @@ class ColorBase implements Color {
         return this;
 	}
 
-	public clone(): ColorBase {
+	clone(): ColorBase {
 		return new ColorBase().copy(this);
     }
     
-    public lerp(color: ColorBase, t: number): ColorBase {
+    lerp(color: ColorBase, t: number): ColorBase {
 		const o = this._array;
 		const c = color._array;
 
@@ -157,7 +157,7 @@ class ColorBase implements Color {
 		return this;
 	}
     
-    public valuesNormalized(): ColorValues {
+    valuesNormalized(): ColorValues {
         return [this.r / 255, this.g / 255, this.b / 255, this.a / 255];
     }
 }

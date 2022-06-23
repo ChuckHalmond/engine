@@ -17,9 +17,9 @@ function isMesh(obj: any): obj is Mesh {
 }
 
 class MeshBase extends Object3DBase {
-    public readonly isMesh: true;
-    public readonly geometry: Geometry;
-    public readonly material: Material;
+    readonly isMesh: true;
+    readonly geometry: Geometry;
+    readonly material: Material;
 
     constructor(geometry: Geometry, material: Material) {
         super();

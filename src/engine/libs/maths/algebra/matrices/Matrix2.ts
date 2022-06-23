@@ -59,7 +59,7 @@ interface Matrix2 {
 }
 
 class Matrix2Base implements Matrix2 {
-  public readonly array: Float32Array;
+  readonly array: Float32Array;
 
 	constructor()
   constructor(array: ArrayLike<number>)
@@ -95,14 +95,14 @@ class Matrix2Base implements Matrix2 {
 		}
   }
   
-  public getValues(): Matrix2Values {
+  getValues(): Matrix2Values {
 		return [
       this.array[0], this.array[1],
       this.array[2], this.array[3]
     ];
 	}
 
-  public setValues(
+  setValues(
     m11: number, m12: number,
     m21: number, m22: number
   ): this {
@@ -115,83 +115,83 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public get row1(): Vector2Values {
+  get row1(): Vector2Values {
 		return [
       this.array[0],
       this.array[2]
     ];
 	}
 
-	public set row1(row: Vector2Values) {
+	set row1(row: Vector2Values) {
     this.array[0] = row[0];
     this.array[2] = row[1];
   }
 
-  public get row2(): Vector2Values {
+  get row2(): Vector2Values {
 		return [
       this.array[1],
       this.array[3]
     ];
 	}
 
-	public set row2(row: Vector2Values) {
+	set row2(row: Vector2Values) {
     this.array[1] = row[0];
     this.array[3] = row[1];
   }
 
-  public get col1(): Vector2Values {
+  get col1(): Vector2Values {
 		return [
       this.array[0],
       this.array[2]
     ];
 	}
 
-	public set col1(col: Vector2Values) {
+	set col1(col: Vector2Values) {
     this.array[0] = col[0];
     this.array[1] = col[1];
   }
 
-  public get col2(): Vector2Values {
+  get col2(): Vector2Values {
 		return [
       this.array[2],
       this.array[3]
     ];
 	}
 
-	public set col2(col: Vector2Values) {
+	set col2(col: Vector2Values) {
     this.array[2] = col[0];
     this.array[3] = col[1];
   }
 
-  public get m11() {
+  get m11() {
 		return this.array[0];
 	}
 
-	public set m11(val: number) {
+	set m11(val: number) {
 		this.array[0] = val;
   }
   
-  public get m12() {
+  get m12() {
 		return this.array[2];
 	}
 
-	public set m12(val: number) {
+	set m12(val: number) {
 		this.array[2] = val;
   }
   
-  public get m21() {
+  get m21() {
 		return this.array[1];
 	}
 
-	public set m21(val: number) {
+	set m21(val: number) {
 		this.array[1] = val;
   }
   
-  public get m22() {
+  get m22() {
 		return this.array[3];
 	}
 
-	public set m22(val: number) {
+	set m22(val: number) {
 		this.array[3] = val;
   }
 
@@ -201,7 +201,7 @@ class Matrix2Base implements Matrix2 {
 		}
 	}
 
-	public equals(mat: Matrix2) {
+	equals(mat: Matrix2) {
     const o = this.array;
     const m = mat.array;
 
@@ -211,7 +211,7 @@ class Matrix2Base implements Matrix2 {
       && o[3] === m[3];
   }
 
-  public copy(mat: Matrix2): this {
+  copy(mat: Matrix2): this {
     const o = this.array;
     const m = mat.array;
 
@@ -223,23 +223,23 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public clone(): this {
+  clone(): this {
     return new Matrix2Base(this.getValues()) as this;
   }
 
-  public det(): number {
+  det(): number {
     const o = this.array;
 
     return o[0] * o[3] - o[1] * o[2];
   }
 
-  public trace(): number {
+  trace(): number {
     const o = this.array;
     
     return o[0] + o[3];
   }
 
-  public setIdentity(): this {
+  setIdentity(): this {
     const o = this.array;
   
     o[0] = 1;
@@ -250,7 +250,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public setZeros(): this {
+  setZeros(): this {
     const o = this.array;
   
     o[0] = 0;
@@ -261,7 +261,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public negate(): this {
+  negate(): this {
     const o = this.array;
 
     o[0] = -o[0];
@@ -272,7 +272,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public transpose(): this {
+  transpose(): this {
     const o = this.array;
 
     let t;
@@ -284,7 +284,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public invert(): this {
+  invert(): this {
     const o = this.array;
 
     const d = 1.0 / (o[0] * o[3] - o[1] * o[2]);
@@ -301,7 +301,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public add(mat: Matrix2): this {
+  add(mat: Matrix2): this {
     const o = this.array;
     const m = mat.array;
 
@@ -313,7 +313,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public sub(mat: Matrix2): this {
+  sub(mat: Matrix2): this {
     const o = this.array;
     const m = mat.array;
 
@@ -325,7 +325,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public mult(mat: Matrix2): this {
+  mult(mat: Matrix2): this {
     const o = this.array;
     const m = mat.array;
 
@@ -346,7 +346,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public multScalar(k: number): this {
+  multScalar(k: number): this {
     const o = this.array;
 
     o[0] = o[0] * k;
@@ -357,7 +357,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
+  writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
 		const m = this.array;
 
 		out[offset     ] = m[ 0];
@@ -366,7 +366,7 @@ class Matrix2Base implements Matrix2 {
     out[offset +  3] = m[ 3];
   }
     
-  public readFromArray(arr: ArrayLike<number>, offset: number = 0): this {
+  readFromArray(arr: ArrayLike<number>, offset: number = 0): this {
 		const o = this.array;
 
 		o[ 0] = arr[offset     ];
@@ -377,7 +377,7 @@ class Matrix2Base implements Matrix2 {
     return this;
   }
 
-  public solve(vecB: Vector2): Vector2Values {
+  solve(vecB: Vector2): Vector2Values {
     const a = this.array;
 
     const a11 = a[0];

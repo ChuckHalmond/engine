@@ -21,8 +21,8 @@ interface SceneConstructor {
 }
 
 class SceneBase implements Scene {
-    public readonly root: Entity;
-    public readonly uuid: UUID;
+    readonly root: Entity;
+    readonly uuid: UUID;
 
     constructor() {
         this.uuid = UUIDGenerator.newUUID();
@@ -48,7 +48,7 @@ class SceneBase implements Scene {
         return entity;
     }
 
-    public build(desc: SceneDescription, root?: Entity): void {
+    build(desc: SceneDescription, root?: Entity): void {
         if (root === undefined) {
             root = this.root;
         }

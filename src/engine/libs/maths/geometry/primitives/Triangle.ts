@@ -72,31 +72,31 @@ class TriangleBase implements Triangle {
 		this._point3 = point3 || new Vector3();
 	}
 
-	public get point1(): Vector3 {
+	get point1(): Vector3 {
 		return this._point1;
 	}
 
-	public set point1(point1: Vector3) {
+	set point1(point1: Vector3) {
 		this._point1 = point1;
 	}
 
-	public get point2(): Vector3 {
+	get point2(): Vector3 {
 		return this._point2;
 	}
 
-	public set point2(point2: Vector3) {
+	set point2(point2: Vector3) {
 		this._point2 = point2;
 	}
 
-	public get point3(): Vector3 {
+	get point3(): Vector3 {
 		return this._point3;
 	}
 
-	public set point3(point3: Vector3) {
+	set point3(point3: Vector3) {
 		this._point3 = point3;
 	}
 
-	public getValues(): TriangleValues {
+	getValues(): TriangleValues {
 		const point1 = this._point1,
 			point2 = this._point2,
 			point3 = this._point3;
@@ -108,7 +108,7 @@ class TriangleBase implements Triangle {
 		];
 	}
 
-    public set(point1: Vector3, point2: Vector3, point3: Vector3): TriangleBase {
+    set(point1: Vector3, point2: Vector3, point3: Vector3): TriangleBase {
         this._point1.copy(point1);
         this._point2.copy(point2);
 		this._point3.copy(point3);
@@ -116,7 +116,7 @@ class TriangleBase implements Triangle {
 		return this;
 	}
 	
-    public setValues(values: TriangleValues): TriangleBase {
+    setValues(values: TriangleValues): TriangleBase {
 		
         this._point1.setValues([values[0], values[1], values[2]]);
         this._point2.setValues([values[3], values[4], values[5]]);
@@ -125,11 +125,11 @@ class TriangleBase implements Triangle {
 		return this;
 	}
 
-    public clone(): TriangleBase {
+    clone(): TriangleBase {
         return new TriangleBase().copy(this);
     }
 
-    public copy(triangle: TriangleBase): TriangleBase {
+    copy(triangle: TriangleBase): TriangleBase {
         this._point1 = triangle._point1;
         this._point2 = triangle._point2;
         this._point3 = triangle._point3;
@@ -137,7 +137,7 @@ class TriangleBase implements Triangle {
         return this;
     }
 
-    public getNormal(out: Vector3): Vector3  {
+    getNormal(out: Vector3): Vector3  {
 		const [temp] = Vector3Pool.acquire(1);
 		out.copyAndSub(this._point2, this.point1);
 		temp.copyAndSub(this._point3, this.point1);
@@ -147,7 +147,7 @@ class TriangleBase implements Triangle {
         return out;
 	}
 
-	public getBarycentricCoordinates(point: Vector3, out: Vector3): Vector3 {
+	getBarycentricCoordinates(point: Vector3, out: Vector3): Vector3 {
 		const [v1, v2, vp] = Vector3Pool.acquire(3);
 		
 		v1.copyAndSub(this._point2, this._point1);
@@ -177,19 +177,19 @@ class TriangleBase implements Triangle {
 		return out;
 	}
 
-	public *sharedPointsWith(triangle: TriangleBase): IterableIterator<Vector3> {
+	*sharedPointsWith(triangle: TriangleBase): IterableIterator<Vector3> {
 		if (this._point1.equals(triangle._point1) || this._point1.equals(triangle._point2) || this._point1.equals(triangle._point3)) yield this._point1;
 		if (this._point2.equals(triangle._point1) || this._point2.equals(triangle._point2) || this._point2.equals(triangle._point3)) yield this._point2;
 		if (this._point3.equals(triangle._point1) || this._point3.equals(triangle._point2) || this._point3.equals(triangle._point3)) yield this._point3;
 	}
 
-	public indexOfPoint(point: Vector3): number {
+	indexOfPoint(point: Vector3): number {
 		return (point.equals(this._point1)) ? 0 :
 			(point.equals(this._point2)) ? 1 :
 			(point.equals(this._point3)) ? 2 : -1;
 	}
 
-	public containsPoint(point: Vector3): boolean {
+	containsPoint(point: Vector3): boolean {
 
 		let contains = false;
 		const [pointCoords] = Vector3Pool.acquire(1);
@@ -200,7 +200,7 @@ class TriangleBase implements Triangle {
 		return contains;
 	}
 
-	public getUV(point: Vector3, uv1: Vector2, uv2: Vector2, uv3: Vector2, out: Vector2): Vector2 {
+	getUV(point: Vector3, uv1: Vector2, uv2: Vector2, uv3: Vector2, out: Vector2): Vector2 {
 		const [pointCoords] = Vector3Pool.acquire(1);
 		this.getBarycentricCoordinates(point, pointCoords);
 		out.setZeros();
@@ -212,7 +212,7 @@ class TriangleBase implements Triangle {
 		return out;
 	}
 
-	public isFrontFacing(direction: Vector3): boolean {
+	isFrontFacing(direction: Vector3): boolean {
 		let result = false;
 
 		const [v1, v2] = Vector3Pool.acquire(2);
@@ -224,7 +224,7 @@ class TriangleBase implements Triangle {
 		return result;
 	}
 
-	public getArea(): number {
+	getArea(): number {
 		let area = 0;
 		
 		const [v1, v2] = Vector3Pool.acquire(2);
@@ -236,15 +236,15 @@ class TriangleBase implements Triangle {
 		return area;
 	}
 
-	public getMidpoint(out: Vector3): Vector3 {
+	getMidpoint(out: Vector3): Vector3 {
 		return out.copy(this._point1).add(this._point2).add(this._point3).scale(1 / 3);
 	}
 
-	public getPlane(out: Plane): Plane {
+	getPlane(out: Plane): Plane {
 		throw Error('Not implemented yet.');
 	}
 
-	public closestPointToPoint(point: Vector3, out: Vector3): Vector3 {
+	closestPointToPoint(point: Vector3, out: Vector3): Vector3 {
         const point1 = this._point1,
             point2 = this._point2,
             point3 = this._point3;
@@ -313,32 +313,32 @@ class TriangleBase implements Triangle {
 		return out;
 	}
 	
-	public equals(triangle: TriangleBase): boolean {
+	equals(triangle: TriangleBase): boolean {
         return triangle._point1.equals(this._point1)
             && triangle._point2.equals(this._point2)
             && triangle._point3.equals(this._point3);
 	}
 
-    public translate(vec: Vector3): void {
+    translate(vec: Vector3): void {
         this._point1.add(vec);
         this._point2.add(vec);
         this._point3.add(vec);
     }
 
-    public transform(matrix: Matrix4): void {
+    transform(matrix: Matrix4): void {
         matrix.transformDirection(this._point1);
         matrix.transformDirection(this._point2);
         matrix.transformDirection(this._point3);
 	}
 
-	public readFromArray(arr: ArrayLike<number>, offset: number): TriangleBase {
+	readFromArray(arr: ArrayLike<number>, offset: number): TriangleBase {
 		this.point1.readFromArray(arr, offset);
 		this.point2.readFromArray(arr, offset + 3);
 		this.point3.readFromArray(arr, offset + 6);
 		return this;
 	}
 
-	public writeIntoArray(arr: WritableArrayLike<number>, offset: number): void {
+	writeIntoArray(arr: WritableArrayLike<number>, offset: number): void {
 		this.point1.writeIntoArray(arr, offset);
 		this.point2.writeIntoArray(arr, offset + 3);
 		this.point3.writeIntoArray(arr, offset + 6);

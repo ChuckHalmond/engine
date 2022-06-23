@@ -25,9 +25,9 @@ interface EulerAnglesConstructor {
  * https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
  */
 class EulerAnglesBase implements EulerAngles {
-	public yaw: number;
-    public pitch: number;
-    public roll: number;
+	yaw: number;
+    pitch: number;
+    roll: number;
 
 	constructor()
 	constructor(values: Vector3Values)
@@ -44,11 +44,11 @@ class EulerAnglesBase implements EulerAngles {
         }
 	}
 
-	public toString(): string {
+	toString(): string {
 		return `EulerAngles([${this.yaw}, ${this.pitch}, ${this.roll}])`;
 	}
 
-	public get values(): Vector3Values {
+	get values(): Vector3Values {
 		return [
 			this.yaw,
 			this.pitch,
@@ -56,13 +56,13 @@ class EulerAnglesBase implements EulerAngles {
 		];
 	}
 
-	public set values(values: Vector3Values) {
+	set values(values: Vector3Values) {
 		this.yaw = values[0];
 		this.pitch = values[1];
 		this.roll = values[2];
 	}
 
-	public toQuaternion(): Quaternion {
+	toQuaternion(): Quaternion {
 		const cosYaw = Math.cos(this.yaw * 0.5);
 		const sinYaw = Math.sin(this.yaw * 0.5);
 		const cosPitch = Math.cos(this.pitch * 0.5);
@@ -78,7 +78,7 @@ class EulerAnglesBase implements EulerAngles {
         ]);
 	}
 
-	public setQuaternion(quaternion: Quaternion): this {
+	setQuaternion(quaternion: Quaternion): this {
 		const x = quaternion.x;
 		const y = quaternion.y;
 		const z = quaternion.z;
@@ -103,11 +103,11 @@ class EulerAnglesBase implements EulerAngles {
 		return this;
 	}
 
-    public static fromQuaternion(quaternion: Quaternion): EulerAngles {
+    static fromQuaternion(quaternion: Quaternion): EulerAngles {
 		return new EulerAnglesBase().setQuaternion(quaternion);
     }
 
-	/*public static fromMatrix(matrix: Matrix3): EulerAngles {
+	/*static fromMatrix(matrix: Matrix3): EulerAngles {
 		const yaw = Math.atan2(matrix.m21, matrix.m11);
 		const pitch = Math.atan2(-matrix.m31, Math.hypot(matrix.m32, matrix.m33));
 		const roll = Math.atan2(matrix.m32, matrix.m33);

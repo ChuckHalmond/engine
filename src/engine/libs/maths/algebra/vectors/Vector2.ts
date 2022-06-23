@@ -48,7 +48,7 @@ interface Vector2 {
 }
 
 class Vector2Base {
-	public array: Float32Array;
+	array: Float32Array;
 
 	constructor()
 	constructor(values: Vector2Values)
@@ -58,35 +58,35 @@ class Vector2Base {
 		]) : new Float32Array([0, 0]);
 	}
 
-	public get values(): Vector2Values {
+	get values(): Vector2Values {
 		return [
 			this.array[0],
 			this.array[1]
 		];
 	}
 
-	public set values(values: Vector2Values) {
+	set values(values: Vector2Values) {
 		this.array[0] = values[0];
 		this.array[1] = values[1];
 	}
 
-	public get x() {
+	get x() {
 		return this.array[0];
 	}
 
-	public set x(x: number) {
+	set x(x: number) {
 		this.array[0] = x;
 	}
 
-	public get y() {
+	get y() {
 		return this.array[1];
 	}
 
-	public set y(y: number) {
+	set y(y: number) {
 		this.array[1] = y;
 	}
 
-	public setValues(v: Vector2Values): this {
+	setValues(v: Vector2Values): this {
 		const o = this.array;
 
 		o[0] = v[0];
@@ -95,7 +95,7 @@ class Vector2Base {
 		return this;
 	}
 
-	public equals(vec: Vector2Base): boolean {
+	equals(vec: Vector2Base): boolean {
 		const v = vec.array;
 		const o = this.array;
 		
@@ -103,7 +103,7 @@ class Vector2Base {
 			&& v[1] === o[1];
 	}
 
-	public copy(vec: Vector2Base): this {
+	copy(vec: Vector2Base): this {
 		const o = this.array;
 		const v = vec.array;
 
@@ -113,11 +113,11 @@ class Vector2Base {
 		return this;
 	}
 
-	public clone(): this {
+	clone(): this {
 		return new Vector2Base(this.values) as this;
 	}
 
-	public setUnit(): this {
+	setUnit(): this {
 		const o = this.array;
 
 		o[0] = 1;
@@ -126,7 +126,7 @@ class Vector2Base {
 		return this;
 	}
 
-	public setZeros(): this {
+	setZeros(): this {
 		const o = this.array;
 
 		o[0] = 0;
@@ -135,7 +135,7 @@ class Vector2Base {
 		return this;
 	}
 
-	public add(vec: Vector2Base): this {
+	add(vec: Vector2Base): this {
 		const v = vec.array;
 		const o = this.array;
 
@@ -145,7 +145,7 @@ class Vector2Base {
 		return this;
 	}
 
-	public addScalar(k: number): this {
+	addScalar(k: number): this {
 		const o = this.array;
 
 		o[0] = o[0] + k;
@@ -154,7 +154,7 @@ class Vector2Base {
 		return this;
 	}
 
-	public sub(vec: Vector2Base): this {
+	sub(vec: Vector2Base): this {
 		const v = vec.array;
 		const o = this.array;
 
@@ -164,7 +164,7 @@ class Vector2Base {
 		return this;
 	}
 
-	public lerp(vec: Vector2Base, t: number): this {
+	lerp(vec: Vector2Base, t: number): this {
 		const v = vec.array;
 		const o = this.array;
 
@@ -174,7 +174,7 @@ class Vector2Base {
 		return this;
 	}
 
-	public clamp(min: Vector2Base, max: Vector2Base): this {
+	clamp(min: Vector2Base, max: Vector2Base): this {
 		const o = this.array;
 		const l = min.array;
 		const g = max.array;
@@ -185,7 +185,7 @@ class Vector2Base {
 		return this;
 	}
 
-	public multScalar(k: number): this {
+	multScalar(k: number): this {
 		const o = this.array;
 
 		o[0] = o[0] * k;
@@ -194,33 +194,33 @@ class Vector2Base {
 		return this;
 	}
 
-	public cross(vec: Vector2Base): number {
+	cross(vec: Vector2Base): number {
 		const a = this.array;
 		const b = vec.array;
 
 		return a[0] * b[1] - a[1] * b[0];
 	}
 
-	public dot(vec: Vector2Base): number {
+	dot(vec: Vector2Base): number {
 		const a = this.array;
 		const b = vec.array;
 
 		return (a[0] * b[0]) + (a[1] * b[1]);
 	}
 
-	public length(): number {
+	length(): number {
 		const v = this.array;
 
 		return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
 	}
 
-	public lengthSquared(): number {
+	lengthSquared(): number {
 		const v = this.array;
 
 		return v[0] * v[0] + v[1] * v[1];
 	}
 
-	public dist(vec: Vector2Base): number {
+	dist(vec: Vector2Base): number {
 		const a = this.array;
 		const b = vec.array;
 
@@ -230,7 +230,7 @@ class Vector2Base {
 		return Math.sqrt(dx * dx + dy * dy);
 	}
 
-	public distSquared(vec: Vector2Base): number {
+	distSquared(vec: Vector2Base): number {
 		const a = this.array;
 		const b = vec.array;
 
@@ -240,7 +240,7 @@ class Vector2Base {
 		return dx * dx + dy * dy;
 	}
 
-	public normalize(): this {
+	normalize(): this {
 		const o = this.array;
 
 		const lenSq = o[0] * o[0] + o[1] * o[1];
@@ -257,7 +257,7 @@ class Vector2Base {
 		return this;
 	}
 
-	public negate(): this {
+	negate(): this {
 		const o = this.array;
 
 		o[0] = -o[0];
@@ -266,9 +266,9 @@ class Vector2Base {
 		return this;
 	}
 
-	public mult(mat: Matrix2): this
-	public mult(vec: Vector2): this
-	public mult(arg0: Matrix2 | Vector2): this {
+	mult(mat: Matrix2): this
+	mult(vec: Vector2): this
+	mult(arg0: Matrix2 | Vector2): this {
 		if (arg0 instanceof Vector2) {
 			const v = arg0.array;
 
@@ -290,7 +290,7 @@ class Vector2Base {
 		}
 	}
 
-	public addScaled(vec: Vector2Base, k: number): this {
+	addScaled(vec: Vector2Base, k: number): this {
 		const v = vec.array;
 		const o = this.array;
 
@@ -300,14 +300,14 @@ class Vector2Base {
 		return this;
 	}
 
-	public writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
+	writeIntoArray(out: WritableArrayLike<number>, offset: number = 0): void {
 		const v = this.array;
 
 		out[offset    ] = v[0];
 		out[offset + 1] = v[1];
     }
     
-    public readFromArray(arr: ArrayLike<number>, offset: number = 0): this {
+    readFromArray(arr: ArrayLike<number>, offset: number = 0): this {
 		const o = this.array;
 
 		o[0] = arr[offset    ];
@@ -316,7 +316,7 @@ class Vector2Base {
 		return this;
     }
 
-	public copyAndSub(vecA: Vector2Base, vecB: Vector2Base): this {
+	copyAndSub(vecA: Vector2Base, vecB: Vector2Base): this {
 		const o = this.array;
 		const a = vecA.array;
 		const b = vecB.array;

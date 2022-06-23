@@ -102,15 +102,15 @@ class PhongMaterialBase extends MaterialBase<PhongMaterialProperties> implements
         this._subscriptions = new Array(Object.keys(PhongMaterialPropertyKeys).length);
     }
 
-    public get changes(): SingleTopicMessageSubscriber<PhongMaterialPropertyKeys> {
+    get changes(): SingleTopicMessageSubscriber<PhongMaterialPropertyKeys> {
         return this._changes;
     }
 
-    public get albedo(): Color | undefined {
+    get albedo(): Color | undefined {
         return this._albedo;
     }
 
-    public updateAlbedo(albedo: ColorValues | undefined) {
+    updateAlbedo(albedo: ColorValues | undefined) {
         if (typeof albedo !== 'undefined') {
             if (typeof this._albedo !== 'undefined') {
                 this._albedo.setValues(albedo);
@@ -122,11 +122,11 @@ class PhongMaterialBase extends MaterialBase<PhongMaterialProperties> implements
         this._changes.publish(PhongMaterialPropertyKeys.albedo);
     }
 
-    public get albedoMap(): Texture | undefined {
+    get albedoMap(): Texture | undefined {
         return this._albedoMap;
     }
 
-    public updateAlbedoMap(albedoMap: TextureProperties | undefined) {
+    updateAlbedoMap(albedoMap: TextureProperties | undefined) {
         
         if (typeof albedoMap !== 'undefined') {
             if (typeof this._albedoMap !== 'undefined') {
@@ -143,103 +143,103 @@ class PhongMaterialBase extends MaterialBase<PhongMaterialProperties> implements
         this._changes.publish(PhongMaterialPropertyKeys.albedoMap);
     }
 
-    public get alpha(): number | undefined {
+    get alpha(): number | undefined {
         return this._alpha;
     }
 
-    public set alpha(alpha: number | undefined) {
+    set alpha(alpha: number | undefined) {
         this._alpha = alpha;
     }
 
-    public get alphaMap(): Texture | undefined {
+    get alphaMap(): Texture | undefined {
         return this._alphaMap;
     }
 
-    public set alphaMap(alphaMap: Texture | undefined) {
+    set alphaMap(alphaMap: Texture | undefined) {
         this._alphaMap = alphaMap;
     }
 
-    public get displacementMap(): Texture | undefined {
+    get displacementMap(): Texture | undefined {
         return this._displacementMap;
     }
 
-    public set displacementMap(displacementMap: Texture | undefined) {
+    set displacementMap(displacementMap: Texture | undefined) {
         this._displacementMap = displacementMap;
     }
 
-    public get emissionMap(): Texture | undefined {
+    get emissionMap(): Texture | undefined {
         return this._emissionMap;
     }
 
-    public set emissionMap(emissionMap: Texture | undefined) {
+    set emissionMap(emissionMap: Texture | undefined) {
         this._emissionMap = emissionMap;
     }
 
-    public get lightMap(): Texture | undefined {
+    get lightMap(): Texture | undefined {
         return this._lightMap;
     }
 
-    public set lightMap(lightMap: Texture | undefined) {
+    set lightMap(lightMap: Texture | undefined) {
         this._lightMap = lightMap;
     }
 
-    public get normalMap(): Texture | undefined {
+    get normalMap(): Texture | undefined {
         return this._normalMap;
     }
 
-    public set normalMap(normalMap: Texture | undefined) {
+    set normalMap(normalMap: Texture | undefined) {
         this._normalMap = normalMap;
     }
 
-    public get occlusionMap(): Texture | undefined {
+    get occlusionMap(): Texture | undefined {
         return this._occlusionMap;
     }
 
-    public set occlusionMap(occlusionMap: Texture | undefined) {
+    set occlusionMap(occlusionMap: Texture | undefined) {
         this._occlusionMap = occlusionMap;
     }
 
-    public get reflexionMap(): Texture | undefined {
+    get reflexionMap(): Texture | undefined {
         return this._reflexionMap;
     }
 
-    public set reflexionMap(reflexionMap: Texture | undefined) {
+    set reflexionMap(reflexionMap: Texture | undefined) {
         this._reflexionMap = reflexionMap;
     }
 
-    public get shininess(): number | undefined {
+    get shininess(): number | undefined {
         return this._shininess;
     }
 
-    public set shininess(shininess: number | undefined) {
+    set shininess(shininess: number | undefined) {
         this._shininess = shininess;
     }
 
-    public get specular(): Color | undefined {
+    get specular(): Color | undefined {
         return this._specular;
     }
 
-    public set specular(specular: Color | undefined) {
+    set specular(specular: Color | undefined) {
         this._specular = specular;
     }
 
-    public get specularMap(): Texture | undefined {
+    get specularMap(): Texture | undefined {
         return this._specularMap;
     }
 
-    public set specularMap(specularMap: Texture | undefined) {
+    set specularMap(specularMap: Texture | undefined) {
         this._specularMap = specularMap;
     }
 
-    public get specularFactor(): number | undefined {
+    get specularFactor(): number | undefined {
         return this._specularFactor;
     }
 
-    public set specularFactor(specularFactor: number | undefined) {
+    set specularFactor(specularFactor: number | undefined) {
         this._specularFactor = specularFactor;
     }
 
-    public copy(material: PhongMaterialBase): PhongMaterialBase {
+    copy(material: PhongMaterialBase): PhongMaterialBase {
         this._albedo = material._albedo;
         this._albedoMap = material._albedoMap;
         this._alpha = material._alpha;
@@ -259,7 +259,7 @@ class PhongMaterialBase extends MaterialBase<PhongMaterialProperties> implements
         return this;
     }
     
-    public clone(): PhongMaterialBase {
+    clone(): PhongMaterialBase {
         return new PhongMaterialBase(this);
     }
 

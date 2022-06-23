@@ -23,7 +23,7 @@ class StackPoolBase<O extends object = object> extends PoolBase<O> implements Po
         this._top = 0;
     }
     
-    public acquire(count: number): O[] {
+    acquire(count: number): O[] {
         const top = this._top;
         const target = top + count;
 
@@ -37,7 +37,7 @@ class StackPoolBase<O extends object = object> extends PoolBase<O> implements Po
         return this._objects.slice(top, target);
     }
 
-    public release(count: number): void {
+    release(count: number): void {
         const top = this._top;
         if (count > top) {
             console.warn("Releasing under zero.");
@@ -45,13 +45,13 @@ class StackPoolBase<O extends object = object> extends PoolBase<O> implements Po
         this._top = Math.max(top - count, 0);
     }
 
-    public extend(count: number): void {
+    extend(count: number): void {
         this._objects.push(...Array(count).fill(0).map(() => {
             return new this.ctor();
         }));
     }
     
-    public clear(): void {
+    clear(): void {
         this._objects = [];
         this._top = 0;
         this._autoExtendTicks = 0;

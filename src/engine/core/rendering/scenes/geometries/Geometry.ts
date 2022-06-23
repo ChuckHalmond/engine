@@ -102,8 +102,8 @@ function isGeometry(obj: any): obj is Geometry {
 
 abstract class GeometryBase implements Geometry {
 
-    /*public readonly uuid: UUID;
-    public readonly isGeometry: true;
+    /*readonly uuid: UUID;
+    readonly isGeometry: true;
     
     private _boundingBox?: BoundingBox;
     private _boundingSphere?: BoundingSphere;
@@ -174,61 +174,61 @@ abstract class GeometryBase implements Geometry {
         this._bitangents = new Vector3List(this._bitangentsArray);*/
     }
 
-    /*public builder(): GeometryBuilder {
+    /*builder(): GeometryBuilder {
         return new GeometryBuilderBase(this);
     }*/
 
-    /*public get indices(): TypedArray {
+    /*get indices(): TypedArray {
         return this._indicesArray;
     }
 
-    public get vertices(): Vector3List {
+    get vertices(): Vector3List {
         return this._vertices;
     }
 
-    public get barycentrics(): Vector2List {
+    get barycentrics(): Vector2List {
         return this._barycentrics;
     }
 
-    public get distances(): TypedArray {
+    get distances(): TypedArray {
         return this._distancesArray;
     }
 
-    public get uvs(): Vector2List {
+    get uvs(): Vector2List {
         return this._uvs;
     }
 
-    public get faces(): TriangleList {
+    get faces(): TriangleList {
         return this._faces;
     }
 
-    public get facesNormals(): Vector3List {
+    get facesNormals(): Vector3List {
         return this._facesNormals;
     }
 
-    public get verticesNormals(): Vector3List {
+    get verticesNormals(): Vector3List {
         return this._verticesNormals;
     }
 
-    public get tangents(): Vector3List {
+    get tangents(): Vector3List {
         return this._tangents;
     }
 
-    public get bitangents(): Vector3List {
+    get bitangents(): Vector3List {
         return this._bitangents;
     }
 
-    public get boundingBox(): BoundingBox | undefined {
+    get boundingBox(): BoundingBox | undefined {
         return this._boundingBox;
     }
     
-	public get boundingSphere(): BoundingSphere | undefined {
+	get boundingSphere(): BoundingSphere | undefined {
         return this._boundingSphere;
     }*/
 
-    public abstract toBuilder(): GeometryBuilder;
+    abstract toBuilder(): GeometryBuilder;
     
-    /*public copy(geometry: GeometryBase): GeometryBase {
+    /*copy(geometry: GeometryBase): GeometryBase {
         this._verticesArray = geometry._verticesArray.slice();
         this._indicesArray = geometry._indicesArray.slice();
         this._uvsArray = geometry._uvsArray.slice();
@@ -248,7 +248,7 @@ abstract class GeometryBase implements Geometry {
         return this;
     }
 
-    public updateVertices(vertices: TypedArray, offset: number = 0): GeometryBase {
+    updateVertices(vertices: TypedArray, offset: number = 0): GeometryBase {
         const idxFrom = offset;
         const idxTo = offset + vertices.length;
         this._verticesArray.set(vertices, offset);
@@ -258,7 +258,7 @@ abstract class GeometryBase implements Geometry {
         return this;
     }
 
-    public updateUvs(uvs: TypedArray, offset: number = 0): GeometryBase {
+    updateUvs(uvs: TypedArray, offset: number = 0): GeometryBase {
         const idxFrom = offset;
         const idxTo = offset + uvs.length;
         this._uvsArray.set(uvs, offset);
@@ -269,7 +269,7 @@ abstract class GeometryBase implements Geometry {
         return this;
     }
 
-    public clone(): GeometryBase {
+    clone(): GeometryBase {
         return new GeometryBase({
             vertices: this._verticesArray.slice(),
             indices: this._indicesArray.slice(),
@@ -309,7 +309,7 @@ abstract class GeometryBase implements Geometry {
         return this;
     }*/
     
-	/*public computeBoundingBox(): BoundingBox {
+	/*computeBoundingBox(): BoundingBox {
         if (this._boundingBox === undefined) {
             this._boundingBox = new BoundingBox().setFromPoints(this._vertices);
         }
@@ -319,7 +319,7 @@ abstract class GeometryBase implements Geometry {
         return this._boundingBox;
     }
     
-	public computeBoundingSphere(): BoundingSphere {
+	computeBoundingSphere(): BoundingSphere {
         if (this._boundingSphere === undefined) {
             this._boundingSphere = new BoundingSphere().setFromPoints(this._vertices);
         }

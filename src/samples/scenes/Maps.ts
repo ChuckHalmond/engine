@@ -203,7 +203,7 @@ export async function launchScene() {
   const timers: [string, Date][] = [
     ["t0", new Date()]
   ];
-  const quadGeometry = new QuadGeometry({widthSegment: 128, heightSegment: 128});
+  const quadGeometry = new QuadGeometry({widthSegment: 32, heightSegment: 32});
   timers.push(["constructor()", getDelta(timers)]);
   const quadGeometryBuilder = quadGeometry.toBuilder();
   timers.push(["toBuilder()", getDelta(timers)]);

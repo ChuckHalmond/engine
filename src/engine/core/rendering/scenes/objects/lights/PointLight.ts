@@ -4,7 +4,7 @@ import { LightBase } from "./Light";
 export { PointLight };
 
 class PointLight extends LightBase {
-    public isLightingOn(mesh: Mesh): boolean {
+    isLightingOn(mesh: Mesh): boolean {
         return false;
     }
 }

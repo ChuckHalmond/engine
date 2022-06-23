@@ -5,7 +5,7 @@ export { AmbientLight };
 
 class AmbientLight extends LightBase {
     
-    public isLightingOn(mesh: Mesh): boolean {
+    isLightingOn(mesh: Mesh): boolean {
         return false;
     }
 }

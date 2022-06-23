@@ -19,14 +19,14 @@ abstract class NodeBase implements Node {
         this._children = [];
     }
 
-    public root(): Node | null {
+    root(): Node | null {
         if (this._parent !== null) {
             return this._parent.parent;
         }
         return this;
     }
 
-    public set parent(parent: Node | null) {
+    set parent(parent: Node | null) {
         if (this._parent != null) {
             this._parent.removeChild(this);
         }
@@ -36,15 +36,15 @@ abstract class NodeBase implements Node {
         }
     }
 
-    public get parent(): Node | null {
+    get parent(): Node | null {
         return this._parent;
     }
 
-    public get children(): Node[] {
+    get children(): Node[] {
         return this._children;
     }
 
-    public removeChild(child: Node): void {
+    removeChild(child: Node): void {
         const childIdx = this._children.indexOf(child);
         if (childIdx > -1) {
             const last = this._children.pop();

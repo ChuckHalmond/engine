@@ -70,34 +70,34 @@ interface ReadonlyTexture extends TReadonlyTexture {};
 
 class BaseTexture implements Texture {
     
-    public readonly uuid: UUID;
+    readonly uuid: UUID;
 
-    public target: TextureTarget;
+    target: TextureTarget;
 
-    public lod: number;
-    public width: number;
-    public height: number;
+    lod: number;
+    width: number;
+    height: number;
 
-    public pixels: Texture2DPixels | TextureCubeMapPixels;
-    public format: TexturePixelFormat;
-    public type: TexturePixelType;
+    pixels: Texture2DPixels | TextureCubeMapPixels;
+    format: TexturePixelFormat;
+    type: TexturePixelType;
     
-    public min?: TextureMinFilter;
-    public mag?: TextureMagFilter;
+    min?: TextureMinFilter;
+    mag?: TextureMagFilter;
 
-    public wrapS?: TextureWrapMode;
-    public wrapT?: TextureWrapMode;
-    public wrapR?: TextureWrapMode;
+    wrapS?: TextureWrapMode;
+    wrapT?: TextureWrapMode;
+    wrapR?: TextureWrapMode;
 
-    public tiling?: Vector2;
-    public offset?: Vector2;
+    tiling?: Vector2;
+    offset?: Vector2;
 
-    public baseLod?: number;
-    public maxLod?: number;
+    baseLod?: number;
+    maxLod?: number;
 
-    public unpackAlignment?: number;
-    public anisotropy?: number;
-    public flipY?: boolean;
+    unpackAlignment?: number;
+    anisotropy?: number;
+    flipY?: boolean;
 
     constructor(props: TextureProperties) {
         this.uuid = UUIDGenerator.newUUID();
@@ -128,9 +128,9 @@ class BaseTexture implements Texture {
 }
 
 export class TextureWrapper implements Texture {
-    public internal: Texture;
+    internal: Texture;
 
-    public get uuid(): UUID {
+    get uuid(): UUID {
         return this.internal.uuid;
     }
 
@@ -138,155 +138,155 @@ export class TextureWrapper implements Texture {
         this.internal = internal;
     }
 
-    public get target(): TextureTarget {
+    get target(): TextureTarget {
         return this.internal.target;
     }
 
-    public set target(target: TextureTarget) {
+    set target(target: TextureTarget) {
         this.internal.target = target;
     }
 
-    public get lod(): number {
+    get lod(): number {
         return this.internal.lod;
     }
 
-    public set lod(lod: number) {
+    set lod(lod: number) {
         this.internal.lod = lod;
     }
 
-    public get width(): number {
+    get width(): number {
         return this.internal.width;
     }
 
-    public set width(width: number) {
+    set width(width: number) {
         this.internal.width = width;
     }
 
-    public get height(): number {
+    get height(): number {
         return this.internal.height;
     }
 
-    public set height(height: number) {
+    set height(height: number) {
         this.internal.height = height;
     }
 
-    public get pixels(): Texture2DPixels | TextureCubeMapPixels {
+    get pixels(): Texture2DPixels | TextureCubeMapPixels {
         return this.internal.pixels;
     }
 
-    public set pixels(pixels: Texture2DPixels | TextureCubeMapPixels) {
+    set pixels(pixels: Texture2DPixels | TextureCubeMapPixels) {
         this.internal.pixels = pixels;
     }
 
-    public get format(): TexturePixelFormat {
+    get format(): TexturePixelFormat {
         return this.internal.format;
     }
 
-    public set format(format: TexturePixelFormat) {
+    set format(format: TexturePixelFormat) {
         this.internal.format = format;
     }
 
-    public get type(): TexturePixelType {
+    get type(): TexturePixelType {
         return this.internal.type;
     }
 
-    public set type(type: TexturePixelType) {
+    set type(type: TexturePixelType) {
         this.internal.type = type;
     }
 
-    public get min(): TextureMinFilter | undefined {
+    get min(): TextureMinFilter | undefined {
         return this.internal.min;
     }
 
-    public set min(min: TextureMinFilter | undefined) {
+    set min(min: TextureMinFilter | undefined) {
         this.internal.min = min;
     }
 
-    public get mag(): TextureMagFilter | undefined {
+    get mag(): TextureMagFilter | undefined {
         return this.internal.mag;
     }
 
-    public set mag(mag: TextureMagFilter | undefined) {
+    set mag(mag: TextureMagFilter | undefined) {
         this.internal.mag = mag;
     }
 
-    public get wrapS(): TextureWrapMode | undefined {
+    get wrapS(): TextureWrapMode | undefined {
         return this.internal.wrapS;
     }
 
-    public set wrapS(wrapS: TextureWrapMode | undefined) {
+    set wrapS(wrapS: TextureWrapMode | undefined) {
         this.internal.wrapS = wrapS;
     }
 
-    public get wrapT(): TextureWrapMode | undefined {
+    get wrapT(): TextureWrapMode | undefined {
         return this.internal.wrapT;
     }
 
-    public set wrapT(wrapT: TextureWrapMode | undefined) {
+    set wrapT(wrapT: TextureWrapMode | undefined) {
         this.internal.wrapT = wrapT;
     }
 
-    public get wrapR(): TextureWrapMode | undefined {
+    get wrapR(): TextureWrapMode | undefined {
         return this.internal.wrapR;
     }
 
-    public set wrapR(wrapR: TextureWrapMode | undefined) {
+    set wrapR(wrapR: TextureWrapMode | undefined) {
         this.internal.wrapR = wrapR;
     }
 
-    public get tiling(): Vector2 | undefined {
+    get tiling(): Vector2 | undefined {
         return this.internal.tiling;
     }
 
-    public set tiling(tiling: Vector2 | undefined) {
+    set tiling(tiling: Vector2 | undefined) {
         this.internal.tiling = tiling;
     }
 
-    public get offset(): Vector2 | undefined {
+    get offset(): Vector2 | undefined {
         return this.internal.offset;
     }
 
-    public set offset(offset: Vector2 | undefined) {
+    set offset(offset: Vector2 | undefined) {
         this.internal.offset = offset;
     }
 
-    public get baseLod(): number | undefined {
+    get baseLod(): number | undefined {
         return this.internal.baseLod;
     }
 
-    public set baseLod(baseLod: number | undefined) {
+    set baseLod(baseLod: number | undefined) {
         this.internal.baseLod = baseLod;
     }
 
-    public get maxLod(): number | undefined {
+    get maxLod(): number | undefined {
         return this.internal.maxLod;
     }
 
-    public set maxLod(maxLod: number | undefined) {
+    set maxLod(maxLod: number | undefined) {
         this.internal.maxLod = maxLod;
     }
 
-    public get unpackAlignment(): number | undefined {
+    get unpackAlignment(): number | undefined {
         return this.internal.unpackAlignment;
     }
 
-    public set unpackAlignment(unpackAlignment: number | undefined) {
+    set unpackAlignment(unpackAlignment: number | undefined) {
         this.internal.unpackAlignment = unpackAlignment;
     }
 
-    public get anisotropy(): number | undefined {
+    get anisotropy(): number | undefined {
         return this.internal.anisotropy;
     }
 
-    public set anisotropy(anisotropy: number | undefined) {
+    set anisotropy(anisotropy: number | undefined) {
         this.internal.anisotropy = anisotropy;
     }
 
-    public get flipY(): boolean | undefined {
+    get flipY(): boolean | undefined {
         return this.internal.flipY;
     }
 
-    public set flipY(flipY: boolean | undefined) {
+    set flipY(flipY: boolean | undefined) {
         this.internal.flipY = flipY;
     }
 }
@@ -297,104 +297,104 @@ export interface IObservableTexture extends Texture {
 }
 
 export class ObservableTexture extends TextureWrapper implements Texture {
-    public readonly changes: SingleTopicMessageBroker<TexturePropertyKeys>;
+    readonly changes: SingleTopicMessageBroker<TexturePropertyKeys>;
     
     constructor(internal: Texture, broker: SingleTopicMessageBroker) {
         super(internal);
         this.changes = broker;
     }
 
-    public set target(target: TextureTarget) {
+    set target(target: TextureTarget) {
         this.internal.target = target;
         this.changes.publish(TexturePropertyKeys.target);
     }
 
-    public set lod(lod: number) {
+    set lod(lod: number) {
         this.internal.lod = lod;
         this.changes.publish(TexturePropertyKeys.lod);
     }
 
-    public set width(width: number) {
+    set width(width: number) {
         this.internal.width = width;
         this.changes.publish(TexturePropertyKeys.width);
     }
 
-    public set height(height: number) {
+    set height(height: number) {
         this.internal.height = height;
         this.changes.publish(TexturePropertyKeys.height);
     }
 
-    public set pixels(pixels: Texture2DPixels | TextureCubeMapPixels) {
+    set pixels(pixels: Texture2DPixels | TextureCubeMapPixels) {
         this.internal.pixels = pixels;
         this.changes.publish(TexturePropertyKeys.pixels);
     }
 
-    public set format(format: TexturePixelFormat) {
+    set format(format: TexturePixelFormat) {
         this.internal.format = format;
         this.changes.publish(TexturePropertyKeys.format);
     }
 
-    public set type(type: TexturePixelType) {
+    set type(type: TexturePixelType) {
         this.internal.type = type;
         this.changes.publish(TexturePropertyKeys.type);
     }
 
-    public set min(min: TextureMinFilter | undefined) {
+    set min(min: TextureMinFilter | undefined) {
         this.internal.min = min;
         this.changes.publish(TexturePropertyKeys.min);
     }
 
-    public set mag(mag: TextureMagFilter | undefined) {
+    set mag(mag: TextureMagFilter | undefined) {
         this.internal.mag = mag;
         this.changes.publish(TexturePropertyKeys.mag);
     }
 
-    public set wrapS(wrapS: TextureWrapMode | undefined) {
+    set wrapS(wrapS: TextureWrapMode | undefined) {
         this.internal.wrapS = wrapS;
         this.changes.publish(TexturePropertyKeys.wrapS);
     }
 
-    public set wrapT(wrapT: TextureWrapMode | undefined) {
+    set wrapT(wrapT: TextureWrapMode | undefined) {
         this.internal.wrapT = wrapT;
         this.changes.publish(TexturePropertyKeys.wrapT);
     }
 
-    public set wrapR(wrapR: TextureWrapMode | undefined) {
+    set wrapR(wrapR: TextureWrapMode | undefined) {
         this.internal.wrapR = wrapR;
         this.changes.publish(TexturePropertyKeys.wrapR);
     }
 
-    public set tiling(tiling: Vector2 | undefined) {
+    set tiling(tiling: Vector2 | undefined) {
         this.internal.tiling = tiling;
         this.changes.publish(TexturePropertyKeys.tiling);
     }
 
-    public set offset(offset: Vector2 | undefined) {
+    set offset(offset: Vector2 | undefined) {
         this.internal.offset = offset;
         this.changes.publish(TexturePropertyKeys.offset);
     }
 
-    public set baseLod(baseLod: number | undefined) {
+    set baseLod(baseLod: number | undefined) {
         this.internal.baseLod = baseLod;
         this.changes.publish(TexturePropertyKeys.baseLod);
     }
 
-    public set maxLod(maxLod: number | undefined) {
+    set maxLod(maxLod: number | undefined) {
         this.internal.maxLod = maxLod;
         this.changes.publish(TexturePropertyKeys.maxLod);
     }
 
-    public set unpackAlignment(unpackAlignment: number | undefined) {
+    set unpackAlignment(unpackAlignment: number | undefined) {
         this.internal.unpackAlignment = unpackAlignment;
         this.changes.publish(TexturePropertyKeys.unpackAlignment);
     }
 
-    public set anisotropy(anisotropy: number | undefined) {
+    set anisotropy(anisotropy: number | undefined) {
         this.internal.anisotropy = anisotropy;
         this.changes.publish(TexturePropertyKeys.anisotropy);
     }
 
-    public set flipY(flipY: boolean | undefined) {
+    set flipY(flipY: boolean | undefined) {
         this.internal.flipY = flipY;
         this.changes.publish(TexturePropertyKeys.flipY);
     }

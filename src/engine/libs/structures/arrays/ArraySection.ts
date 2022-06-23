@@ -40,27 +40,27 @@ class ArraySectionsBase implements ArraySections {
         }
     }
 
-    public get(index: number): ArraySectionValues {
+    get(index: number): ArraySectionValues {
         return [this._sections[index], this._sections[index + 1]];
     }
 
-    public getThenSetEmpty(index: number): ArraySectionValues {
+    getThenSetEmpty(index: number): ArraySectionValues {
         const section: ArraySectionValues = [this._sections[index], this._sections[index + 1]];
         this._sections[index    ] = this._maxLength;
         this._sections[index + 1] = 0;
         return section;
     }
 
-    public isEmpty(index: number): boolean {
+    isEmpty(index: number): boolean {
         return this._sections[index] <= this._sections[index + 1];
     }
 
-    public setEmpty(index: number): void {
+    setEmpty(index: number): void {
         this._sections[index    ] = this._maxLength;
         this._sections[index + 1] = 0;
 	}
 	
-    public extend(index: number, section: ArraySectionValues): void {
+    extend(index: number, section: ArraySectionValues): void {
         this._sections[index    ] = Math.min(this._sections[index    ], section[0], this._maxLength);
         this._sections[index + 1] = Math.max(this._sections[index + 1], section[1], 0);
 	}

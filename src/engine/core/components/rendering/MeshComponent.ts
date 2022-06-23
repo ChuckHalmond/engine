@@ -6,11 +6,11 @@ export interface TMeshComponentDesc extends ComponentDesc {
 
 export class MeshComponent {
 
-    public setup(): void {
+    setup(): void {
     }
 
-    public cleanup(): void {
+    cleanup(): void {
     }
 
-    public render(): void {}
+    render(): void {}
 }

@@ -32,23 +32,23 @@ export class Renderer {
         this.textures = [];
     }
 
-    public compile(scene: Scene) {
+    compile(scene: Scene) {
 
     }
 
-    public clear() {
+    clear() {
 
     }
 
-    public dispose() {
+    dispose() {
 
     }
 
-    public prepare() {
+    prepare() {
 
     }
 
-    public prerender(scene: Scene) {
+    prerender(scene: Scene) {
         this.packets = [];
 
         /*for (const mesh of scene.meshes) {
@@ -66,7 +66,7 @@ export class Renderer {
         }*/
     }
 
-    public render(scene: Scene, camera: Camera) {
+    render(scene: Scene, camera: Camera) {
         
         // Culling (octree, etc.)
 

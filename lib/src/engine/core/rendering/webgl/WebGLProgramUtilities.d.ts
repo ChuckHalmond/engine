@@ -15,7 +15,6 @@ export declare type ProgramProperties = {
     fragmentSource: string;
 };
 export declare class WebGLProgramUtilities {
-    private constructor();
     static createShader(gl: WebGL2RenderingContext, type: ShaderType, source: string): Shader | null;
     static deleteShader(gl: WebGL2RenderingContext, shader: Shader): void;
     static createProgram(gl: WebGL2RenderingContext, vertexSource: string, fragmentSource: string): Program | null;

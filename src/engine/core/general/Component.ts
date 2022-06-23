@@ -25,6 +25,6 @@ export abstract class AbstractComponent implements Component {
         this.enabled = false;
     }
 
-    public abstract setup(): void;
-    public abstract cleanup(): void;
+    abstract setup(): void;
+    abstract cleanup(): void;
 }

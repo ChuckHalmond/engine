@@ -19,19 +19,19 @@ class WorldViewUBO extends UBOBase<WorldViewUBOReferences> implements WorldViewU
         super('WorldViewUBO', references);
     }
     
-    public static getInstance(references: WorldViewUBOReferences): WorldViewUBO {
+    static getInstance(references: WorldViewUBOReferences): WorldViewUBO {
         return UBOBase.getConcreteInstance(WorldViewUBO, references);
     }
 
-    public subscribeReferences(): void {
+    subscribeReferences(): void {
         throw new Error("Method not implemented.");
     }
 
-    public unsubscribeReferences(): void {
+    unsubscribeReferences(): void {
         throw new Error("Method not implemented.");
     }
 
-    public getUniformValues(): UniformsList {
+    getUniformValues(): UniformsList {
         let values: UniformsList = {};
         const [worldInverseTranspose, worldViewProjection, cameraWorld, meshWorld] = Matrix4Pool.acquire(4);
         cameraWorld.copy(this._references.camera.transform.matrix);
@@ -51,7 +51,7 @@ class WorldViewUBO extends UBOBase<WorldViewUBOReferences> implements WorldViewU
         return values;
     }
         
-    public getDeltaUniformValues(): Partial<UniformsList> | null {
+    getDeltaUniformValues(): Partial<UniformsList> | null {
         throw new Error("Method not implemented.");
     }
 }
