@@ -1,5 +1,4 @@
 export { Buffer };
-export { BufferProperties };
 export declare enum BufferDataUsage {
     STATIC_DRAW = 35044,
     DYNAMIC_DRAW = 35048,
@@ -17,14 +16,9 @@ export declare enum BufferTarget {
     TRANSFORM_FEEDBACK_BUFFER = 35982,
     UNIFORM_BUFFER = 35345
 }
-declare type BufferProperties = {
-    target: BufferTarget;
-    usage: BufferDataUsage;
-    byteLength?: number;
-};
 declare type Buffer = {
     internal: WebGLBuffer;
     target: BufferTarget;
     usage: BufferDataUsage;
-    byteLength: number;
+    data: ArrayBuffer;
 };

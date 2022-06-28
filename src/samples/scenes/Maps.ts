@@ -9,7 +9,7 @@ import { WebGLPacketUtilities, PacketProperties } from "../../engine/core/render
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
 import { BufferMask, Capabilities, TestFunction, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
 import { TexturePixelFormat, TexturePixelType, TextureMagFilter, TextureMinFilter, TextureTarget, TextureWrapMode, TextureInternalPixelFormat } from "../../engine/core/rendering/webgl/WebGLTextureUtilities";
-import { DrawMode } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
+import { AttributeDataType, DrawMode } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Vector3 } from "../../engine/libs/maths/algebra/vectors/Vector3";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
@@ -114,36 +114,7 @@ export async function launchScene() {
   const skyboxZNegImg = await fetchImage("assets/engine/img/skybox_z_neg.png");
 
   const phongPacketBindings = WebGLPacketUtilities.createBindings(gl, {
-    textures: {
-      albedoMap: {
-        pixels: albedoMapImg,
-        width: albedoMapImg.width, height: albedoMapImg.height,
-        target: TextureTarget.TEXTURE_2D,
-        type: TexturePixelType.UNSIGNED_BYTE,
-        format: TexturePixelFormat.RGB,
-        internalFormat: TextureInternalPixelFormat.RGB8
-      },
-      normalMap: {
-        pixels: normalMapImg,
-        width: normalMapImg.width, height: normalMapImg.height,
-        target: TextureTarget.TEXTURE_2D,
-        type: TexturePixelType.UNSIGNED_BYTE,
-        format: TexturePixelFormat.RGB,
-        internalFormat: TextureInternalPixelFormat.RGB8,
-        min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
-        mag: TextureMagFilter.LINEAR
-      },
-      heightMap: {
-        pixels: heightMapImg,
-        width: heightMapImg.width, height: heightMapImg.height,
-        target: TextureTarget.TEXTURE_2D,
-        type: TexturePixelType.UNSIGNED_BYTE,
-        format: TexturePixelFormat.RGB,
-        internalFormat: TextureInternalPixelFormat.RGB8,
-        min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
-        mag: TextureMagFilter.LINEAR
-      }
-    },
+    textures: ["albedoMap", "normalMap", "heightMap"],
     program: phongGlProgram,
     uniformBlocks: ["worldViewBlock", "lightsBlock", "phongBlock"]
   })!;
@@ -168,7 +139,7 @@ export async function launchScene() {
     const textures = [albedoMap, normalMap];
     textures.forEach((texture) => {
       gl.activeTexture(gl.TEXTURE0 + texture.unit);
-      gl.bindTexture(texture.target, texture.internal);
+      gl.bindTexture(gl.TEXTURE_2D, texture.internal);
       gl.texParameterf(gl.TEXTURE_2D, anisotropicExtension.TEXTURE_MAX_ANISOTROPY_EXT, maxFiltering);
     });
   }
@@ -229,7 +200,7 @@ export async function launchScene() {
       attributes: {
         a_position: {
           array: quadLines,
-          numComponents: 3,
+          type: AttributeDataType.VEC3
         }
       },
       numElements: quadLines.length / 2
@@ -261,10 +232,10 @@ export async function launchScene() {
   const phongPacketProperties: PacketProperties = {
     vertexArray: {
       attributes: {
-        a_position: { array: quadVertices, numComponents: 3 },
-        a_normal: { array: quadNormals, numComponents: 3, constant: true },
-        a_tangent: { array: quadTangents, numComponents: 3, constant: true },
-        a_uv: { array: quadUVs, numComponents: 2 },
+        a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
+        a_normal: { array: quadNormals, type: AttributeDataType.VEC3, constant: true },
+        a_tangent: { array: quadTangents, type: AttributeDataType.VEC3, constant: true },
+        a_uv: { array: quadUVs, type: AttributeDataType.VEC2 },
       },
       indices: quadIndices,
       numElements: quadIndices.length
@@ -305,7 +276,46 @@ export async function launchScene() {
       u_albedo: { value: albedoMap },
       u_normalMap: { value: normalMap },
       u_heightMap: { value: heightMap }
-    }
+    },
+    textures: [
+      {
+        texture: albedoMap,
+        properties: {
+          pixels: albedoMapImg,
+          width: albedoMapImg.width, height: albedoMapImg.height,
+          target: TextureTarget.TEXTURE_2D,
+          type: TexturePixelType.UNSIGNED_BYTE,
+          format: TexturePixelFormat.RGB,
+          internalFormat: TextureInternalPixelFormat.RGB8
+        }
+      },
+      {
+        texture: normalMap,
+        properties: {
+          pixels: normalMapImg,
+          width: normalMapImg.width, height: normalMapImg.height,
+          target: TextureTarget.TEXTURE_2D,
+          type: TexturePixelType.UNSIGNED_BYTE,
+          format: TexturePixelFormat.RGB,
+          internalFormat: TextureInternalPixelFormat.RGB8,
+          min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
+          mag: TextureMagFilter.LINEAR
+        }
+      },
+      {
+        texture: heightMap,
+        properties: {
+          pixels: heightMapImg,
+          width: heightMapImg.width, height: heightMapImg.height,
+          target: TextureTarget.TEXTURE_2D,
+          type: TexturePixelType.UNSIGNED_BYTE,
+          format: TexturePixelFormat.RGB,
+          internalFormat: TextureInternalPixelFormat.RGB8,
+          min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
+          mag: TextureMagFilter.LINEAR
+        }
+      }
+    ]
   };
 
   const phongPacket = WebGLPacketUtilities.createPacket(gl, phongGlProgram, phongPacketProperties)!;

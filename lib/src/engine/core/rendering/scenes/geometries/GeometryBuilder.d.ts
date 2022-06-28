@@ -1,16 +1,9 @@
-import { Geometry } from "./Geometry";
 export { GeometryBuilder };
-export { GeometryBuilderBase };
-interface GeometryBuilder<G extends PartialGeometry = PartialGeometry> {
-    readonly halfEdges: Array<HalfEdge>;
-    readonly vertices: Array<Vertex>;
-    readonly faces: Array<Face>;
-    verticesArray(): Float32Array;
-    uvsArray(): Float32Array;
-    indicesArray(): Uint8Array | Uint16Array | Uint32Array;
-    linesArray(): Float32Array;
-    verticesNormalsArray(): Float32Array;
-    tangentsArray(): Float32Array;
+interface GeometryBuilder {
+    halfEdges: Array<HalfEdge>;
+    vertices: Array<Vertex>;
+    faces: Array<Face>;
+    clone(): GeometryBuilder;
     addQuadFaceVertices(v0: number[] | Float32Array | Float64Array, v1: number[] | Float32Array | Float64Array, v2: number[] | Float32Array | Float64Array, v3: number[] | Float32Array | Float64Array, properties?: {
         [key: string]: any;
     }): void;
@@ -27,43 +20,16 @@ interface GeometryBuilder<G extends PartialGeometry = PartialGeometry> {
     addFace(vertices: Vertex[], properties?: {
         [key: string]: any;
     }[]): void;
+    verticesArray(): Float32Array;
+    uvsArray(): Float32Array;
+    indicesArray(): Uint8Array | Uint16Array | Uint32Array;
+    linesArray(): Float32Array;
+    verticesNormalsArray(): Float32Array;
+    tangentsArray(): Float32Array;
 }
 interface GeometryBuilderConstructor {
     readonly prototype: GeometryBuilder;
     new (): GeometryBuilder;
-}
-interface PartialGeometry extends Partial<Geometry> {
-}
-declare class GeometryBuilderBase<G extends PartialGeometry> implements GeometryBuilder<G> {
-    readonly halfEdges: Array<HalfEdge>;
-    readonly vertices: Array<Vertex>;
-    readonly faces: Array<Face>;
-    constructor();
-    linesArray(): Float32Array;
-    verticesArray(): Float32Array;
-    tangentsArray(): Float32Array;
-    verticesNormalsArray(): Float32Array;
-    uvsArray(): Float32Array;
-    indicesArray(): Uint8Array | Uint16Array | Uint32Array;
-    addFaceVertices(vertices: number[][], properties?: {
-        [key: string]: any;
-    }): void;
-    addTriangleFaceVertices(v0: number[] | Float32Array | Float64Array, v1: number[] | Float32Array | Float64Array, v2: number[] | Float32Array | Float64Array, properties?: {
-        [key: string]: any;
-    }): void;
-    addTriangleFace(v0: Vertex, v1: Vertex, v2: Vertex, properties?: {
-        [key: string]: any;
-    }): void;
-    addQuadFaceVertices(v0: number[] | Float32Array | Float64Array, v1: number[] | Float32Array | Float64Array, v2: number[] | Float32Array | Float64Array, v3: number[] | Float32Array | Float64Array, properties?: {
-        [key: string]: any;
-    }): void;
-    addQuadFace(v0: Vertex, v1: Vertex, v2: Vertex, v3: Vertex, properties?: {
-        [key: string]: any;
-    }): void;
-    addVertex(vertex: number[] | Float32Array | Float64Array): Vertex;
-    addFace(vertices: Vertex[], properties?: {
-        [key: string]: any;
-    }): void;
 }
 declare var GeometryBuilder: GeometryBuilderConstructor;
 export declare type HalfEdge = {
@@ -78,7 +44,7 @@ export declare type Face = {
     [key: string]: any;
 };
 export declare type Vertex = {
-    point: number[] | Float32Array | Float64Array;
+    position: number[] | Float32Array | Float64Array;
     halfEdge: HalfEdge | null;
     properties?: {
         [key: string]: any;

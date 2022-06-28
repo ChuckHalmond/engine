@@ -66,7 +66,7 @@ class PhongUBO extends UBOBase<PhongUBOReferences, PhongUBOValues> {
         let values = {} as PhongUBOValues;
         
         if (typeof material.shininess !== 'undefined') {
-            values.u_shininess = { value: material.shininess };
+            values.u_shininess = { value: new Float32Array(material.shininess) };
         }
         
         if (typeof material.specular !== 'undefined') {
@@ -74,7 +74,7 @@ class PhongUBO extends UBOBase<PhongUBOReferences, PhongUBOValues> {
         }
 
         if (typeof material.specularFactor !== 'undefined') {
-            values.u_specularFactor = { value: material.specularFactor };
+            values.u_specularFactor = { value: new Float32Array(material.specularFactor) };
         }
 
         return values;
@@ -91,7 +91,7 @@ class PhongUBO extends UBOBase<PhongUBOReferences, PhongUBOValues> {
         if (typeof deltaFlags !== 'undefined') {
             if (typeof material.shininess !== 'undefined') {
                 if (deltaFlags.getThenUnset(PhongUBOIndices.shininess)) {
-                    uniforms.u_shininess = { value: material.shininess };
+                    uniforms.u_shininess = { value: new Float32Array(material.shininess) };
                     if (!hasValues) hasValues = true;
                 }
             }
@@ -105,7 +105,7 @@ class PhongUBO extends UBOBase<PhongUBOReferences, PhongUBOValues> {
 
             if (typeof material.specularFactor !== 'undefined') {
                 if (deltaFlags.getThenUnset(PhongUBOIndices.specularFactor)) {
-                    uniforms.u_specularFactor = { value: material.specularFactor };
+                    uniforms.u_specularFactor = { value: new Float32Array(material.specularFactor) };
                     if (!hasValues) hasValues = true;
                 }
             }

@@ -2,7 +2,7 @@ import { BufferDataUsage } from "../../engine/core/rendering/webgl/WebGLBufferUt
 import { Packet, PacketProperties, WebGLPacketUtilities } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
 import { BufferMask, Capabilities, WindingOrder, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
-import { DrawMode } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
+import { AttributeDataType, DrawMode } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 
 function glsl(strings: TemplateStringsArray, ...args: any[]): string {
     const strs = Array.from(strings);
@@ -92,7 +92,7 @@ function scene(canvas: HTMLCanvasElement) {
                         0.5, 0.5, 0.5,
                     ]),
                     divisor: 1,
-                    numComponents: 3,
+                    type: AttributeDataType.VEC3
                 },
                 a_position: {
                     array: new Float32Array([
@@ -100,7 +100,7 @@ function scene(canvas: HTMLCanvasElement) {
                         0, 0.5, 0,
                         0, 0, 0
                     ]),
-                    numComponents: 3,
+                    type: AttributeDataType.VEC3
                 },
                 a_color: {
                     array: new Float32Array([
@@ -108,7 +108,7 @@ function scene(canvas: HTMLCanvasElement) {
                         0, 255, 0,
                         255, 0, 0
                     ]),
-                    numComponents: 3,
+                    type: AttributeDataType.VEC3,
                     normalize: true
                 },
                 /*a_position: {

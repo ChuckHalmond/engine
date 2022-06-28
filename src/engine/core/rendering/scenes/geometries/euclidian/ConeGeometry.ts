@@ -49,10 +49,14 @@ const buildConeGeometry = function(properties: {radius: number, segment: number,
 
 	return [vertices, indices, uvs, lines];
 };
-
+*/
 export class ConeGeometry extends GeometryBase {
+	radius: number;
+	segment: number;
+	height: number;
+
 	constructor(properties?: {radius?: number, segment?: number, height?: number}) {
-		const [vertices, indices, uvs, lines] = buildConeGeometry({
+		/*const [vertices, indices, uvs, lines] = buildConeGeometry({
 			radius: properties?.radius ?? 1,
 			segment: properties?.segment ?? 32,
             height: properties?.height ?? 1
@@ -64,6 +68,32 @@ export class ConeGeometry extends GeometryBase {
 		});
 		Object.assign(this, {
 			lines: new Vector3List(lines)
-		});
+		});*/
+		super();
+		const {radius, segment, height} = properties ?? {};
+		this.radius = radius ?? 1;
+		this.segment = segment ?? 3;
+		this.height = height ?? 2;
 	}
-}*/
+
+	toBuilder(): GeometryBuilder {
+		const builder = new GeometryBuilder();
+		const {segment, radius, height} = this;
+		const angleSlice = Math.PI / (segment * 0.5);
+		const origin = builder.addVertex([0, 0, 0]);
+		const top = builder.addVertex([0, 0, height]);
+		Array(segment).fill(0).forEach((_, index) => {
+			const angle = index * angleSlice;
+			const nextAngle = ((index + 1) % segment) * angleSlice;
+			let v1 = builder.addVertex([Math.cos(nextAngle) * radius, Math.sin(nextAngle) * radius, 0]);
+			let v2 = builder.addVertex([Math.cos(angle) * radius, Math.sin(angle) * radius, 0]);
+			builder.addTriangleFace(
+				origin, v1, v2
+			);
+			builder.addTriangleFace(
+				v2, top, v1
+			);
+		});
+		return builder;
+	}
+}

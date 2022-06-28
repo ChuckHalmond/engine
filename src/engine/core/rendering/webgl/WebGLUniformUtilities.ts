@@ -1,5 +1,5 @@
 import { Program, WebGLProgramUtilities } from "./WebGLProgramUtilities";
-import { Texture } from "./WebGLTextureUtilities";
+import { Texture, TextureTarget } from "./WebGLTextureUtilities";
 
 export { UniformValue };
 export { UniformProperties };
@@ -81,49 +81,43 @@ type UniformsListSetter = {
     program: Program;
 }
 
+export enum UniformDataType {
+    SCALAR = "SCALAR",
+    VEC2 = "VEC2",
+    VEC3 = "VEC3",
+    VEC4 = "VEC4",
+    MAT2 = "MAT2",
+    MAT3 = "MAT3",
+    MAT4 = "MAT4"
+}
+
 class WebGLUniformUtilities {
 
-    static getUniformValueByteLength(uniformValue: UniformValue): number {
-        if (typeof uniformValue === "object") {
-            if ("buffer" in uniformValue) {
-                return uniformValue.byteLength;
-            }
-            else if ("unit" in uniformValue) {
-                return 32;
-            }
-            else {
-                return uniformValue.length * 32;
-            }
-        }
-        return 32;
-    }
-
-    static getUniformValueArrayBufferView(uniformValue: UniformValue): ArrayBufferView {
+    static asArrayBufferView(uniformValue: UniformValue): ArrayBufferView {
         if (typeof uniformValue === "object") {
             if ("buffer" in uniformValue) {
                 return uniformValue;
             }
             else if ("unit" in uniformValue) {
-                return new Float32Array(uniformValue.unit);
+                return Float32Array.of(uniformValue.unit);
             }
             else {
-                return new Float32Array(uniformValue);
+                return Float32Array.from(uniformValue);
             }
         }
-        return new Float32Array([uniformValue]);
+        else {
+            return Float32Array.of(uniformValue);
+        }
     }
 
     static getUniformSetter(gl: WebGL2RenderingContext, uniform: Uniform, location: WebGLUniformLocation , uniformType: UniformType): UniformSetter | null { 
         const uniformValue = uniform.value;
-        const uniformProps = (typeof uniform.props === "undefined") ? {
-            srcOffset: undefined,
-            srcLength: undefined,
-            transpose: false
-        } : {
-            srcOffset: uniform.props.srcOffset || undefined,
-            srcLength: uniform.props.srcLength || undefined,
-            transpose: uniform.props.transpose || false    
-        };
+        let {props} = uniform;
+        props = props ?? {};
+
+        const {srcOffset, srcLength} = props;
+        let {transpose} = props;
+        transpose = transpose ?? false;
 
         switch (uniformType) {
             case UniformType.FLOAT:
@@ -172,23 +166,14 @@ class WebGLUniformUtilities {
             case UniformType.UNSIGNED_INT_SAMPLER_3D:
             case UniformType.UNSIGNED_INT_SAMPLER_CUBE:
             case UniformType.UNSIGNED_INT_SAMPLER_2D_ARRAY:
-                if (typeof uniformValue !== "number" && "unit" in uniformValue) {
+                if (typeof uniformValue == "object" && "unit" in uniformValue) {
                     return {
                         type: uniformType,
                         set: (tex: Texture) => {
-                            gl.activeTexture(gl.TEXTURE0 + tex.unit);
-                            gl.bindTexture(tex.target, tex.internal);
-                            gl.uniform1i(location, tex.unit);
-                        }
-                    };
-                }
-                else if (typeof uniformValue !== "number" && "unit" in uniformValue) {
-                    return {
-                        type: uniformType,
-                        set: (tex: Texture) => {
-                            gl.activeTexture(gl.TEXTURE0 + tex.unit);
-                            gl.bindTexture(tex.target, tex.internal);
-                            gl.uniform1i(location, tex.unit);
+                            const {unit} = tex;
+                            //gl.activeTexture(gl.TEXTURE0 + unit);
+                            //gl.bindTexture(target, internal);
+                            gl.uniform1i(location, unit);
                         }
                     };
                 }
@@ -198,7 +183,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniform2fv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniform2fv(location, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -219,7 +204,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Uint32List) => {
-                            gl.uniform2uiv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniform2uiv(location, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -229,7 +214,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniform3fv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniform3fv(location, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -240,7 +225,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Int32List) => {
-                            gl.uniform3iv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniform3iv(location, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -250,7 +235,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Uint32List) => {
-                            gl.uniform3uiv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniform3uiv(location, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -260,7 +245,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniform4fv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniform4fv(location, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -271,7 +256,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Int32List) => {
-                            gl.uniform4iv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniform4iv(location, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -281,7 +266,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Uint32List) => {
-                            gl.uniform4uiv(location, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniform4uiv(location, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -291,7 +276,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniformMatrix2fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniformMatrix2fv(location, transpose!, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -301,7 +286,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniformMatrix3fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniformMatrix3fv(location, transpose!, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -311,7 +296,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniformMatrix4fv(location, uniformProps.transpose, list);
+                            gl.uniformMatrix4fv(location, transpose!, list);
                         }
                     };
                 }
@@ -321,7 +306,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniformMatrix2x3fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniformMatrix2x3fv(location, transpose!, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -331,7 +316,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniformMatrix2x4fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniformMatrix2x4fv(location, transpose!, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -341,7 +326,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniformMatrix3x2fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniformMatrix3x2fv(location, transpose!, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -351,7 +336,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniformMatrix3x4fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniformMatrix3x4fv(location, transpose!, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -361,7 +346,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniformMatrix4x2fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniformMatrix4x2fv(location, transpose!, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -371,7 +356,7 @@ class WebGLUniformUtilities {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
-                            gl.uniformMatrix4x3fv(location, uniformProps.transpose, list, uniformProps.srcOffset, uniformProps.srcLength);
+                            gl.uniformMatrix4x3fv(location, transpose!, list, srcOffset, srcLength);
                         }
                     };
                 }
@@ -412,10 +397,11 @@ class WebGLUniformUtilities {
     }
 
     static setUniformsListValues(gl: WebGL2RenderingContext, setter: UniformsListSetter, list: UniformsList): void {
-        WebGLProgramUtilities.useProgram(gl, setter.program);
+        const {program, setters} = setter;
+        WebGLProgramUtilities.useProgram(gl, program);
         
         Object.keys(list).forEach((name) => {
-            const uniformSetter = setter.setters[name];
+            const uniformSetter = setters[name];
             const uniform = list[name];
             if (uniformSetter) {
                 uniformSetter.set(uniform.value);

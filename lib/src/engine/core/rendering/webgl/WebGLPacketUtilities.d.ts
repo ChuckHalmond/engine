@@ -1,20 +1,19 @@
 import { VertexArray, VertexArrayValues, VertexArrayProperties, DrawMode } from "./WebGLVertexArrayUtilities";
-import { Texture, TextureParameters, TextureProperties } from "./WebGLTextureUtilities";
+import { Texture, TextureProperties } from "./WebGLTextureUtilities";
 import { UniformBlock, UniformBuffer, UniformBufferProperties } from "./WebGLUniformBlockUtilities";
 import { UniformsList, UniformsListSetter } from "./WebGLUniformUtilities";
 import { Program } from "./WebGLProgramUtilities";
 export declare type PacketProperties = {
-    vertexArray?: VertexArrayProperties;
+    vertexArray: VertexArrayProperties;
     uniforms?: UniformsList;
     textures?: {
         texture: Texture;
-        props?: TextureProperties;
-        params?: TextureParameters;
+        properties: TextureProperties;
     }[];
     uniformBlocks?: {
         block: UniformBlock;
         buffer?: UniformBuffer | UniformBufferProperties;
-        uniforms?: UniformsList;
+        uniforms: UniformsList;
     }[];
     options?: {
         drawMode?: DrawMode;
@@ -24,11 +23,6 @@ export declare type PacketProperties = {
 export declare type PacketValues = {
     vertexArray?: VertexArrayValues;
     uniforms?: UniformsList;
-    textures?: {
-        texture: Texture;
-        props?: TextureProperties;
-        params?: TextureParameters;
-    }[];
     uniformBlocks?: {
         block: UniformBlock;
         buffer: UniformBuffer;
@@ -37,9 +31,7 @@ export declare type PacketValues = {
 };
 export declare type PacketBindingsProperties = {
     program: Program;
-    textures?: {
-        [name: string]: TextureProperties & TextureParameters;
-    };
+    textures?: string[];
     uniformBlocks?: string[];
 };
 export declare type PacketBindings = {
@@ -64,7 +56,7 @@ export declare type Packet = {
     instanceCount?: number;
 };
 export declare class WebGLPacketUtilities {
-    static createBindings(gl: WebGL2RenderingContext, props: PacketBindingsProperties): PacketBindings;
+    static createBindings(gl: WebGL2RenderingContext, properties: PacketBindingsProperties): PacketBindings;
     static createPacket(gl: WebGL2RenderingContext, program: Program, packet: PacketProperties): Packet | null;
     static setPacketValues(gl: WebGL2RenderingContext, packet: Packet, values: PacketValues): void;
     static drawPacket(gl: WebGL2RenderingContext, packet: Packet): void;

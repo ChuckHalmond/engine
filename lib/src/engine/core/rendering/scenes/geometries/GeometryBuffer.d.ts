@@ -1,24 +1,28 @@
+import { BufferDataUsage } from "../../webgl/WebGLBufferUtilities";
+import { AttributeArray, AttributeDataType, DataComponentType } from "../../webgl/WebGLVertexArrayUtilities";
 export { GeometryBuffer };
 interface GeometryBufferConstructor {
     readonly prototype: GeometryBuffer;
     new (attributes: {
         [name: string]: GeometryBufferAttribute;
-    }, interleaved?: boolean): GeometryBuffer;
+    }, interleaved?: boolean, usage?: BufferDataUsage): GeometryBuffer;
 }
 interface GeometryBuffer {
     readonly interleaved: boolean;
     readonly buffer: ArrayBuffer;
+    readonly usage: BufferDataUsage;
     readonly attributes: {
         [name: string]: {
+            componentType: DataComponentType;
             byteOffset: number;
-            numComponents: 1 | 2 | 3 | 4;
+            count: number;
+            type: AttributeDataType;
         };
     };
     getAttribute(name: string): GeometryBufferAttribute | null;
 }
-declare type GeometryBufferAttributeArray = Float32Array | Uint8Array | Uint16Array | Uint32Array;
 interface GeometryBufferAttribute {
-    array: GeometryBufferAttributeArray;
-    numComponents: 1 | 2 | 3 | 4;
+    array: AttributeArray;
+    type: AttributeDataType;
 }
 declare var GeometryBuffer: GeometryBufferConstructor;

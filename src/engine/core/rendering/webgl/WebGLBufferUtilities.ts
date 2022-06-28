@@ -1,5 +1,4 @@
 export { Buffer };
-export { BufferProperties };
 
 export enum BufferDataUsage {
     STATIC_DRAW = 0x88E4,
@@ -20,15 +19,9 @@ export enum BufferTarget {
     UNIFORM_BUFFER = 0x8A11,
 }
 
-type BufferProperties = {
-    target: BufferTarget;
-    usage: BufferDataUsage;
-    byteLength?: number;
-}
-
 type Buffer = {
     internal: WebGLBuffer;
     target: BufferTarget;
     usage: BufferDataUsage;
-    byteLength: number;
+    data: ArrayBuffer;
 }

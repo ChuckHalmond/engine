@@ -1,6 +1,6 @@
 import { Entity } from "./src/engine/core/general/Entity";
 import { Scene } from "./src/engine/core/general/Scene";
-import { FaceHalfEdgesIterator, FaceVerticesIterator, GeometryBuilderBase, Vertex, VertexFacesIterator } from "./src/engine/core/rendering/scenes/geometries/GeometryBuilder";
+import { FaceHalfEdgesIterator, FaceVerticesIterator, Vertex, VertexFacesIterator } from "./src/engine/core/rendering/scenes/geometries/GeometryBuilder";
 import { QuadGeometry } from "./src/engine/core/rendering/scenes/geometries/lib/QuadGeometry";
 import { Matrix3 } from "./src/engine/libs/maths/algebra/matrices/Matrix3";
 import { Matrix4 } from "./src/engine/libs/maths/algebra/matrices/Matrix4";

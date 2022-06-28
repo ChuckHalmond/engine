@@ -72,9 +72,17 @@ declare type UniformsListSetter = {
     };
     program: Program;
 };
+export declare enum UniformDataType {
+    SCALAR = "SCALAR",
+    VEC2 = "VEC2",
+    VEC3 = "VEC3",
+    VEC4 = "VEC4",
+    MAT2 = "MAT2",
+    MAT3 = "MAT3",
+    MAT4 = "MAT4"
+}
 declare class WebGLUniformUtilities {
-    static getUniformValueByteLength(uniformValue: UniformValue): number;
-    static getUniformValueArrayBufferView(uniformValue: UniformValue): ArrayBufferView;
+    static asArrayBufferView(uniformValue: UniformValue): ArrayBufferView;
     static getUniformSetter(gl: WebGL2RenderingContext, uniform: Uniform, location: WebGLUniformLocation, uniformType: UniformType): UniformSetter | null;
     static getUniformsListSetter(gl: WebGL2RenderingContext, program: Program, list: UniformsList): UniformsListSetter | null;
     static setUniformsListValues(gl: WebGL2RenderingContext, setter: UniformsListSetter, list: UniformsList): void;

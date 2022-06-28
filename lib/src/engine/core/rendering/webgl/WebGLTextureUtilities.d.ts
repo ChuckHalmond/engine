@@ -151,19 +151,6 @@ export declare type TextureCubeMapPixels = {
     zPos: TexImageSource;
     zNeg: TexImageSource;
 };
-export declare type TextureParameters = {
-    min?: TextureMinFilter;
-    mag?: TextureMagFilter;
-    wrapS?: TextureWrapMode;
-    wrapT?: TextureWrapMode;
-    wrapR?: TextureWrapMode;
-    baseMipmapLevel?: number;
-    maxMipmapLevel?: number;
-    minLod?: number;
-    maxLod?: number;
-    compareFunction?: TextureCompareFunction;
-    compareMode?: TextureCompareMode;
-};
 export declare type TextureProperties = {
     pixels: Texture2DPixels | TextureCubeMapPixels;
     target: TextureTarget;
@@ -179,15 +166,27 @@ export declare type TextureProperties = {
     format: TexturePixelFormat;
     internalFormat: TextureInternalPixelFormat;
     type: TexturePixelType;
+    min?: TextureMinFilter;
+    mag?: TextureMagFilter;
+    wrapS?: TextureWrapMode;
+    wrapT?: TextureWrapMode;
+    wrapR?: TextureWrapMode;
+    baseMipmapLevel?: number;
+    maxMipmapLevel?: number;
+    minLod?: number;
+    maxLod?: number;
+    compareFunction?: TextureCompareFunction;
+    compareMode?: TextureCompareMode;
 };
-export declare type Texture = TextureProperties & TextureParameters & {
+export declare type Texture = {
+    name: string;
     unit: number;
     internal: WebGLTexture;
+    properties?: TextureProperties;
 };
 export declare class WebGLTextureUtilities {
     #private;
-    static createTexture(gl: WebGL2RenderingContext, props: TextureProperties & TextureParameters): Texture | null;
+    static createTexture(gl: WebGL2RenderingContext, name: string): Texture | null;
     static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void;
-    static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, props: TextureProperties): void;
-    static setTextureParameters(gl: WebGL2RenderingContext, texture: Texture, param: TextureParameters): void;
+    static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, properties: TextureProperties): void;
 }

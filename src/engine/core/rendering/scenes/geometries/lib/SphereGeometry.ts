@@ -1,6 +1,36 @@
 import { Vector3List } from "../../../../../libs/maths/extensions/lists/Vector3List";
 import { GeometryBase } from "../Geometry";
 import { GeometryBuilder, FaceVerticesIterator } from "../GeometryBuilder";
+
+export class SphereGeometry extends GeometryBase {
+	radius: number;
+	widthSegment: number;
+	heightSegment: number;
+	phiStart: number;
+	phiLength: number;
+	thetaStart: number;
+	thetaLength: number;
+
+	constructor(properties?: {
+		radius?: number, widthSegment?: number, heightSegment?: number; phiStart?: number; phiLength?: number; thetaStart?: number; thetaLength?: number;
+	}) {
+		super();
+		const {radius, widthSegment, heightSegment, phiStart, phiLength, thetaStart, thetaLength} = properties ?? {};
+		this.radius = radius ?? 1;
+		this.widthSegment = widthSegment ?? 32;
+		this.heightSegment = heightSegment ?? 16;
+		this.phiStart = phiStart ?? 0;
+		this.phiLength = phiLength ?? 2 * Math.PI;
+		this.thetaStart = thetaStart ?? 0;
+		this.thetaLength = thetaLength ?? Math.PI;
+	}
+
+	toBuilder(): GeometryBuilder {
+		const builder = new GeometryBuilder();
+		return builder;
+	}
+}
+
 /*
 const buildSphereGeometry = function(properties: {radius: number, widthSegment: number, heightSegment: number}) {
 	const builder = new GeometryBuilder();

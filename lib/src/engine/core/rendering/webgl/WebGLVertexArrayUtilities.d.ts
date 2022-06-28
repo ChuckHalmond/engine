@@ -15,55 +15,53 @@ export declare enum DrawMode {
     TRIANGLE_STRIP = 5,
     TRIANGLE_FAN = 6
 }
-export declare enum ArrayDataType {
+export declare enum DataComponentType {
     BYTE = 5120,
     UNSIGNED_BYTE = 5121,
     SHORT = 5122,
     UNSIGNED_SHORT = 5123,
     INT = 5124,
     UNSIGNED_INT = 5125,
-    FLOAT = 5126,
-    HALF_FLOAT = 5131
+    FLOAT = 5126
+}
+export declare enum AttributeDataType {
+    VEC2 = "VEC2",
+    VEC3 = "VEC3",
+    VEC4 = "VEC4"
 }
 export declare enum ElementArrayDataType {
     UNSIGNED_BYTE = 5121,
     UNSIGNED_SHORT = 5123,
     UNSIGNED_INT = 5125
 }
-declare type VertexArrayAttributeArray = Float32Array | Int32Array | Uint32Array | Int16Array | Uint16Array | Int8Array | Uint8Array | Uint8ClampedArray;
+export declare type AttributeArray = Float32Array | Int32Array | Uint32Array | Int16Array | Uint16Array | Int8Array | Uint8Array;
 declare type VertexArrayAttributeProperties = {
-    array: VertexArrayAttributeArray;
-    numComponents: 1 | 2 | 3 | 4;
-    stride?: number;
-    offset?: number;
+    array: AttributeArray;
+    type: AttributeDataType;
     divisor?: number;
     normalize?: boolean;
-    usage?: BufferDataUsage;
-    byteLength?: number;
     constant?: boolean;
-    srcOffset?: number;
-    srcLength?: number;
 };
 declare type VertexArrayAttributeValue = {
-    array: VertexArrayAttributeArray;
+    array: AttributeArray;
     srcOffset?: number;
     srcLength?: number;
 };
 declare type VertexArrayAttributeSetter = {
-    bufferIndex: number;
     location: number;
     divisor: number;
-    stride: number;
+    componentType: DataComponentType;
     constant: boolean;
-    offset: number;
-    numComponents: number;
+    byteOffset: number;
+    type: AttributeDataType;
     normalize: boolean;
-    bufferBytesOffset: number;
 };
 declare type VertexArrayProperties = {
     attributes: {
         [name: string]: VertexArrayAttributeProperties;
     };
+    usage?: BufferDataUsage;
+    interleave?: boolean;
     indices?: Uint8Array | Uint16Array | Uint32Array;
     numElements: number;
 };
@@ -80,13 +78,16 @@ declare type VertexArray = {
     attributeSetters: {
         [name: string]: VertexArrayAttributeSetter;
     };
-    verticesBuffers: Buffer[];
+    verticesBuffer: Buffer;
     numElements: number;
     indexType?: ElementArrayDataType;
     indicesBuffer?: WebGLBuffer;
 };
 declare class WebGLVertexArrayUtilities {
-    static getAttributeDataType(attribute: VertexArrayAttributeProperties): ArrayDataType;
+    static getAttributeDataTypeElementsSize(type: AttributeDataType): number;
+    static getDataComponentTypeArrayConstructor(type: DataComponentType): typeof Float32Array | typeof Int32Array | typeof Uint32Array | typeof Int16Array | typeof Uint16Array | typeof Int8Array | typeof Uint8Array;
+    static getAttributeArrayDataComponentType(array: AttributeArray): DataComponentType;
+    static getDataComponentTypeBytesPerElement(type: DataComponentType): number;
     static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null;
     static deleteVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray): void;
     static drawVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray, mode: DrawMode, instanceCount?: number): void;

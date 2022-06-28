@@ -1,5 +1,5 @@
 import { UniformsList } from "./WebGLUniformUtilities";
-import { BufferProperties, Buffer, BufferDataUsage } from "./WebGLBufferUtilities";
+import { Buffer, BufferDataUsage } from "./WebGLBufferUtilities";
 import { Program } from "./WebGLProgramUtilities";
 export declare type UniformBlock = {
     name: string;
@@ -17,18 +17,20 @@ export declare type UniformBuffer = Buffer & {
     rangeOffset?: number;
     rangeSize?: number;
 };
-export declare type UniformBufferProperties = Omit<BufferProperties, "target"> & {
-    rangeOffset?: number;
-    rangeSize?: number;
+export declare type RangedUniformBuffer = UniformBuffer & {
+    rangeOffset: number;
+    rangeSize: number;
 };
-export declare type UniformBlocksBindingsContext = {
-    maxBindingPoints: number;
-    registeredBindingPoints: Array<boolean>;
+export declare type UniformBufferProperties = {
+    usage: BufferDataUsage;
 };
 export declare class WebGLUniformBlockUtilities {
     #private;
-    static createUniformBuffer(gl: WebGL2RenderingContext, program: Program, blockName: string, usage?: BufferDataUsage, byteLength?: number, rangeOffset?: number, rangeSize?: number): UniformBuffer | null;
-    static setUniformBufferValues(gl: WebGL2RenderingContext, layout: UniformBlockLayout, buffer: UniformBuffer, uniforms: UniformsList): void;
-    static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void;
     static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null;
+    static createUniformBuffer(gl: WebGL2RenderingContext, byteLength: number, usage?: BufferDataUsage): UniformBuffer | null;
+    static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): {
+        [name: string]: RangedUniformBuffer;
+    } | null;
+    static setUniformBufferValues(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer, uniforms: UniformsList): void;
+    static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void;
 }

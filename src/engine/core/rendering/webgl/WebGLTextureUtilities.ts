@@ -89,7 +89,6 @@ export enum TexturePixelType {
     INT_2_10_10_10_REV = 0x8D9F
 }
 
-
 export enum TextureParameter {
     TEXTURE_MAG_FILTER = 0x2800,
     TEXTURE_MIN_FILTER = 0x2801,
@@ -164,7 +163,25 @@ export type TextureCubeMapPixels = {
     zNeg: TexImageSource;
 }
 
-export type TextureParameters = {
+export type TextureProperties = {
+    pixels: Texture2DPixels | TextureCubeMapPixels;
+    target: TextureTarget;
+
+    subimage?: {
+        xoffset: number;
+        yoffset: number;
+        width: number;
+        height: number;
+    };
+
+    lod?: number;
+    width: number;
+    height: number;
+
+    format: TexturePixelFormat;
+    internalFormat: TextureInternalPixelFormat;
+    type: TexturePixelType;
+
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
 
@@ -182,37 +199,19 @@ export type TextureParameters = {
     compareMode?: TextureCompareMode;
 }
 
-export type TextureProperties = {
-    pixels: Texture2DPixels | TextureCubeMapPixels;
-    target: TextureTarget;
-    
-    subimage?: {
-        xoffset: number;
-        yoffset: number;
-        width: number;
-        height: number;
-    };
-
-    lod?: number;
-    width: number;
-    height: number;
-
-    format: TexturePixelFormat;
-    internalFormat: TextureInternalPixelFormat;
-    type: TexturePixelType;
-}
-
-export type Texture = TextureProperties & TextureParameters & {
+export type Texture = {
+    name: string;
     unit: number;
     internal: WebGLTexture;
+    properties?: TextureProperties;
 }
 
 export class WebGLTextureUtilities {
 
-    static createTexture(gl: WebGL2RenderingContext, props: TextureProperties & TextureParameters): Texture | null {
-        const texture = gl.createTexture();
+    static createTexture(gl: WebGL2RenderingContext, name: string): Texture | null {
+        const internal = gl.createTexture();
         
-        if (texture === null) {
+        if (internal === null) {
             console.error("Could not create WebGLTexture.");
             return null;
         }
@@ -222,118 +221,112 @@ export class WebGLTextureUtilities {
             console.error(`Could not allocate another texture unit. Max (${gl.MAX_TEXTURE_IMAGE_UNITS}) was reached.`);
             return null;
         }
-
-        let tex = {
-            unit: unit,
-            internal: texture
-        } as Texture;
-
-        this.setTextureProperties(gl, tex, props);
-        this.setTextureParameters(gl, tex, props);
-
-        return tex;
+        
+        return {
+            unit,
+            internal,
+            name
+        };;
     }
 
     static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void {
-        if (gl.isTexture(texture.internal)) {
-            gl.deleteTexture(texture.internal);
+        const {internal, unit} = texture;
+        if (gl.isTexture(internal)) {
+            gl.deleteTexture(internal);
         }
-        this.#freeUnit(gl, texture.unit);
+        this.#freeUnit(gl, unit);
     }
 
-    static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, props: TextureProperties): void {
+    static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, properties: TextureProperties): void {
+        const {unit, internal}  = texture;
+        const {pixels, target, subimage, width, height, format, internalFormat, type} = properties;
+        let {lod} = properties;
 
         const activeTexture = gl.getParameter(gl.ACTIVE_TEXTURE);
-        if (activeTexture !== texture.unit) {
-            gl.activeTexture(gl.TEXTURE0 + texture.unit);
-            gl.bindTexture(props.target, texture.internal);
+        if (activeTexture !== unit) {
+            gl.activeTexture(gl.TEXTURE0 + unit);
+            gl.bindTexture(target, internal);
         }
 
-        const lod = props.lod ?? 0;
+        lod = lod ?? 0;
 
-        const pixels = props.pixels;
         if (pixels == null) {
-            gl.texImage2D(props.target, lod, props.internalFormat, props.width, props.height, 0, props.format, props.type, null);
+            gl.texImage2D(target, lod, internalFormat, width, height, 0, format, type, null);
         }
         else {
             if ("xPos" in pixels) {
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_X, lod, props.internalFormat, props.width, props.height, 0, props.format, props.type, pixels.xPos as any);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_X, lod, props.internalFormat, props.width, props.height, 0, props.format, props.type, pixels.xNeg as any);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Y, lod, props.internalFormat, props.width, props.height, 0, props.format, props.type, pixels.yPos as any);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Y, lod, props.internalFormat, props.width, props.height, 0, props.format, props.type, pixels.yNeg as any);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Z, lod, props.internalFormat, props.width, props.height, 0, props.format, props.type, pixels.zPos as any);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Z, lod, props.internalFormat, props.width, props.height, 0, props.format, props.type, pixels.zNeg as any);
+                const {xPos, xNeg, yPos, yNeg, zPos, zNeg} = pixels;
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_X, lod, internalFormat, width, height, 0, format, type, xPos);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_X, lod, internalFormat, width, height, 0, format, type, xNeg);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Y, lod, internalFormat, width, height, 0, format, type, yPos);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Y, lod, internalFormat, width, height, 0, format, type, yNeg);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Z, lod, internalFormat, width, height, 0, format, type, zPos);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Z, lod, internalFormat, width, height, 0, format, type, zNeg);
             }
             else {
-                if (typeof props.subimage !== "undefined") {
-                    gl.texImage2D(props.target, lod, props.internalFormat, props.width, props.height, 0, props.format, props.type, props.pixels as ArrayBufferView);
-                    gl.texSubImage2D(props.target, lod, props.subimage.xoffset, props.subimage.yoffset, props.subimage.width, props.subimage.height, props.format, props.type, props.pixels as any);
+                if (subimage) {
+                    const {xoffset, yoffset, width, height} = subimage;
+                    gl.texImage2D(target, lod, internalFormat, width, height, 0, format, type, pixels as ArrayBufferView);
+                    gl.texSubImage2D(target, lod, xoffset, yoffset, width, height, format, type, pixels as ArrayBufferView);
                 }
                 else {
-                    gl.texImage2D(props.target, lod, props.internalFormat, props.width, props.height, 0, props.format, props.type, props.pixels as ArrayBufferView);
+                    gl.texImage2D(target, lod, internalFormat, width, height, 0, format, type, pixels as ArrayBufferView);
                 }
             }
-            gl.generateMipmap(props.target);
+            gl.generateMipmap(target);
         }
+
+        const {min, mag, wrapS, wrapT, wrapR, baseMipmapLevel, maxMipmapLevel, compareFunction, compareMode, minLod, maxLod} = properties;
+
+        if (min !== void 0)
+            gl.texParameteri(target, TextureParameter.TEXTURE_MIN_FILTER, min);
+        if (mag !== void 0)
+            gl.texParameteri(target, TextureParameter.TEXTURE_MAG_FILTER, mag);
+        if (wrapS  !== void 0)
+            gl.texParameteri(target, TextureParameter.TEXTURE_WRAP_S, wrapS);
+        if (wrapT !== void 0)
+            gl.texParameteri(target, TextureParameter.TEXTURE_WRAP_T, wrapT);
+        if (wrapR !== void 0)
+            gl.texParameteri(target, TextureParameter.TEXTURE_WRAP_R, wrapR);
+        if (baseMipmapLevel !== void 0)
+            gl.texParameteri(target, TextureParameter.TEXTURE_BASE_LEVEL, baseMipmapLevel);
+        if (maxMipmapLevel !== void 0)
+            gl.texParameteri(target, TextureParameter.TEXTURE_MAX_LEVEL, maxMipmapLevel);
+        if (compareFunction !== void 0)
+            gl.texParameteri(target, TextureParameter.TEXTURE_COMPARE_FUNC, compareFunction);
+        if (compareMode !== void 0)
+            gl.texParameteri(target, TextureParameter.TEXTURE_COMPARE_MODE, compareMode);
+        if (minLod !== void 0)
+            gl.texParameterf(target, TextureParameter.TEXTURE_MIN_LOD, minLod);
+        if (maxLod !== void 0)
+            gl.texParameterf(target, TextureParameter.TEXTURE_MAX_LOD, maxLod);
 
         Object.assign(
             texture, {
-            pixels: props.pixels,
-            target: props.target,
-            subimage: props.subimage,
-            lod: props.lod,
-            width: props.width,
-            height: props.height,
-            format: props.format,
-            internalFormat: props.internalFormat,
-            type: props.type
-        });
-    }
-
-    static setTextureParameters(gl: WebGL2RenderingContext, texture: Texture, param: TextureParameters): void {
-
-        const activeTexture = gl.getParameter(gl.ACTIVE_TEXTURE);
-        if (activeTexture !== texture.unit) {
-            gl.activeTexture(gl.TEXTURE0 + texture.unit);
-            gl.bindTexture(texture.target, texture.internal);
-        }
-
-        if (typeof param.min !== "undefined")
-            gl.texParameteri(texture.target, TextureParameter.TEXTURE_MIN_FILTER, param.min);
-        if (typeof param.mag !== "undefined")
-            gl.texParameteri(texture.target, TextureParameter.TEXTURE_MAG_FILTER, param.mag);
-        if (typeof param.wrapS !== "undefined")
-            gl.texParameteri(texture.target, TextureParameter.TEXTURE_WRAP_S, param.wrapS);
-        if (typeof param.wrapT !== "undefined")
-            gl.texParameteri(texture.target, TextureParameter.TEXTURE_WRAP_T, param.wrapT);
-        if (typeof param.wrapR !== "undefined")
-            gl.texParameteri(texture.target, TextureParameter.TEXTURE_WRAP_R, param.wrapR);
-        if (typeof param.baseMipmapLevel !== "undefined")
-            gl.texParameteri(texture.target, TextureParameter.TEXTURE_BASE_LEVEL, param.baseMipmapLevel);
-        if (typeof param.maxMipmapLevel !== "undefined")
-            gl.texParameteri(texture.target, TextureParameter.TEXTURE_MAX_LEVEL, param.maxMipmapLevel);
-        if (typeof param.compareFunction !== "undefined")
-            gl.texParameteri(texture.target, TextureParameter.TEXTURE_COMPARE_FUNC, param.compareFunction);
-        if (typeof param.compareMode !== "undefined")
-            gl.texParameteri(texture.target, TextureParameter.TEXTURE_COMPARE_MODE, param.compareMode);
-        if (typeof param.minLod !== "undefined")
-            gl.texParameterf(texture.target, TextureParameter.TEXTURE_MIN_LOD, param.minLod);
-        if (typeof param.maxLod !== "undefined")
-            gl.texParameterf(texture.target, TextureParameter.TEXTURE_MAX_LOD, param.maxLod);
-
-        Object.assign(texture, {
-            min: param.min,
-            mag: param.mag,
-            wrapS: param.wrapS,
-            wrapT: param.wrapT,
-            wrapR: param.wrapR,
-            baseMipmapLevel: param.baseMipmapLevel,
-            maxMipmapLevel: param.maxMipmapLevel,
-            compareFunction: param.compareFunction,
-            compareMode: param.compareMode,
-            minLod: param.minLod,
-            maxLod: param.maxLod
-        });
+                properties: {
+                    pixels,
+                    target,
+                    subimage,
+                    lod,
+                    width,
+                    height,
+                    format,
+                    internalFormat,
+                    type,
+                    min,
+                    mag,
+                    wrapS,
+                    wrapT,
+                    wrapR,
+                    baseMipmapLevel,
+                    maxMipmapLevel,
+                    compareFunction,
+                    compareMode,
+                    minLod,
+                    maxLod
+                }
+            }
+        );
     }
     
     static #units: Map<WebGL2RenderingContext, boolean[]> = new Map();

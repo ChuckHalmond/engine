@@ -2,11 +2,13 @@ import { ArcballCameraControl } from "../../engine/core/controls/ArcballCameraCo
 import { Transform } from "../../engine/core/general/Transform";
 import { Input } from "../../engine/core/input/Input";
 import { PerspectiveCamera } from "../../engine/core/rendering/scenes/cameras/PerspectiveCamera";
+import { ConeGeometry } from "../../engine/core/rendering/scenes/geometries/euclidian/ConeGeometry";
 import { CubeGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry";
+import { QuadGeometry } from "../../engine/core/rendering/scenes/geometries/lib/QuadGeometry";
 import { Packet, PacketProperties, WebGLPacketUtilities } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
 import { BufferMask, Capabilities, WindingOrder, WebGLRendererUtilities, TestFunction, BlendingMode, BlendingEquation } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
-import { DrawMode } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
+import { AttributeDataType, DrawMode } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
 import { Vector3 } from "../../engine/libs/maths/algebra/vectors/Vector3";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
@@ -65,7 +67,10 @@ export async function wireframe() {
   const cameraMat = camera.transform.matrix;
   const viewProjection = camera.projection.clone().mult(cameraMat.clone().invert());
   
-  const cubeGeometry = new CubeGeometry({width: 2, height: 0.5, depth: 5});
+  const cubeGeometry =
+    /*new CubeGeometry({width: 2, height: 0.5, depth: 5})*/
+    /*new QuadGeometry({widthSegment: 4, heightSegment: 8})*/
+    new ConeGeometry();
   const cubeTransform = new Transform();
   const cubeLines = cubeGeometry.toBuilder().linesArray();
   
@@ -74,7 +79,7 @@ export async function wireframe() {
       attributes: {
         a_position: {
           array: cubeLines,
-          numComponents: 3,
+          type: AttributeDataType.VEC3
         }
       },
       numElements: cubeLines.length / 2

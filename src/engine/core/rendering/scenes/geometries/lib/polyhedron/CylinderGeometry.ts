@@ -1,6 +1,44 @@
-import { Vector3List } from "../../../../../../libs/maths/extensions/lists/Vector3List";
 import { GeometryBase } from "../../Geometry";
-import { GeometryBuilder, FaceVerticesIterator } from "../../GeometryBuilder";
+import { GeometryBuilder } from "../../GeometryBuilder";
+
+class CylinderGeometry extends GeometryBase {
+	radiusTop: number;
+	radiusBottom: number;
+	height: number;
+	radialSegments: number;
+	heightSegments: number;
+	openEnded: boolean;
+	thetaStart: number;
+	thetaLength: number;
+
+	constructor(properties?: {
+		radiusTop?: number;
+		radiusBottom?: number;
+		height?: number;
+		radialSegments?: number;
+		heightSegments?: number;
+		openEnded?: boolean;
+		thetaStart?: number;
+		thetaLength?: number;
+	}) {
+		super();
+		const {radiusTop, radiusBottom, height, radialSegments, heightSegments, openEnded, thetaStart, thetaLength} = properties ?? {};
+		this.radiusTop = radiusTop ?? 2;
+		this.radiusBottom = radiusBottom ?? 2;
+		this.height = height ?? 2;
+		this.radialSegments = radialSegments ?? 2;
+		this.heightSegments = heightSegments ?? 2;
+		this.openEnded = openEnded ?? true;
+		this.thetaStart = thetaStart ?? 2;
+		this.thetaLength = thetaLength ?? 2;
+	}
+
+	toBuilder(): GeometryBuilder {
+		const builder = new GeometryBuilder();
+		
+		return builder;
+	}
+}
 /*
 const buildCylinderGeometry = function(properties: {radius: number, segment: number, height: number}) {
 	const builder = new GeometryBuilder();
