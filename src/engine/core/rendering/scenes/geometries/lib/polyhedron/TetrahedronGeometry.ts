@@ -1,76 +1,48 @@
 import { buildArrayFromIndexedArrays } from "../../../../../../utils/Snippets";
 import { GeometryBase } from "../../Geometry";
-/*
+import { GeometryBuilder } from "../../GeometryBuilder";
+
 export { TetrahedronGeometry };
 
 class TetrahedronGeometry extends GeometryBase {
+	radius: number;
+	detail: number;
 
-	constructor() {
-		super({
-			vertices: new Float32Array(tetrahedronVertices),
-			uvs: new Float32Array(tetrahedronUVS),
-			indices: new Uint8Array(tetrahedronIndices)
-		})
+	constructor(properties?: {radius?: number, detail?: number}) {
+		super();
+		const {radius, detail} = properties ?? {};
+		this.radius = radius ?? 1;
+		this.detail = detail ?? 1;
+	}
+
+	toBuilder(): GeometryBuilder {
+		const builder = new GeometryBuilder();
+
+		const vertices = [
+			1, 1, 1,
+			-1, -1, 1,
+			-1, 1, -1,
+			1, -1, -1
+		];
+
+		const indices = [
+			2, 1, 0,
+			0, 3, 2,
+			1, 3, 0,
+			2, 3, 1
+		];
+
+		const indicesCount = indices.length;
+		for (let i = 0; i < indicesCount; i += 3) {
+			let vi1 = 3 * indices[i    ];
+			let vi2 = 3 * indices[i + 1];
+			let vi3 = 3 * indices[i + 2];
+			builder.addTriangleFaceVertices(
+				[vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]],
+				[vertices[vi2], vertices[vi2 + 1], vertices[vi2 + 2]],
+				[vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]]
+			);
+		}
+		return builder;
 	}
 }
-*/
-/**
- *          v0
- *         / \
- *        /   \
- *       /     \
- *      /  f0   \
- *     v1--------v2
- *     /\        /\
- * 	  /  \  f2  /  \
- *   /    \    /    \
- *  /  f1  \  /  f3  \
- * v0-------v3--------v0
- * 
- * v0 = [+1,-1,+1]
- * v1 = [-1,+1,+1]
- * v2 = [+1,+1,-1]
- * v3 = [+1,+1,+1]
- * 
- */
-
-const tetrahedronVerticesSet = [
-	[+1, -1, +1], // v0
-	[-1, +1, +1], // v1
-	[+1, +1, -1], // v2
-	[+1, +1, +1], // v3
-];
-
-const tetrahedronUVsSet = [
-	[0, 0],
-	[1, 0],
-	[0, 1],
-	[1, 1],
-];
-
-const tetrahedronVertices = buildArrayFromIndexedArrays(
-	tetrahedronVerticesSet,
-	[
-		0, 1, 2, // f0
-		1, 0, 3, // f1
-		1, 3, 2, // f2
-		2, 3, 0, // f3
-	]
-);
-
-const tetrahedronUVS = buildArrayFromIndexedArrays(
-	tetrahedronUVsSet,
-	[
-		1, 2, 0, // f0
-		1, 3, 0, // f1
-		2, 3, 0, // f2
-		1, 2, 3, // f3
-	]
-);
-
-const tetrahedronIndices = [
-    0,  1,  2, // f0
-    3,  4,  5, // f1
-    6,  7,  8, // f2
-    9, 10, 11, // f3
-];

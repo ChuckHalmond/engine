@@ -23,6 +23,7 @@ import { Space } from "../../engine/libs/maths/geometry/space/Space";
 import { addWidgets, createPositionWidgets, createRelativePositionWidgets, createRotationWidgets } from "./Common";
 import { SphereGeometry } from "../../engine/core/rendering/scenes/geometries/lib/SphereGeometry";
 import { CylinderGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/CylinderGeometry";
+import { DodecahedronGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/DodecahedronGeometry";
 
 const simpleSceneDOM = /*template*/`
 <!--<link rel="stylesheet" href="./css/main.css"/>-->
@@ -173,10 +174,12 @@ export async function launchScene() {
     });
   }
 
-  const cubeGeometry = //new QuadGeometry({widthSegment: 4, heightSegment: 8}
-    new CubeGeometry({widthSegments: 2});
+  const cubeGeometry =
+    //new QuadGeometry({widthSegment: 4, heightSegment: 8}
+    //new CubeGeometry({widthSegments: 2});
     //new SphereGeometry({widthSegments: 64, heightSegments: 64});
     //new CylinderGeometry();
+    new DodecahedronGeometry();
 
   const cubeGeometryBuilder = cubeGeometry.toBuilder()/*.clone()*/;
   const quad = new QuadGeometry({height: 2, width: 2});
@@ -211,21 +214,21 @@ export async function launchScene() {
   const cubeVertices = cubeGeometryBuilder.verticesArray();
   const cubeIndices = cubeGeometryBuilder.indicesArray();
   const cubeNormals = cubeGeometryBuilder.verticesNormalsArray();
-  const cubeUVs = cubeGeometryBuilder.uvsArray();
-  const cubeTangents = cubeGeometryBuilder.tangentsArray();
+  //const cubeUVs = cubeGeometryBuilder.uvsArray();
+  //const cubeTangents = cubeGeometryBuilder.tangentsArray();
   const cubeGeometryBuffer = new GeometryBuffer({
     a_position: { array: cubeVertices, type: AttributeDataType.VEC3 },
     a_normal: { array: cubeNormals, type: AttributeDataType.VEC3 },
-    a_tangent: { array: cubeTangents, type: AttributeDataType.VEC3 },
-    a_uv: { array: cubeUVs, type: AttributeDataType.VEC2 },
+    //a_tangent: { array: cubeTangents, type: AttributeDataType.VEC3 },
+    //a_uv: { array: cubeUVs, type: AttributeDataType.VEC2 },
   }, true);
   const phongCubePacketProperties: PacketProperties = {
     vertexArray: {
       attributes: {
         a_position: cubeGeometryBuffer.getAttribute("a_position")!,
         a_normal: cubeGeometryBuffer.getAttribute("a_normal")!,
-        a_tangent: cubeGeometryBuffer.getAttribute("a_tangent")!,
-        a_uv: cubeGeometryBuffer.getAttribute("a_uv")!
+        //a_tangent: cubeGeometryBuffer.getAttribute("a_tangent")!,
+        //a_uv: cubeGeometryBuffer.getAttribute("a_uv")!
       },
       indices: cubeIndices,
       elementsCount: cubeIndices.length,

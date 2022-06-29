@@ -4,7 +4,10 @@ import { Input } from "../../engine/core/input/Input";
 import { PerspectiveCamera } from "../../engine/core/rendering/scenes/cameras/PerspectiveCamera";
 import { ConeGeometry } from "../../engine/core/rendering/scenes/geometries/euclidian/ConeGeometry";
 import { CubeGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry";
+import { DodecahedronGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/DodecahedronGeometry";
+import { IcosahedronGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry";
 import { QuadGeometry } from "../../engine/core/rendering/scenes/geometries/lib/QuadGeometry";
+import { SphereGeometry } from "../../engine/core/rendering/scenes/geometries/lib/SphereGeometry";
 import { Packet, PacketProperties, WebGLPacketUtilities } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
 import { BufferMask, Capabilities, WindingOrder, WebGLRendererUtilities, TestFunction, BlendingMode, BlendingEquation } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
@@ -68,9 +71,12 @@ export async function wireframe() {
   const viewProjection = camera.projection.clone().mult(cameraMat.clone().invert());
   
   const cubeGeometry =
-    /*new CubeGeometry({width: 2, height: 0.5, depth: 5})*/
-    /*new QuadGeometry({widthSegment: 4, heightSegment: 8})*/
-    new ConeGeometry();
+    //new QuadGeometry({widthSegment: 4, heightSegment: 8}
+    //new CubeGeometry({widthSegments: 2});
+    //new SphereGeometry({widthSegments: 32, heightSegments: 32});
+    //new CylinderGeometry();
+    new DodecahedronGeometry();
+  
   const cubeTransform = new Transform();
   const cubeLines = cubeGeometry.toBuilder().linesArray();
   
