@@ -1,24 +1,29 @@
-import { Vector3List } from "../../../../../libs/maths/extensions/lists/Vector3List";
 import { GeometryBase } from "../Geometry";
 import { GeometryBuilder, FaceVerticesIterator } from "../GeometryBuilder";
 
 export class SphereGeometry extends GeometryBase {
 	radius: number;
-	widthSegment: number;
-	heightSegment: number;
+	widthSegments: number;
+	heightSegments: number;
 	phiStart: number;
 	phiLength: number;
 	thetaStart: number;
 	thetaLength: number;
 
 	constructor(properties?: {
-		radius?: number, widthSegment?: number, heightSegment?: number; phiStart?: number; phiLength?: number; thetaStart?: number; thetaLength?: number;
+		radius?: number,
+		widthSegments?: number,
+		heightSegments?: number,
+		phiStart?: number,
+		phiLength?: number,
+		thetaStart?: number,
+		thetaLength?: number
 	}) {
 		super();
-		const {radius, widthSegment, heightSegment, phiStart, phiLength, thetaStart, thetaLength} = properties ?? {};
+		const {radius, widthSegments, heightSegments, phiStart, phiLength, thetaStart, thetaLength} = properties ?? {};
 		this.radius = radius ?? 1;
-		this.widthSegment = widthSegment ?? 32;
-		this.heightSegment = heightSegment ?? 16;
+		this.widthSegments = widthSegments ?? 32;
+		this.heightSegments = heightSegments ?? 16;
 		this.phiStart = phiStart ?? 0;
 		this.phiLength = phiLength ?? 2 * Math.PI;
 		this.thetaStart = thetaStart ?? 0;
@@ -27,112 +32,75 @@ export class SphereGeometry extends GeometryBase {
 
 	toBuilder(): GeometryBuilder {
 		const builder = new GeometryBuilder();
+		const {radius, phiStart, phiLength, thetaStart, thetaLength} = this;
+		let {widthSegments, heightSegments} = this;
+
+		widthSegments = Math.max(3, Math.floor(widthSegments));
+		heightSegments = Math.max(2, Math.floor(heightSegments));
+
+		const thetaEnd = Math.min(thetaStart + thetaLength, Math.PI);
+
+		const indexArray = [];
+		const indices = [];
+		const vertices = []
+		const uvs = [];
+		let index = 0;
+
+		for (let iy = 0; iy <= heightSegments; iy++) {
+			const indexRow = [];
+			const v = iy / heightSegments;
+
+			let uOffset = 0;
+			if (iy == 0 && thetaStart == 0) {
+				uOffset = 0.5 / widthSegments;
+			} else if (iy == heightSegments && thetaEnd == Math.PI) {
+				uOffset = -0.5 / widthSegments;
+			}
+
+			for (let ix = 0; ix <= widthSegments; ix++) {
+				const u = ix / widthSegments;
+				vertices.push(
+					-radius * Math.cos(phiStart + u * phiLength) * Math.sin(thetaStart + v * thetaLength),
+					radius * Math.cos(thetaStart + v * thetaLength),
+					radius * Math.sin(phiStart + u * phiLength) * Math.sin(thetaStart + v * thetaLength)
+				);
+				uvs.push(u + uOffset, 1 - v);
+				indexRow.push(index++);
+			}
+			indexArray.push(indexRow);
+		}
+
+		for (let iy = 0; iy < heightSegments; iy++) {
+			for (let ix = 0; ix < widthSegments; ix++) {
+				const lowerLeftIndex = indexArray[iy][ix];
+				const upperLeftIndex = indexArray[iy + 1][ix];
+				const upperRightVertex = indexArray[iy + 1][ix + 1];
+				const lowerRightVertex = indexArray[iy][ix + 1];
+				if (iy !== 0 || thetaStart > 0) indices.push(lowerRightVertex, lowerLeftIndex, upperRightVertex);
+				if (iy !== heightSegments - 1 || thetaEnd < Math.PI) indices.push(lowerLeftIndex, upperLeftIndex, upperRightVertex);
+			}
+		}
+
+		const indicesCount = indices.length;
+		for (let i = 0; i < indicesCount; i += 3) {
+			let vi1 = 3 * indices[i    ];
+			let vi2 = 3 * indices[i + 1];
+			let vi3 = 3 * indices[i + 2];
+			let ui1 = 2 * indices[i    ];
+			let ui2 = 2 * indices[i + 1];
+			let ui3 = 2 * indices[i + 2];
+			builder.addTriangleFaceVertices(
+				[vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]],
+				[vertices[vi2], vertices[vi2 + 1], vertices[vi2 + 2]],
+				[vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]], {
+					uv: [
+						[uvs[ui1], uvs[ui1 + 1]],
+						[uvs[ui2], uvs[ui2 + 1]],
+						[uvs[ui3], uvs[ui3 + 1]]
+					]
+				}
+			);
+		}
 		return builder;
 	}
 }
-
-/*
-const buildSphereGeometry = function(properties: {radius: number, widthSegment: number, heightSegment: number}) {
-	const builder = new GeometryBuilder();
-    const {radius, widthSegment, heightSegment} = properties;
-    const widthAngleSlice = 2 * Math.PI / widthSegment;
-	const heightAngleSlice = Math.PI / heightSegment;
-    const lowerOrigin = builder.addVertex([0, 0, -radius]);
-	const upperOrigin = builder.addVertex([0, 0, radius]);
-    Array(heightSegment).fill(0).forEach((_, heightSegmentIndex) => {
-		const deltaZ = Math.sin(heightSegmentIndex * heightAngleSlice) * radius;
-		const z = Math.sin(-(Math.PI / 2) + heightSegmentIndex * heightAngleSlice) * radius;
-		Array(widthSegment).fill(0).forEach((_, widthSegmentIndex) => {
-			if (heightSegmentIndex === heightSegment || heightSegmentIndex === 0) {
-				return;
-			}
-			if (heightSegmentIndex === 1 || heightSegmentIndex === heightSegment - 1) {
-				const widthAngle = widthSegmentIndex * widthAngleSlice;
-				const nextAngle = ((widthSegmentIndex + 1) % widthSegment) * widthAngleSlice;
-				let v0 = (heightSegmentIndex === 1) ? lowerOrigin : upperOrigin;
-				let v1 = builder.addVertex([Math.cos(nextAngle) * radius, Math.sin(nextAngle) * radius, z]);
-				let v2 = builder.addVertex([Math.cos(widthAngle) * radius, Math.sin(widthAngle) * radius, z]);
-				builder.addTriangleFace(
-					v0, v1, v2
-				);
-			}
-			const widthAngle = widthSegmentIndex * widthAngleSlice;
-			const nextAngle = ((widthSegmentIndex + 1) % widthSegment) * widthAngleSlice;
-			let v0 = builder.addVertex([0, 0, z]);
-			let v1 = builder.addVertex([Math.cos(nextAngle) * radius, Math.sin(nextAngle) * radius, z]);
-			let v2 = builder.addVertex([Math.cos(widthAngle) * radius, Math.sin(widthAngle) * radius, z]);
-			builder.addQuadFace(
-				v0, v1, v2
-			);
-			//}
-			let v3 = builder.addVertex([Math.cos(nextAngle) * radius, Math.sin(nextAngle) * radius, height]);
-			let v4 = builder.addVertex([Math.cos(angle) * radius, Math.sin(angle) * radius, height]);
-			builder.addTriangleFace(
-				upperOrigin, v3, v4
-			);
-			builder.addQuadFace(
-				v1, v2, v3, v4
-			);
-		});
-    });
-	
-	const vertices = new Float32Array(builder.faces.flatMap((face) => {
-		return Array.from(new FaceVerticesIterator(face)).flatMap((vertex) => {
-			return vertex.point;
-		});
-	}));
-
-	const indices = new Uint8Array(builder.faces.reduce(([indices, index]) => {
-		return [indices.concat([index, index + 1, index + 2]), index + 3] as [number[], number];
-	}, [[], 0] as [number[], number])[0]);
-
-	const uvs = new Float32Array(builder.faces.flatMap((face) => {
-		return face.uv.flat(1);
-	}));
-
-	const lines = new Float32Array(builder.faces.flatMap((face) => {
-		const faceVertices = Array.from(new FaceVerticesIterator(face));
-		//if (faceVertices.length === 3) {
-			const origin = faceVertices[0];
-			const v1 = faceVertices[1];
-			const v2 = faceVertices[2];
-			return [
-				...origin.point, ...v1.point,
-				...v1.point, ...v2.point,
-				...v2.point, ...origin.point
-			];
-		}
-		else {
-			const upperLeftVertex = faceVertices[0];
-			const upperRightVertex = faceVertices[1];
-			const lowerLeftVertex = faceVertices[2];
-			const lowerRightVertex = faceVertices[3];
-			return [
-				...upperLeftVertex.point, ...upperRightVertex.point,
-				...upperRightVertex.point, ...lowerRightVertex.point,
-				...lowerRightVertex.point, ...lowerLeftVertex.point,
-				...lowerLeftVertex.point, ...upperLeftVertex.point
-			];
-		}
-	}));
-
-	return [vertices, indices, uvs, lines];
-};
-
-export class SphereGeometry extends GeometryBase {
-	constructor(properties?: {radius?: number, widthSegment?: number, heightSegment?: number}) {
-		const [vertices, indices, uvs, lines] = buildSphereGeometry({
-			radius: properties?.radius ?? 1,
-			widthSegment: properties?.widthSegment ?? 16,
-			heightSegment: properties?.heightSegment ?? 16,
-		});
-		super({
-			vertices: vertices,
-			indices: indices,
-			uvs: uvs
-		});
-		Object.assign(this, {
-			lines: new Vector3List(lines)
-		});
-	}
-}*/

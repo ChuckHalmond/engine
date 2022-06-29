@@ -1,19 +1,48 @@
 import { buildArrayFromIndexedArrays } from "../../../../../../utils/Snippets";
 import { GeometryBase } from "../../Geometry";
 import { GOLDEN_RATIO as p } from "../../../../../../libs/maths/geometry/GeometryConstants";
-/*
+import { GeometryBuilder } from "../../GeometryBuilder";
+
 export { IcosahedronGeometry };
 
 class IcosahedronGeometry extends GeometryBase {
+	vertices: Float32Array;
+	uvs: Float32Array;
+	indices: Uint8Array;
 
 	constructor() {
-		super({
-			vertices: new Float32Array(icosahedronVertices),
-			uvs: new Float32Array(icosahedronUVS),
-			indices: new Uint8Array(icosahedronIndices)
-		})
+		super();
+		this.vertices = new Float32Array(icosahedronVertices);
+		this.uvs = new Float32Array(icosahedronUVS);
+		this.indices = new Uint8Array(icosahedronIndices);
 	}
-}*/
+
+	toBuilder(): GeometryBuilder {
+		const builder = new GeometryBuilder();
+		const {indices, vertices, uvs} = this;
+		const indicesCount = indices.length;
+		for (let i = 0; i < indicesCount; i += 3) {
+			let vi1 = 3 * indices[i    ];
+			let vi2 = 3 * indices[i + 1];
+			let vi3 = 3 * indices[i + 2];
+			let ui1 = 2 * indices[i    ];
+			let ui2 = 2 * indices[i + 1];
+			let ui3 = 2 * indices[i + 2];
+			builder.addTriangleFaceVertices(
+				[vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]],
+				[vertices[vi2], vertices[vi2 + 1], vertices[vi2 + 2]],
+				[vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]], {
+					uv: [
+						[uvs[ui1], uvs[ui1 + 1]],
+						[uvs[ui2], uvs[ui2 + 1]],
+						[uvs[ui3], uvs[ui3 + 1]]
+					]
+				}
+			);
+		}
+		return builder;
+	}
+}
 
 /**
  * 

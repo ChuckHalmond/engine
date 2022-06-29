@@ -63,14 +63,14 @@ declare type VertexArrayProperties = {
     usage?: BufferDataUsage;
     interleave?: boolean;
     indices?: Uint8Array | Uint16Array | Uint32Array;
-    numElements: number;
+    elementsCount: number;
 };
 declare type VertexArrayValues = {
     attributes: {
         [name: string]: VertexArrayAttributeValue;
     };
     indices?: Uint8Array | Uint16Array | Uint32Array;
-    numElements: number;
+    elementsCount: number;
 };
 declare type VertexArray = {
     internal: WebGLVertexArrayObject;
@@ -79,7 +79,7 @@ declare type VertexArray = {
         [name: string]: VertexArrayAttributeSetter;
     };
     verticesBuffer: Buffer;
-    numElements: number;
+    elementsCount: number;
     indexType?: ElementArrayDataType;
     indicesBuffer?: WebGLBuffer;
 };

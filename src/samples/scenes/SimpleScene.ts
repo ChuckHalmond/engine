@@ -1,3 +1,4 @@
+import { IcosahedronGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/IcosahedronGeometry";
 import { ArcballCameraControl } from "../../engine/core/controls/ArcballCameraControl";
 import { FreeCameraControl } from "../../engine/core/controls/FreeCameraControl";
 import { Transform } from "../../engine/core/general/Transform";
@@ -20,6 +21,8 @@ import { Quaternion } from "../../engine/libs/maths/algebra/quaternions/Quaterni
 import { Vector3, Vector3Values } from "../../engine/libs/maths/algebra/vectors/Vector3";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
 import { addWidgets, createPositionWidgets, createRelativePositionWidgets, createRotationWidgets } from "./Common";
+import { SphereGeometry } from "../../engine/core/rendering/scenes/geometries/lib/SphereGeometry";
+import { CylinderGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/CylinderGeometry";
 
 const simpleSceneDOM = /*template*/`
 <!--<link rel="stylesheet" href="./css/main.css"/>-->
@@ -170,9 +173,13 @@ export async function launchScene() {
     });
   }
 
-  const cubeGeometry = /*new QuadGeometry({widthSegment: 4, heightSegment: 8}*/new CubeGeometry({widthSegment: 2, height: 1, width: 1});
+  const cubeGeometry = //new QuadGeometry({widthSegment: 4, heightSegment: 8}
+    new CubeGeometry({widthSegments: 2});
+    //new SphereGeometry({widthSegments: 64, heightSegments: 64});
+    //new CylinderGeometry();
+
   const cubeGeometryBuilder = cubeGeometry.toBuilder()/*.clone()*/;
-  const quad = new QuadGeometry();
+  const quad = new QuadGeometry({height: 2, width: 2});
   const quadGeometryBuilder = quad.toBuilder();
   const cube = new Transform();
 
@@ -221,7 +228,7 @@ export async function launchScene() {
         a_uv: cubeGeometryBuffer.getAttribute("a_uv")!
       },
       indices: cubeIndices,
-      numElements: cubeIndices.length,
+      elementsCount: cubeIndices.length,
       interleave: true
     },
     uniformBlocks: [
@@ -356,7 +363,7 @@ export async function launchScene() {
         a_position: { array: cubeVertices, type: AttributeDataType.VEC3 },
       },
       indices: cubeIndices,
-      numElements: cubeIndices.length
+      elementsCount: cubeIndices.length
     },
     uniformBlocks: [
       {
@@ -381,7 +388,7 @@ export async function launchScene() {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
       },
       indices: quadIndices,
-      numElements: quadIndices.length
+      elementsCount: quadIndices.length
     },
     uniforms: {
       u_world: { value: quadWorld.array },
@@ -397,7 +404,7 @@ export async function launchScene() {
         a_uv: { array: quadUVs, type: AttributeDataType.VEC2 },
       },
       indices: quadIndices,
-      numElements: quadIndices.length
+      elementsCount: quadIndices.length
     },
     uniforms: {
       u_world: { value: quadWorld.array },
@@ -412,7 +419,7 @@ export async function launchScene() {
         a_uv: { array: quadUVs, type: AttributeDataType.VEC2 },
       },
       indices: quadIndices,
-      numElements: quadIndices.length
+      elementsCount: quadIndices.length
     },
     uniforms: {
       u_world: { value: quadWorld.array },

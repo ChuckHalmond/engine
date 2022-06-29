@@ -13,16 +13,16 @@ export declare class CubeGeometry extends GeometryBase {
     width: number;
     height: number;
     depth: number;
-    widthSegment: number;
-    heightSegment: number;
-    depthSegment: number;
+    widthSegments: number;
+    heightSegments: number;
+    depthSegments: number;
     constructor(properties?: {
         width?: number;
         height?: number;
         depth?: number;
-        widthSegment?: number;
-        heightSegment?: number;
-        depthSegment?: number;
+        widthSegments?: number;
+        heightSegments?: number;
+        depthSegments?: number;
     });
     toBuilder(): GeometryBuilder;
 }

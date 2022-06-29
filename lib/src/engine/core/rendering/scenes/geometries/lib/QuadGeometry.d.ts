@@ -4,13 +4,13 @@ export { QuadGeometry };
 declare class QuadGeometry extends GeometryBase {
     width: number;
     height: number;
-    widthSegment: number;
-    heightSegment: number;
+    widthSegments: number;
+    heightSegments: number;
     constructor(properties?: {
         width?: number;
         height?: number;
-        widthSegment?: number;
-        heightSegment?: number;
+        widthSegments?: number;
+        heightSegments?: number;
     });
     toBuilder(): GeometryBuilder;
 }

@@ -82,7 +82,7 @@ export async function wireframe() {
           type: AttributeDataType.VEC3
         }
       },
-      numElements: cubeLines.length / 2
+      elementsCount: cubeLines.length / 2
     },
     uniformBlocks: [
       {

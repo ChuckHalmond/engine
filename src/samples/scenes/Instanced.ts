@@ -130,7 +130,7 @@ function scene(canvas: HTMLCanvasElement) {
                     normalize: true
                 }*/
             },
-            numElements: 3
+            elementsCount: 3
         },
         uniformBlocks: [
             {

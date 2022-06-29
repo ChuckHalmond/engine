@@ -174,7 +174,7 @@ export async function launchScene() {
   const timers: [string, Date][] = [
     ["t0", new Date()]
   ];
-  const quadGeometry = new QuadGeometry({widthSegment: 32, heightSegment: 32});
+  const quadGeometry = new QuadGeometry({widthSegments: 32, heightSegments: 32});
   timers.push(["constructor()", getDelta(timers)]);
   const quadGeometryBuilder = quadGeometry.toBuilder();
   timers.push(["toBuilder()", getDelta(timers)]);
@@ -203,7 +203,7 @@ export async function launchScene() {
           type: AttributeDataType.VEC3
         }
       },
-      numElements: quadLines.length / 2
+      elementsCount: quadLines.length / 2
     },
     uniformBlocks: [
       {
@@ -238,7 +238,7 @@ export async function launchScene() {
         a_uv: { array: quadUVs, type: AttributeDataType.VEC2 },
       },
       indices: quadIndices,
-      numElements: quadIndices.length
+      elementsCount: quadIndices.length
     },
     uniformBlocks: [
       {
