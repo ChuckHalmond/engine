@@ -11,7 +11,7 @@ import { BufferDataUsage } from "../../engine/core/rendering/webgl/WebGLBufferUt
 import { FramebufferAttachment, FramebufferTextureTarget, RenderbufferPixelFormat, WebGLFramebufferUtilities } from "../../engine/core/rendering/webgl/WebGLFramebufferUtilities";
 import { WebGLPacketUtilities, PacketProperties } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
-import { BufferMask, Capabilities, TestFunction, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
+import { BufferMask, Capabilities, TestFunction, WebGLRendererUtilities, WindingOrder } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
 import { TexturePixelFormat, TexturePixelType, TextureMagFilter, TextureMinFilter, TextureTarget, TextureWrapMode, WebGLTextureUtilities, TextureInternalPixelFormat } from "../../engine/core/rendering/webgl/WebGLTextureUtilities";
 import { WebGLUniformBlockUtilities } from "../../engine/core/rendering/webgl/WebGLUniformBlockUtilities";
 import { AttributeDataType } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
@@ -35,6 +35,20 @@ const simpleSceneDOM = /*template*/`
           </div>
           <div id="widgets"></div>
           <canvas id="canvas" tabindex="0" tooltip="mon-canvas" oncontextmenu="return false;"></canvas>
+          <style>
+            circle:hover {
+              fill: rgb(255, 0, 0);
+            }
+          </style>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+            <circle cx="10" cy="10" r="4"/>
+          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" id="save" fill="none">
+            <g>
+              <rect x="0" y="0" width="100" height="100" fill="red"></rect>
+              <text text-anchor="middle" alignment-baseline="middle" x="50" y="50" font-family="Verdana" fill="blue">Hello,World!</text>
+            </g>
+          </svg>
         </section>
     </main>
   </div>`;
@@ -43,6 +57,60 @@ export async function start() {
   const template = document.createElement("template");
   template.innerHTML = simpleSceneDOM;
   document.body.insertBefore(template.content, document.body.firstChild);
+
+  let onCapture = false;
+
+  const handlePointerUpEvent = (event: PointerEvent) => {
+    const {target, pointerId} = event;
+    (<Element>target).releasePointerCapture(pointerId);
+    onCapture = false;
+  }
+
+  const handlePointerDownEvent = (event: PointerEvent) => {
+    const {target, pointerId} = event;
+    (<Element>target).setPointerCapture(pointerId);
+    onCapture = true;
+  }
+
+  const handlePointerOutEvent = (event: PointerEvent) => {
+    const {target, pointerId} = event;
+    (<Element>target).releasePointerCapture(pointerId);
+    onCapture = false;
+  }
+
+  const handlePointerMoveEvent = (event: PointerEvent) => {
+    if (onCapture) {
+      const {currentTarget, clientX, clientY} = event;
+      const svg = <Element>currentTarget;
+      const {
+        right: svgRight, left: svgLeft, width: svgWidth,
+        bottom: svgBottom, top: svgTop, height: svgHeight
+      } = svg.getBoundingClientRect();
+      //const isOutsideSvg = clientX < svgLeft || clientX > svgRight || clientY < svgTop || clientY > svgBottom;
+      //if (!isOutsideSvg) {
+        const {target, movementX, movementY} = event;
+        const targetElement = <Element>target;
+        const [viewMinX, viewMinY, viewMaxX, viewMaxY] = svg.getAttribute("viewBox")!.split(" ").map(value => parseFloat(value));
+        const offsetX = (Math.min(svgRight, Math.max(clientX, svgLeft)) - svgLeft) / svgWidth;
+        const offsetY = (Math.min(svgBottom, Math.max(clientY, svgTop)) - svgTop) / svgHeight;
+        const newTargetX = Math.round(offsetX * (viewMaxX - viewMinX));
+        const newTargetY = Math.round(offsetY * (viewMaxY - viewMinY));
+        /*const [cx, cy] = ["cx", "cy"].map(attribute => parseFloat(targetElement.getAttribute(attribute)!));
+        const newTargetX = Math.min(viewMaxX, Math.max(cx + movementX / (svgWidth / (viewMaxX - viewMinX)), viewMinX));
+        const newTargetY = Math.min(viewMaxY, Math.max(cy + movementY / (svgHeight / (viewMaxY - viewMinY)), viewMinY));*/
+        targetElement.setAttribute("cx", `${newTargetX}`);
+        targetElement.setAttribute("cy", `${newTargetY}`);
+      //}
+    }
+  }
+
+
+  const svg = document.querySelector("svg");
+  svg!.addEventListener("pointerdown", handlePointerDownEvent);
+  svg!.addEventListener("pointermove", handlePointerMoveEvent);
+  svg!.addEventListener("pointerup", handlePointerUpEvent);
+  svg!.addEventListener("pointerout", handlePointerOutEvent);
+
   try {
     launchScene();
   }
@@ -94,23 +162,23 @@ export async function launchScene() {
   // Shaders
   const phongVert = await fetch("assets/engine/shaders/common/phong.vert.glsl").then(resp => resp.text());
   const phongFrag = await fetch("assets/engine/shaders/common/phong.frag.glsl").then(resp => resp.text());
-  const phongGlProgram = WebGLProgramUtilities.createProgram(gl, phongVert, phongFrag)!;
+  const phongGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: phongVert, fragmentSource: phongFrag})!;
 
   const skyboxVert = await fetch("assets/engine/shaders/common/skybox.vert").then(resp => resp.text());
   const skyboxFrag = await fetch("assets/engine/shaders/common/skybox.frag").then(resp => resp.text());
-  const skyboxGlProgram = WebGLProgramUtilities.createProgram(gl, skyboxVert, skyboxFrag)!;
+  const skyboxGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: skyboxVert, fragmentSource: skyboxFrag})!;
   
   const textureVert = await fetch("assets/engine/shaders/common/texture.vert").then(resp => resp.text());
   const textureFrag = await fetch("assets/engine/shaders/common/texture.frag").then(resp => resp.text());
-  const texGlProgram = WebGLProgramUtilities.createProgram(gl, textureVert, textureFrag)!;
+  const texGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: textureVert, fragmentSource: textureFrag})!;
 
   const basicVert = await fetch("assets/engine/shaders/common/basic.vert.glsl").then(resp => resp.text());
   const basicFrag = await fetch("assets/engine/shaders/common/basic.frag.glsl").then(resp => resp.text());
-  const basicGlProgram = WebGLProgramUtilities.createProgram(gl, basicVert, basicFrag)!;
+  const basicGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: basicVert, fragmentSource: basicFrag})!;
   
   const depthVert = await fetch("assets/engine/shaders/common/depth.vert.glsl").then(resp => resp.text());
   const depthFrag = await fetch("assets/engine/shaders/common/depth.frag.glsl").then(resp => resp.text());
-  const depthGlProgram = WebGLProgramUtilities.createProgram(gl, depthVert, depthFrag)!;
+  const depthGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: depthVert, fragmentSource: depthFrag})!;
 
   async function fetchImage(url: string) {
     return fetch(url).then((resp) => {
@@ -175,11 +243,11 @@ export async function launchScene() {
   }
 
   const cubeGeometry =
-    //new QuadGeometry({widthSegment: 4, heightSegment: 8}
+    //new QuadGeometry({widthSegments: 4, heightSegments: 8});
     //new CubeGeometry({widthSegments: 2});
-    //new SphereGeometry({widthSegments: 64, heightSegments: 64});
+    new SphereGeometry({widthSegments: 64, heightSegments: 64});
     //new CylinderGeometry();
-    new DodecahedronGeometry();
+    //new DodecahedronGeometry();
 
   const cubeGeometryBuilder = cubeGeometry.toBuilder()/*.clone()*/;
   const quad = new QuadGeometry({height: 2, width: 2});
@@ -209,26 +277,24 @@ export async function launchScene() {
     ...createRelativePositionWidgets(camera.transform, "Camera"),
   ]);
 
-  console.log(`Max block size: ${gl.getParameter(gl.MAX_UNIFORM_BLOCK_SIZE)}`);
-
   const cubeVertices = cubeGeometryBuilder.verticesArray();
   const cubeIndices = cubeGeometryBuilder.indicesArray();
   const cubeNormals = cubeGeometryBuilder.verticesNormalsArray();
-  //const cubeUVs = cubeGeometryBuilder.uvsArray();
-  //const cubeTangents = cubeGeometryBuilder.tangentsArray();
+  const cubeUVs = cubeGeometryBuilder.uvsArray();
+  const cubeTangents = cubeGeometryBuilder.tangentsArray();
   const cubeGeometryBuffer = new GeometryBuffer({
     a_position: { array: cubeVertices, type: AttributeDataType.VEC3 },
     a_normal: { array: cubeNormals, type: AttributeDataType.VEC3 },
-    //a_tangent: { array: cubeTangents, type: AttributeDataType.VEC3 },
-    //a_uv: { array: cubeUVs, type: AttributeDataType.VEC2 },
+    a_tangent: { array: cubeTangents, type: AttributeDataType.VEC3 },
+    a_uv: { array: cubeUVs, type: AttributeDataType.VEC2 },
   }, true);
   const phongCubePacketProperties: PacketProperties = {
     vertexArray: {
       attributes: {
         a_position: cubeGeometryBuffer.getAttribute("a_position")!,
         a_normal: cubeGeometryBuffer.getAttribute("a_normal")!,
-        //a_tangent: cubeGeometryBuffer.getAttribute("a_tangent")!,
-        //a_uv: cubeGeometryBuffer.getAttribute("a_uv")!
+        a_tangent: cubeGeometryBuffer.getAttribute("a_tangent")!,
+        a_uv: cubeGeometryBuffer.getAttribute("a_uv")!
       },
       indices: cubeIndices,
       elementsCount: cubeIndices.length,
@@ -270,7 +336,7 @@ export async function launchScene() {
       }
     ],
     uniforms: {
-      u_albedo: { value: albedoMap },
+      u_albedoMap: { value: albedoMap },
       u_normalMap: { value: normalMap },
       u_heightMap: { value: heightMap }
     },
@@ -481,7 +547,7 @@ export async function launchScene() {
 
   //WebGLRendererUtilities.frontFace(gl, WindingOrder.CW);
   WebGLRendererUtilities.enable(gl, Capabilities.DEPTH_TEST);
-  //WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
+  WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
   
   let lastFrameTime = 0;
   let deltaTime = 0;
@@ -627,5 +693,35 @@ export async function launchScene() {
     anchor.click();
   });
   rec.start();*/
+  
   render(0);
+  
+  // const saveSVG = document.querySelector<SVGSVGElement>("svg#save")!;
+  // const getSVGImageData = (svg: SVGSVGElement) => new Promise((resolve: (value: string) => void) => {
+  //   const url = URL.createObjectURL(new Blob([svg.outerHTML], {
+  //     type: "image/svg+xml"
+  //   }));
+  //   const svgImage = document.createElement("img");
+  //   document.body.appendChild(svgImage);
+  //   svgImage.onload = () => {
+  //     const canvas = document.createElement("canvas");
+  //     const ctx = canvas.getContext("2d", {alpha: true})!;
+  //     canvas.width = svgImage.clientWidth;
+  //     canvas.height = svgImage.clientHeight;
+  //     ctx.drawImage(svgImage, 0, 0);
+  //     const imgData = canvas.toDataURL("image/png");
+  //     resolve(imgData);
+  //     URL.revokeObjectURL(url);
+  //     svgImage.remove();
+  //   };
+  //   svgImage.src = url;
+  // });
+
+  // getSVGImageData(saveSVG).then(
+  //   (data: string) => {
+  //     const img = new Image();
+  //     img.src = data;
+  //     document.body.append(img);
+  //   }
+  // )
 }

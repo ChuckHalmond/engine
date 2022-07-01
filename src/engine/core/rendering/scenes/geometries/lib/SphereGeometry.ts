@@ -1,5 +1,5 @@
 import { GeometryBase } from "../Geometry";
-import { GeometryBuilder, FaceVerticesIterator } from "../GeometryBuilder";
+import { GeometryBuilder, Vertex } from "../GeometryBuilder";
 
 export class SphereGeometry extends GeometryBase {
 	radius: number;
@@ -72,35 +72,46 @@ export class SphereGeometry extends GeometryBase {
 
 		for (let iy = 0; iy < heightSegments; iy++) {
 			for (let ix = 0; ix < widthSegments; ix++) {
-				const lowerLeftIndex = indexArray[iy][ix];
-				const upperLeftIndex = indexArray[iy + 1][ix];
-				const upperRightVertex = indexArray[iy + 1][ix + 1];
-				const lowerRightVertex = indexArray[iy][ix + 1];
-				if (iy !== 0 || thetaStart > 0) indices.push(lowerRightVertex, lowerLeftIndex, upperRightVertex);
-				if (iy !== heightSegments - 1 || thetaEnd < Math.PI) indices.push(lowerLeftIndex, upperLeftIndex, upperRightVertex);
+				const a = indexArray[iy][ix + 1];
+				const b = indexArray[iy][ix];
+				const c = indexArray[iy + 1][ix];
+				const d = indexArray[iy + 1][ix + 1];
+				if (iy !== 0 || thetaStart > 0) indices.push(a, b, d);
+				if (iy !== heightSegments - 1 || thetaEnd < Math.PI) indices.push(b, c, d);
 			}
 		}
-
-		const indicesCount = indices.length;
+		
+		const {length: indicesCount} = indices;
+		const verticesArray: Vertex[] = [];
+		const uvsArray: number[][] = [];
 		for (let i = 0; i < indicesCount; i += 3) {
-			let vi1 = 3 * indices[i    ];
-			let vi2 = 3 * indices[i + 1];
-			let vi3 = 3 * indices[i + 2];
-			let ui1 = 2 * indices[i    ];
-			let ui2 = 2 * indices[i + 1];
-			let ui3 = 2 * indices[i + 2];
-			builder.addTriangleFaceVertices(
-				[vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]],
-				[vertices[vi2], vertices[vi2 + 1], vertices[vi2 + 2]],
-				[vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]], {
-					uv: [
-						[uvs[ui1], uvs[ui1 + 1]],
-						[uvs[ui2], uvs[ui2 + 1]],
-						[uvs[ui3], uvs[ui3 + 1]]
-					]
-				}
-			);
+			const vi1 = 3 * indices[i], vi2 = 3 * indices[i + 1], vi3 = 3 * indices[i + 2];
+			const ui1 = 2 * indices[i], ui2 = 2 * indices[i + 1], ui3 = 2 * indices[i + 2];
+			let v1 = verticesArray[vi1], v2 = verticesArray[vi2], v3 = verticesArray[vi3];
+			if (v1 == undefined) {
+				v1 = builder.addVertex([vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]]), verticesArray[vi1] = v1;
+			}
+			if (v2 == undefined) {
+				v2 = builder.addVertex([vertices[vi2], vertices[vi2 + 1], vertices[vi2 + 2]]), verticesArray[vi2] = v2;
+			}
+			if (v3 == undefined) {
+				v3 = builder.addVertex([vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]]), verticesArray[vi3] = v3;
+			}
+			let uv1 = uvsArray[ui1], uv2 = uvsArray[ui2], uv3 = uvsArray[ui3];
+			if (uv1 == undefined) {
+				uv1 = [uvs[ui1], uvs[ui1 + 1]], uvsArray[ui1] = uv1;
+			}
+			if (uv2 == undefined) {
+				uv2 = [uvs[ui2], uvs[ui2 + 1]], uvsArray[ui2] = uv2;
+			}
+			if (uv3 == undefined) {
+				uv3 = [uvs[ui3], uvs[ui3 + 1]], uvsArray[ui3] = uv3;
+			}
+			builder.addTriangleFace(v1, v2, v3, {
+				uv: [uv1, uv2, uv3]
+			});
 		}
+
 		return builder;
 	}
 }

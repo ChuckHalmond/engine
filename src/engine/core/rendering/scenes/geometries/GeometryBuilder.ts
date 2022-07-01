@@ -4,20 +4,7 @@ interface GeometryBuilder {
     halfEdges: Array<HalfEdge>;
     vertices: Array<Vertex>;
     faces: Array<Face>;
-    clone(): GeometryBuilder;
-    addQuadFaceVertices(
-        v0: number[] | Float32Array | Float64Array,
-        v1: number[] | Float32Array | Float64Array,
-        v2: number[] | Float32Array | Float64Array,
-        v3: number[] | Float32Array | Float64Array,
-        properties?: {[key: string]: any;}
-    ): void;
-    addTriangleFaceVertices(
-        v0: number[] | Float32Array | Float64Array,
-        v1: number[] | Float32Array | Float64Array,
-        v2: number[] | Float32Array | Float64Array,
-        properties?: {[key: string]: any;}
-    ): void;
+    //clone(): GeometryBuilder;
     addTriangleFace(v0: Vertex, v1: Vertex, v2: Vertex, properties?: {[key: string]: any;}): void;
     addQuadFace(v0: Vertex, v1: Vertex, v2: Vertex, v3: Vertex, properties?: {[key: string]: any;}): void;
     addVertex(vertex: number[] | Float32Array | Float64Array): Vertex;
@@ -46,7 +33,7 @@ class GeometryBuilderBase implements GeometryBuilder {
         this.faces = [];
     }
 
-    clone(): GeometryBuilder {
+    /*clone(): GeometryBuilder {
         const {halfEdges, faces, vertices} = this;
         const clone = new GeometryBuilder();
         const cloneHalfEdges = new Map<HalfEdge, HalfEdge>();
@@ -110,71 +97,24 @@ class GeometryBuilderBase implements GeometryBuilder {
         clone.faces = Array.from(cloneFaces.values());
         clone.vertices = Array.from(cloneVertices.values());
         return clone;
-    }
-
-    addFaceVertices(vertices: number[][], properties?: {[key: string]: any;}): void {
-        const addedVertices = vertices.map((v_i) => {
-            return this.vertices
-                .find((v_j) => {
-                    const {position} = v_j;
-                    return position.length === v_i.length &&
-                        position.every((value_ii, ii) => v_i[ii] === value_ii)
-                }) ?? this.addVertex(v_i);
-        });
-        this.addFace(addedVertices, properties);
-    }
-
-    addTriangleFaceVertices(
-        v0: number[] | Float32Array | Float64Array,
-        v1: number[] | Float32Array | Float64Array,
-        v2: number[] | Float32Array | Float64Array,
-        properties?: {[key: string]: any;}
-        ): void {
-        const [_v0, _v1, _v2] = [v0, v1, v2].map((v_i) => {
-            return this.vertices
-                .find((v_j) => {
-                    const {position} = v_j;
-                    return position.length === v_i.length &&
-                        position.every((coord_ii, ii) => v_i[ii] === coord_ii)
-                }) ?? this.addVertex(v_i);
-        });
-        this.addTriangleFace(_v0, _v1, _v2, properties);
-    }
+    }*/
 
     addTriangleFace(v0: Vertex, v1: Vertex, v2: Vertex, properties?: {[key: string]: any;}): void {
         this.addFace([v0, v1, v2], properties);
-    }
-
-    addQuadFaceVertices(
-        v0: number[] | Float32Array | Float64Array,
-        v1: number[] | Float32Array | Float64Array,
-        v2: number[] | Float32Array | Float64Array,
-        v3: number[] | Float32Array | Float64Array,
-        properties?: {[key: string]: any;}
-        ): void {
-        const [_v0, _v1, _v2, _v3] = [v0, v1, v2, v3].map((v_i) => {
-            return this.vertices
-                .find((v_j) => {
-                    const {position} = v_j;
-                        position.length === v_i.length &&
-                        position.every((coord_ii, ii) => v_i[ii] === coord_ii)
-            }) ?? this.addVertex(v_i);
-        });
-        this.addQuadFace(_v0, _v1, _v2, _v3, properties);
     }
 
     addQuadFace(v0: Vertex, v1: Vertex, v2: Vertex, v3: Vertex, properties?: {[key: string]: any;}): void {
         this.addFace([v0, v1, v2, v3], properties);
     }
     
-    addVertex(vertex: number[] | Float32Array | Float64Array): Vertex {
+    addVertex(position: number[] | Float32Array | Float64Array): Vertex {
         const {vertices} = this;
-        const _vertex: Vertex = {
-            position: vertex,
+        const vertex: Vertex = {
+            position: position,
             halfEdge: null
         };
-        vertices.push(_vertex);
-        return _vertex;
+        vertices.push(vertex);
+        return vertex;
     }
 
     addFace(vertices: Vertex[], properties?: {[key: string]: any;}): void {
@@ -343,8 +283,8 @@ class GeometryBuilderBase implements GeometryBuilder {
         }, 0);
         const arrayConstructor = (count < Math.pow(2, 8)) ? Uint8Array : (count < Math.pow(2, 16)) ? Uint16Array : Uint32Array;
         return new arrayConstructor(faces.reduce(([indices, index], face) => {
-            const _faces = Array.from(new FaceVerticesIterator(face));
-            if (_faces.length === 4) {
+            const vertices = Array.from(new FaceVerticesIterator(face));
+            if (vertices.length === 4) {
                 return [indices.concat([index, index + 1, index + 2, index + 2, index + 3, index]), index + 4] as [number[], number];
             }
             return [indices.concat([index, index + 1, index + 2]), index + 3] as [number[], number];

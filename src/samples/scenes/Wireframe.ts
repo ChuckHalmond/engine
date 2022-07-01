@@ -37,8 +37,8 @@ export async function wireframe() {
   const linesVertex = await fetch("assets/engine/shaders/common/lines.vert.glsl").then(resp => resp.text());
   const linesFragment = await fetch("assets/engine/shaders/common/lines.frag.glsl").then(resp => resp.text());
 
-  const wireframeProgram = WebGLProgramUtilities.createProgram(gl, wireframeVertex, wireframeFragment);
-  const linesProgram = WebGLProgramUtilities.createProgram(gl, linesVertex, linesFragment);
+  const wireframeProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: wireframeVertex, fragmentSource: wireframeFragment});
+  const linesProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: linesVertex, fragmentSource: linesFragment});
 
   if (wireframeProgram == null || linesProgram == null) {
     console.error("program null.");

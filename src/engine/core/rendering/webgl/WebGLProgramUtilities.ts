@@ -15,7 +15,9 @@ export type Shader = {
 
 export type ProgramProperties = {
     vertexSource: string;
+    vertexFlags?: string[];
     fragmentSource: string;
+    fragmentFlags?: string[];
 }
 
 export class WebGLProgramUtilities {
@@ -54,7 +56,8 @@ export class WebGLProgramUtilities {
         }
     }
     
-    static createProgram(gl: WebGL2RenderingContext, vertexSource: string, fragmentSource: string): Program | null {
+    static createProgram(gl: WebGL2RenderingContext, properties: ProgramProperties): Program | null {
+        const {vertexSource, fragmentSource} = properties;
 
         const vertexShader = this.createShader(gl, ShaderType.VERTEX_SHADER, vertexSource);
         if (vertexShader == null) {

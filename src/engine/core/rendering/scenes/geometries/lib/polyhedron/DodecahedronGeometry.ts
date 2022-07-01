@@ -1,5 +1,5 @@
 import { GeometryBase } from "../../Geometry";
-import { GeometryBuilder } from "../../GeometryBuilder";
+import { GeometryBuilder, Vertex } from "../../GeometryBuilder";
  
 export { DodecahedronGeometry };
  
@@ -21,7 +21,6 @@ class DodecahedronGeometry extends GeometryBase {
         const r = 1 / t;
 
         const vertices = [
-            // (±1, ±1, ±1)
             -1, -1, -1,
             -1, -1, 1,
             -1, 1, -1,
@@ -30,17 +29,14 @@ class DodecahedronGeometry extends GeometryBase {
             1, -1, 1,
             1, 1, -1,
             1, 1, 1,
-            // (0, ±1/φ, ±φ)
             0, - r, - t,
             0, - r, t,
             0, r, - t,
             0, r, t,
-            // (±1/φ, ±φ, 0)
             - r, - t, 0,
             - r, t, 0,
             r, - t, 0,
             r, t, 0,
-            // (±φ, 0, ±1/φ)
             - t, 0, - r,
             t, 0, - r,
             - t, 0, r,
@@ -86,17 +82,23 @@ class DodecahedronGeometry extends GeometryBase {
             1, 5, 9
         ];
  
-        const indicesCount = indices.length;
-        for (let i = 0; i < indicesCount; i += 3) {
-            let vi1 = 3 * indices[i    ];
-            let vi2 = 3 * indices[i + 1];
-            let vi3 = 3 * indices[i + 2];
-            builder.addTriangleFaceVertices(
-                [vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]],
-                [vertices[vi2], vertices[vi2 + 1], vertices[vi2 + 2]],
-                [vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]]
-            );
-        }
+		const {length: indicesCount} = indices;
+		const verticesArray: Vertex[] = [];
+		for (let i = 0; i < indicesCount; i += 3) {
+			const vi1 = 3 * indices[i], vi2 = 3 * indices[i + 1], vi3 = 3 * indices[i + 2];
+			let v1 = verticesArray[vi1], v2 = verticesArray[vi2], v3 = verticesArray[vi3];
+			if (v1 == undefined) {
+				v1 = builder.addVertex([vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]]), verticesArray[vi1] = v1;
+			}
+			if (v2 == undefined) {
+				v2 = builder.addVertex([vertices[vi2], vertices[vi2 + 1], vertices[vi2 + 2]]), verticesArray[vi2] = v2;
+			}
+			if (v3 == undefined) {
+				v3 = builder.addVertex([vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]]), verticesArray[vi3] = v3;
+			}
+			builder.addTriangleFace(v1, v2, v3);
+		}
+        
         return builder;
     }
 }

@@ -1,6 +1,5 @@
-import { buildArrayFromIndexedArrays } from "../../../../../../utils/Snippets";
 import { GeometryBase } from "../../Geometry";
-import { GeometryBuilder } from "../../GeometryBuilder";
+import { GeometryBuilder, Vertex } from "../../GeometryBuilder";
 
 export { TetrahedronGeometry };
 
@@ -32,17 +31,23 @@ class TetrahedronGeometry extends GeometryBase {
 			2, 3, 1
 		];
 
-		const indicesCount = indices.length;
+		const {length: indicesCount} = indices;
+		const verticesArray: Vertex[] = [];
 		for (let i = 0; i < indicesCount; i += 3) {
-			let vi1 = 3 * indices[i    ];
-			let vi2 = 3 * indices[i + 1];
-			let vi3 = 3 * indices[i + 2];
-			builder.addTriangleFaceVertices(
-				[vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]],
-				[vertices[vi2], vertices[vi2 + 1], vertices[vi2 + 2]],
-				[vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]]
-			);
+			const vi1 = 3 * indices[i], vi2 = 3 * indices[i + 1], vi3 = 3 * indices[i + 2];
+			let v1 = verticesArray[vi1], v2 = verticesArray[vi2], v3 = verticesArray[vi3];
+			if (v1 == undefined) {
+				v1 = builder.addVertex([vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]]), verticesArray[vi1] = v1;
+			}
+			if (v2 == undefined) {
+				v2 = builder.addVertex([vertices[vi2], vertices[vi2 + 1], vertices[vi2 + 2]]), verticesArray[vi2] = v2;
+			}
+			if (v3 == undefined) {
+				v3 = builder.addVertex([vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]]), verticesArray[vi3] = v3;
+			}
+			builder.addTriangleFace(v1, v2, v3);
 		}
+		
 		return builder;
 	}
 }

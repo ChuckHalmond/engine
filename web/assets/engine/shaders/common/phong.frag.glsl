@@ -2,8 +2,17 @@
 
 precision highp float;
 
+//EXTS
+//ENDEXTS
+
+//DEFS
+#define USE_ALBEDO_MAP
+#define USE_NORMAL_MAP
+//ENDDEFS
+
 in vec4 v_position;
 in vec3 v_normal;
+in vec2 v_uv;
 
 in vec3 v_lightPos;
 in vec3 v_fragPos;
@@ -32,14 +41,30 @@ uniform phongBlock {
   float u_shininess;
 };
 
-//uniform sampler2D u_normalMap;
-//uniform sampler2D u_albedo;
+#ifdef USE_NORMAL_MAP
+  uniform sampler2D u_normalMap;
+#endif
+#ifdef USE_ALBEDO_MAP
+  uniform sampler2D u_albedoMap;
+#endif
 
 out vec4 o_outColor;
 
 void main() {
-  vec3 albedo = vec3(1.0, 0.0, 0.0);
-  vec3 N = normalize(v_normal);
+  #ifdef USE_ALBEDO_MAP
+    vec3 albedo = texture(u_albedoMap, v_uv).rgb;
+  #else
+    vec3 albedo = vec3(0.0, 1.0, 0.0);
+  #endif
+
+  #ifdef USE_NORMAL_MAP
+    vec3 normal = texture(u_normalMap, v_uv).rgb;
+    normal = normalize(normal) * 2.0 - 1.0;
+    vec3 N = normalize(normal);
+  #else
+    vec3 N = normalize(v_normal);
+  #endif
+
   vec3 L = normalize(v_lightPos - v_fragPos);
   
   // Lambert's cosine law
@@ -59,7 +84,7 @@ void main() {
   
   o_outColor = vec4(
     u_ambientFactor * u_ambientColor +
-    u_diffuseFactor * lambertian * u_diffuseColor +
+    u_diffuseFactor * lambertian * albedo +
     u_specularFactor * specular * u_specularColor,
     1.0
   );

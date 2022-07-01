@@ -81,10 +81,10 @@ export async function launchScene() {
   // Shaders
   const phongVert = await fetch("assets/engine/shaders/common/phong.vert.glsl").then(resp => resp.text());
   const phongFrag = await fetch("assets/engine/shaders/common/phong.frag.glsl").then(resp => resp.text());
-  const phongGlProgram = WebGLProgramUtilities.createProgram(gl, phongVert, phongFrag)!;
+  const phongGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: phongVert, fragmentSource: phongFrag})!;
   const linesVertex = await fetch("assets/engine/shaders/common/lines.vert.glsl").then(resp => resp.text());
   const linesFragment = await fetch("assets/engine/shaders/common/lines.frag.glsl").then(resp => resp.text());
-  const linesProgram = WebGLProgramUtilities.createProgram(gl, linesVertex, linesFragment)!;
+  const linesProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: linesVertex, fragmentSource: linesFragment})!;
   
   async function fetchImage(url: string) {
     return fetch(url).then((resp) => {

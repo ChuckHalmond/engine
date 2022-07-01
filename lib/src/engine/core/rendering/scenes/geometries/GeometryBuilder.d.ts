@@ -3,13 +3,6 @@ interface GeometryBuilder {
     halfEdges: Array<HalfEdge>;
     vertices: Array<Vertex>;
     faces: Array<Face>;
-    clone(): GeometryBuilder;
-    addQuadFaceVertices(v0: number[] | Float32Array | Float64Array, v1: number[] | Float32Array | Float64Array, v2: number[] | Float32Array | Float64Array, v3: number[] | Float32Array | Float64Array, properties?: {
-        [key: string]: any;
-    }): void;
-    addTriangleFaceVertices(v0: number[] | Float32Array | Float64Array, v1: number[] | Float32Array | Float64Array, v2: number[] | Float32Array | Float64Array, properties?: {
-        [key: string]: any;
-    }): void;
     addTriangleFace(v0: Vertex, v1: Vertex, v2: Vertex, properties?: {
         [key: string]: any;
     }): void;

@@ -29,7 +29,7 @@ function scene(canvas: HTMLCanvasElement) {
     gl.canvas.height = 600;
 
     const program = WebGLProgramUtilities.createProgram(gl, 
-        glsl`
+        {vertexSource: glsl`
             #version 300 es
 
             in vec3 a_position;
@@ -54,6 +54,7 @@ function scene(canvas: HTMLCanvasElement) {
                 gl_Position = vec4(a_position + a_translation, 1.0);
             }
         `,
+        fragmentSource: 
         glsl`
             #version 300 es
 
@@ -66,7 +67,7 @@ function scene(canvas: HTMLCanvasElement) {
             void main() {
                 outColor = v_color;
             }
-        `
+        `}
     );
 
     if (program == null) {
