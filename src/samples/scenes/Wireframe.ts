@@ -72,10 +72,10 @@ export async function wireframe() {
   
   const cubeGeometry =
     //new QuadGeometry({widthSegment: 4, heightSegment: 8}
-    //new CubeGeometry({widthSegments: 2});
+    new CubeGeometry({widthSegments: 64, heightSegments: 64});
     //new SphereGeometry({widthSegments: 32, heightSegments: 32});
     //new CylinderGeometry();
-    new DodecahedronGeometry();
+    //new DodecahedronGeometry();
   
   const cubeTransform = new Transform();
   const cubeLines = cubeGeometry.toBuilder().linesArray();

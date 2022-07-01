@@ -14,6 +14,11 @@ export declare enum TexturePixelFormat {
     RGBA_INTEGER = 36249
 }
 export declare enum TextureInternalPixelFormat {
+    ALPHA = 6406,
+    RGB = 6407,
+    RGBA = 6408,
+    LUMINANCE = 6409,
+    LUMINANCE_ALPHA = 6410,
     DEPTH_COMPONENT16 = 33189,
     DEPTH_COMPONENT24 = 33190,
     DEPTH_COMPONENT32F = 36012,

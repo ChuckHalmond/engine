@@ -197,7 +197,7 @@ export async function launchScene() {
     });
   }
   // Images
-  const albedoMapImg = await fetchImage("assets/engine/img/brickwall.jpg");
+  const albedoMapImg = await fetchImage("assets/engine/img/NormalMap.png");
   const normalMapImg = await fetchImage("assets/engine/img/NormalMap_0.png");
   const heightMapImg = await fetchImage("assets/engine/img/HeightMap_0.png");
   const skyboxXPosImg = await fetchImage("assets/engine/img/skybox_x_pos.png");
@@ -230,7 +230,7 @@ export async function launchScene() {
   const {basicBlock} = basicPacketBindings.uniformBlocks;
   const {albedoMap, normalMap, heightMap, skybox, fbColorTex, depthTex} = phongPacketBindings.textures;
 
-  const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
+  /*const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
   if (anisotropicExtension) {
     console.log(`Extension EXT_texture_filter_anisotropic activated.`);
     const maxFiltering = gl.getParameter(anisotropicExtension.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
@@ -240,16 +240,17 @@ export async function launchScene() {
       gl.bindTexture(gl.TEXTURE_2D, texture.internal);
       gl.texParameterf(gl.TEXTURE_2D, anisotropicExtension.TEXTURE_MAX_ANISOTROPY_EXT, maxFiltering);
     });
-  }
+  }*/
 
   const cubeGeometry =
     //new QuadGeometry({widthSegments: 4, heightSegments: 8});
-    //new CubeGeometry({widthSegments: 2});
-    new SphereGeometry({widthSegments: 64, heightSegments: 64});
+    new CubeGeometry({width: 2, height: 2, depth: 2}/*{widthSegments: 64, heightSegments: 64}*/);
+    //new SphereGeometry({widthSegments: 64, heightSegments: 64});
     //new CylinderGeometry();
     //new DodecahedronGeometry();
 
   const cubeGeometryBuilder = cubeGeometry.toBuilder()/*.clone()*/;
+  console.log(cubeGeometryBuilder);
   const quad = new QuadGeometry({height: 2, width: 2});
   const quadGeometryBuilder = quad.toBuilder();
   const cube = new Transform();
@@ -344,12 +345,27 @@ export async function launchScene() {
       {
         texture: albedoMap,
         properties: {
-          pixels: albedoMapImg,
-          width: albedoMapImg.width, height: albedoMapImg.height,
+          pixels: new Uint8Array([
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+          ]),
+          width: 8, height: 8,
+          // pixels: albedoMapImg,
+          // width: albedoMapImg.width, height: albedoMapImg.height,
           target: TextureTarget.TEXTURE_2D,
           type: TexturePixelType.UNSIGNED_BYTE,
-          format: TexturePixelFormat.RGBA,
-          internalFormat: TextureInternalPixelFormat.RGBA8
+          format: TexturePixelFormat.LUMINANCE,
+          internalFormat: TextureInternalPixelFormat.LUMINANCE
+          //min: TextureMinFilter.NEAREST
+          //mag: TextureMagFilter.NEAREST
+          // format: TexturePixelFormat.RGBA,
+          // internalFormat: TextureInternalPixelFormat.RGBA8
         }
       },
       {

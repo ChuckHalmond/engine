@@ -15,6 +15,11 @@ export enum TexturePixelFormat {
 }
 
 export enum TextureInternalPixelFormat {
+    ALPHA = 0x1906,
+    RGB = 0x1907,
+    RGBA = 0x1908,
+    LUMINANCE = 0x1909,
+    LUMINANCE_ALPHA = 0x190A,
     DEPTH_COMPONENT16 = 0x81A5,
     DEPTH_COMPONENT24 = 0x81A6,
     DEPTH_COMPONENT32F = 0x8CAC,
@@ -226,7 +231,7 @@ export class WebGLTextureUtilities {
             unit,
             internal,
             name
-        };;
+        };
     }
 
     static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void {

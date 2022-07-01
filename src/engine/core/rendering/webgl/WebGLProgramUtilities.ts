@@ -59,6 +59,8 @@ export class WebGLProgramUtilities {
     static createProgram(gl: WebGL2RenderingContext, properties: ProgramProperties): Program | null {
         const {vertexSource, fragmentSource} = properties;
 
+        //@TODO: bindAttribLocation
+
         const vertexShader = this.createShader(gl, ShaderType.VERTEX_SHADER, vertexSource);
         if (vertexShader == null) {
             return null;

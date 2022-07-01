@@ -262,7 +262,7 @@ class GeometryBuilderBase implements GeometryBuilder {
             });
             const length = Math.hypot(...normal);
             face.normal = normal.map(normal_i => normal_i / length);
-
+            
             return faceVertices.flatMap(() => {
                 return Array.from(face.normal);
             });
