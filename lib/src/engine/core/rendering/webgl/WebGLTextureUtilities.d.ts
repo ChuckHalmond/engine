@@ -165,6 +165,7 @@ export declare type TextureProperties = {
         width: number;
         height: number;
     };
+    border?: number;
     lod?: number;
     width: number;
     height: number;
@@ -192,6 +193,7 @@ export declare type Texture = {
 export declare class WebGLTextureUtilities {
     #private;
     static createTexture(gl: WebGL2RenderingContext, name: string): Texture | null;
+    static setUnpackAlignment(gl: WebGL2RenderingContext, alignment: number): void;
     static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void;
     static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, properties: TextureProperties): void;
 }

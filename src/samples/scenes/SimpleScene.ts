@@ -62,20 +62,26 @@ export async function start() {
 
   const handlePointerUpEvent = (event: PointerEvent) => {
     const {target, pointerId} = event;
-    (<Element>target).releasePointerCapture(pointerId);
-    onCapture = false;
+    if (target instanceof Element && target.tagName == "circle") {
+      (<Element>target).releasePointerCapture(pointerId);
+      onCapture = false;
+    }
   }
 
   const handlePointerDownEvent = (event: PointerEvent) => {
     const {target, pointerId} = event;
-    (<Element>target).setPointerCapture(pointerId);
-    onCapture = true;
+    if (target instanceof Element && target.tagName == "circle") {
+      (<Element>target).setPointerCapture(pointerId);
+      onCapture = true;
+    }
   }
 
   const handlePointerOutEvent = (event: PointerEvent) => {
     const {target, pointerId} = event;
-    (<Element>target).releasePointerCapture(pointerId);
-    onCapture = false;
+    if (target instanceof Element && target.tagName == "circle") {
+      (<Element>target).releasePointerCapture(pointerId);
+      onCapture = false;
+    }
   }
 
   const handlePointerMoveEvent = (event: PointerEvent) => {
@@ -154,10 +160,12 @@ export async function launchScene() {
   canvas.style.width = `${canvasWidth}px`;
   canvas.style.height = `${canvasHeight}px`;
   
-  const gl = canvas.getContext("webgl2"/*, {antialias: true}*//*, {preserveDrawingBuffer: true}*/);
+  const gl = canvas.getContext("webgl2", {alpha: false}/*, {antialias: true}*//*, {preserveDrawingBuffer: true}*/);
   if (!gl) {
     return;
   }
+
+  WebGLTextureUtilities.setUnpackAlignment(gl, 1);
 
   // Shaders
   const phongVert = await fetch("assets/engine/shaders/common/phong.vert.glsl").then(resp => resp.text());
@@ -243,14 +251,13 @@ export async function launchScene() {
   }*/
 
   const cubeGeometry =
-    //new QuadGeometry({widthSegments: 4, heightSegments: 8});
+    //new QuadGeometry({height: 4, width: 4});
     new CubeGeometry({width: 2, height: 2, depth: 2}/*{widthSegments: 64, heightSegments: 64}*/);
     //new SphereGeometry({widthSegments: 64, heightSegments: 64});
     //new CylinderGeometry();
     //new DodecahedronGeometry();
 
-  const cubeGeometryBuilder = cubeGeometry.toBuilder()/*.clone()*/;
-  console.log(cubeGeometryBuilder);
+  const cubeGeometryBuilder = cubeGeometry.toBuilder();
   const quad = new QuadGeometry({height: 2, width: 2});
   const quadGeometryBuilder = quad.toBuilder();
   const cube = new Transform();
@@ -360,10 +367,19 @@ export async function launchScene() {
           // width: albedoMapImg.width, height: albedoMapImg.height,
           target: TextureTarget.TEXTURE_2D,
           type: TexturePixelType.UNSIGNED_BYTE,
+
+          /*wrapS: TextureWrapMode.CLAMP_TO_EDGE,
+          wrapT: TextureWrapMode.CLAMP_TO_EDGE,
+          wrapR: TextureWrapMode.CLAMP_TO_EDGE,*/
+
           format: TexturePixelFormat.LUMINANCE,
-          internalFormat: TextureInternalPixelFormat.LUMINANCE
-          //min: TextureMinFilter.NEAREST
-          //mag: TextureMagFilter.NEAREST
+          internalFormat: TextureInternalPixelFormat.LUMINANCE,
+
+          // format: TexturePixelFormat.RGB,
+          // internalFormat: TextureInternalPixelFormat.RGB
+
+          min: TextureMinFilter.NEAREST,
+          mag: TextureMagFilter.NEAREST
           // format: TexturePixelFormat.RGBA,
           // internalFormat: TextureInternalPixelFormat.RGBA8
         }

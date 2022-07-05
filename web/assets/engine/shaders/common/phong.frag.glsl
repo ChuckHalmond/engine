@@ -88,7 +88,6 @@ void main() {
     u_specularFactor * specular * u_specularColor,
     1.0
   );
-  o_outColor = texture(u_albedoMap, v_uv);
 }
 /*#version 300 es
 

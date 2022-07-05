@@ -179,6 +179,7 @@ export type TextureProperties = {
         height: number;
     };
 
+    border?: number;
     lod?: number;
     width: number;
     height: number;
@@ -234,6 +235,10 @@ export class WebGLTextureUtilities {
         };
     }
 
+    static setUnpackAlignment(gl: WebGL2RenderingContext, alignment: number): void {
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
+    }
+
     static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void {
         const {internal, unit} = texture;
         if (gl.isTexture(internal)) {
@@ -245,7 +250,10 @@ export class WebGLTextureUtilities {
     static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, properties: TextureProperties): void {
         const {unit, internal}  = texture;
         const {pixels, target, subimage, width, height, format, internalFormat, type} = properties;
-        let {lod} = properties;
+        let {lod, border} = properties;
+
+        lod = lod ?? 0;
+        border = border ?? 0;
 
         const activeTexture = gl.getParameter(gl.ACTIVE_TEXTURE);
         if (activeTexture !== unit) {
@@ -253,29 +261,27 @@ export class WebGLTextureUtilities {
             gl.bindTexture(target, internal);
         }
 
-        lod = lod ?? 0;
-
         if (pixels == null) {
-            gl.texImage2D(target, lod, internalFormat, width, height, 0, format, type, null);
+            gl.texImage2D(target, lod, internalFormat, width, height, border, format, type, null);
         }
         else {
             if ("xPos" in pixels) {
                 const {xPos, xNeg, yPos, yNeg, zPos, zNeg} = pixels;
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_X, lod, internalFormat, width, height, 0, format, type, xPos);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_X, lod, internalFormat, width, height, 0, format, type, xNeg);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Y, lod, internalFormat, width, height, 0, format, type, yPos);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Y, lod, internalFormat, width, height, 0, format, type, yNeg);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Z, lod, internalFormat, width, height, 0, format, type, zPos);
-                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Z, lod, internalFormat, width, height, 0, format, type, zNeg);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_X, lod, internalFormat, width, height, border, format, type, xPos);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_X, lod, internalFormat, width, height, border, format, type, xNeg);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Y, lod, internalFormat, width, height, border, format, type, yPos);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Y, lod, internalFormat, width, height, border, format, type, yNeg);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Z, lod, internalFormat, width, height, border, format, type, zPos);
+                gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Z, lod, internalFormat, width, height, border, format, type, zNeg);
             }
             else {
                 if (subimage) {
                     const {xoffset, yoffset, width, height} = subimage;
-                    gl.texImage2D(target, lod, internalFormat, width, height, 0, format, type, pixels as ArrayBufferView);
+                    gl.texImage2D(target, lod, internalFormat, width, height, border, format, type, pixels as ArrayBufferView);
                     gl.texSubImage2D(target, lod, xoffset, yoffset, width, height, format, type, pixels as ArrayBufferView);
                 }
                 else {
-                    gl.texImage2D(target, lod, internalFormat, width, height, 0, format, type, pixels as ArrayBufferView);
+                    gl.texImage2D(target, lod, internalFormat, width, height, border, format, type, pixels as ArrayBufferView);
                 }
             }
             gl.generateMipmap(target);

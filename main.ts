@@ -54,10 +54,19 @@ function windingOrder(v0: Vector3, v1: Vector3, v2: Vector3) {
 }*/
 
 export async function main() {
-    //console.clear();
     //instanced();
     //wireframe();
+
+    const myWorker = new Worker("./worker.js");
+    myWorker.addEventListener("message", (event) => {
+        const {data} = event;
+        console.log(`Received back: ${data}`);
+    });
+
+    myWorker.postMessage("Hello");
+
     start();
+
     //startMaps();
 
     // const button = document.createElement("button");

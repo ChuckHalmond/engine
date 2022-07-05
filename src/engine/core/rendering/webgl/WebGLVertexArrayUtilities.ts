@@ -201,6 +201,13 @@ class WebGLVertexArrayUtilities {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         
         const attributesEntries = Object.entries(attributes);
+
+        const {length: attributesCount} = attributesEntries;
+        const maxAttributes = gl.getParameter(gl.MAX_VERTEX_ATTRIBS);
+        if (attributesCount > maxAttributes) {
+            console.warn("Attributes count is greater than max.");
+        }
+
         const byteLength = attributesEntries.reduce(
             (byteLength, [_, attribute]) => byteLength + attribute.array.byteLength, 0
         );
