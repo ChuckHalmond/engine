@@ -40,7 +40,7 @@ const simpleSceneDOM = /*template*/`
               fill: rgb(255, 0, 0);
             }
           </style>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+          <!--<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
             <circle cx="10" cy="10" r="4"/>
           </svg>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" id="save" fill="none">
@@ -48,7 +48,7 @@ const simpleSceneDOM = /*template*/`
               <rect x="0" y="0" width="100" height="100" fill="red"></rect>
               <text text-anchor="middle" alignment-baseline="middle" x="50" y="50" font-family="Verdana" fill="blue">Hello,World!</text>
             </g>
-          </svg>
+          </svg>-->
         </section>
     </main>
   </div>`;
@@ -58,8 +58,7 @@ export async function start() {
   template.innerHTML = simpleSceneDOM;
   document.body.insertBefore(template.content, document.body.firstChild);
 
-  let onCapture = false;
-
+  /*let onCapture = false;
   const handlePointerUpEvent = (event: PointerEvent) => {
     const {target, pointerId} = event;
     if (target instanceof Element && target.tagName == "circle") {
@@ -67,7 +66,6 @@ export async function start() {
       onCapture = false;
     }
   }
-
   const handlePointerDownEvent = (event: PointerEvent) => {
     const {target, pointerId} = event;
     if (target instanceof Element && target.tagName == "circle") {
@@ -75,7 +73,6 @@ export async function start() {
       onCapture = true;
     }
   }
-
   const handlePointerOutEvent = (event: PointerEvent) => {
     const {target, pointerId} = event;
     if (target instanceof Element && target.tagName == "circle") {
@@ -83,7 +80,6 @@ export async function start() {
       onCapture = false;
     }
   }
-
   const handlePointerMoveEvent = (event: PointerEvent) => {
     if (onCapture) {
       const {currentTarget, clientX, clientY} = event;
@@ -92,30 +88,22 @@ export async function start() {
         right: svgRight, left: svgLeft, width: svgWidth,
         bottom: svgBottom, top: svgTop, height: svgHeight
       } = svg.getBoundingClientRect();
-      //const isOutsideSvg = clientX < svgLeft || clientX > svgRight || clientY < svgTop || clientY > svgBottom;
-      //if (!isOutsideSvg) {
-        const {target, movementX, movementY} = event;
-        const targetElement = <Element>target;
-        const [viewMinX, viewMinY, viewMaxX, viewMaxY] = svg.getAttribute("viewBox")!.split(" ").map(value => parseFloat(value));
-        const offsetX = (Math.min(svgRight, Math.max(clientX, svgLeft)) - svgLeft) / svgWidth;
-        const offsetY = (Math.min(svgBottom, Math.max(clientY, svgTop)) - svgTop) / svgHeight;
-        const newTargetX = Math.round(offsetX * (viewMaxX - viewMinX));
-        const newTargetY = Math.round(offsetY * (viewMaxY - viewMinY));
-        /*const [cx, cy] = ["cx", "cy"].map(attribute => parseFloat(targetElement.getAttribute(attribute)!));
-        const newTargetX = Math.min(viewMaxX, Math.max(cx + movementX / (svgWidth / (viewMaxX - viewMinX)), viewMinX));
-        const newTargetY = Math.min(viewMaxY, Math.max(cy + movementY / (svgHeight / (viewMaxY - viewMinY)), viewMinY));*/
-        targetElement.setAttribute("cx", `${newTargetX}`);
-        targetElement.setAttribute("cy", `${newTargetY}`);
-      //}
+      const {target} = event;
+      const targetElement = <Element>target;
+      const [viewMinX, viewMinY, viewMaxX, viewMaxY] = svg.getAttribute("viewBox")!.split(" ").map(value => parseFloat(value));
+      const offsetX = (Math.min(svgRight, Math.max(clientX, svgLeft)) - svgLeft) / svgWidth;
+      const offsetY = (Math.min(svgBottom, Math.max(clientY, svgTop)) - svgTop) / svgHeight;
+      const newTargetX = Math.round(offsetX * (viewMaxX - viewMinX));
+      const newTargetY = Math.round(offsetY * (viewMaxY - viewMinY));
+      targetElement.setAttribute("cx", `${newTargetX}`);
+      targetElement.setAttribute("cy", `${newTargetY}`);
     }
   }
-
-
   const svg = document.querySelector("svg");
   svg!.addEventListener("pointerdown", handlePointerDownEvent);
   svg!.addEventListener("pointermove", handlePointerMoveEvent);
   svg!.addEventListener("pointerup", handlePointerUpEvent);
-  svg!.addEventListener("pointerout", handlePointerOutEvent);
+  svg!.addEventListener("pointerout", handlePointerOutEvent);*/
 
   try {
     launchScene();
@@ -161,6 +149,7 @@ export async function launchScene() {
   canvas.style.height = `${canvasHeight}px`;
   
   const gl = canvas.getContext("webgl2", {alpha: false}/*, {antialias: true}*//*, {preserveDrawingBuffer: true}*/);
+  console.log(gl);
   if (!gl) {
     return;
   }

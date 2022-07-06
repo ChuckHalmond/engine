@@ -1,0 +1,13 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "File server",
+            "command": "deno run --allow-net --allow-read server/server.ts",
+            "problemMatcher": [
+                "$eslint-stylish"
+            ]
+        }
+    ]
+}
