@@ -31,6 +31,10 @@ class CameraBase extends Object3DBase {
       this._frustrum = new Frustrum().setFromPerspectiveMatrix(this._projection);
     }
 
+    getFront(vector: Vector3): Vector3 {
+      return this.transform.getBackward(vector);
+    }
+
     get projection(): Matrix4 {
       return this._projection.clone();
     }

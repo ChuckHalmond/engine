@@ -162,13 +162,16 @@ export declare type TextureProperties = {
     subimage?: {
         xoffset: number;
         yoffset: number;
+        zoffset?: number;
         width: number;
         height: number;
+        depth?: number;
     };
     border?: number;
     lod?: number;
     width: number;
     height: number;
+    depth?: number;
     format: TexturePixelFormat;
     internalFormat: TextureInternalPixelFormat;
     type: TexturePixelType;

@@ -159,23 +159,28 @@ export async function launchScene() {
   // Shaders
   const phongVert = await fetch("assets/engine/shaders/common/phong.vert.glsl").then(resp => resp.text());
   const phongFrag = await fetch("assets/engine/shaders/common/phong.frag.glsl").then(resp => resp.text());
-  const phongGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: phongVert, fragmentSource: phongFrag})!;
+  const phongGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: phongVert, fragmentSource: phongFrag});
+  if (phongGlProgram == null) return;
 
   const skyboxVert = await fetch("assets/engine/shaders/common/skybox.vert").then(resp => resp.text());
   const skyboxFrag = await fetch("assets/engine/shaders/common/skybox.frag").then(resp => resp.text());
-  const skyboxGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: skyboxVert, fragmentSource: skyboxFrag})!;
+  const skyboxGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: skyboxVert, fragmentSource: skyboxFrag});
+  if (skyboxGlProgram == null) return;
   
   const textureVert = await fetch("assets/engine/shaders/common/texture.vert").then(resp => resp.text());
   const textureFrag = await fetch("assets/engine/shaders/common/texture.frag").then(resp => resp.text());
-  const texGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: textureVert, fragmentSource: textureFrag})!;
+  const texGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: textureVert, fragmentSource: textureFrag});
+  if (texGlProgram == null) return;
 
   const basicVert = await fetch("assets/engine/shaders/common/basic.vert.glsl").then(resp => resp.text());
   const basicFrag = await fetch("assets/engine/shaders/common/basic.frag.glsl").then(resp => resp.text());
-  const basicGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: basicVert, fragmentSource: basicFrag})!;
+  const basicGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: basicVert, fragmentSource: basicFrag});
+  if (basicGlProgram == null) return;
   
   const depthVert = await fetch("assets/engine/shaders/common/depth.vert.glsl").then(resp => resp.text());
   const depthFrag = await fetch("assets/engine/shaders/common/depth.frag.glsl").then(resp => resp.text());
-  const depthGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: depthVert, fragmentSource: depthFrag})!;
+  const depthGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: depthVert, fragmentSource: depthFrag});
+  if (depthGlProgram == null) return;
 
   async function fetchImage(url: string) {
     return fetch(url).then((resp) => {
@@ -257,6 +262,8 @@ export async function launchScene() {
   const zFar = 100;
 
   const camera = new PerspectiveCamera(fov, aspect, zNear, zFar);
+  camera.transform.setTranslation(new Vector3([0, 4, 4]));
+  camera.transform.lookAt(new Vector3([0, 0, 0]), Space.up);
 
   const lightTransform = new Transform();
   lightTransform.setTranslation(new Vector3([0, 2, 2]));
@@ -315,7 +322,9 @@ export async function launchScene() {
         buffer: phongPacketUBOBuffer.lightsBlock,
         uniforms: {
           u_lightWorldPos: { value: Array.from(lightTransform.getTranslation(new Vector3())) },
-          u_lightColor: { value: [1, 0.8, 0.8] },
+          u_lightDirection: { value: Array.from(lightTransform.getBackward(new Vector3())) },
+          u_cutOff: { value: (12.5 / 360) * Math.PI },
+          u_lightColor: { value: [1, 0.8, 0.8] }
         }
       },
       {
@@ -329,6 +338,9 @@ export async function launchScene() {
           u_diffuseFactor: { value: 1 },
           u_specularFactor: { value: 1 },
           u_shininess: { value: 36 },
+          u_constant: { value: 1}, 
+          u_linear: { value: 0.09},
+          u_quadratic: { value: 0.032 }
         }
       }
     ],
@@ -350,11 +362,20 @@ export async function launchScene() {
             0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
             0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
             0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
           ]),
-          width: 8, height: 8,
+          width: 8, height: 8, depth: 2,
           // pixels: albedoMapImg,
           // width: albedoMapImg.width, height: albedoMapImg.height,
-          target: TextureTarget.TEXTURE_2D,
+          target: TextureTarget.TEXTURE_2D_ARRAY,
           type: TexturePixelType.UNSIGNED_BYTE,
 
           /*wrapS: TextureWrapMode.CLAMP_TO_EDGE,
@@ -610,6 +631,7 @@ export async function launchScene() {
     fpsElement.textContent = fps.toFixed(0);
 
     cameraControl.update(deltaTime);
+    lightTransform.setMatrix(camera.transform.matrix);
 
     animate(
       cube,
@@ -633,7 +655,8 @@ export async function launchScene() {
     WebGLRendererUtilities.depthFunction(gl, TestFunction.LESS);
 
     WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, {
-      uniformBlocks: [{
+      uniformBlocks: [
+        {
           block: worldViewBlock,
           buffer: phongCubePacket.uniformBlocks!.worldViewBlock.buffer,
           uniforms: {
@@ -644,7 +667,16 @@ export async function launchScene() {
             u_normal: { value: camera.view.mult(cube.matrix).invert().transpose().array },
             u_projection: { value: camera.projection.array },
           }
-      }]
+        },
+        {
+          block: lightsBlock,
+          buffer: phongPacketUBOBuffer.lightsBlock,
+          uniforms: {
+            u_lightWorldPos: { value: Array.from(lightTransform.getTranslation(new Vector3())) },
+            u_lightDirection: { value: Array.from(lightTransform.getBackward(new Vector3())) },
+          }
+        }
+      ]
     });
 
     WebGLPacketUtilities.drawPacket(gl, phongCubePacket);

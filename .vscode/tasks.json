@@ -3,7 +3,7 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "File server",
+            "label": "file server",
             "command": "deno run --allow-net --allow-read server/server.ts",
             "problemMatcher": [
                 "$eslint-stylish"

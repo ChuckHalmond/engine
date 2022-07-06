@@ -25,6 +25,8 @@ uniform worldViewBlock {
 uniform lightsBlock {
     vec3 u_lightWorldPos;
     vec3 u_lightColor;
+    vec3 u_lightDirection;
+    float u_cutOff;
 };
 
 out vec4 v_position;

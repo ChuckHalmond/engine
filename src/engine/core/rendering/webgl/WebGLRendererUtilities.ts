@@ -75,7 +75,22 @@ export enum WindingOrder {
     CCW = 0x0901
 }
 
+export enum HintTarget {
+    GENERATE_MIPMAP_HINT = 0x8192,
+    FRAGMENT_SHADER_DERIVATIVE_HINT = 0x8B8B
+}
+
+export enum HintMode {
+    DONT_CARE = 0x1100,
+    FASTEST	= 0x1101,
+    NICEST = 0x1102
+}
+
 export class WebGLRendererUtilities {
+
+    static hint(gl: WebGL2RenderingContext, target: HintTarget, mode: HintMode) {
+        gl.hint(target, mode);
+    }
 
     static frontFace(gl: WebGL2RenderingContext, winding: WindingOrder): void {
         gl.frontFace(winding);

@@ -1,3 +1,4 @@
+import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
 import { Matrix4 } from "../../../../libs/maths/algebra/matrices/Matrix4";
 import { UUID } from "../../../../libs/maths/statistics/random/UUIDGenerator";
 import { Mesh } from "../objects/meshes/Mesh";
@@ -17,6 +18,7 @@ declare class CameraBase extends Object3DBase {
     private _frustrum;
     constructor();
     constructor(projection: Matrix4);
+    getFront(vector: Vector3): Vector3;
     get projection(): Matrix4;
     get view(): Matrix4;
     get viewProjection(): Matrix4;

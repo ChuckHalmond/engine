@@ -1,7 +1,7 @@
 #version 300 es
 
 precision highp float;
-
+precision highp sampler2DArray;
 //EXTS
 //ENDEXTS
 
@@ -29,6 +29,8 @@ uniform worldViewBlock {
 uniform lightsBlock {
   vec3 u_lightWorldPos;
   vec3 u_lightColor;
+  vec3 u_lightDirection;
+  float u_cutOff;
 };
 
 uniform phongBlock {
@@ -39,27 +41,31 @@ uniform phongBlock {
   float u_diffuseFactor;
   float u_specularFactor;
   float u_shininess;
+  float u_constant;
+  float u_linear;
+  float u_quadratic;
 };
 
 #ifdef USE_NORMAL_MAP
   uniform sampler2D u_normalMap;
 #endif
 #ifdef USE_ALBEDO_MAP
-  uniform sampler2D u_albedoMap;
+  uniform sampler2DArray u_albedoMap;
 #endif
 
 out vec4 o_outColor;
 
 void main() {
+  float i = 0.0;
   #ifdef USE_ALBEDO_MAP
-    vec3 albedo = texture(u_albedoMap, v_uv).rgb;
+    vec3 albedo = texture(u_albedoMap, vec3(v_uv, i)).rgb;
   #else
     vec3 albedo = vec3(0.0, 1.0, 0.0);
   #endif
 
   #ifdef USE_NORMAL_MAP
     vec3 normal = texture(u_normalMap, v_uv).rgb;
-    normal = normalize(normal) * 2.0 - 1.0;
+    normal = normal * 2.0 - 1.0;
     vec3 N = normalize(normal);
   #else
     vec3 N = normalize(v_normal);
@@ -67,27 +73,47 @@ void main() {
 
   vec3 L = normalize(v_lightPos - v_fragPos);
   
-  // Lambert's cosine law
-  float lambertian = max(dot(N, L), 0.0);
-  float specular = 0.0;
+  float theta = dot(u_lightWorldPos, normalize(-u_lightDirection));
+  if (theta > u_cutOff) {
 
-  if (lambertian > 0.0) {
-    vec3 R = reflect(-L, N);
-    vec3 V = normalize(-v_fragPos);
-    float specularAngle = max(dot(V, R), 0.0);
-    float shininess = max(u_shininess, 1.0);
-    specular = pow(specularAngle, shininess);
-    // vec3 halfDir = normalize(L + V);
-    // float specularAngle = max(dot(halfDir, N), 0.0);
-    // specular = pow(specularAngle, u_shininess);
+    // Lambert's cosine law
+    float specular = 0.0;
+    float lambertian = max(dot(N, L), 0.0);
+    if (lambertian > 0.0) {
+      vec3 R = reflect(-L, N);
+      vec3 V = normalize(-v_fragPos);
+      float specularAngle = max(dot(V, R), 0.0);
+      float shininess = max(u_shininess, 1.0);
+      specular = pow(specularAngle, shininess);
+      // Blinn
+      // vec3 halfDir = normalize(L + V);
+      // float specularAngle = max(dot(halfDir, N), 0.0);
+      // specular = pow(specularAngle, u_shininess);
+    }
+
+    /*float ambientFactor = u_ambientFactor; 
+    float diffuseFactor = u_diffuseFactor;
+    float specularFactor = u_specularFactor;*/
+
+    float dist = length(v_lightPos - v_fragPos);
+    float attenuation = 1.0 / (u_constant + u_linear * dist + u_quadratic * (dist * dist));    
+    float ambientFactor = u_ambientFactor * attenuation; 
+    float diffuseFactor = u_diffuseFactor * attenuation;
+    float specularFactor = u_specularFactor * attenuation;
+
+    o_outColor = vec4(
+      ambientFactor * u_ambientColor +
+      diffuseFactor * lambertian * albedo +
+      specularFactor * specular * u_specularColor,
+      1.0
+    );
   }
-  
-  o_outColor = vec4(
-    u_ambientFactor * u_ambientColor +
-    u_diffuseFactor * lambertian * albedo +
-    u_specularFactor * specular * u_specularColor,
-    1.0
-  );
+  else {
+    o_outColor = vec4(
+      u_ambientFactor * u_ambientColor,
+      1.0
+    );
+  }
 }
 /*#version 300 es
 

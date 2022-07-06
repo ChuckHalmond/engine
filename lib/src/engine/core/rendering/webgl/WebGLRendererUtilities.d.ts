@@ -67,7 +67,17 @@ export declare enum WindingOrder {
     CW = 2304,
     CCW = 2305
 }
+export declare enum HintTarget {
+    GENERATE_MIPMAP_HINT = 33170,
+    FRAGMENT_SHADER_DERIVATIVE_HINT = 35723
+}
+export declare enum HintMode {
+    DONT_CARE = 4352,
+    FASTEST = 4353,
+    NICEST = 4354
+}
 export declare class WebGLRendererUtilities {
+    static hint(gl: WebGL2RenderingContext, target: HintTarget, mode: HintMode): void;
     static frontFace(gl: WebGL2RenderingContext, winding: WindingOrder): void;
     static scissor(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void;
     static viewport(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void;
