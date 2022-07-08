@@ -56,7 +56,7 @@ uniform phongBlock {
 out vec4 o_outColor;
 
 void main() {
-  float i = 0.0;
+  float i = 1.0;
   #ifdef USE_ALBEDO_MAP
     vec3 albedo = texture(u_albedoMap, vec3(v_uv, i)).rgb;
   #else

@@ -147,7 +147,7 @@ export declare enum TextureCompareFunction {
     GEQUAL = 518,
     ALWAYS = 519
 }
-export declare type Texture2DPixels = Uint32Array | Uint16Array | Uint8Array | TexImageSource | null;
+export declare type Texture2DPixels = Uint32Array | Uint16Array | Uint8Array | TexImageSource;
 export declare type TextureCubeMapPixels = {
     xPos: TexImageSource;
     xNeg: TexImageSource;
@@ -157,24 +157,25 @@ export declare type TextureCubeMapPixels = {
     zNeg: TexImageSource;
 };
 export declare type TextureProperties = {
-    pixels: Texture2DPixels | TextureCubeMapPixels;
     target: TextureTarget;
-    subimage?: {
+    pixels: Texture2DPixels | TextureCubeMapPixels | null;
+    width: number;
+    height: number;
+    format: TexturePixelFormat;
+    internalFormat: TextureInternalPixelFormat;
+    type: TexturePixelType;
+    depth?: number;
+    lod?: number;
+    border?: number;
+    subimages?: {
+        pixels: Texture2DPixels;
         xoffset: number;
         yoffset: number;
         zoffset?: number;
         width: number;
         height: number;
         depth?: number;
-    };
-    border?: number;
-    lod?: number;
-    width: number;
-    height: number;
-    depth?: number;
-    format: TexturePixelFormat;
-    internalFormat: TextureInternalPixelFormat;
-    type: TexturePixelType;
+    }[];
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
     wrapS?: TextureWrapMode;

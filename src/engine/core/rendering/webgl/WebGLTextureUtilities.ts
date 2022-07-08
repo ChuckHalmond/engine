@@ -157,7 +157,7 @@ export enum TextureCompareFunction {
     ALWAYS = 0x0207
 }
 
-export type Texture2DPixels = Uint32Array |  Uint16Array | Uint8Array | TexImageSource | null;
+export type Texture2DPixels = Uint32Array |  Uint16Array | Uint8Array | TexImageSource;
 
 export type TextureCubeMapPixels = {
     xPos: TexImageSource;
@@ -169,27 +169,27 @@ export type TextureCubeMapPixels = {
 }
 
 export type TextureProperties = {
-    pixels: Texture2DPixels | TextureCubeMapPixels;
     target: TextureTarget;
+    pixels: Texture2DPixels | TextureCubeMapPixels | null;
+    width: number;
+    height: number;
+    format: TexturePixelFormat;
+    internalFormat: TextureInternalPixelFormat;
+    type: TexturePixelType;
 
-    subimage?: {
+    depth?: number;
+    lod?: number;
+    border?: number;
+
+    subimages?: {
+        pixels: Texture2DPixels;
         xoffset: number;
         yoffset: number;
         zoffset?: number;
         width: number;
         height: number;
         depth?: number;
-    };
-
-    border?: number;
-    lod?: number;
-    width: number;
-    height: number;
-    depth?: number;
-
-    format: TexturePixelFormat;
-    internalFormat: TextureInternalPixelFormat;
-    type: TexturePixelType;
+    }[];
 
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
@@ -252,7 +252,7 @@ export class WebGLTextureUtilities {
 
     static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, properties: TextureProperties): void {
         const {unit, internal}  = texture;
-        const {pixels, target, subimage, width, height, format, internalFormat, type} = properties;
+        const {pixels, target, subimages, width, height, format, internalFormat, type} = properties;
         let {lod, border, depth} = properties;
 
         lod = lod ?? 0;
@@ -267,13 +267,12 @@ export class WebGLTextureUtilities {
         
         switch (target) {
             case TextureTarget.TEXTURE_2D: {
-                if (subimage) {
-                    const {xoffset, yoffset, width: subWidth, height: subHeight} = subimage;
-                    gl.texImage2D(target, lod, internalFormat, width, height, border, format, type, pixels as ArrayBufferView);
-                    gl.texSubImage2D(target, lod, xoffset, yoffset, subWidth, subHeight, format, type, pixels as ArrayBufferView);
-                }
-                else {
-                    gl.texImage2D(target, lod, internalFormat, width, height, border, format, type, pixels as ArrayBufferView);
+                gl.texImage2D(target, lod, internalFormat, width, height, border, format, type, <ArrayBufferView | null>pixels);
+                if (subimages) {
+                    subimages.forEach((subimage_i) => {
+                        const {xoffset, yoffset, width, height, pixels} = subimage_i;
+                        gl.texSubImage2D(target, lod!, xoffset, yoffset, width, height, format, type, pixels as ArrayBufferView);
+                    });
                 }
                 break;
             }
@@ -281,25 +280,26 @@ export class WebGLTextureUtilities {
                 if (pixels == null) {
                     gl.texImage2D(target, lod, internalFormat, width, height, border, format, type, null);  
                 }
-                else if ("xPos" in pixels) {
-                    const {xPos, xNeg, yPos, yNeg, zPos, zNeg} = pixels;
-                    gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_X, lod, internalFormat, width, height, border, format, type, xPos);
-                    gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_X, lod, internalFormat, width, height, border, format, type, xNeg);
-                    gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Y, lod, internalFormat, width, height, border, format, type, yPos);
-                    gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Y, lod, internalFormat, width, height, border, format, type, yNeg);
-                    gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Z, lod, internalFormat, width, height, border, format, type, zPos);
-                    gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Z, lod, internalFormat, width, height, border, format, type, zNeg);
+                else {
+                    if ("xPos" in pixels) {
+                        const {xPos, xNeg, yPos, yNeg, zPos, zNeg} = pixels;
+                        gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_X, lod, internalFormat, width, height, border, format, type, xPos);
+                        gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_X, lod, internalFormat, width, height, border, format, type, xNeg);
+                        gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Y, lod, internalFormat, width, height, border, format, type, yPos);
+                        gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Y, lod, internalFormat, width, height, border, format, type, yNeg);
+                        gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_POSITIVE_Z, lod, internalFormat, width, height, border, format, type, zPos);
+                        gl.texImage2D(TextureTarget.TEXTURE_CUBE_MAP_NEGATIVE_Z, lod, internalFormat, width, height, border, format, type, zNeg);
+                    }
                 }
                 break;
             }
             case TextureTarget.TEXTURE_2D_ARRAY: {
-                gl.texImage3D(target, lod, internalFormat, width, height, depth, border, format, type, pixels as ArrayBufferView);
-                if (subimage) {
-                    const {xoffset, yoffset, zoffset, width: subWidth, height: subHeight, depth: subDepth} = subimage;
-                    gl.texSubImage3D(target, lod, xoffset, yoffset, zoffset!, subWidth, subHeight, subDepth!, format, type, pixels as ArrayBufferView);
-                }
-                else {
-                    gl.texImage3D(target, lod, internalFormat, width, height,  depth, border, format, type, pixels as ArrayBufferView);
+                gl.texImage3D(target, lod, internalFormat, width, height,  depth, border, format, type, <ArrayBufferView | null>pixels);
+                if (subimages) {
+                    subimages.forEach((subimage_i, i) => {
+                        const {xoffset, yoffset, zoffset, width, height, depth, pixels} = subimage_i;
+                        gl.texSubImage3D(target, lod!, xoffset, yoffset, zoffset!, width, height, depth!, format, type, pixels as ArrayBufferView);
+                    });
                 }
                 break;
             }
@@ -336,7 +336,7 @@ export class WebGLTextureUtilities {
                 properties: {
                     pixels,
                     target,
-                    subimage,
+                    subimages,
                     lod,
                     width,
                     height,
