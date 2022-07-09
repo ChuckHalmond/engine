@@ -2,12 +2,16 @@
 
 in vec4 a_position;
 
-uniform basicBlock {
+uniform viewBlock {
+    mat4 u_view;
+    mat4 u_projection;
+};
+
+uniform basicModelBlock {
     mat4 u_model;
-    mat4 u_viewProjection;
     vec3 u_color;
 };
 
 void main() {
-    gl_Position = (u_viewProjection * u_model * a_position);
+    gl_Position = (u_projection * u_view  * u_model * a_position);
 }

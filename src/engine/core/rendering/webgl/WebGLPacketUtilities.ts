@@ -14,7 +14,7 @@ export type PacketProperties = {
     uniformBlocks?: {
         block: UniformBlock;
         buffer?: UniformBuffer | UniformBufferProperties;
-        uniforms: UniformsList;
+        uniforms?: UniformsList;
     }[];
     options?: {
         drawMode?: DrawMode;
@@ -185,14 +185,8 @@ export class WebGLPacketUtilities {
     }
 
     static drawPacket(gl: WebGL2RenderingContext, packet: Packet): void {
-        const {vertexArray, uniformBlocks} = packet;
+        const {vertexArray} = packet;
 
-        if (uniformBlocks) {
-            Object.values(uniformBlocks).forEach((uniformBlock_i) => {
-                const {block, buffer} = uniformBlock_i;
-                WebGLUniformBlockUtilities.bindUniformBuffer(gl, block, buffer);
-            });
-        }
         if (vertexArray) {
             const {drawMode, instanceCount} = packet;
             WebGLVertexArrayUtilities.drawVertexArray(gl, vertexArray, drawMode, instanceCount);
@@ -200,5 +194,7 @@ export class WebGLPacketUtilities {
         else {
             console.error("No vertex array to draw.");
         }
+
+        //@TODO: getError
     }
 }

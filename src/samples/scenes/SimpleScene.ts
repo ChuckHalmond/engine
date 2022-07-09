@@ -217,19 +217,21 @@ export async function launchScene() {
   const phongPacketBindings = WebGLPacketUtilities.createBindings(gl, {
     program: phongGlProgram,
     textures: ["albedoMap", "normalMap", "heightMap", "skybox", "fbColorTex", "depthTex"],
-    uniformBlocks: ["worldViewBlock", "lightsBlock", "phongBlock"]
+    uniformBlocks: ["viewBlock", "modelBlock", "lightsBlock", "phongBlock"]
   })!; 
 
   const basicPacketBindings = WebGLPacketUtilities.createBindings(gl, {
     program: basicGlProgram,
-    uniformBlocks: ["basicBlock"]
+    uniformBlocks: ["viewBlock", "basicModelBlock"]
   })!;
 
-  const {worldViewBlock, lightsBlock, phongBlock} = phongPacketBindings.uniformBlocks;
-  
-  const phongPacketUBOBuffer = WebGLUniformBlockUtilities.createRangedUniformBuffers(gl, [worldViewBlock, lightsBlock, phongBlock], BufferDataUsage.DYNAMIC_DRAW)!;
+  const {uniformBlocks: phongPacketBlocks} = phongPacketBindings;
+  const {uniformBlocks: basicPacketBlocks} = basicPacketBindings;
 
-  const {basicBlock} = basicPacketBindings.uniformBlocks;
+  const phongPacketBuffers = WebGLUniformBlockUtilities.createRangedUniformBuffers(gl,
+    Object.values(phongPacketBindings.uniformBlocks), BufferDataUsage.DYNAMIC_DRAW
+  )!;
+
   const {albedoMap, normalMap, heightMap, skybox, fbColorTex, depthTex} = phongPacketBindings.textures;
 
   /*const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
@@ -286,12 +288,14 @@ export async function launchScene() {
   const cubeNormals = cubeGeometryBuilder.verticesNormalsArray();
   const cubeUVs = cubeGeometryBuilder.uvsArray();
   const cubeTangents = cubeGeometryBuilder.tangentsArray();
+
   const cubeGeometryBuffer = new GeometryBuffer({
     a_position: { array: cubeVertices, type: AttributeDataType.VEC3 },
     a_normal: { array: cubeNormals, type: AttributeDataType.VEC3 },
     a_tangent: { array: cubeTangents, type: AttributeDataType.VEC3 },
     a_uv: { array: cubeUVs, type: AttributeDataType.VEC2 },
   }, true);
+
   const phongCubePacketProperties: PacketProperties = {
     vertexArray: {
       attributes: {
@@ -306,20 +310,25 @@ export async function launchScene() {
     },
     uniformBlocks: [
       {
-        block: worldViewBlock,
-        buffer: phongPacketUBOBuffer.worldViewBlock,
+        block: phongPacketBlocks.viewBlock,
+        buffer: phongPacketBuffers.viewBlock,
         uniforms: {
-          u_model: { value: cube.matrix.array },
-          u_modelView: { value: camera.view.mult(cube.matrix).array },
-          u_normal: { value: camera.view.mult(cube.matrix).invert().transpose().array },
           u_view: { value: camera.view.array },
-          u_camera: { value: camera.transform.matrix.array },
           u_projection: { value: camera.projection.array },
         }
       },
       {
-        block: lightsBlock,
-        buffer: phongPacketUBOBuffer.lightsBlock,
+        block: phongPacketBlocks.modelBlock,
+        buffer: phongPacketBuffers.modelBlock,
+        uniforms: {
+          u_model: { value: cube.matrix.array },
+          u_modelView: { value: camera.view.mult(cube.matrix).array },
+          u_normal: { value: camera.view.mult(cube.matrix).invert().transpose().array }
+        }
+      },
+      {
+        block: phongPacketBlocks.lightsBlock,
+        buffer: phongPacketBuffers.lightsBlock,
         uniforms: {
           u_lightWorldPos: { value: Array.from(lightTransform.getTranslation(new Vector3())) },
           u_lightDirection: { value: Array.from(lightTransform.getBackward(new Vector3())) },
@@ -328,8 +337,8 @@ export async function launchScene() {
         }
       },
       {
-        block: phongBlock,
-        buffer: phongPacketUBOBuffer.phongBlock,
+        block: phongPacketBlocks.phongBlock,
+        buffer: phongPacketBuffers.phongBlock,
         uniforms: {
           u_ambientColor: { value: [0.1, 0.1, 0.1] },
           u_diffuseColor: { value: [0.8, 0, 0] },
@@ -499,12 +508,15 @@ export async function launchScene() {
     },
     uniformBlocks: [
       {
-        block: basicBlock,
+        block: basicPacketBlocks.basicModelBlock,
         uniforms: {
           u_model: { value: lightTransform.matrix.array },
-          u_viewProjection: { value: camera.viewProjection.array },
-          u_color: { value: [1, 1, 0] },
+          u_color: { value: [1, 1, 0] }
         }
+      },
+      {
+        block: basicPacketBlocks.viewBlock,
+        buffer: phongPacketBuffers.viewBlock,
       }
     ]
   };
@@ -559,8 +571,9 @@ export async function launchScene() {
     }
   };
 
-  const basicPacket = WebGLPacketUtilities.createPacket(gl, basicGlProgram, basicPacketProperties)!;
+  
   const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongGlProgram, phongCubePacketProperties)!;
+  const basicPacket = WebGLPacketUtilities.createPacket(gl, basicGlProgram, basicPacketProperties)!;
   const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxGlProgram, skyboxPacketProperties)!;
   const depthPacket = WebGLPacketUtilities.createPacket(gl, depthGlProgram, depthPacketProperties)!;
   const texPacket = WebGLPacketUtilities.createPacket(gl, texGlProgram, texPacketProperties)!;
@@ -625,8 +638,9 @@ export async function launchScene() {
   const targetRotation = Quaternion.fromAxisAngle(Space.down, Math.PI / 3)/*.mult(Quaternion.fromAxisAngle(Space.forward, Math.PI / 3))*/;
   
   function animate(transform: Transform, initPosition: Vector3, initRotation: Quaternion, targetPosition: Vector3, targetRotation: Quaternion, t: number) {
-    /*transform.globalPosition = transform.globalPosition
-      .lerp(initPosition, targetPosition, t);*/
+    transform.setTranslation(
+      new Vector3().lerp(initPosition, targetPosition, t)
+    );
     transform.setRotation(transform.getRotation(new Quaternion()).slerp(initRotation, targetRotation, t));
   }
 
@@ -636,6 +650,7 @@ export async function launchScene() {
 
   const cameraControl = new FreeCameraControl(camera);
 
+  console.log(basicPacket);
   let frame = 0;
   render = function(frameTime: number) {
     ++frame;
@@ -657,11 +672,14 @@ export async function launchScene() {
     animate(
       cube,
       initPosition, initRotation,
-      initPosition, targetRotation,
+      targetPosition, targetRotation,
       t
     );
     
     t += deltaTime * direction * 0.5;
+    if (t > 2 || t < 0) {
+      direction *= -1;
+    }
     
     WebGLRendererUtilities.clearColor(gl, Color.GREEN.valuesNormalized());
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
@@ -669,7 +687,7 @@ export async function launchScene() {
     viewDirectionProjectionInverse.copy(camera.projection).mult(new Matrix4().setIdentity().setRotation(camera.view.getRotation())).invert();
 
     // Framebuffer
-    //WebGLFramebufferUtilities.bindFramebuffer(gl, depthFramebuffer);
+    // WebGLFramebufferUtilities.bindFramebuffer(gl, depthFramebuffer);
     WebGLFramebufferUtilities.bindFramebuffer(gl, framebuffer);
 
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
@@ -678,20 +696,25 @@ export async function launchScene() {
     WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, {
       uniformBlocks: [
         {
-          block: worldViewBlock,
-          buffer: phongCubePacket.uniformBlocks!.worldViewBlock.buffer,
+          block: phongPacketBlocks.modelBlock,
+          buffer: phongPacketBuffers.modelBlock,
           uniforms: {
             u_model: { value: cube.matrix.array },
             u_modelView: { value: camera.view.mult(cube.matrix).array },
-            u_camera: { value: camera.transform.matrix.array },
-            u_view: { value: camera.view.array },
             u_normal: { value: camera.view.mult(cube.matrix).invert().transpose().array },
+          }
+        },
+        {
+          block: phongPacketBlocks.viewBlock,
+          buffer: phongPacketBuffers.viewBlock,
+          uniforms: {
+            u_view: { value: camera.view.array },
             u_projection: { value: camera.projection.array },
           }
         },
         {
-          block: lightsBlock,
-          buffer: phongPacketUBOBuffer.lightsBlock,
+          block: phongPacketBlocks.lightsBlock,
+          buffer: phongPacketBuffers.lightsBlock,
           uniforms: {
             u_lightWorldPos: { value: Array.from(lightTransform.getTranslation(new Vector3())) },
             u_lightDirection: { value: Array.from(lightTransform.getBackward(new Vector3())) },
@@ -699,20 +722,9 @@ export async function launchScene() {
         }
       ]
     });
-
+    
     WebGLPacketUtilities.drawPacket(gl, phongCubePacket);
-
-    WebGLPacketUtilities.setPacketValues(gl, basicPacket, {
-      uniformBlocks: [
-        {
-          block: basicBlock,
-          buffer: basicPacket.uniformBlocks!.basicBlock.buffer,
-          uniforms: {
-            u_viewProjection: { value: camera.viewProjection.array },
-          }
-        }
-      ]
-    });
+    
     WebGLPacketUtilities.drawPacket(gl, basicPacket);
     
     WebGLPacketUtilities.setPacketValues(gl, skyboxPacket, {
@@ -720,6 +732,7 @@ export async function launchScene() {
         u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }
       }
     });
+    
     WebGLRendererUtilities.depthFunction(gl, TestFunction.LEQUAL);
     WebGLPacketUtilities.drawPacket(gl, skyboxPacket);
     

@@ -17,13 +17,15 @@ in vec2 v_uv;
 in vec3 v_lightPos;
 in vec3 v_fragPos;
 
-uniform worldViewBlock {
-  mat4 u_model;
+uniform viewBlock {
   mat4 u_view;
-  mat4 u_camera;
+  mat4 u_projection;
+};
+
+uniform modelBlock {
+  mat4 u_model;
   mat4 u_modelView;
   mat4 u_normal;
-  mat4 u_projection;
 };
 
 uniform lightsBlock {

@@ -2,10 +2,14 @@
 
 precision highp float;
 
-uniform basicBlock {
-    mat4 u_model;
-    mat4 u_viewProjection;
-    vec3 u_color;
+uniform viewBlock {
+  mat4 u_view;
+  mat4 u_projection;
+};
+
+uniform basicModelBlock {
+  mat4 u_model;
+  vec3 u_color;
 };
 
 out vec4 o_outColor;

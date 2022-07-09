@@ -110,7 +110,6 @@ export class WebGLUniformBlockUtilities {
 
     static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): {[name: string]: RangedUniformBuffer} | null {
         const offsetAlignment = gl.getParameter(gl.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
-        
         const bufferByteLength = blocks.reduce(
             (size, block) => size + Math.max(Math.ceil(block.blockSize / offsetAlignment), 1) * offsetAlignment, 0
         );

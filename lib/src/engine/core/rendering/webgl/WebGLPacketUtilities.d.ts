@@ -13,7 +13,7 @@ export declare type PacketProperties = {
     uniformBlocks?: {
         block: UniformBlock;
         buffer?: UniformBuffer | UniformBufferProperties;
-        uniforms: UniformsList;
+        uniforms?: UniformsList;
     }[];
     options?: {
         drawMode?: DrawMode;

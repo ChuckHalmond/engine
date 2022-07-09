@@ -13,13 +13,15 @@ in vec3 a_tangent;
 in vec3 a_position;
 in vec3 a_normal;
 
-uniform worldViewBlock {
-    mat4 u_model;
+uniform viewBlock {
     mat4 u_view;
-    mat4 u_camera;
+    mat4 u_projection;
+};
+
+uniform modelBlock {
+    mat4 u_model;
     mat4 u_modelView;
     mat4 u_normal;
-    mat4 u_projection;
 };
 
 uniform lightsBlock {
@@ -41,7 +43,7 @@ out vec2 v_uv;
 #endif
 
 void main() {
-    vec4 vertPos = u_modelView * vec4(a_position, 1.0);
+    vec4 vertPos = u_view * u_model * vec4(a_position, 1.0);
     vec3 fragPos = vec3(vertPos);
     vec3 lightPos = (u_view * vec4(u_lightWorldPos, 1.0)).xyz;
 
@@ -49,7 +51,7 @@ void main() {
         float displacementScale = 0.5;
         float displacement = texture(u_heightMap, a_uv).r * displacementScale;
         vec3 displacedPos = a_position + vec3(0.0, 0.0, displacement);
-        vertPos = u_modelView * vec4(displacedPos, 1.0);
+        vertPos = u_view * u_model * vec4(displacedPos, 1.0);
         fragPos = vec3(vertPos);
     #endif
 
