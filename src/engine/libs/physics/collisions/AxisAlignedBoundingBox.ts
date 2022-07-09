@@ -13,9 +13,8 @@ export { BoundingBoxBase };
 export { BoundingBoxPool };
 
 interface BoundingBox {
-	min: Vector3;
-	max: Vector3;
-	
+	readonly min: Vector3;
+	readonly max: Vector3;
 	set(min: Vector3, max: Vector3): void;
     copy(box: BoundingBox): BoundingBox;
     clone(box: BoundingBox): BoundingBox;
@@ -43,40 +42,22 @@ interface BoundingBoxConstructor {
 }
 
 class BoundingBoxBase implements BoundingBox {
-
-    private _min: Vector3;
-	private _max: Vector3;
+    readonly min: Vector3;
+	readonly max: Vector3;
 
     constructor() {
-        this._min = new Vector3([-Infinity, -Infinity, -Infinity]);
-        this._max = new Vector3([+Infinity, +Infinity, +Infinity]);
+        this.min = new Vector3([-Infinity, -Infinity, -Infinity]);
+        this.max = new Vector3([+Infinity, +Infinity, +Infinity]);
     }
-	
-	get min(): Vector3 {
-		return this._min;
-	}
-
-	set min(min: Vector3) {
-		this._min = min;
-	}
-
-	get max(): Vector3 {
-		return this._max;
-	}
-
-	set max(max: Vector3) {
-		this._max = max;
-	}
 
 	set(min: Vector3, max: Vector3): void {
-        this._min.copy(min);
-        this._max.copy(max);
+        this.min.copy(min);
+        this.max.copy(max);
     }
 
     copy(box: BoundingBoxBase): BoundingBoxBase {
-        this._min = box._min;
-        this._max = box._max;
-
+        this.min.copy(box.min);
+        this.max.copy(box.max);
         return this;
     }
 
@@ -85,27 +66,27 @@ class BoundingBoxBase implements BoundingBox {
     }
 
     makeEmpty(): void {
-        this._min.setValues([Infinity, Infinity, Infinity]);
-        this._max.setValues([+Infinity, +Infinity, +Infinity]);
+        this.min.setValues([Infinity, Infinity, Infinity]);
+        this.max.setValues([+Infinity, +Infinity, +Infinity]);
     }
 
     isEmpty(): boolean {
-        return (this._max.x < this._min.x) || (this._max.y < this._min.y) || (this._max.z < this._min.z);
+        return (this.max.x < this.min.x) || (this.max.y < this.min.y) || (this.max.z < this.min.z);
     }
 
 	getCenter(out: Vector3): Vector3 {
-		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._min).add(this._max).scale(0.5);
+		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this.min).add(this.max).scale(0.5);
 		return out;
 	}
     
 	getSize(out: Vector3): Vector3 {
-		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this._max).sub(this._min);
+		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this.max).sub(this.min);
 		return out;
 	}
 
     setFromLengths(center: Vector3, length: number, width: number, height: number): BoundingBoxBase {
-        this._min.setValues([center.x - length / 2, center.y - width / 2, center.z - height / 2]);
-        this._max.setValues([center.x + length / 2, center.y + width / 2, center.z + height / 2]);
+        this.min.setValues([center.x - length / 2, center.y - width / 2, center.z - height / 2]);
+        this.max.setValues([center.x + length / 2, center.y + width / 2, center.z + height / 2]);
 
         return this;
     }
@@ -121,34 +102,34 @@ class BoundingBoxBase implements BoundingBox {
     }
     
 	expandByPoint(point: Vector3): BoundingBoxBase {
-		this._min.min(point);
-        this._max.min(point);
+		this.min.min(point);
+        this.max.min(point);
         
         return this;
     }
 
 	expandByVector(vector: Vector3): BoundingBoxBase {
-		this._min.sub(vector);
-        this._max.add(vector);
+		this.min.sub(vector);
+        this.max.add(vector);
         
 		return this;
 	}
 
 	expandByScalar(k: number) {
-		this._min.addScalar(-k);
-		this._max.addScalar(k);
+		this.min.addScalar(-k);
+		this.max.addScalar(k);
 
 		return this;
     }
     
 	clampPoint(point: Vector3, out: Vector3): Vector3 {
-		return out.copy(point).clamp(this._min, this._max);
+		return out.copy(point).clamp(this.min, this.max);
 	}
 
 	distanceToPoint(point: Vector3): number {
 		let dist = 0;
 		const [temp] = Vector3Pool.acquire(1);
-		const clampedPoint = temp.copy(point).clamp(this._min, this._max);
+		const clampedPoint = temp.copy(point).clamp(this.min, this.max);
 		dist = clampedPoint.sub(point).length();
 		Vector3Pool.release(1);
         return dist;
@@ -158,30 +139,30 @@ class BoundingBoxBase implements BoundingBox {
 		let min = 0, max = 0;
 
 		if (plane.normal.x > 0) {
-			min = plane.normal.x * this._min.x;
-			max = plane.normal.x * this._max.x;
+			min = plane.normal.x * this.min.x;
+			max = plane.normal.x * this.max.x;
         }
         else {
-			min = plane.normal.x * this._max.x;
-			max = plane.normal.x * this._min.x;
+			min = plane.normal.x * this.max.x;
+			max = plane.normal.x * this.min.x;
 		}
 
 		if (plane.normal.y > 0) {
-			min += plane.normal.y * this._min.y;
-			max += plane.normal.y * this._max.y;
+			min += plane.normal.y * this.min.y;
+			max += plane.normal.y * this.max.y;
         }
         else {
-			min += plane.normal.y * this._max.y;
-			max += plane.normal.y * this._min.y;
+			min += plane.normal.y * this.max.y;
+			max += plane.normal.y * this.min.y;
 		}
 
 		if (plane.normal.z > 0) {
-			min += plane.normal.z * this._min.z;
-			max += plane.normal.z * this._max.z;
+			min += plane.normal.z * this.min.z;
+			max += plane.normal.z * this.max.z;
         }
         else {
-			min += plane.normal.z * this._max.z;
-			max += plane.normal.z * this._min.z;
+			min += plane.normal.z * this.max.z;
+			max += plane.normal.z * this.min.z;
 		}
 
 		return (min <= -plane.constant && max >= -plane.constant);
@@ -200,9 +181,9 @@ class BoundingBoxBase implements BoundingBox {
 
     intersectsBox(box: BoundingBoxBase): boolean {
 		return !(
-            box._max.x < this._min.x || box._min.x > this._max.x ||
-			box._max.y < this._min.y || box._min.y > this._max.y ||
-            box._max.z < this._min.z || box._min.z > this._max.z
+            box.max.x < this.min.x || box.min.x > this.max.x ||
+			box.max.y < this.min.y || box.min.y > this.max.y ||
+            box.max.z < this.min.z || box.min.z > this.max.z
         );
     }
 
@@ -228,7 +209,7 @@ class BoundingBoxBase implements BoundingBox {
 
 		this.getCenter(center);
 		
-		extents.copyAndSub(this._max, center),
+		extents.copyAndSub(this.max, center),
 		v1.copyAndSub(point1, center),
 		v2.copyAndSub(point2, center),
 		v3.copyAndSub(point3, center),

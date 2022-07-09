@@ -3,14 +3,14 @@ import { Vector3 } from "../../maths/algebra/vectors/Vector3";
 import { Vector3List } from "../../maths/extensions/lists/Vector3List";
 import { Plane } from "../../maths/geometry/primitives/Plane";
 import { Injector } from "../../patterns/injectors/Injector";
-import { BoundingBox, BoundingBoxPool } from "./BoundingBox";
+import { BoundingBox, BoundingBoxPool } from "./AxisAlignedBoundingBox";
 
 export { BoundingSphere };
 export { BoundingSphereInjector };
 export { BoundingSphereBase };
 
 interface BoundingSphere {
-	center: Vector3;
+	readonly center: Vector3;
 	radius: number;
 	set(center: Vector3, radius: number): BoundingSphere;
 	copy(sphere: BoundingSphere): BoundingSphere;
@@ -37,40 +37,24 @@ interface BoundingSphereConstructor {
 
 class BoundingSphereBase implements BoundingSphere {
 
-    private _center: Vector3;
-	private _radius: number;
+    readonly center: Vector3;
+	radius: number;
 	
     constructor() {
-        this._center = new Vector3([-Infinity, -Infinity, -Infinity]);
-        this._radius = 0;
+        this.center = new Vector3([-Infinity, -Infinity, -Infinity]);
+        this.radius = 0;
 	}
-
-	get center(): Vector3 {
-		return this._center;
-	}
-
-	set center(center: Vector3) {
-		this._center = center;
-	}
-
-	get radius(): number {
-		return this._radius;
-	}
-
-	set radius(radius: number) {
-		this._radius = radius;
-	}
-
+	
 	set(center: Vector3, radius: number): BoundingSphereBase {
-		this._center.copy(center);
-		this._radius = radius;
+		this.center.copy(center);
+		this.radius= radius;
 
 		return this;
 	}
 
 	copy(sphere: BoundingSphereBase): BoundingSphereBase {
-		this._center.copy(sphere._center);
-		this._radius = sphere._radius;
+		this.center.copy(sphere.center);
+		this.radius = sphere.radius;
 		
 		return this;
 	}
@@ -82,52 +66,52 @@ class BoundingSphereBase implements BoundingSphere {
 	setFromPoints(points: Vector3List, center?: Vector3): BoundingSphereBase {
 
 		if (center !== undefined) {
-			this._center.copy(center);
+			this.center.copy(center);
         }
         else {
 			const [box] = BoundingBoxPool.acquire(1);
-			box.setFromPoints(points).getCenter(this._center);
+			box.setFromPoints(points).getCenter(this.center);
 			BoundingBoxPool.release(1);
 		}
 
         let maxRadiusSq = 0;
 		
 		points.forEach((point: Vector3) => {
-			maxRadiusSq = Math.max(maxRadiusSq, this._center.distanceSquared(point));
+			maxRadiusSq = Math.max(maxRadiusSq, this.center.distanceSquared(point));
 		});
 
-		this._radius = Math.sqrt(maxRadiusSq);
+		this.radius = Math.sqrt(maxRadiusSq);
 
 		return this;
     }
 
 	isEmpty(): boolean {
-		return (this._radius < 0);
+		return (this.radius < 0);
 	}
 
 	makeEmpty(): BoundingSphereBase {
-		this._center.setZeros();
-		this._radius = -1;
+		this.center.setZeros();
+		this.radius = -1;
 
 		return this;
 	}
 
 	containsPoint(point: Vector3): boolean {
-		return (point.distanceSquared(this._center) <= (this._radius * this._radius));
+		return (point.distanceSquared(this.center) <= (this.radius * this.radius));
 	}
 
 	dist(point: Vector3): number {
-		return (point.distance(this._center) - this._radius);
+		return (point.distance(this.center) - this.radius);
 	}
 
 	distToPlane(plane: Plane): number {
-		return plane.distanceToPoint(this._center) - this._radius;
+		return plane.distanceToPoint(this.center) - this.radius;
 	}
 
 	intersectsSphere(sphere: BoundingSphereBase): boolean {
-        const radiusSum = this._radius + sphere._radius;
+        const radiusSum = this.radius + sphere.radius;
         
-		return this._center.distanceSquared(sphere._center) <= (radiusSum * radiusSum);
+		return this.center.distanceSquared(sphere.center) <= (radiusSum * radiusSum);
 	}
 
 	intersectsBox(box: BoundingBox): boolean {
@@ -135,17 +119,17 @@ class BoundingSphereBase implements BoundingSphere {
 	}
 
 	intersectsPlane(plane: Plane): boolean {
-		return Math.abs(plane.distanceToPoint(this._center)) <= this._radius;
+		return Math.abs(plane.distanceToPoint(this.center)) <= this.radius;
 	}
 
 	clampPoint(point: Vector3, out: Vector3): Vector3 {
-		const deltaLenSq = this._center.distanceSquared(point);
+		const deltaLenSq = this.center.distanceSquared(point);
 
 		out.copy(point);
 
-		if (deltaLenSq > (this._radius * this._radius)) {
-			out.sub(this._center).normalize();
-			out.scale(this._radius).add(this._center);
+		if (deltaLenSq > (this.radius * this.radius)) {
+			out.sub(this.center).normalize();
+			out.scale(this.radius).add(this.center);
 		}
 
 		return out;
@@ -158,19 +142,19 @@ class BoundingSphereBase implements BoundingSphere {
 			return out;
 		}
 
-		out.set(this._center, this._center);
-		out.expandByScalar(this._radius);
+		out.set(this.center, this.center);
+		out.expandByScalar(this.radius);
 
 		return out;
 	}
 
 	transform(matrix: Matrix4): void {
-		matrix.transformPoint(this._center);
-		this._radius = this._radius * matrix.getMaxScaleOnAxis();
+		matrix.transformPoint(this.center);
+		this.radius = this.radius * matrix.getMaxScaleOnAxis();
 	}
 
 	translate(offset: Vector3): void {
-		this._center.add(offset);
+		this.center.add(offset);
 	}
 }
 

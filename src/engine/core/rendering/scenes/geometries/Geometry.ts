@@ -6,7 +6,7 @@ import { TriangleList } from "../../../../libs/maths/extensions/lists/TriangleLi
 import { Vector2List } from "../../../../libs/maths/extensions/lists/Vector2List";
 import { Vector3List } from "../../../../libs/maths/extensions/lists/Vector3List";
 import { UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
-import { BoundingBox } from "../../../../libs/physics/collisions/BoundingBox";
+import { BoundingBox } from "../../../../libs/physics/collisions/AxisAlignedBoundingBox";
 import { BoundingSphere } from "../../../../libs/physics/collisions/BoundingSphere";
 import { GeometryBuffer } from "./GeometryBuffer";
 import { GeometryBuilder } from "./GeometryBuilder";

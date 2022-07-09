@@ -1,9 +1,9 @@
 import { Matrix4 } from "../../maths/algebra/matrices/Matrix4";
 import { Vector3 } from "../../maths/algebra/vectors/Vector3";
 import { Vector3Pool } from "../../maths/extensions/pools/Vector3Pools";
-import { Plane, PlaneInjector } from "../../maths/geometry/primitives/Plane";
+import { Plane } from "../../maths/geometry/primitives/Plane";
 import { Injector } from "../../patterns/injectors/Injector";
-import { BoundingBox } from "./BoundingBox";
+import { BoundingBox } from "./AxisAlignedBoundingBox";
 import { BoundingSphere } from "./BoundingSphere";
 
 export { Frustrum };
@@ -11,12 +11,12 @@ export { FrustrumInjector };
 export { FrustrumBase };
 
 interface Frustrum {
-    nearPlane: Plane;
-    farPlane: Plane;
-    topPlane: Plane;
-    bottomPlane: Plane;
-    leftPlane: Plane;
-    rightPlane: Plane;
+    readonly nearPlane: Plane;
+    readonly farPlane: Plane;
+    readonly topPlane: Plane;
+    readonly bottomPlane: Plane;
+    readonly leftPlane: Plane;
+    readonly rightPlane: Plane;
     copy(frustrum: Frustrum): Frustrum;
 	clone(): Frustrum;
 	setFromPerspectiveMatrix(matrix: Matrix4): Frustrum;
@@ -36,69 +36,20 @@ interface FrustrumConstructor {
 }
 
 class FrustrumBase implements Frustrum {
-    private _nearPlane: Plane;
-    private _farPlane: Plane;
-    private _topPlane: Plane;
-    private _bottomPlane: Plane;
-    private _leftPlane: Plane;
-    private _rightPlane: Plane;
+    readonly nearPlane: Plane;
+    readonly farPlane: Plane;
+    readonly topPlane: Plane;
+    readonly bottomPlane: Plane;
+    readonly leftPlane: Plane;
+    readonly rightPlane: Plane;
 
     constructor() {
-        const planeCtor = PlaneInjector.defaultCtor;
-		this._nearPlane = new planeCtor();
-        this._farPlane = new planeCtor();
-        this._topPlane = new planeCtor();
-        this._bottomPlane = new planeCtor();
-        this._leftPlane = new planeCtor();
-        this._rightPlane = new planeCtor();
-    }
-    
-    get nearPlane(): Plane {
-        return this._nearPlane;
-    }
-
-    set nearPlane(nearPlane: Plane) {
-        this._nearPlane = nearPlane;
-    }
-
-    get farPlane(): Plane {
-        return this._farPlane;
-    }
-
-    set farPlane(farPlane: Plane) {
-        this._farPlane = farPlane;
-    }
-
-    get topPlane(): Plane {
-        return this._topPlane;
-    }
-
-    set topPlane(topPlane: Plane) {
-        this._topPlane = topPlane;
-    }
-
-    get bottomPlane(): Plane {
-        return this._bottomPlane;
-    }
-
-    set bottomPlane(bottomPlane: Plane) {
-        this._bottomPlane = bottomPlane;
-    }
-
-    get leftPlane(): Plane {
-        return this._leftPlane;
-    }
-
-    set leftPlane(leftPlane: Plane) {
-        this._leftPlane = leftPlane;
-    }
-
-    get rightPlane(): Plane {
-        return this._rightPlane;
-    }
-
-    set rightPlane(rightPlane: Plane) {
-        this._rightPlane = rightPlane;
+		this.nearPlane = new Plane();
+        this.farPlane = new Plane();
+        this.topPlane = new Plane();
+        this.bottomPlane = new Plane();
+        this.leftPlane = new Plane();
+        this.rightPlane = new Plane();
     }
 
     set(
@@ -106,24 +57,24 @@ class FrustrumBase implements Frustrum {
         topPlane: Plane, bottomPlane: Plane,
         leftPlane: Plane, rightPlane: Plane): Frustrum {
 
-		this._nearPlane.copy(nearPlane);
-		this._farPlane.copy(farPlane);
-        this._topPlane.copy(topPlane);
-        this._bottomPlane.copy(bottomPlane);
-        this._leftPlane.copy(leftPlane);
-        this._rightPlane.copy(rightPlane);
+		this.nearPlane.copy(nearPlane);
+		this.farPlane.copy(farPlane);
+        this.topPlane.copy(topPlane);
+        this.bottomPlane.copy(bottomPlane);
+        this.leftPlane.copy(leftPlane);
+        this.rightPlane.copy(rightPlane);
 
 		return this;
 	}
 
     copy(frustrum: FrustrumBase): FrustrumBase {
         this.set(
-            frustrum._nearPlane,
-            frustrum._farPlane,
-            frustrum._topPlane,
-            frustrum._bottomPlane,
-            frustrum._leftPlane,
-            frustrum._rightPlane
+            frustrum.nearPlane,
+            frustrum.farPlane,
+            frustrum.topPlane,
+            frustrum.bottomPlane,
+            frustrum.leftPlane,
+            frustrum.rightPlane
         );
 
         return this;
@@ -151,12 +102,12 @@ class FrustrumBase implements Frustrum {
         const m43 = matrix.m43;
         const m44 = matrix.m44;
 
-        this._nearPlane.set(m31 + m41, m32 + m42, m33 + m43, m34 + m44).normalized();
-        this._farPlane.set(-m31 + m41, -m32 + m42, -m33 + m43, -m34 + m44).normalized();
-        this._bottomPlane.set(m21 + m41, m22 + m42, m23 + m43, m24 + m44).normalized();
-        this._topPlane.set(-m21 + m41, -m22 + m42, -m23 + m43, -m24 + m44).normalized();
-        this._leftPlane.set(m11 + m41, m12 + m42, m13 + m43, m14 + m44).normalized();
-        this._rightPlane.set(-m11 + m41, -m12 + m42, -m13 + m43, -m14 + m44).normalized();
+        this.nearPlane.set(m31 + m41, m32 + m42, m33 + m43, m34 + m44).normalized();
+        this.farPlane.set(-m31 + m41, -m32 + m42, -m33 + m43, -m34 + m44).normalized();
+        this.bottomPlane.set(m21 + m41, m22 + m42, m23 + m43, m24 + m44).normalized();
+        this.topPlane.set(-m21 + m41, -m22 + m42, -m23 + m43, -m24 + m44).normalized();
+        this.leftPlane.set(m11 + m41, m12 + m42, m13 + m43, m14 + m44).normalized();
+        this.rightPlane.set(-m11 + m41, -m12 + m42, -m13 + m43, -m14 + m44).normalized();
         
 		return this;
     }
@@ -164,12 +115,12 @@ class FrustrumBase implements Frustrum {
 	intersectsSphere(sphere: BoundingSphere): boolean {
         const center = sphere.center;
         const radius = sphere.radius;
-        return center.dot(this._nearPlane.normal) + this._nearPlane.constant + radius <= 0 ||
-            center.dot(this._farPlane.normal) + this._farPlane.constant + radius <= 0 ||
-            center.dot(this._bottomPlane.normal) + this._bottomPlane.constant + radius <= 0 ||
-            center.dot(this._topPlane.normal) + this._topPlane.constant + radius <= 0 ||
-            center.dot(this._leftPlane.normal) + this._leftPlane.constant + radius <= 0 ||
-            center.dot(this._rightPlane.normal) + this._rightPlane.constant + radius <= 0;
+        return center.dot(this.nearPlane.normal) + this.nearPlane.constant + radius <= 0 ||
+            center.dot(this.farPlane.normal) + this.farPlane.constant + radius <= 0 ||
+            center.dot(this.bottomPlane.normal) + this.bottomPlane.constant + radius <= 0 ||
+            center.dot(this.topPlane.normal) + this.topPlane.constant + radius <= 0 ||
+            center.dot(this.leftPlane.normal) + this.leftPlane.constant + radius <= 0 ||
+            center.dot(this.rightPlane.normal) + this.rightPlane.constant + radius <= 0;
 	}
 
 	intersectsBox(box: BoundingBox): boolean {
@@ -180,35 +131,35 @@ class FrustrumBase implements Frustrum {
 
         const [temp] = Vector3Pool.acquire(1);
         intersects = 
-            this._nearPlane.distanceToPoint(temp.setValues([
-                this._nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this._nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this._nearPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            this.nearPlane.distanceToPoint(temp.setValues([
+                this.nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this.nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this.nearPlane.normal.z > 0 ? boxMax.z : boxMin.z
             ])) >= 0 &&
-            this._farPlane.distanceToPoint(temp.setValues([
-                this._farPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this._farPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this._farPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            this.farPlane.distanceToPoint(temp.setValues([
+                this.farPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this.farPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this.farPlane.normal.z > 0 ? boxMax.z : boxMin.z
             ])) >= 0 &&
-            this._bottomPlane.distanceToPoint(temp.setValues([
-                this._bottomPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this._bottomPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this._bottomPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            this.bottomPlane.distanceToPoint(temp.setValues([
+                this.bottomPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this.bottomPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this.bottomPlane.normal.z > 0 ? boxMax.z : boxMin.z
             ])) >= 0 &&
-            this._topPlane.distanceToPoint(temp.setValues([
-                this._topPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this._topPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this._topPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            this.topPlane.distanceToPoint(temp.setValues([
+                this.topPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this.topPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this.topPlane.normal.z > 0 ? boxMax.z : boxMin.z
             ])) >= 0 &&
-            this._leftPlane.distanceToPoint(temp.setValues([
-                this._leftPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this._leftPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this._leftPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            this.leftPlane.distanceToPoint(temp.setValues([
+                this.leftPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this.leftPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this.leftPlane.normal.z > 0 ? boxMax.z : boxMin.z
             ])) >= 0 &&
-            this._rightPlane.distanceToPoint(temp.setValues([
-                this._rightPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this._rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this._rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            this.rightPlane.distanceToPoint(temp.setValues([
+                this.rightPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                this.rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                this.rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
             ])) >= 0;
         Vector3Pool.release(1);
 
@@ -216,12 +167,12 @@ class FrustrumBase implements Frustrum {
 	}
 
 	containsPoint(point: Vector3): boolean {
-        return this._nearPlane.distanceToPoint(point) >= 0 &&
-            this._farPlane.distanceToPoint(point) >= 0 &&
-            this._bottomPlane.distanceToPoint(point) >= 0 &&
-            this._topPlane.distanceToPoint(point) >= 0 &&
-            this._leftPlane.distanceToPoint(point) >= 0 &&
-            this._rightPlane.distanceToPoint(point) >= 0;
+        return this.nearPlane.distanceToPoint(point) >= 0 &&
+            this.farPlane.distanceToPoint(point) >= 0 &&
+            this.bottomPlane.distanceToPoint(point) >= 0 &&
+            this.topPlane.distanceToPoint(point) >= 0 &&
+            this.leftPlane.distanceToPoint(point) >= 0 &&
+            this.rightPlane.distanceToPoint(point) >= 0;
     }
 }
 

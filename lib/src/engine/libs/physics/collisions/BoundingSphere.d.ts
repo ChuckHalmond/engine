@@ -3,12 +3,12 @@ import { Vector3 } from "../../maths/algebra/vectors/Vector3";
 import { Vector3List } from "../../maths/extensions/lists/Vector3List";
 import { Plane } from "../../maths/geometry/primitives/Plane";
 import { Injector } from "../../patterns/injectors/Injector";
-import { BoundingBox } from "./BoundingBox";
+import { BoundingBox } from "./AxisAlignedBoundingBox";
 export { BoundingSphere };
 export { BoundingSphereInjector };
 export { BoundingSphereBase };
 interface BoundingSphere {
-    center: Vector3;
+    readonly center: Vector3;
     radius: number;
     set(center: Vector3, radius: number): BoundingSphere;
     copy(sphere: BoundingSphere): BoundingSphere;
@@ -32,13 +32,9 @@ interface BoundingSphereConstructor {
     new (): BoundingSphere;
 }
 declare class BoundingSphereBase implements BoundingSphere {
-    private _center;
-    private _radius;
+    readonly center: Vector3;
+    radius: number;
     constructor();
-    get center(): Vector3;
-    set center(center: Vector3);
-    get radius(): number;
-    set radius(radius: number);
     set(center: Vector3, radius: number): BoundingSphereBase;
     copy(sphere: BoundingSphereBase): BoundingSphereBase;
     clone(): BoundingSphereBase;

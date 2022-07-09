@@ -1,5 +1,5 @@
 import { Injector } from "../../../patterns/injectors/Injector";
-import { BoundingBox } from "../../../physics/collisions/BoundingBox";
+import { BoundingBox } from "../../../physics/collisions/AxisAlignedBoundingBox";
 import { BoundingSphere } from "../../../physics/collisions/BoundingSphere";
 import { Matrix4 } from "../../algebra/matrices/Matrix4";
 import { Vector3 } from "../../algebra/vectors/Vector3";
