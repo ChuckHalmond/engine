@@ -53,6 +53,8 @@ out vec3 v_normal;
 
 out vec3 v_lightPos;
 out vec3 v_fragPos;
+out vec3 v_lightPos2;
+out vec3 v_fragPos2;
 out vec2 v_uv;
 
 #ifdef USE_HEIGHT_MAP
@@ -71,12 +73,15 @@ void main() {
     vec4 vertPos = modelView * vec4(a_position, 1.0);
     vec3 fragPos = vec3(vertPos);
     vec3 lightPos = (u_view * vec4(lightWorldPos, 1.0)).xyz;
+    
+    v_lightPos2 = lightPos;
+    v_fragPos2 = fragPos;
 
     #ifdef USE_HEIGHT_MAP
         float displacementScale = 0.5;
         float displacement = texture(u_heightMap, a_uv).r * displacementScale;
         vec3 displacedPos = a_position + vec3(0.0, 0.0, displacement);
-        vertPos = u_view * model * vec4(displacedPos, 1.0);
+        vertPos = modelView * vec4(displacedPos, 1.0);
         fragPos = vec3(vertPos);
     #endif
 

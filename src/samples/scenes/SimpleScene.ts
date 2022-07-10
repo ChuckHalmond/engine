@@ -248,7 +248,7 @@ export async function launchScene() {
 
   const cubeGeometry =
     //new QuadGeometry({height: 4, width: 4});
-    new CubeGeometry({width: 2, height: 2, depth: 2}/*{widthSegments: 64, heightSegments: 64}*/);
+    new CubeGeometry({width: 1, height: 1, depth: 1}/*{widthSegments: 64, heightSegments: 64}*/);
     //new SphereGeometry({widthSegments: 64, heightSegments: 64});
     //new CylinderGeometry();
     //new DodecahedronGeometry();
@@ -257,14 +257,15 @@ export async function launchScene() {
   const quad = new QuadGeometry({height: 2, width: 2});
   const quadGeometryBuilder = quad.toBuilder();
   const cube = new Transform();
-
+  cube.setScaling(new Vector3([4, 4, 4]));
+  
   const fov = (1 / 3) * Math.PI;
   const aspect = gl.canvas.width / gl.canvas.height;
   const zNear = 0.1;
   const zFar = 100;
 
   const camera = new PerspectiveCamera(fov, aspect, zNear, zFar);
-  camera.transform.setTranslation(new Vector3([0, 4, 4]));
+  camera.transform.setTranslation(new Vector3([0, 8, 8]));
   camera.transform.lookAt(new Vector3([0, 0, 0]), Space.up);
 
   const lightTransform = new Transform();
@@ -275,13 +276,13 @@ export async function launchScene() {
   camera.transform.lookAt(new Vector3([0, 0, 0]), Space.up);
 
   const viewDirectionProjectionInverse = camera.projection.clone().mult(new Matrix4().setIdentity().setRotation(camera.view.getRotation())).invert();
-
+/*
   addWidgets([
     ...createRotationWidgets(cube, "Cube"),
     ...createPositionWidgets(cube, "Cube"),
     ...createRelativePositionWidgets(cube, "Cube"),
     ...createRelativePositionWidgets(camera.transform, "Camera"),
-  ]);
+  ]);*/
 
   const cubeVertices = cubeGeometryBuilder.verticesArray();
   const cubeIndices = cubeGeometryBuilder.indicesArray();
@@ -332,7 +333,7 @@ export async function launchScene() {
         uniforms: {
           "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
           "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
-          "lights[0].u_cutOff": { value: (12.5 / 360) * Math.PI },
+          "lights[0].u_cutOff": { value: (2 / 360) * Math.PI },
           "lights[0].u_lightColor": { value: [1, 0.8, 0.8] }
         }
       },
@@ -347,8 +348,8 @@ export async function launchScene() {
           u_diffuseFactor: { value: 1 },
           u_specularFactor: { value: 1 },
           u_shininess: { value: 36 },
-          u_constant: { value: 1}, 
-          u_linear: { value: 0.09},
+          u_constant: { value: 1 }, 
+          u_linear: { value: 0.09 },
           u_quadratic: { value: 0.032 }
         }
       }
@@ -571,8 +572,6 @@ export async function launchScene() {
     }
   };
 
-  
-  console.log(phongCubePacketProperties);
   const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongGlProgram, phongCubePacketProperties)!;
   const basicPacket = WebGLPacketUtilities.createPacket(gl, basicGlProgram, basicPacketProperties)!;
   const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxGlProgram, skyboxPacketProperties)!;
@@ -639,10 +638,11 @@ export async function launchScene() {
   const targetRotation = Quaternion.fromAxisAngle(Space.down, Math.PI / 3)/*.mult(Quaternion.fromAxisAngle(Space.forward, Math.PI / 3))*/;
   
   function animate(transform: Transform, initPosition: Vector3, initRotation: Quaternion, targetPosition: Vector3, targetRotation: Quaternion, t: number) {
-    transform.setTranslation(
-      new Vector3().lerp(initPosition, targetPosition, t)
-    );
-    transform.setRotation(transform.getRotation(new Quaternion()).slerp(initRotation, targetRotation, t));
+    // transform.setTranslation(
+    //   new Vector3().lerp(initPosition, targetPosition, t)
+    // );
+    //transform.setRotation(transform.getRotation(new Quaternion()).slerp(initRotation, targetRotation, t));
+    transform.rotate(new Quaternion().slerp(initRotation, targetRotation, t));
   }
 
   Input.initialize(gl.canvas);
@@ -693,6 +693,10 @@ export async function launchScene() {
 
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
     WebGLRendererUtilities.depthFunction(gl, TestFunction.LESS);
+
+    if (cube.getScaling(new Vector3()).equals(new Vector3([10, 10, 10]))) {
+      console.log(1);
+    }
 
     WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, {
       uniformBlocks: [

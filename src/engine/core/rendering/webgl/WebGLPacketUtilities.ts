@@ -195,6 +195,6 @@ export class WebGLPacketUtilities {
             console.error("No vertex array to draw.");
         }
 
-        //@TODO: getError
+        //@TODO: getError ?
     }
 }

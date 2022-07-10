@@ -182,6 +182,7 @@ class WebGLVertexArrayUtilities {
     }
 
     static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null {
+        //@TODO: Allow multiple buffers and existing buffers as input.
         const {attributes, indices, elementsCount, interleave} = vertexArray;
         let {usage} = vertexArray;
 
@@ -381,6 +382,7 @@ class WebGLVertexArrayUtilities {
     }
 
     static setVertexArrayAttributeValue(gl: WebGL2RenderingContext, vertexArray: VertexArray, attributeName: string, value: VertexArrayAttributeValue) {
+        //@TODO: Handle interleaved attributes
         const {attributeSetters, verticesBuffer} = vertexArray;
         const attributeSetter = attributeSetters[attributeName];
         const {internal} = verticesBuffer;

@@ -18,6 +18,8 @@ in vec2 v_uv;
 
 in vec3 v_lightPos;
 in vec3 v_fragPos;
+in vec3 v_lightPos2;
+in vec3 v_fragPos2;
 
 uniform viewBlock {
   mat4 u_view;
@@ -92,8 +94,8 @@ void main() {
 
   vec3 L = normalize(v_lightPos - v_fragPos);
   
-  float theta = dot(lightWorldPos, normalize(-lightDirection));
-  if (theta > cutOff) {
+  /*float theta = dot(normalize(v_lightPos2 - v_fragPos2), normalize(-lightDirection));
+  if (theta > cutOff) {*/
 
     // Lambert's cosine law
     float specular = 0.0;
@@ -126,13 +128,13 @@ void main() {
       specularFactor * specular * u_specularColor,
       1.0
     );
-  }
+  /*}
   else {
     o_outColor = vec4(
       u_ambientFactor * u_ambientColor,
       1.0
     );
-  }
+  }*/
 }
 /*#version 300 es
 
