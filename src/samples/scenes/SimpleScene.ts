@@ -635,14 +635,16 @@ export async function launchScene() {
   let initPosition = cube.getTranslation(new Vector3());
 
   const targetPosition = new Vector3([2, -2, -2]);
-  const targetRotation = Quaternion.fromAxisAngle(Space.down, Math.PI / 3)/*.mult(Quaternion.fromAxisAngle(Space.forward, Math.PI / 3))*/;
+  const targetRotation = Quaternion.fromAxisAngle(Space.down, Math.PI / 3);
   
   function animate(transform: Transform, initPosition: Vector3, initRotation: Quaternion, targetPosition: Vector3, targetRotation: Quaternion, t: number) {
-    // transform.setTranslation(
-    //   new Vector3().lerp(initPosition, targetPosition, t)
-    // );
+    /*transform.setTranslation(
+      new Vector3().lerp(initPosition, targetPosition, t)
+    );*/
     //transform.setRotation(transform.getRotation(new Quaternion()).slerp(initRotation, targetRotation, t));
-    transform.rotate(new Quaternion().slerp(initRotation, targetRotation, t));
+    
+    //transform.rotate(new Quaternion().slerp(initRotation, targetRotation, t));
+    transform.rotate(Quaternion.fromAxisAngle(Space.down, Math.PI / 128));
   }
 
   Input.initialize(gl.canvas);
@@ -651,7 +653,6 @@ export async function launchScene() {
 
   const cameraControl = new FreeCameraControl(camera);
 
-  console.log(basicPacket);
   let frame = 0;
   render = function(frameTime: number) {
     ++frame;
@@ -678,7 +679,7 @@ export async function launchScene() {
     );
     
     t += deltaTime * direction * 0.5;
-    if (t > 2 || t < 0) {
+    if (t > 1 || t < 0) {
       direction *= -1;
     }
     
@@ -693,10 +694,6 @@ export async function launchScene() {
 
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
     WebGLRendererUtilities.depthFunction(gl, TestFunction.LESS);
-
-    if (cube.getScaling(new Vector3()).equals(new Vector3([10, 10, 10]))) {
-      console.log(1);
-    }
 
     WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, {
       uniformBlocks: [

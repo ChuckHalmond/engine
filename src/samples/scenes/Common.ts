@@ -101,7 +101,7 @@ export function createRotationWidgets(transform: Transform, name: string): Widge
             name: `${name} roll`, type: "range",
             value: 0, min: -360, max: 360,
             setter: function(this, val) {
-                const rotationMatrix = transform.getRotation(new Quaternion()).getMatrix();
+                const rotationMatrix = transform.getRotation(new Quaternion()).getMatrix3(new Matrix3());
                 
                 if (!("data" in this)) {
                     this.data = {
@@ -122,7 +122,7 @@ export function createRotationWidgets(transform: Transform, name: string): Widge
             name: `${name} pitch`, type: "range",
             value: 0, min: -360, max: 360,
             setter: function(this, val) {
-                const rotationMatrix = transform.getRotation(new Quaternion()).getMatrix();
+                const rotationMatrix = transform.getRotation(new Quaternion()).getMatrix3(new Matrix3());
                 
                 if (!("data" in this)) {
                     this.data = {
@@ -143,7 +143,7 @@ export function createRotationWidgets(transform: Transform, name: string): Widge
             name: `${name} yaw`, type: "range",
             value: 0, min: -360, max: 360,
             setter: function(this, val) {
-                const rotationMatrix = transform.getRotation(new Quaternion()).getMatrix();
+                const rotationMatrix = transform.getRotation(new Quaternion()).getMatrix3(new Matrix3());
                 
                 if (!("data" in this)) {
                     this.data = {

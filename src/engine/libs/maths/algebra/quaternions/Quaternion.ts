@@ -59,8 +59,9 @@ interface Quaternion {
 	clone(): this;
 	getAxis(out: Vector3): Vector3;
 
-	getMatrix(): Matrix3;
-	
+	getMatrix3(matrix: Matrix3): Matrix3;
+	getMatrix4(matrix: Matrix4): Matrix4;
+
 	rotate(vec: Vector3): Vector3;
 	toVector(): Vector3;
 
@@ -267,7 +268,7 @@ class QuaternionBase {
 		return out;
 	}
 
-	getMatrix(): Matrix3 {
+	getMatrix3(matrix: Matrix3): Matrix3 {
 		const thisArray = this.array;
 		const thisLengthSquared = this.lengthSquared();
 		const s = 2.0 / thisLengthSquared;
@@ -293,11 +294,45 @@ class QuaternionBase {
 		const yz = y * zs;
 		const zz = z * zs;
 
-		return new Matrix3([
+		return matrix.setValues(
 			1 - (yy + zz),	xy + wz,		xz - wy,
 			xy - wz,		1 - (xx + zz),	yz + wx,
 			xz + wy,		yz - wx,		1 - (xx + yy)
-		]);
+		);
+	}
+
+	getMatrix4(matrix: Matrix4): Matrix4 {
+		const thisArray = this.array;
+		const thisLengthSquared = this.lengthSquared();
+		const s = 2.0 / thisLengthSquared;
+
+		const x = thisArray[0];
+		const y = thisArray[1];
+		const z = thisArray[2];
+		const w = thisArray[3];
+
+		const xs = x * s;
+		const ys = y * s;
+		const zs = z * s;
+	  
+		const wx = w * xs;
+		const wy = w * ys;
+		const wz = w * zs;
+	  
+		const xx = x * xs;
+		const xy = x * ys;
+		const xz = x * zs;
+		
+		const yy = y * ys;
+		const yz = y * zs;
+		const zz = z * zs;
+
+		return matrix.setValues(
+			1 - (yy + zz),	xy + wz,		xz - wy, 		0,
+			xy - wz,		1 - (xx + zz),	yz + wx, 		0,
+			xz + wy,		yz - wx,		1 - (xx + yy), 	0,
+			0, 				0, 				0, 				1
+		);
 	}
 
 	rotate(vector: Vector3): Vector3 {

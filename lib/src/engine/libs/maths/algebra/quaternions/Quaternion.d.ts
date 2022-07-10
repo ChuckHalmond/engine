@@ -43,7 +43,8 @@ interface Quaternion {
     copy(quat: Quaternion): this;
     clone(): this;
     getAxis(out: Vector3): Vector3;
-    getMatrix(): Matrix3;
+    getMatrix3(matrix: Matrix3): Matrix3;
+    getMatrix4(matrix: Matrix4): Matrix4;
     rotate(vec: Vector3): Vector3;
     toVector(): Vector3;
     angleTo(quat: Quaternion): number;

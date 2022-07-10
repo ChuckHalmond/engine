@@ -291,21 +291,10 @@ class TransformBase implements Transform {
     }
 
     rotate(rotation: Quaternion): this {
-        const matrix = rotation.getMatrix();
-        const {m11, m12, m13, m21, m22, m23, m31, m32, m33} = matrix;
         this.matrix.mult(
-            new Matrix4([
-                m11, m21, m31, 0,
-                m12, m22, m32, 0,
-                m13, m23, m33, 0,
-                0, 0, 0, 1
-            ])
+            rotation.getMatrix4(new Matrix4())
         );
         return this;
-        /*const thisRotation = this.getRotation(QuaternionPool.acquire(1)[0]);
-        this.matrix.setRotation(thisRotation.mult(rotation));
-        QuaternionPool.release(1);
-        return this;*/
     }
 
     transformPoint(point: Vector3): Vector3 {
