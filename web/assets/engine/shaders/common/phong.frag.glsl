@@ -8,6 +8,8 @@ precision highp sampler2DArray;
 //DEFS
 #define USE_ALBEDO_MAP
 #define USE_NORMAL_MAP
+#define MAX_INSTANCES 2
+#define MAX_LIGHTS 2
 //ENDDEFS
 
 in vec4 v_position;
@@ -22,17 +24,25 @@ uniform viewBlock {
   mat4 u_projection;
 };
 
-uniform modelBlock {
+struct Model {
   mat4 u_model;
   mat4 u_modelView;
   mat4 u_normal;
 };
 
-uniform lightsBlock {
+uniform modelBlock {
+  Model models[MAX_INSTANCES]; 
+};
+
+struct Light {
   vec3 u_lightWorldPos;
   vec3 u_lightColor;
   vec3 u_lightDirection;
   float u_cutOff;
+};
+
+uniform lightsBlock {
+  Light lights[MAX_LIGHTS];
 };
 
 uniform phongBlock {
@@ -58,6 +68,13 @@ uniform phongBlock {
 out vec4 o_outColor;
 
 void main() {
+
+  Light currentLight = lights[0];
+  vec3 lightWorldPos = currentLight.u_lightWorldPos;
+  vec3 lightColor = currentLight.u_lightColor;
+  vec3 lightDirection = currentLight.u_lightDirection;
+  float cutOff = currentLight.u_cutOff;
+
   float i = 1.0;
   #ifdef USE_ALBEDO_MAP
     vec3 albedo = texture(u_albedoMap, vec3(v_uv, i)).rgb;
@@ -75,8 +92,8 @@ void main() {
 
   vec3 L = normalize(v_lightPos - v_fragPos);
   
-  float theta = dot(u_lightWorldPos, normalize(-u_lightDirection));
-  if (theta > u_cutOff) {
+  float theta = dot(lightWorldPos, normalize(-lightDirection));
+  if (theta > cutOff) {
 
     // Lambert's cosine law
     float specular = 0.0;

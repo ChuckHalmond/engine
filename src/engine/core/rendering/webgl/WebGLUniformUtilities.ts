@@ -77,7 +77,7 @@ type UniformSetter = {
 
 type UniformsListSetter = {
     setters: {
-        [name: string]: UniformSetter | null;
+        [name: string]: UniformSetter;
     };
     program: Program;
 }
@@ -172,8 +172,6 @@ class WebGLUniformUtilities {
                         type: uniformType,
                         set: (tex: Texture) => {
                             const {unit} = tex;
-                            //gl.activeTexture(gl.TEXTURE0 + unit);
-                            //gl.bindTexture(target, internal);
                             gl.uniform1i(location, unit);
                         }
                     };
@@ -387,7 +385,7 @@ class WebGLUniformUtilities {
         });
         
         const setters: {
-            [name: string]: UniformSetter | null;
+            [name: string]: UniformSetter;
         } = {};
 
         const activeUniformsInfo: WebGLActiveInfo[] = validUniformIndices.map(index => gl.getActiveUniform(internal, index)!);
@@ -398,7 +396,10 @@ class WebGLUniformUtilities {
                 console.warn(`Uniform ${name} could not be located.`);
                 return null;
             }
-            setters[name] = this.getUniformSetter(gl, uniform, location, type);
+            const setter = this.getUniformSetter(gl, uniform, location, type);
+            if (setter) {
+                setters[name] = setter;
+            }
         });
         
         return {
@@ -412,15 +413,13 @@ class WebGLUniformUtilities {
         WebGLProgramUtilities.useProgram(gl, program);
         
         Object.keys(list).forEach((name) => {
+            if (!(name in setters)) {
+                console.warn(`Uniform ${name} does not match any of the given setters.`);
+            }
             const setter = setters[name];
             const uniform = list[name];
             const {value} = uniform;
-            if (setter) {
-                setter.set(value);
-            }
-            else {
-                console.warn(`Uniform ${name} does not match any of the given setters.`);
-            }
+            setter.set(value);
         });
     }
 }

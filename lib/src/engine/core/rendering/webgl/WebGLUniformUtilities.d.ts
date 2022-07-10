@@ -68,7 +68,7 @@ declare type UniformSetter = {
 };
 declare type UniformsListSetter = {
     setters: {
-        [name: string]: UniformSetter | null;
+        [name: string]: UniformSetter;
     };
     program: Program;
 };

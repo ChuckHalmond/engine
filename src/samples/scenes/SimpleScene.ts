@@ -321,19 +321,19 @@ export async function launchScene() {
         block: phongPacketBlocks.modelBlock,
         buffer: phongPacketBuffers.modelBlock,
         uniforms: {
-          u_model: { value: cube.matrix.array },
-          u_modelView: { value: camera.view.mult(cube.matrix).array },
-          u_normal: { value: camera.view.mult(cube.matrix).invert().transpose().array }
+          "models[0].u_model": { value: cube.matrix.array },
+          "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
+          "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array }
         }
       },
       {
         block: phongPacketBlocks.lightsBlock,
         buffer: phongPacketBuffers.lightsBlock,
         uniforms: {
-          u_lightWorldPos: { value: Array.from(lightTransform.getTranslation(new Vector3())) },
-          u_lightDirection: { value: Array.from(lightTransform.getBackward(new Vector3())) },
-          u_cutOff: { value: (12.5 / 360) * Math.PI },
-          u_lightColor: { value: [1, 0.8, 0.8] }
+          "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
+          "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
+          "lights[0].u_cutOff": { value: (12.5 / 360) * Math.PI },
+          "lights[0].u_lightColor": { value: [1, 0.8, 0.8] }
         }
       },
       {
@@ -572,6 +572,7 @@ export async function launchScene() {
   };
 
   
+  console.log(phongCubePacketProperties);
   const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongGlProgram, phongCubePacketProperties)!;
   const basicPacket = WebGLPacketUtilities.createPacket(gl, basicGlProgram, basicPacketProperties)!;
   const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxGlProgram, skyboxPacketProperties)!;
@@ -699,9 +700,9 @@ export async function launchScene() {
           block: phongPacketBlocks.modelBlock,
           buffer: phongPacketBuffers.modelBlock,
           uniforms: {
-            u_model: { value: cube.matrix.array },
-            u_modelView: { value: camera.view.mult(cube.matrix).array },
-            u_normal: { value: camera.view.mult(cube.matrix).invert().transpose().array },
+            "models[0].u_model": { value: cube.matrix.array },
+            "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
+            "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array },
           }
         },
         {
@@ -716,8 +717,8 @@ export async function launchScene() {
           block: phongPacketBlocks.lightsBlock,
           buffer: phongPacketBuffers.lightsBlock,
           uniforms: {
-            u_lightWorldPos: { value: Array.from(lightTransform.getTranslation(new Vector3())) },
-            u_lightDirection: { value: Array.from(lightTransform.getBackward(new Vector3())) },
+            "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
+            "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
           }
         }
       ]

@@ -57,22 +57,10 @@ export class WebGLUniformBlockUtilities {
             const uniformIndex = blockUniformsIndices[i];
             const uniformInfo = gl.getActiveUniform(internal, uniformIndex);
             if (uniformInfo !== null) {
-                let {name} = uniformInfo;
-                const bracketIndex = name.indexOf("[");
-                const isArray = bracketIndex > -1;
-                if (isArray) {
-                    name = name.substring(0, bracketIndex);
-                    if (typeof layout[name] === "undefined") {
-                        layout[name] = {
-                            offset: uniformOffset_i
-                        };
-                    }
-                }
-                else {
-                    layout[name] = {
-                        offset: uniformOffset_i
-                    };
-                }
+                const {name} = uniformInfo;
+                layout[name] = {
+                    offset: uniformOffset_i
+                };
             }
         });
 
@@ -146,9 +134,12 @@ export class WebGLUniformBlockUtilities {
             gl.bindBuffer(gl.UNIFORM_BUFFER, internal);
         }
         
-        const {layout} = block;
+        const {layout, name} = block;
         Object.entries(uniforms).forEach(([uniformName, uniform]) => {
             const {value} = uniform;
+            if (!(uniformName in layout)) {
+                console.warn(`${uniformName} does not exist in block ${name}.`);
+            }
             const {offset} = layout[uniformName];
             gl.bufferSubData(gl.UNIFORM_BUFFER, offset + (buffer.rangeOffset ?? 0), WebGLUniformUtilities.asArrayBufferView(value));
         });
