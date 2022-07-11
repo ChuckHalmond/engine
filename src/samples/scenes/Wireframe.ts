@@ -45,18 +45,15 @@ export async function wireframe() {
     return;
   }
 
-  const linesBindings = WebGLPacketUtilities.createBindings(gl, {
-    program: linesProgram,
-    uniformBlocks: ["viewBlock", "linesBlock"]
-  });
+  const blocks = WebGLPacketUtilities.createUniformBlocks(gl, linesProgram, ["viewBlock", "linesBlock"]);
 
-  if (linesBindings == null) {
+  if (blocks == null) {
     console.error("bindings null.");
     return;
   }
 
-  const viewBlock = linesBindings.uniformBlocks.viewBlock;
-  const linesBlock = linesBindings.uniformBlocks.linesBlock;
+  const viewBlock = blocks.viewBlock;
+  const linesBlock = blocks.linesBlock;
 
   const camera = new PerspectiveCamera(
     (1 / 3) * Math.PI,
@@ -91,15 +88,15 @@ export async function wireframe() {
       elementsCount: cubeLines.length / 2
     },
     uniformBlocks: [
-      {
-        block: viewBlock,
-        uniforms: {
-          u_worldViewProjection: {
-            value: new Float32Array(viewProjection.clone().mult(cubeTransform.getMatrix(new Matrix4())).array),
+        {
+          block: viewBlock,
+          uniforms: {
+            u_worldViewProjection: {
+              value: new Float32Array(viewProjection.clone().mult(cubeTransform.getMatrix(new Matrix4())).array),
+            }
           }
-        }
-      },
-      {
+        },
+        {
         block: linesBlock,
         uniforms: {
           u_color: {

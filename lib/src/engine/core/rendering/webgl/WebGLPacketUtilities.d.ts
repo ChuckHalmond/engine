@@ -29,19 +29,6 @@ export declare type PacketValues = {
         uniforms: UniformsList;
     }[];
 };
-export declare type PacketBindingsProperties = {
-    program: Program;
-    textures?: string[];
-    uniformBlocks?: string[];
-};
-export declare type PacketBindings = {
-    textures: {
-        [name: string]: Texture;
-    };
-    uniformBlocks: {
-        [name: string]: UniformBlock;
-    };
-};
 export declare type Packet = {
     vertexArray?: VertexArray;
     uniformsSetter?: UniformsListSetter;
@@ -51,12 +38,18 @@ export declare type Packet = {
             buffer: UniformBuffer;
         };
     };
-    bindings?: PacketBindings;
     drawMode: DrawMode;
     instanceCount?: number;
 };
 export declare class WebGLPacketUtilities {
-    static createBindings(gl: WebGL2RenderingContext, properties: PacketBindingsProperties): PacketBindings;
+    static createTextures(gl: WebGL2RenderingContext, textures: {
+        [name: string]: TextureProperties;
+    }): {
+        [name: string]: Texture;
+    };
+    static createUniformBlocks(gl: WebGL2RenderingContext, program: Program, uniformBlocks: string[]): {
+        [name: string]: UniformBlock;
+    };
     static createPacket(gl: WebGL2RenderingContext, program: Program, packet: PacketProperties): Packet | null;
     static setPacketValues(gl: WebGL2RenderingContext, packet: Packet, values: PacketValues): void;
     static drawPacket(gl: WebGL2RenderingContext, packet: Packet): void;

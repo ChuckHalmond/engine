@@ -217,7 +217,14 @@ export type Texture = {
 
 export class WebGLTextureUtilities {
 
-    static createTexture(gl: WebGL2RenderingContext, name: string): Texture | null {
+    static #textureUnits: Map<string, number> = new Map();
+
+
+    static getTexturesUnitsEntries(): IterableIterator<[string, number]> {
+        return this.#textureUnits.entries();
+    }
+
+    static createTexture(gl: WebGL2RenderingContext, name: string, properties: TextureProperties): Texture | null {
         const internal = gl.createTexture();
         
         if (internal === null) {
@@ -225,33 +232,12 @@ export class WebGLTextureUtilities {
             return null;
         }
 
-        const unit = this.#allocateUnit(gl);
-        if (unit < 0) {
-            console.error(`Could not allocate another texture unit. Max (${gl.MAX_TEXTURE_IMAGE_UNITS}) was reached.`);
-            return null;
+        let unit = this.#textureUnits.get(name);
+        if (unit == undefined) {
+            unit = Math.max(-1, ...this.#textureUnits.values()) + 1;
+            this.#textureUnits.set(name, unit);
         }
-        
-        return {
-            unit,
-            internal,
-            name
-        };
-    }
 
-    static setUnpackAlignment(gl: WebGL2RenderingContext, alignment: number): void {
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
-    }
-
-    static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void {
-        const {internal, unit} = texture;
-        if (gl.isTexture(internal)) {
-            gl.deleteTexture(internal);
-        }
-        this.#freeUnit(gl, unit);
-    }
-
-    static setTextureProperties(gl: WebGL2RenderingContext, texture: Texture, properties: TextureProperties): void {
-        const {unit, internal}  = texture;
         const {pixels, target, subimages, width, height, format, internalFormat, type} = properties;
         let {lod, border, depth} = properties;
 
@@ -330,60 +316,45 @@ export class WebGLTextureUtilities {
             gl.texParameterf(target, TextureParameter.TEXTURE_MIN_LOD, minLod);
         if (maxLod !== void 0)
             gl.texParameterf(target, TextureParameter.TEXTURE_MAX_LOD, maxLod);
-
-        Object.assign(
-            texture, {
-                properties: {
-                    pixels,
-                    target,
-                    subimages,
-                    lod,
-                    width,
-                    height,
-                    format,
-                    internalFormat,
-                    type,
-                    min,
-                    mag,
-                    wrapS,
-                    wrapT,
-                    wrapR,
-                    baseMipmapLevel,
-                    maxMipmapLevel,
-                    compareFunction,
-                    compareMode,
-                    minLod,
-                    maxLod
-                }
+        
+        return {
+            unit,
+            internal,
+            name,
+            properties: {
+                pixels,
+                target,
+                subimages,
+                lod,
+                width,
+                height,
+                format,
+                internalFormat,
+                type,
+                min,
+                mag,
+                wrapS,
+                wrapT,
+                wrapR,
+                baseMipmapLevel,
+                maxMipmapLevel,
+                compareFunction,
+                compareMode,
+                minLod,
+                maxLod
             }
-        );
-    }
-    
-    static #units: Map<WebGL2RenderingContext, boolean[]> = new Map();
-
-    static #freeUnit(gl: WebGL2RenderingContext, unit: number): number | null {
-        const units = this.#units.get(gl);
-        if (typeof units !== "undefined") {
-            if (units.length < 0) {
-                units[unit] = false;
-            }
-        }
-        return null;
+        };
     }
 
-    static #allocateUnit(gl: WebGL2RenderingContext): number {
-        const maxUnits = gl.MAX_TEXTURE_IMAGE_UNITS;
-        let units = this.#units.get(gl);
-        if (typeof units === "undefined") {
-            units = new Array(maxUnits);
-            this.#units.set(gl, units);
+    static setUnpackAlignment(gl: WebGL2RenderingContext, alignment: number): void {
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
+    }
+
+    static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void {
+        const {internal, name} = texture;
+        if (gl.isTexture(internal)) {
+            gl.deleteTexture(internal);
+            this.#textureUnits.delete(name);
         }
-        for (let i = 1; i < maxUnits; i++) {
-            if (!units[i]) {
-                units[i] = true;
-                return i;
-            }
-        }
-        return -1;
     }
 }

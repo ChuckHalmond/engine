@@ -32,21 +32,6 @@ export type PacketValues = {
     }[];
 }
 
-export type PacketBindingsProperties = {
-    program: Program;
-    textures?: string[];
-    uniformBlocks?: string[];
-}
-
-export type PacketBindings = {
-    textures: {
-        [name: string]: Texture;
-    };
-    uniformBlocks: {
-        [name: string]: UniformBlock;
-    };
-}
-
 export type Packet = {
     vertexArray?: VertexArray;
     uniformsSetter?: UniformsListSetter;
@@ -56,44 +41,40 @@ export type Packet = {
             buffer: UniformBuffer;
         }
     };
-    bindings?: PacketBindings;
     drawMode: DrawMode;
     instanceCount?: number;
 }
 
 export class WebGLPacketUtilities {
 
-    static createBindings(gl: WebGL2RenderingContext, properties: PacketBindingsProperties): PacketBindings {
-        const textures: {
+    static createTextures(gl: WebGL2RenderingContext, textures: {
+        [name: string]: TextureProperties;
+    }): {[name: string]: Texture} {
+        const _textures: {
             [key: string]: Texture
         } = {};
-        const uniformBlocks: {
+        Object.entries(textures).forEach(([name, properties]) => {
+            const texture = WebGLTextureUtilities.createTexture(gl, name, properties);
+            if (texture !== null) {
+                _textures[name] = texture;
+            }
+        });
+        return _textures;
+    }
+
+    static createUniformBlocks(gl: WebGL2RenderingContext, program: Program, uniformBlocks: string[]): {[name: string]: UniformBlock} {
+        const _uniformBlocks: {
             [key: string]: UniformBlock
         } = {};
-
-        const {textures: texturesNames, uniformBlocks: uniformBlocksNames, program} = properties;
-        
-        if (texturesNames !== void 0) {
-            texturesNames.forEach((textureName) => {
-                const texture = WebGLTextureUtilities.createTexture(gl, textureName);
-                if (texture !== null) {
-                    textures[textureName] = texture;
-                }
-            });
-        }
-
-        if (uniformBlocksNames !== void 0) {
-            uniformBlocksNames.forEach((blockName) => {
-                const uniformBlock = WebGLUniformBlockUtilities.createUniformBlock(
-                    gl, program, blockName
-                );
-                if (uniformBlock !== null) {
-                    uniformBlocks[blockName] = uniformBlock;
-                }
-            });
-        }
-
-        return {textures, uniformBlocks};
+        uniformBlocks.forEach((blockName) => {
+            const uniformBlock = WebGLUniformBlockUtilities.createUniformBlock(
+                gl, program, blockName
+            );
+            if (uniformBlock !== null) {
+                _uniformBlocks[blockName] = uniformBlock;
+            }
+        });
+        return _uniformBlocks;
     }
 
     static createPacket(gl: WebGL2RenderingContext, program: Program, packet: PacketProperties): Packet | null {
@@ -141,19 +122,11 @@ export class WebGLPacketUtilities {
                 if (buffer == null) {
                     return null;
                 }
-                if (uniforms !== void 0) {
+                WebGLUniformBlockUtilities.bindUniformBuffer(gl, block, buffer);
+                if (uniforms !== undefined) {
                     WebGLUniformBlockUtilities.setUniformBufferValues(gl, block, buffer, uniforms);
                 }
-                WebGLUniformBlockUtilities.bindUniformBuffer(gl, block, buffer);
                 uniformBlocks[blockName] = {block, buffer};
-            });
-        }
-        if (texturesProperties !== void 0) {
-            texturesProperties.forEach((textureProperties) => {
-                const {properties, texture} = textureProperties;
-                if (properties !== void 0) {
-                    WebGLTextureUtilities.setTextureProperties(gl, texture, properties);
-                }
             });
         }
 

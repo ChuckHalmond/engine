@@ -75,11 +75,8 @@ function scene(canvas: HTMLCanvasElement) {
         return;
     }
 
-    const bindings = WebGLPacketUtilities.createBindings(gl, {
-        program: program,
-        uniformBlocks: ["commonBlock"]
-    });
-    if (bindings == null) {
+    const blocks = WebGLPacketUtilities.createUniformBlocks(gl, program, ["commonBlock"]);
+    if (blocks == null) {
         console.error("bindings null.");
         return;
     }
@@ -135,7 +132,7 @@ function scene(canvas: HTMLCanvasElement) {
         },
         uniformBlocks: [
             {
-                block: bindings.uniformBlocks.commonBlock,
+                block: blocks.commonBlock,
                 uniforms: {
                     my_data: {
                         value: new Float32Array([1, 0, 0, 0, 0, 1, 0, 0]),

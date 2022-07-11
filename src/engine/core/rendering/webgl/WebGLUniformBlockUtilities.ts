@@ -4,6 +4,7 @@ import { Program } from "./WebGLProgramUtilities";
 
 export type UniformBlock = {
     name: string;
+    blockIndex: number;
     program: Program;
     layout: UniformBlockLayout;
     blockSize: number;
@@ -17,6 +18,7 @@ export type UniformBlockLayout = {
 }
 
 export type UniformBuffer = Buffer & {
+    //bindingPoint: number;
     rangeOffset?: number;
     rangeSize?: number;
 }
@@ -31,14 +33,20 @@ export type UniformBufferProperties = {
 }
 
 export class WebGLUniformBlockUtilities {
-    
+
+    static #bindingPoints: Map<string, number> = new Map();
+
+    static getBindingPointsEntries(): IterableIterator<[string, number]> {
+        return this.#bindingPoints.entries();
+    }
+
     static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null {
         const {internal} = program;
 
-        const bindingPoint = this.#allocateBindingPoint(gl);
-        if (bindingPoint === null) {
-            console.error(`Could not bind another uniform buffer object. Max (${gl.MAX_UNIFORM_BUFFER_BINDINGS}) was reached.`);
-            return null;
+        let bindingPoint = this.#bindingPoints.get(name);
+        if (bindingPoint == undefined) {
+            bindingPoint = Math.max(-1, ...this.#bindingPoints.values()) + 1;
+            this.#bindingPoints.set(name, bindingPoint);
         }
 
         const blockIndex = gl.getUniformBlockIndex(internal, name);
@@ -66,6 +74,7 @@ export class WebGLUniformBlockUtilities {
 
         return {
             name: name,
+            blockIndex: blockIndex,
             bindingPoint: bindingPoint,
             blockSize: blockSize,
             layout: layout,
@@ -96,7 +105,9 @@ export class WebGLUniformBlockUtilities {
         };
     }
 
-    static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): {[name: string]: RangedUniformBuffer} | null {
+    static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): {
+        [name: string]: RangedUniformBuffer
+    } | null {
         const offsetAlignment = gl.getParameter(gl.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
         const bufferByteLength = blocks.reduce(
             (size, block) => size + Math.max(Math.ceil(block.blockSize / offsetAlignment), 1) * offsetAlignment, 0
@@ -135,13 +146,14 @@ export class WebGLUniformBlockUtilities {
         }
         
         const {layout, name} = block;
+        const {rangeOffset} = buffer;
         Object.entries(uniforms).forEach(([uniformName, uniform]) => {
             const {value} = uniform;
             if (!(uniformName in layout)) {
                 console.warn(`${uniformName} does not exist in block ${name}.`);
             }
             const {offset} = layout[uniformName];
-            gl.bufferSubData(gl.UNIFORM_BUFFER, offset + (buffer.rangeOffset ?? 0), WebGLUniformUtilities.asArrayBufferView(value));
+            gl.bufferSubData(gl.UNIFORM_BUFFER, offset + (rangeOffset ?? 0), WebGLUniformUtilities.asArrayBufferView(value));
         });
     }
 
@@ -158,33 +170,5 @@ export class WebGLUniformBlockUtilities {
         else {
             gl.bindBufferBase(gl.UNIFORM_BUFFER, bindingPoint, internal);
         }
-    }
-
-    static #bindingPoints: Map<WebGL2RenderingContext, boolean[]> = new Map();
-
-    static #freeBindingPoint(gl: WebGL2RenderingContext, bindingPoint: number): number | null {
-        const maxBindings = this.#bindingPoints.get(gl);
-        if (typeof maxBindings !== "undefined") {
-            if (maxBindings.length < 0) {
-                maxBindings[bindingPoint] = false;
-            }
-        }
-        return null;
-    }
-
-    static #allocateBindingPoint(gl: WebGL2RenderingContext): number {
-        const maxBindings = gl.MAX_UNIFORM_BUFFER_BINDINGS;
-        let bindingPoints = this.#bindingPoints.get(gl);
-        if (typeof bindingPoints === "undefined") {
-            bindingPoints = new Array(maxBindings);
-            this.#bindingPoints.set(gl, bindingPoints);
-        }
-        for (let i = 1; i < maxBindings; i++) {
-            if (!bindingPoints[i]) {
-                bindingPoints[i] = true;
-                return i;
-            }
-        }
-        return -1;
     }
 }

@@ -214,25 +214,133 @@ export async function launchScene() {
     console.log(`Extension EXT_texture_norm16 activated.`);
   }*/
 
-  const phongPacketBindings = WebGLPacketUtilities.createBindings(gl, {
-    program: phongGlProgram,
-    textures: ["albedoMap", "normalMap", "heightMap", "skybox", "fbColorTex", "depthTex"],
-    uniformBlocks: ["viewBlock", "modelBlock", "lightsBlock", "phongBlock"]
-  })!; 
+  const textures = WebGLPacketUtilities.createTextures(gl, {
+    albedoMap: {
+      pixels: null,
+      width: 8, height: 8, depth: 2,
+      // pixels: albedoMapImg,
+      // width: albedoMapImg.width, height: albedoMapImg.height,
+      target: TextureTarget.TEXTURE_2D_ARRAY,
+      type: TexturePixelType.UNSIGNED_BYTE,
 
-  const basicPacketBindings = WebGLPacketUtilities.createBindings(gl, {
-    program: basicGlProgram,
-    uniformBlocks: ["viewBlock", "basicModelBlock"]
+      /*wrapS: TextureWrapMode.CLAMP_TO_EDGE,
+      wrapT: TextureWrapMode.CLAMP_TO_EDGE,
+      wrapR: TextureWrapMode.CLAMP_TO_EDGE,*/
+
+      format: TexturePixelFormat.LUMINANCE,
+      internalFormat: TextureInternalPixelFormat.LUMINANCE,
+
+      // format: TexturePixelFormat.RGB,
+      // internalFormat: TextureInternalPixelFormat.RGB
+
+      min: TextureMinFilter.NEAREST,
+      mag: TextureMagFilter.NEAREST,
+
+      subimages: [
+        {
+          pixels: new Uint8Array([
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+          ]),
+          xoffset: 0,
+          yoffset: 0,
+          zoffset: 0,
+          width: 8,
+          height: 8,
+          depth: 1
+        },
+        {
+          pixels: new Uint8Array([
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+          ]),
+          xoffset: 0,
+          yoffset: 0,
+          zoffset: 1,
+          width: 8,
+          height: 8,
+          depth: 1
+        }
+      ]
+    },
+    normalMap: {
+      pixels: normalMapImg,
+      width: normalMapImg.width, height: normalMapImg.height,
+      target: TextureTarget.TEXTURE_2D,
+      type: TexturePixelType.UNSIGNED_BYTE,
+      format: TexturePixelFormat.RGB,
+      internalFormat: TextureInternalPixelFormat.RGB8,
+      min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
+      mag: TextureMagFilter.LINEAR
+    },
+    heightMap: {
+      pixels: heightMapImg,
+      width: heightMapImg.width, height: heightMapImg.height,
+      target: TextureTarget.TEXTURE_2D,
+      type: TexturePixelType.UNSIGNED_BYTE,
+      format: TexturePixelFormat.RGBA,
+      internalFormat: TextureInternalPixelFormat.RGBA8
+    },
+    skybox: {
+      pixels: {
+        xPos: skyboxXPosImg, xNeg: skyboxXNegImg,
+        yPos: skyboxYPosImg, yNeg: skyboxYNegImg,
+        zPos: skyboxZPosImg, zNeg: skyboxZNegImg
+      },
+      width: skyboxXPosImg.width, height: skyboxXPosImg.height,
+      target: TextureTarget.TEXTURE_CUBE_MAP,
+      type: TexturePixelType.UNSIGNED_BYTE,
+      format: TexturePixelFormat.RGBA,
+      internalFormat: TextureInternalPixelFormat.RGBA8
+    },
+    fbColorTex: {
+      width: canvas.width, height: canvas.height,
+      pixels: null,
+      target: TextureTarget.TEXTURE_2D,
+      type: TexturePixelType.UNSIGNED_BYTE,
+      format: TexturePixelFormat.RGBA,
+      internalFormat: TextureInternalPixelFormat.RGBA8,
+      mag: TextureMagFilter.LINEAR,
+      min: TextureMinFilter.LINEAR,
+      wrapS: TextureWrapMode.CLAMP_TO_EDGE,
+      wrapT: TextureWrapMode.CLAMP_TO_EDGE,
+      wrapR: TextureWrapMode.CLAMP_TO_EDGE,
+    },
+    depthTex: {
+      width: canvas.width, height: canvas.height,
+      pixels: null,
+      target: TextureTarget.TEXTURE_2D,
+      type: TexturePixelType.UNSIGNED_INT,
+      format: TexturePixelFormat.DEPTH_COMPONENT,
+      internalFormat: TextureInternalPixelFormat.DEPTH_COMPONENT24,
+      wrapS: TextureWrapMode.CLAMP_TO_EDGE,
+      wrapT: TextureWrapMode.CLAMP_TO_EDGE,
+      wrapR: TextureWrapMode.CLAMP_TO_EDGE,
+      mag: TextureMagFilter.NEAREST,
+      min: TextureMinFilter.NEAREST,
+    }
   })!;
 
-  const {uniformBlocks: phongPacketBlocks} = phongPacketBindings;
-  const {uniformBlocks: basicPacketBlocks} = basicPacketBindings;
-
+  const phongUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, phongGlProgram, ["viewBlock", "modelBlock", "lightsBlock", "phongBlock"]);
+  const basicUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, basicGlProgram, ["viewBlock", "basicModelBlock"]);
+  
   const phongPacketBuffers = WebGLUniformBlockUtilities.createRangedUniformBuffers(gl,
-    Object.values(phongPacketBindings.uniformBlocks), BufferDataUsage.DYNAMIC_DRAW
+    Object.values(phongUniformBlocks), BufferDataUsage.DYNAMIC_DRAW
   )!;
 
-  const {albedoMap, normalMap, heightMap, skybox, fbColorTex, depthTex} = phongPacketBindings.textures;
+  const {albedoMap, normalMap, heightMap, skybox, fbColorTex, depthTex} = textures;
 
   /*const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
   if (anisotropicExtension) {
@@ -311,7 +419,7 @@ export async function launchScene() {
     },
     uniformBlocks: [
       {
-        block: phongPacketBlocks.viewBlock,
+        block: phongUniformBlocks.viewBlock,
         buffer: phongPacketBuffers.viewBlock,
         uniforms: {
           u_view: { value: camera.view.array },
@@ -319,7 +427,7 @@ export async function launchScene() {
         }
       },
       {
-        block: phongPacketBlocks.modelBlock,
+        block: phongUniformBlocks.modelBlock,
         buffer: phongPacketBuffers.modelBlock,
         uniforms: {
           "models[0].u_model": { value: cube.matrix.array },
@@ -328,7 +436,7 @@ export async function launchScene() {
         }
       },
       {
-        block: phongPacketBlocks.lightsBlock,
+        block: phongUniformBlocks.lightsBlock,
         buffer: phongPacketBuffers.lightsBlock,
         uniforms: {
           "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
@@ -338,7 +446,7 @@ export async function launchScene() {
         }
       },
       {
-        block: phongPacketBlocks.phongBlock,
+        block: phongUniformBlocks.phongBlock,
         buffer: phongPacketBuffers.phongBlock,
         uniforms: {
           u_ambientColor: { value: [0.1, 0.1, 0.1] },
@@ -358,145 +466,7 @@ export async function launchScene() {
       u_albedoMap: { value: albedoMap },
       u_normalMap: { value: normalMap },
       u_heightMap: { value: heightMap }
-    },
-    textures: [
-      {
-        texture: albedoMap,
-        properties: {
-          pixels: null,
-          width: 8, height: 8, depth: 2,
-          // pixels: albedoMapImg,
-          // width: albedoMapImg.width, height: albedoMapImg.height,
-          target: TextureTarget.TEXTURE_2D_ARRAY,
-          type: TexturePixelType.UNSIGNED_BYTE,
-
-          /*wrapS: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapT: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapR: TextureWrapMode.CLAMP_TO_EDGE,*/
-
-          format: TexturePixelFormat.LUMINANCE,
-          internalFormat: TextureInternalPixelFormat.LUMINANCE,
-
-          // format: TexturePixelFormat.RGB,
-          // internalFormat: TextureInternalPixelFormat.RGB
-
-          min: TextureMinFilter.NEAREST,
-          mag: TextureMagFilter.NEAREST,
-
-          subimages: [
-            {
-              pixels: new Uint8Array([
-                0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-                0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-                0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-                0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-                0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-                0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-                0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-                0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-              ]),
-              xoffset: 0,
-              yoffset: 0,
-              zoffset: 0,
-              width: 8,
-              height: 8,
-              depth: 1
-            },
-            {
-              pixels: new Uint8Array([
-                0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-                0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-                0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-                0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-                0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-                0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-                0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-                0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-              ]),
-              xoffset: 0,
-              yoffset: 0,
-              zoffset: 1,
-              width: 8,
-              height: 8,
-              depth: 1
-            }
-          ]
-          // format: TexturePixelFormat.RGBA,
-          // internalFormat: TextureInternalPixelFormat.RGBA8
-        }
-      },
-      {
-        texture: normalMap,
-        properties: {
-          pixels: normalMapImg,
-          width: normalMapImg.width, height: normalMapImg.height,
-          target: TextureTarget.TEXTURE_2D,
-          type: TexturePixelType.UNSIGNED_BYTE,
-          format: TexturePixelFormat.RGB,
-          internalFormat: TextureInternalPixelFormat.RGB8,
-          min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
-          mag: TextureMagFilter.LINEAR
-        }
-      },
-      {
-        texture: heightMap,
-        properties: {
-          pixels: heightMapImg,
-          width: heightMapImg.width, height: heightMapImg.height,
-          target: TextureTarget.TEXTURE_2D,
-          type: TexturePixelType.UNSIGNED_BYTE,
-          format: TexturePixelFormat.RGBA,
-          internalFormat: TextureInternalPixelFormat.RGBA8
-        }
-      },
-      {
-        texture: skybox,
-        properties: {
-          pixels: {
-            xPos: skyboxXPosImg, xNeg: skyboxXNegImg,
-            yPos: skyboxYPosImg, yNeg: skyboxYNegImg,
-            zPos: skyboxZPosImg, zNeg: skyboxZNegImg
-          },
-          width: skyboxXPosImg.width, height: skyboxXPosImg.height,
-          target: TextureTarget.TEXTURE_CUBE_MAP,
-          type: TexturePixelType.UNSIGNED_BYTE,
-          format: TexturePixelFormat.RGBA,
-          internalFormat: TextureInternalPixelFormat.RGBA8
-        }
-      },
-      {
-        texture: fbColorTex,
-        properties: {
-          width: canvas.width, height: canvas.height,
-          pixels: null,
-          target: TextureTarget.TEXTURE_2D,
-          type: TexturePixelType.UNSIGNED_BYTE,
-          format: TexturePixelFormat.RGBA,
-          internalFormat: TextureInternalPixelFormat.RGBA8,
-          mag: TextureMagFilter.LINEAR,
-          min: TextureMinFilter.LINEAR,
-          wrapS: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapT: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapR: TextureWrapMode.CLAMP_TO_EDGE,
-        }
-      },
-      {
-        texture: depthTex,
-        properties: {
-          width: canvas.width, height: canvas.height,
-          pixels: null,
-          target: TextureTarget.TEXTURE_2D,
-          type: TexturePixelType.UNSIGNED_INT,
-          format: TexturePixelFormat.DEPTH_COMPONENT,
-          internalFormat: TextureInternalPixelFormat.DEPTH_COMPONENT24,
-          wrapS: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapT: TextureWrapMode.CLAMP_TO_EDGE,
-          wrapR: TextureWrapMode.CLAMP_TO_EDGE,
-          mag: TextureMagFilter.NEAREST,
-          min: TextureMinFilter.NEAREST,
-        }
-      }
-    ]
+    }
   };
 
   const basicPacketProperties: PacketProperties = {
@@ -509,14 +479,14 @@ export async function launchScene() {
     },
     uniformBlocks: [
       {
-        block: basicPacketBlocks.basicModelBlock,
+        block: basicUniformBlocks.basicModelBlock,
         uniforms: {
           u_model: { value: lightTransform.matrix.array },
           u_color: { value: [1, 1, 0] }
         }
       },
       {
-        block: basicPacketBlocks.viewBlock,
+        block: basicUniformBlocks.viewBlock,
         buffer: phongPacketBuffers.viewBlock,
       }
     ]
@@ -698,7 +668,7 @@ export async function launchScene() {
     WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, {
       uniformBlocks: [
         {
-          block: phongPacketBlocks.modelBlock,
+          block: phongUniformBlocks.modelBlock,
           buffer: phongPacketBuffers.modelBlock,
           uniforms: {
             "models[0].u_model": { value: cube.matrix.array },
@@ -707,7 +677,7 @@ export async function launchScene() {
           }
         },
         {
-          block: phongPacketBlocks.viewBlock,
+          block: phongUniformBlocks.viewBlock,
           buffer: phongPacketBuffers.viewBlock,
           uniforms: {
             u_view: { value: camera.view.array },
@@ -715,7 +685,7 @@ export async function launchScene() {
           }
         },
         {
-          block: phongPacketBlocks.lightsBlock,
+          block: phongUniformBlocks.lightsBlock,
           buffer: phongPacketBuffers.lightsBlock,
           uniforms: {
             "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },

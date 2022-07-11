@@ -113,24 +113,45 @@ export async function launchScene() {
   const skyboxZPosImg = await fetchImage("assets/engine/img/skybox_z_pos.png");
   const skyboxZNegImg = await fetchImage("assets/engine/img/skybox_z_neg.png");
 
-  const phongPacketBindings = WebGLPacketUtilities.createBindings(gl, {
-    textures: ["albedoMap", "normalMap", "heightMap"],
-    program: phongGlProgram,
-    uniformBlocks: ["worldViewBlock", "lightsBlock", "phongBlock"]
-  })!;
+  const phongBlocks = WebGLPacketUtilities.createUniformBlocks(gl, phongGlProgram, ["worldViewBlock", "lightsBlock", "phongBlock"])!;
+  const {worldViewBlock: phongWorldViewBlock, lightsBlock: phongLightsBlock, phongBlock} = phongBlocks;
+  const linesBlocks = WebGLPacketUtilities.createUniformBlocks(gl, linesProgram, ["viewBlock", "linesBlock"])!;
+  const {viewBlock: linesViewBlock, linesBlock} = linesBlocks;
 
-  const linesBindings = WebGLPacketUtilities.createBindings(gl, {
-    program: linesProgram,
-    uniformBlocks: ["viewBlock", "linesBlock"]
-  })!;
+  const textures = WebGLPacketUtilities.createTextures(gl, {
+    albedoMap: {
+        pixels: albedoMapImg,
+        width: albedoMapImg.width, height: albedoMapImg.height,
+        target: TextureTarget.TEXTURE_2D,
+        type: TexturePixelType.UNSIGNED_BYTE,
+        format: TexturePixelFormat.RGB,
+        internalFormat: TextureInternalPixelFormat.RGB8
+    },
+    normalMap: {
+      pixels: normalMapImg,
+      width: normalMapImg.width, height: normalMapImg.height,
+      target: TextureTarget.TEXTURE_2D,
+      type: TexturePixelType.UNSIGNED_BYTE,
+      format: TexturePixelFormat.RGB,
+      internalFormat: TextureInternalPixelFormat.RGB8,
+      min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
+      mag: TextureMagFilter.LINEAR
+    },
+    heightMap: {
+      pixels: heightMapImg,
+      width: heightMapImg.width, height: heightMapImg.height,
+      target: TextureTarget.TEXTURE_2D,
+      type: TexturePixelType.UNSIGNED_BYTE,
+      format: TexturePixelFormat.RGB,
+      internalFormat: TextureInternalPixelFormat.RGB8,
+      min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
+      mag: TextureMagFilter.LINEAR
+    }
+  });
 
-  const worldViewBlock = phongPacketBindings.uniformBlocks.worldViewBlock;
-  const lightsBlock = phongPacketBindings.uniformBlocks.lightsBlock;
-  const phongBlock = phongPacketBindings.uniformBlocks.phongBlock;
-
-  const albedoMap = phongPacketBindings.textures.albedoMap;
-  const normalMap = phongPacketBindings.textures.normalMap;
-  const heightMap = phongPacketBindings.textures.heightMap;
+  const albedoMap = textures.albedoMap;
+  const normalMap = textures.normalMap;
+  const heightMap = textures.heightMap;
 
   const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
   if (anisotropicExtension) {
@@ -207,7 +228,7 @@ export async function launchScene() {
     },
     uniformBlocks: [
       {
-        block: linesBindings.uniformBlocks.viewBlock,
+        block: linesViewBlock,
         uniforms: {
           u_worldViewProjection: {
             value: new Float32Array(camera.viewProjection.clone().mult(quadTransform.matrix).array),
@@ -215,7 +236,7 @@ export async function launchScene() {
         }
       },
       {
-        block:  linesBindings.uniformBlocks.linesBlock,
+        block: linesBlock,
         uniforms: {
           u_color: {
             value: new Float32Array([255, 0, 0]),
@@ -242,7 +263,7 @@ export async function launchScene() {
     },
     uniformBlocks: [
       {
-        block: worldViewBlock,
+        block: phongWorldViewBlock,
         uniforms: {
           u_model: { value: new Float32Array(quadTransform.matrix.array) },
           u_modelView: { value: new Float32Array(camera.view.mult(quadTransform.matrix).array) },
@@ -253,7 +274,7 @@ export async function launchScene() {
         }
       },
       {
-        block: lightsBlock,
+        block: phongLightsBlock,
         uniforms: {
           u_lightWorldPos: { value: Array.from(lightTransform.getTranslation(new Vector3()).array) },
           u_lightColor: { value: [1, 0.8, 0.8] },
@@ -276,46 +297,7 @@ export async function launchScene() {
       u_albedo: { value: albedoMap },
       u_normalMap: { value: normalMap },
       u_heightMap: { value: heightMap }
-    },
-    textures: [
-      {
-        texture: albedoMap,
-        properties: {
-          pixels: albedoMapImg,
-          width: albedoMapImg.width, height: albedoMapImg.height,
-          target: TextureTarget.TEXTURE_2D,
-          type: TexturePixelType.UNSIGNED_BYTE,
-          format: TexturePixelFormat.RGB,
-          internalFormat: TextureInternalPixelFormat.RGB8
-        }
-      },
-      {
-        texture: normalMap,
-        properties: {
-          pixels: normalMapImg,
-          width: normalMapImg.width, height: normalMapImg.height,
-          target: TextureTarget.TEXTURE_2D,
-          type: TexturePixelType.UNSIGNED_BYTE,
-          format: TexturePixelFormat.RGB,
-          internalFormat: TextureInternalPixelFormat.RGB8,
-          min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
-          mag: TextureMagFilter.LINEAR
-        }
-      },
-      {
-        texture: heightMap,
-        properties: {
-          pixels: heightMapImg,
-          width: heightMapImg.width, height: heightMapImg.height,
-          target: TextureTarget.TEXTURE_2D,
-          type: TexturePixelType.UNSIGNED_BYTE,
-          format: TexturePixelFormat.RGB,
-          internalFormat: TextureInternalPixelFormat.RGB8,
-          min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
-          mag: TextureMagFilter.LINEAR
-        }
-      }
-    ]
+    }
   };
 
   const phongPacket = WebGLPacketUtilities.createPacket(gl, phongGlProgram, phongPacketProperties)!;
@@ -357,7 +339,7 @@ export async function launchScene() {
 
     WebGLPacketUtilities.setPacketValues(gl, phongPacket, {
       uniformBlocks: [{
-          block: worldViewBlock,
+          block: phongWorldViewBlock,
           buffer: phongPacket.uniformBlocks!.worldViewBlock.buffer,
           uniforms: {
             u_model: { value: new Float32Array(quadTransform.matrix.array) },

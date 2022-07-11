@@ -3,6 +3,7 @@ import { Buffer, BufferDataUsage } from "./WebGLBufferUtilities";
 import { Program } from "./WebGLProgramUtilities";
 export declare type UniformBlock = {
     name: string;
+    blockIndex: number;
     program: Program;
     layout: UniformBlockLayout;
     blockSize: number;
@@ -26,6 +27,7 @@ export declare type UniformBufferProperties = {
 };
 export declare class WebGLUniformBlockUtilities {
     #private;
+    static getBindingPointsEntries(): IterableIterator<[string, number]>;
     static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null;
     static createUniformBuffer(gl: WebGL2RenderingContext, byteLength: number, usage?: BufferDataUsage): UniformBuffer | null;
     static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): {
