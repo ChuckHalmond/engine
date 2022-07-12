@@ -1,3 +1,4 @@
+import { BoundingBox } from "./bounding/BoundingBox";
 export { GeometryBuilder };
 interface GeometryBuilder {
     halfEdges: Array<HalfEdge>;
@@ -19,6 +20,7 @@ interface GeometryBuilder {
     linesArray(): Float32Array;
     verticesNormalsArray(): Float32Array;
     tangentsArray(): Float32Array;
+    boundingBox(): BoundingBox;
 }
 interface GeometryBuilderConstructor {
     readonly prototype: GeometryBuilder;

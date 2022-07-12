@@ -367,7 +367,7 @@ class WebGLUniformUtilities {
 
     static getUniformsListSetter(gl: WebGL2RenderingContext, program: Program, list: UniformsList): UniformsListSetter | null {
         const {internal} = program;
-
+        
         const uniformsNames = Object.keys(list);
         let uniformIndices = gl.getUniformIndices(internal, uniformsNames);
         if (uniformIndices == null) {

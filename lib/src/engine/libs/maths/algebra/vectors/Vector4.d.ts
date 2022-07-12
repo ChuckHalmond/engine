@@ -20,7 +20,7 @@ interface Vector4 {
     y: number;
     z: number;
     w: number;
-    setValues(v: Vector4Values): this;
+    setValues(x: number, y: number, z: number, w: number): this;
     copy(vec: Vector4): this;
     clone(): this;
     equals(vec: Vector4): boolean;
@@ -66,7 +66,7 @@ declare class Vector4Base {
     set z(z: number);
     get w(): number;
     set w(w: number);
-    setValues(v: Vector4Values): this;
+    setValues(x: number, y: number, z: number, w: number): this;
     copy(vec: Vector4): this;
     clone(): this;
     equals(vec: Vector4): boolean;

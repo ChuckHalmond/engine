@@ -1,3 +1,6 @@
+import { Vector3 } from "../../../../libs/maths/algebra/vectors/Vector3"
+import { BoundingBox } from "./bounding/BoundingBox";
+
 export { GeometryBuilder };
 
 interface GeometryBuilder {
@@ -15,6 +18,7 @@ interface GeometryBuilder {
     linesArray(): Float32Array;
     verticesNormalsArray(): Float32Array;
     tangentsArray(): Float32Array;
+    boundingBox(): BoundingBox;
 }
 
 interface GeometryBuilderConstructor {
@@ -289,6 +293,32 @@ class GeometryBuilderBase implements GeometryBuilder {
             }
             return [indices.concat([index, index + 1, index + 2]), index + 3] as [number[], number];
         }, [[], 0] as [number[], number])[0]);
+    }
+
+    boundingBox(): BoundingBox {
+        const positiveInfinity = Number.POSITIVE_INFINITY;
+        const negativeInfinity = Number.NEGATIVE_INFINITY;
+        let minX = positiveInfinity;
+        let minY = positiveInfinity;
+        let minZ = positiveInfinity;
+        let maxX = negativeInfinity;
+        let maxY = negativeInfinity;
+        let maxZ = negativeInfinity;
+        const {vertices} = this;
+        if (vertices.length > 0) {
+            vertices.forEach((vertex_i) => {
+                const [x, y, z] = vertex_i.position;
+                if (x < minX) minX = x;
+                else if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                else if (y > maxY) maxY = y;
+                if (z < minZ) minZ = z;
+                else if (z > maxZ) maxZ = z;
+            });
+        }
+        const min = new Vector3([minX, minY, minZ]);
+        const max = new Vector3([maxX, maxY, maxZ]);
+        return new BoundingBox(min, max);
     }
 }
 

@@ -19,7 +19,7 @@ interface Vector2 {
 	values: Vector2Values;
 	x: number;
 	y: number;
-	setValues(v: Vector2Values): this;
+	setValues(x: number, y: number): this;
 	copy(vec: Vector2): this;
 	clone(): this;
 	equals(vec: Vector2): boolean;
@@ -86,11 +86,11 @@ class Vector2Base {
 		this.array[1] = y;
 	}
 
-	setValues(v: Vector2Values): this {
+	setValues(x: number, y: number): this {
 		const o = this.array;
 
-		o[0] = v[0];
-		o[1] = v[1];
+		o[0] = x;
+		o[1] = y;
 
 		return this;
 	}

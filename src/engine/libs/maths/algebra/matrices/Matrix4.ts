@@ -1542,11 +1542,11 @@ class Matrix4Base implements Matrix4 {
 
     const d = x * thisArray[3] + y * thisArray[7] + z * thisArray[11] + thisArray[15];
 
-    point.setValues([
+    point.setValues(
       (x * thisArray[0] + y * thisArray[4] + z * thisArray[ 8] + thisArray[12]) / d,
       (x * thisArray[1] + y * thisArray[5] + z * thisArray[ 9] + thisArray[13]) / d,
       (x * thisArray[2] + y * thisArray[6] + z * thisArray[10] + thisArray[14]) / d
-    ]);
+    );
 
     return point;
   }
@@ -1559,11 +1559,11 @@ class Matrix4Base implements Matrix4 {
     const y = directionArray[1];
     const z = directionArray[2];
 
-    direction.setValues([
+    direction.setValues(
       x * thisArray[0] + y * thisArray[4] + z * thisArray[ 8],
       x * thisArray[1] + y * thisArray[5] + z * thisArray[ 9],
       x * thisArray[2] + y * thisArray[6] + z * thisArray[10]
-    ]);
+    );
 
     return direction;
   }
@@ -1577,11 +1577,11 @@ class Matrix4Base implements Matrix4 {
     const y = normalArray[1];
     const z = normalArray[2];
 
-    normal.setValues([
+    normal.setValues(
       x * thisInvArray[0] + y * thisInvArray[4] + z * thisInvArray[ 8],
       x * thisInvArray[1] + y * thisInvArray[5] + z * thisInvArray[ 9],
       x * thisInvArray[2] + y * thisInvArray[6] + z * thisInvArray[10]
-    ]);
+    );
 
     this.invert();
 

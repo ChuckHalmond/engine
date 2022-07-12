@@ -17,7 +17,7 @@ interface Vector2 {
     values: Vector2Values;
     x: number;
     y: number;
-    setValues(v: Vector2Values): this;
+    setValues(x: number, y: number): this;
     copy(vec: Vector2): this;
     clone(): this;
     equals(vec: Vector2): boolean;
@@ -54,7 +54,7 @@ declare class Vector2Base {
     set x(x: number);
     get y(): number;
     set y(y: number);
-    setValues(v: Vector2Values): this;
+    setValues(x: number, y: number): this;
     equals(vec: Vector2Base): boolean;
     copy(vec: Vector2Base): this;
     clone(): this;

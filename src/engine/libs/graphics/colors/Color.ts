@@ -28,7 +28,12 @@ interface Color {
     copy(color: Color): Color;
     clone(): Color;
     getValues(): ColorValues;
-    setValues(c: ColorValues): Color;
+    setValues(
+        r: number,
+        g: number,
+        b: number,
+        a: number
+    ): Color;
     lerp(color: Color, t: number): Color;
     valuesNormalized(): ColorValues;
 }
@@ -50,13 +55,13 @@ class ColorBase implements Color {
 
     static rgb(r: number, g: number, b: number): ColorBase {
         const color =  new ColorBase()
-        color.setValues([r, g, b, 255]);
+        color.setValues(r, g, b, 255);
         return color;
     }
 
     static rgba(r: number, g: number, b: number, a: number): ColorBase {
         const color =  new ColorBase()
-        color.setValues([r, g, b, a]);
+        color.setValues(r, g, b, a);
         return color;
     }
 
@@ -111,13 +116,13 @@ class ColorBase implements Color {
         this._array[3] = a;
     }
 
-    setValues(c: ColorValues): ColorBase {
+    setValues(r: number, g: number, b: number, a: number): ColorBase {
 		const o = this._array;
 
-		o[0] = c[0];
-		o[1] = c[1];
-		o[2] = c[2];
-		o[3] = c[3];
+		o[0] = r;
+		o[1] = g;
+		o[2] = b;
+		o[3] = a;
 
 		return this;
     }

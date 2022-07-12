@@ -131,36 +131,36 @@ class FrustrumBase implements Frustrum {
 
         const [temp] = Vector3Pool.acquire(1);
         intersects = 
-            this.nearPlane.distanceToPoint(temp.setValues([
+            this.nearPlane.distanceToPoint(temp.setValues(
                 this.nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
                 this.nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
                 this.nearPlane.normal.z > 0 ? boxMax.z : boxMin.z
-            ])) >= 0 &&
-            this.farPlane.distanceToPoint(temp.setValues([
+            )) >= 0 &&
+            this.farPlane.distanceToPoint(temp.setValues(
                 this.farPlane.normal.x > 0 ? boxMax.x : boxMin.x,
                 this.farPlane.normal.y > 0 ? boxMax.y : boxMin.y,
                 this.farPlane.normal.z > 0 ? boxMax.z : boxMin.z
-            ])) >= 0 &&
-            this.bottomPlane.distanceToPoint(temp.setValues([
+            )) >= 0 &&
+            this.bottomPlane.distanceToPoint(temp.setValues(
                 this.bottomPlane.normal.x > 0 ? boxMax.x : boxMin.x,
                 this.bottomPlane.normal.y > 0 ? boxMax.y : boxMin.y,
                 this.bottomPlane.normal.z > 0 ? boxMax.z : boxMin.z
-            ])) >= 0 &&
-            this.topPlane.distanceToPoint(temp.setValues([
+            )) >= 0 &&
+            this.topPlane.distanceToPoint(temp.setValues(
                 this.topPlane.normal.x > 0 ? boxMax.x : boxMin.x,
                 this.topPlane.normal.y > 0 ? boxMax.y : boxMin.y,
                 this.topPlane.normal.z > 0 ? boxMax.z : boxMin.z
-            ])) >= 0 &&
-            this.leftPlane.distanceToPoint(temp.setValues([
+            )) >= 0 &&
+            this.leftPlane.distanceToPoint(temp.setValues(
                 this.leftPlane.normal.x > 0 ? boxMax.x : boxMin.x,
                 this.leftPlane.normal.y > 0 ? boxMax.y : boxMin.y,
                 this.leftPlane.normal.z > 0 ? boxMax.z : boxMin.z
-            ])) >= 0 &&
-            this.rightPlane.distanceToPoint(temp.setValues([
+            )) >= 0 &&
+            this.rightPlane.distanceToPoint(temp.setValues(
                 this.rightPlane.normal.x > 0 ? boxMax.x : boxMin.x,
                 this.rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
                 this.rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
-            ])) >= 0;
+            )) >= 0;
         Vector3Pool.release(1);
 
 		return intersects;

@@ -77,7 +77,7 @@ class PlaneBase implements Plane {
     }
 
     set(x: number, y: number, z: number, constant: number): PlaneBase {
-        this._normal.setValues([x, y, z]);
+        this._normal.setValues(x, y, z);
         this._constant = constant;
 
         return this;

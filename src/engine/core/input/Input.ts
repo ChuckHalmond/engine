@@ -213,10 +213,10 @@ class InputBase implements Input {
                 break;
             case "pointermove":
                 const canvasRect = this.getCanvasRect();
-                this.pointerPosition.setValues([
+                this.pointerPosition.setValues(
                     ((event as MouseEvent).clientX - canvasRect.left),
                     ((event as MouseEvent).clientY - canvasRect.top),
-                ]);
+                );
                 break;
             case "wheel":
                 this.wheelDelta = (event as WheelEvent).deltaY / 100;

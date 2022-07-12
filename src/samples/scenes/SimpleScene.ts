@@ -14,7 +14,7 @@ import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLPr
 import { BufferMask, Capabilities, TestFunction, WebGLRendererUtilities, WindingOrder } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
 import { TexturePixelFormat, TexturePixelType, TextureMagFilter, TextureMinFilter, TextureTarget, TextureWrapMode, WebGLTextureUtilities, TextureInternalPixelFormat } from "../../engine/core/rendering/webgl/WebGLTextureUtilities";
 import { WebGLUniformBlockUtilities } from "../../engine/core/rendering/webgl/WebGLUniformBlockUtilities";
-import { AttributeDataType } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
+import { AttributeDataType, DrawMode } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
 import { Quaternion } from "../../engine/libs/maths/algebra/quaternions/Quaternion";
@@ -149,7 +149,6 @@ export async function launchScene() {
   canvas.style.height = `${canvasHeight}px`;
   
   const gl = canvas.getContext("webgl2", {alpha: false}/*, {antialias: true}*//*, {preserveDrawingBuffer: true}*/);
-  console.log(gl);
   if (!gl) {
     return;
   }
@@ -159,28 +158,33 @@ export async function launchScene() {
   // Shaders
   const phongVert = await fetch("assets/engine/shaders/common/phong.vert.glsl").then(resp => resp.text());
   const phongFrag = await fetch("assets/engine/shaders/common/phong.frag.glsl").then(resp => resp.text());
-  const phongGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: phongVert, fragmentSource: phongFrag});
-  if (phongGlProgram == null) return;
+  const phongProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: phongVert, fragmentSource: phongFrag});
+  if (phongProgram == null) return;
 
   const skyboxVert = await fetch("assets/engine/shaders/common/skybox.vert").then(resp => resp.text());
   const skyboxFrag = await fetch("assets/engine/shaders/common/skybox.frag").then(resp => resp.text());
-  const skyboxGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: skyboxVert, fragmentSource: skyboxFrag});
-  if (skyboxGlProgram == null) return;
+  const skyboxProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: skyboxVert, fragmentSource: skyboxFrag});
+  if (skyboxProgram == null) return;
   
   const textureVert = await fetch("assets/engine/shaders/common/texture.vert").then(resp => resp.text());
   const textureFrag = await fetch("assets/engine/shaders/common/texture.frag").then(resp => resp.text());
-  const texGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: textureVert, fragmentSource: textureFrag});
-  if (texGlProgram == null) return;
+  const texProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: textureVert, fragmentSource: textureFrag});
+  if (texProgram == null) return;
 
   const basicVert = await fetch("assets/engine/shaders/common/basic.vert.glsl").then(resp => resp.text());
   const basicFrag = await fetch("assets/engine/shaders/common/basic.frag.glsl").then(resp => resp.text());
-  const basicGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: basicVert, fragmentSource: basicFrag});
-  if (basicGlProgram == null) return;
+  const basicProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: basicVert, fragmentSource: basicFrag});
+  if (basicProgram == null) return;
   
   const depthVert = await fetch("assets/engine/shaders/common/depth.vert.glsl").then(resp => resp.text());
   const depthFrag = await fetch("assets/engine/shaders/common/depth.frag.glsl").then(resp => resp.text());
-  const depthGlProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: depthVert, fragmentSource: depthFrag});
-  if (depthGlProgram == null) return;
+  const depthProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: depthVert, fragmentSource: depthFrag});
+  if (depthProgram == null) return;
+
+  const linesVertex = await fetch("assets/engine/shaders/common/lines.vert.glsl").then(resp => resp.text());
+  const linesFragment = await fetch("assets/engine/shaders/common/lines.frag.glsl").then(resp => resp.text());
+  const linesProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: linesVertex, fragmentSource: linesFragment});
+  if (linesProgram == null) return;
 
   async function fetchImage(url: string) {
     return fetch(url).then((resp) => {
@@ -201,7 +205,7 @@ export async function launchScene() {
   // Images
   const albedoMapImg = await fetchImage("assets/engine/img/NormalMap.png");
   const normalMapImg = await fetchImage("assets/engine/img/NormalMap_0.png");
-  const heightMapImg = await fetchImage("assets/engine/img/HeightMap_0.png");
+  const displacementMapImg = await fetchImage("assets/engine/img/DisplacementMap.png");
   const skyboxXPosImg = await fetchImage("assets/engine/img/skybox_x_pos.png");
   const skyboxXNegImg = await fetchImage("assets/engine/img/skybox_x_neg.png");
   const skyboxYPosImg = await fetchImage("assets/engine/img/skybox_y_pos.png");
@@ -216,65 +220,76 @@ export async function launchScene() {
 
   const textures = WebGLPacketUtilities.createTextures(gl, {
     albedoMap: {
-      pixels: null,
-      width: 8, height: 8, depth: 2,
-      // pixels: albedoMapImg,
-      // width: albedoMapImg.width, height: albedoMapImg.height,
-      target: TextureTarget.TEXTURE_2D_ARRAY,
+      pixels: albedoMapImg,
+      width: albedoMapImg.width, height: albedoMapImg.height,
+      target: TextureTarget.TEXTURE_2D,
       type: TexturePixelType.UNSIGNED_BYTE,
-
-      /*wrapS: TextureWrapMode.CLAMP_TO_EDGE,
-      wrapT: TextureWrapMode.CLAMP_TO_EDGE,
-      wrapR: TextureWrapMode.CLAMP_TO_EDGE,*/
-
-      format: TexturePixelFormat.LUMINANCE,
-      internalFormat: TextureInternalPixelFormat.LUMINANCE,
-
-      // format: TexturePixelFormat.RGB,
-      // internalFormat: TextureInternalPixelFormat.RGB
+      format: TexturePixelFormat.RGB,
+      internalFormat: TextureInternalPixelFormat.RGB,
 
       min: TextureMinFilter.NEAREST,
       mag: TextureMagFilter.NEAREST,
-
-      subimages: [
-        {
-          pixels: new Uint8Array([
-            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-          ]),
-          xoffset: 0,
-          yoffset: 0,
-          zoffset: 0,
-          width: 8,
-          height: 8,
-          depth: 1
-        },
-        {
-          pixels: new Uint8Array([
-            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-          ]),
-          xoffset: 0,
-          yoffset: 0,
-          zoffset: 1,
-          width: 8,
-          height: 8,
-          depth: 1
-        }
-      ]
     },
+    // albedoMap: {
+    //   pixels: null,
+    //   width: 8, height: 8, depth: 2,
+    //   // pixels: albedoMapImg,
+    //   // width: albedoMapImg.width, height: albedoMapImg.height,
+    //   target: TextureTarget.TEXTURE_2D_ARRAY,
+    //   type: TexturePixelType.UNSIGNED_BYTE,
+
+    //   /*wrapS: TextureWrapMode.CLAMP_TO_EDGE,
+    //   wrapT: TextureWrapMode.CLAMP_TO_EDGE,
+    //   wrapR: TextureWrapMode.CLAMP_TO_EDGE,*/
+
+    //   format: TexturePixelFormat.LUMINANCE,
+    //   internalFormat: TextureInternalPixelFormat.LUMINANCE,
+
+    //   // format: TexturePixelFormat.RGB,
+    //   // internalFormat: TextureInternalPixelFormat.RGB
+
+    //   min: TextureMinFilter.NEAREST,
+    //   mag: TextureMagFilter.NEAREST,
+
+    //   subimages: [
+    //     {
+    //       pixels: new Uint8Array([
+    //         0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+    //         0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+    //         0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+    //         0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+    //         0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+    //         0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+    //         0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+    //         0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+    //       ]),
+    //       xoffset: 0,
+    //       yoffset: 0,
+    //       zoffset: 0,
+    //       width: 8,
+    //       height: 8,
+    //       depth: 1
+    //     },
+    //     {
+    //       pixels: new Uint8Array([
+    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+    //       ]),
+    //       xoffset: 0,
+    //       yoffset: 0,
+    //       zoffset: 1,
+    //       width: 8,
+    //       height: 8,
+    //       depth: 1
+    //     }
+    //   ]
+    // },
     normalMap: {
       pixels: normalMapImg,
       width: normalMapImg.width, height: normalMapImg.height,
@@ -285,9 +300,9 @@ export async function launchScene() {
       min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
       mag: TextureMagFilter.LINEAR
     },
-    heightMap: {
-      pixels: heightMapImg,
-      width: heightMapImg.width, height: heightMapImg.height,
+    displacementMap: {
+      pixels: displacementMapImg,
+      width: displacementMapImg.width, height: displacementMapImg.height,
       target: TextureTarget.TEXTURE_2D,
       type: TexturePixelType.UNSIGNED_BYTE,
       format: TexturePixelFormat.RGBA,
@@ -333,14 +348,15 @@ export async function launchScene() {
     }
   })!;
 
-  const phongUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, phongGlProgram, ["viewBlock", "modelBlock", "lightsBlock", "phongBlock"]);
-  const basicUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, basicGlProgram, ["viewBlock", "basicModelBlock"]);
-  
+  const phongUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, phongProgram, ["viewBlock", "modelBlock", "lightsBlock", "phongBlock"]);
+  const basicUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, basicProgram, ["viewBlock", "basicModelBlock"]);
+  const linesUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, linesProgram, ["viewBlock", "modelBlock"]);
+
   const phongPacketBuffers = WebGLUniformBlockUtilities.createRangedUniformBuffers(gl,
     Object.values(phongUniformBlocks), BufferDataUsage.DYNAMIC_DRAW
   )!;
 
-  const {albedoMap, normalMap, heightMap, skybox, fbColorTex, depthTex} = textures;
+  const {albedoMap, normalMap, displacementMap, skybox, fbColorTex, depthTex} = textures;
 
   /*const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
   if (anisotropicExtension) {
@@ -355,8 +371,8 @@ export async function launchScene() {
   }*/
 
   const cubeGeometry =
-    //new QuadGeometry({height: 4, width: 4});
-    new CubeGeometry({width: 1, height: 1, depth: 1}/*{widthSegments: 64, heightSegments: 64}*/);
+    //new QuadGeometry({heightSegments: 64, widthSegments: 64});
+    new CubeGeometry({height: 4, width: 4, depth: 4, heightSegments: 32, widthSegments: 32, depthSegments: 32});
     //new SphereGeometry({widthSegments: 64, heightSegments: 64});
     //new CylinderGeometry();
     //new DodecahedronGeometry();
@@ -365,7 +381,7 @@ export async function launchScene() {
   const quad = new QuadGeometry({height: 2, width: 2});
   const quadGeometryBuilder = quad.toBuilder();
   const cube = new Transform();
-  cube.setScaling(new Vector3([4, 4, 4]));
+  cube.setScaling(new Vector3([1, 1, 1]));
   
   const fov = (1 / 3) * Math.PI;
   const aspect = gl.canvas.width / gl.canvas.height;
@@ -397,6 +413,7 @@ export async function launchScene() {
   const cubeNormals = cubeGeometryBuilder.verticesNormalsArray();
   const cubeUVs = cubeGeometryBuilder.uvsArray();
   const cubeTangents = cubeGeometryBuilder.tangentsArray();
+  const cubeLines = cubeGeometryBuilder.linesArray();
 
   const cubeGeometryBuffer = new GeometryBuffer({
     a_position: { array: cubeVertices, type: AttributeDataType.VEC3 },
@@ -404,7 +421,7 @@ export async function launchScene() {
     a_tangent: { array: cubeTangents, type: AttributeDataType.VEC3 },
     a_uv: { array: cubeUVs, type: AttributeDataType.VEC2 },
   }, true);
-
+  
   const phongCubePacketProperties: PacketProperties = {
     vertexArray: {
       attributes: {
@@ -465,7 +482,37 @@ export async function launchScene() {
     uniforms: {
       u_albedoMap: { value: albedoMap },
       u_normalMap: { value: normalMap },
-      u_heightMap: { value: heightMap }
+      u_displacementMap: { value: displacementMap }
+    }
+  };
+
+  const linesProperties: PacketProperties = {
+    vertexArray: {
+      attributes: {
+        a_position: {
+          array: cubeLines,
+          type: AttributeDataType.VEC3
+        }
+      },
+      elementsCount: cubeLines.length / 2
+    },
+    uniformBlocks: [
+        {
+          block: linesUniformBlocks.modelBlock,
+          buffer: phongPacketBuffers.modelBlock
+        },
+        {
+          block: linesUniformBlocks.viewBlock,
+          buffer: phongPacketBuffers.viewBlock
+        }
+    ],
+    uniforms: {
+      u_color: {
+        value: new Float32Array([1, 0, 0])
+      }
+    },
+    options: {
+      drawMode: DrawMode.LINES
     }
   };
 
@@ -542,11 +589,12 @@ export async function launchScene() {
     }
   };
 
-  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongGlProgram, phongCubePacketProperties)!;
-  const basicPacket = WebGLPacketUtilities.createPacket(gl, basicGlProgram, basicPacketProperties)!;
-  const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxGlProgram, skyboxPacketProperties)!;
-  const depthPacket = WebGLPacketUtilities.createPacket(gl, depthGlProgram, depthPacketProperties)!;
-  const texPacket = WebGLPacketUtilities.createPacket(gl, texGlProgram, texPacketProperties)!;
+  const linesPacket = WebGLPacketUtilities.createPacket(gl, linesProgram, linesProperties)!;
+  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongProgram, phongCubePacketProperties)!;
+  const basicPacket = WebGLPacketUtilities.createPacket(gl, basicProgram, basicPacketProperties)!;
+  const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxProgram, skyboxPacketProperties)!;
+  const depthPacket = WebGLPacketUtilities.createPacket(gl, depthProgram, depthPacketProperties)!;
+  const texPacket = WebGLPacketUtilities.createPacket(gl, texProgram, texPacketProperties)!;
 
   const framebuffer = WebGLFramebufferUtilities.createFramebuffer(gl)!;
   const maxSamples = WebGLRendererUtilities.getMaxSamples(gl);
@@ -696,6 +744,8 @@ export async function launchScene() {
     });
     
     WebGLPacketUtilities.drawPacket(gl, phongCubePacket);
+
+    WebGLPacketUtilities.drawPacket(gl, linesPacket);
     
     WebGLPacketUtilities.drawPacket(gl, basicPacket);
     

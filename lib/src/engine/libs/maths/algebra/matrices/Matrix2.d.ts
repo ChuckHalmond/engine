@@ -71,7 +71,6 @@ declare class Matrix2Base implements Matrix2 {
     set m21(val: number);
     get m22(): number;
     set m22(val: number);
-    private checkArray;
     equals(mat: Matrix2): boolean;
     copy(mat: Matrix2): this;
     clone(): this;

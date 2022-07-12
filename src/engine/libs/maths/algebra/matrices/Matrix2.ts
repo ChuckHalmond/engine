@@ -78,7 +78,9 @@ class Matrix2Base implements Matrix2 {
 		}
 		else if (typeof args[0] === "object") {
       const array = args[0];
-      this.checkArray(array);
+      if (array.length < 4) {
+        throw new MathError(`Array must be of length 4 at least.`);
+      }
       if (array instanceof Float32Array) {
         this.array = array;
       }
@@ -194,12 +196,6 @@ class Matrix2Base implements Matrix2 {
 	set m22(val: number) {
 		this.array[3] = val;
   }
-
-  private checkArray(array: ArrayLike<number>): void {
-		if (array.length < 4) {
-			throw new MathError(`Array must be of length 4 at least.`);
-		}
-	}
 
 	equals(mat: Matrix2) {
     const o = this.array;

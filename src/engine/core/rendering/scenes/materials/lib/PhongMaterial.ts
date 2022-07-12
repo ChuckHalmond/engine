@@ -113,7 +113,7 @@ class PhongMaterialBase extends MaterialBase<PhongMaterialProperties> implements
     updateAlbedo(albedo: ColorValues | undefined) {
         if (typeof albedo !== 'undefined') {
             if (typeof this._albedo !== 'undefined') {
-                this._albedo.setValues(albedo);
+                this._albedo.setValues(...albedo);
             }
             else {
                 delete this._albedo;

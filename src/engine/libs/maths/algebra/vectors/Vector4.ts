@@ -23,8 +23,12 @@ interface Vector4 {
 	y: number;
 	z: number;
 	w: number;
-	setValues(v: Vector4Values): this;
-
+	setValues(
+		x: number,
+		y: number,
+		z: number,
+		w: number
+	): this;
 	copy(vec: Vector4): this;
 	clone(): this;
 	equals(vec: Vector4): boolean;
@@ -140,13 +144,13 @@ class Vector4Base {
 		this.array[3] = w;
 	}
 
-	setValues(v: Vector4Values): this {
+	setValues(x: number, y: number, z: number, w: number): this {
 		const o = this.array;
 		
-		o[0] = v[0];
-		o[1] = v[1];
-		o[2] = v[2];
-		o[3] = v[3];
+		o[0] = x;
+		o[1] = y;
+		o[2] = z;
+		o[3] = w;
 
 		return this;
 	}

@@ -118,9 +118,9 @@ class TriangleBase implements Triangle {
 	
     setValues(values: TriangleValues): TriangleBase {
 		
-        this._point1.setValues([values[0], values[1], values[2]]);
-        this._point2.setValues([values[3], values[4], values[5]]);
-		this._point3.setValues([values[6], values[7], values[8]]);
+        this._point1.setValues(values[0], values[1], values[2]);
+        this._point2.setValues(values[3], values[4], values[5]);
+		this._point3.setValues(values[6], values[7], values[8]);
 		
 		return this;
 	}
@@ -163,14 +163,14 @@ class TriangleBase implements Triangle {
 		const denom = (dotxx * dotyy - dotxy * dotxy);
 		if (denom === 0) {
 			// TODO: Handle ?
-			out.setValues([-2, -1, -1]);
+			out.setValues(-2, -1, -1);
 		}
 
 		const invDenom = 1 / denom;
 		const u = (dotyy * dotxz - dotxy * dotyz) * invDenom;
 		const v = (dotxx * dotyz - dotxy * dotxz) * invDenom;
 
-		out.setValues([1 - u - v, v, u]);
+		out.setValues(1 - u - v, v, u);
 		
 		Vector3Pool.release(3);
 

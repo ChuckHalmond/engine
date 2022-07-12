@@ -66,8 +66,8 @@ class BoundingBoxBase implements BoundingBox {
     }
 
     makeEmpty(): void {
-        this.min.setValues([Infinity, Infinity, Infinity]);
-        this.max.setValues([+Infinity, +Infinity, +Infinity]);
+        this.min.setValues(Infinity, Infinity, Infinity);
+        this.max.setValues(+Infinity, +Infinity, +Infinity);
     }
 
     isEmpty(): boolean {
@@ -75,18 +75,18 @@ class BoundingBoxBase implements BoundingBox {
     }
 
 	getCenter(out: Vector3): Vector3 {
-		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this.min).add(this.max).scale(0.5);
+		this.isEmpty() ? out.setValues(0, 0, 0) : out.copy(this.min).add(this.max).scale(0.5);
 		return out;
 	}
     
 	getSize(out: Vector3): Vector3 {
-		this.isEmpty() ? out.setValues([0, 0, 0]) : out.copy(this.max).sub(this.min);
+		this.isEmpty() ? out.setValues(0, 0, 0) : out.copy(this.max).sub(this.min);
 		return out;
 	}
 
     setFromLengths(center: Vector3, length: number, width: number, height: number): BoundingBoxBase {
-        this.min.setValues([center.x - length / 2, center.y - width / 2, center.z - height / 2]);
-        this.max.setValues([center.x + length / 2, center.y + width / 2, center.z + height / 2]);
+        this.min.setValues(center.x - length / 2, center.y - width / 2, center.z - height / 2);
+        this.max.setValues(center.x + length / 2, center.y + width / 2, center.z + height / 2);
 
         return this;
     }

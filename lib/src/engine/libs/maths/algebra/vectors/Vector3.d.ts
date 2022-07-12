@@ -10,7 +10,8 @@ export declare type Vector3Values = [number, ...number[]] & {
 interface Vector3Constructor {
     readonly prototype: Vector3;
     new (): Vector3;
-    new (values: Vector3Values): Vector3;
+    new (a: number, y: number, z: number): Vector3;
+    new (array: ArrayLike<number>): Vector3;
     angle(vectorA: Vector3, vectorB: Vector3): number;
 }
 interface Vector3 extends Iterable<number> {
@@ -20,7 +21,7 @@ interface Vector3 extends Iterable<number> {
     y: number;
     z: number;
     toString(): string;
-    setValues(v: Vector3Values): this;
+    setValues(x: number, y: number, z: number): this;
     equals(vec: Vector3): boolean;
     copy(vec: Vector3): this;
     clone(): this;
@@ -55,7 +56,8 @@ interface Vector3 extends Iterable<number> {
 declare class Vector3Base {
     readonly array: Float32Array;
     constructor();
-    constructor(values: Vector3Values);
+    constructor(array: ArrayLike<number>);
+    constructor(x: number, y: number, z: number);
     toString(): string;
     static angle(vectorA: Vector3, vectorB: Vector3): number;
     get values(): Vector3Values;
@@ -66,7 +68,7 @@ declare class Vector3Base {
     set y(y: number);
     get z(): number;
     set z(z: number);
-    setValues(v: Vector3Values): this;
+    setValues(x: number, y: number, z: number): this;
     copy(vec: Vector3): this;
     clone(): this;
     equals(vector: Vector3): boolean;

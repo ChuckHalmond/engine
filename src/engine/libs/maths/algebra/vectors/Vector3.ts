@@ -12,7 +12,8 @@ export type Vector3Values = [number, ...number[]] & { length: 3 };
 interface Vector3Constructor {
 	readonly prototype: Vector3;
 	new(): Vector3;
-	new(values: Vector3Values): Vector3;
+	new(a: number, y: number, z: number): Vector3;
+  	new(array: ArrayLike<number>): Vector3;
 	angle(vectorA: Vector3, vectorB: Vector3): number;
 }
 
@@ -23,7 +24,11 @@ interface Vector3 extends Iterable<number> {
 	y: number;
 	z: number;
 	toString(): string;
-	setValues(v: Vector3Values): this;
+	setValues(
+		x: number,
+		y: number,
+		z: number
+	): this;
 	equals(vec: Vector3): boolean;
 	copy(vec: Vector3): this;
 	clone(): this;
@@ -60,11 +65,31 @@ class Vector3Base {
 	readonly array: Float32Array;
 
 	constructor()
-	constructor(values: Vector3Values)
-	constructor(values?: Vector3Values) {
-		this.array = (values) ? new Float32Array([
-			values[0], values[1], values[2]
-		]) : new Float32Array([0, 0, 0]);
+	constructor(array: ArrayLike<number>)
+	  constructor(
+	  x: number, y: number, z: number
+	)
+	constructor(
+	  ...args: any[]
+	) {
+		if (typeof args[0] === "number") {
+			this.array = new Float32Array([args[0], args[2], args[1]]);
+		}
+		else if (typeof args[0] === "object") {
+			const array = args[0];
+			if (array.length < 3) {
+				throw new MathError(`Array must be of length 3 at least.`);
+			}
+			if (array instanceof Float32Array) {
+				this.array = array;
+			}
+			else {
+				this.array = new Float32Array(array);
+			}
+		}
+		else {
+			this.array = new Float32Array([0, 0, 0]);
+		}
 	}
 
 	toString(): string {
@@ -114,10 +139,10 @@ class Vector3Base {
 		this.array[2] = z;
 	}
 
-	setValues(v: Vector3Values): this {
-		this.array[0] = v[0];
-		this.array[1] = v[1];
-		this.array[2] = v[2];
+	setValues(x: number, y: number, z: number): this {
+		this.array[0] = x;
+		this.array[1] = y;
+		this.array[2] = z;
 
 		return this;
 	}

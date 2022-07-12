@@ -25,7 +25,7 @@ interface Color {
     copy(color: Color): Color;
     clone(): Color;
     getValues(): ColorValues;
-    setValues(c: ColorValues): Color;
+    setValues(r: number, g: number, b: number, a: number): Color;
     lerp(color: Color, t: number): Color;
     valuesNormalized(): ColorValues;
 }
@@ -50,7 +50,7 @@ declare class ColorBase implements Color {
     set b(b: number);
     get a(): number;
     set a(a: number);
-    setValues(c: ColorValues): ColorBase;
+    setValues(r: number, g: number, b: number, a: number): ColorBase;
     getValues(): ColorValues;
     copy(color: ColorBase): ColorBase;
     clone(): ColorBase;
