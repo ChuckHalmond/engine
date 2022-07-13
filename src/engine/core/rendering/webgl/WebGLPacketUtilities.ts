@@ -1,19 +1,15 @@
 import { VertexArray, VertexArrayValues, VertexArrayProperties, WebGLVertexArrayUtilities, DrawMode } from "./WebGLVertexArrayUtilities"
 import { Texture, TextureProperties, WebGLTextureUtilities } from "./WebGLTextureUtilities"
-import { UniformBlock, UniformBuffer, UniformBufferProperties, WebGLUniformBlockUtilities } from "./WebGLUniformBlockUtilities"
+import { UniformBlock, UniformBlockBuffer, UniformBufferProperties, WebGLUniformBlockUtilities } from "./WebGLUniformBlockUtilities"
 import { UniformsList, UniformsListSetter, WebGLUniformUtilities } from "./WebGLUniformUtilities"
 import { Program } from "./WebGLProgramUtilities"
 
 export type PacketProperties = {
     vertexArray: VertexArrayProperties;
     uniforms?: UniformsList;
-    textures?: {
-        texture: Texture;
-        properties: TextureProperties;
-    }[];
     uniformBlocks?: {
         block: UniformBlock;
-        buffer?: UniformBuffer | UniformBufferProperties;
+        buffer?: UniformBlockBuffer | UniformBufferProperties;
         uniforms?: UniformsList;
     }[];
     options?: {
@@ -27,7 +23,7 @@ export type PacketValues = {
     uniforms?: UniformsList;
     uniformBlocks?: {
         block: UniformBlock;
-        buffer: UniformBuffer;
+        buffer: UniformBlockBuffer;
         uniforms: UniformsList;
     }[];
 }
@@ -38,7 +34,7 @@ export type Packet = {
     uniformBlocks?: {
         [name: string]: {
             block: UniformBlock;
-            buffer: UniformBuffer;
+            buffer: UniformBlockBuffer;
         }
     };
     drawMode: DrawMode;
@@ -78,7 +74,7 @@ export class WebGLPacketUtilities {
     }
 
     static createPacket(gl: WebGL2RenderingContext, program: Program, packet: PacketProperties): Packet | null {
-        const {options, vertexArray: vertexArrayProperties, uniforms: uniformsProperties, uniformBlocks: uniformBlocksProperties, textures: texturesProperties} = packet;
+        const {options, vertexArray: vertexArrayProperties, uniforms: uniformsProperties, uniformBlocks: uniformBlocksProperties} = packet;
         const drawMode = options?.drawMode || DrawMode.TRIANGLES;
         const instanceCount = options?.instanceCount;
 
@@ -102,7 +98,7 @@ export class WebGLPacketUtilities {
         let uniformBlocks: {
             [name: string]: {
                 block: UniformBlock;
-                buffer: UniformBuffer;
+                buffer: UniformBlockBuffer;
             }
         } = {};
 
@@ -110,7 +106,7 @@ export class WebGLPacketUtilities {
             uniformBlocksProperties.forEach((uniformBlock) => {
                 const {block, buffer: bufferProperties, uniforms} = uniformBlock;
                 const {blockSize, name: blockName} = block;
-                let buffer: UniformBuffer | null = null;
+                let buffer: UniformBlockBuffer | null = null;
                 if (bufferProperties) {
                     const {usage} = bufferProperties;
                     buffer = "internal" in bufferProperties ? bufferProperties :

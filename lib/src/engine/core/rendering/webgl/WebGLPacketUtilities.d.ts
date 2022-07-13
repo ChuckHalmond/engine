@@ -1,18 +1,14 @@
 import { VertexArray, VertexArrayValues, VertexArrayProperties, DrawMode } from "./WebGLVertexArrayUtilities";
 import { Texture, TextureProperties } from "./WebGLTextureUtilities";
-import { UniformBlock, UniformBuffer, UniformBufferProperties } from "./WebGLUniformBlockUtilities";
+import { UniformBlock, UniformBlockBuffer, UniformBufferProperties } from "./WebGLUniformBlockUtilities";
 import { UniformsList, UniformsListSetter } from "./WebGLUniformUtilities";
 import { Program } from "./WebGLProgramUtilities";
 export declare type PacketProperties = {
     vertexArray: VertexArrayProperties;
     uniforms?: UniformsList;
-    textures?: {
-        texture: Texture;
-        properties: TextureProperties;
-    }[];
     uniformBlocks?: {
         block: UniformBlock;
-        buffer?: UniformBuffer | UniformBufferProperties;
+        buffer?: UniformBlockBuffer | UniformBufferProperties;
         uniforms?: UniformsList;
     }[];
     options?: {
@@ -25,7 +21,7 @@ export declare type PacketValues = {
     uniforms?: UniformsList;
     uniformBlocks?: {
         block: UniformBlock;
-        buffer: UniformBuffer;
+        buffer: UniformBlockBuffer;
         uniforms: UniformsList;
     }[];
 };
@@ -35,7 +31,7 @@ export declare type Packet = {
     uniformBlocks?: {
         [name: string]: {
             block: UniformBlock;
-            buffer: UniformBuffer;
+            buffer: UniformBlockBuffer;
         };
     };
     drawMode: DrawMode;

@@ -591,6 +591,7 @@ export async function launchScene() {
 
   const linesPacket = WebGLPacketUtilities.createPacket(gl, linesProgram, linesProperties)!;
   const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongProgram, phongCubePacketProperties)!;
+  console.log(phongCubePacket);
   const basicPacket = WebGLPacketUtilities.createPacket(gl, basicProgram, basicPacketProperties)!;
   const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxProgram, skyboxPacketProperties)!;
   const depthPacket = WebGLPacketUtilities.createPacket(gl, depthProgram, depthPacketProperties)!;

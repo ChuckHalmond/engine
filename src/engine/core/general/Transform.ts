@@ -16,6 +16,8 @@ interface TransformConstructor {
     new(owner: Object3D): Transform;
 }
 
+const tempMatrix = new Matrix4();
+
 interface Transform {
     readonly localArray: Float32Array;
     readonly array: Float32Array;
@@ -292,7 +294,7 @@ class TransformBase implements Transform {
 
     rotate(rotation: Quaternion): this {
         this.matrix.mult(
-            rotation.getMatrix4(new Matrix4())
+            rotation.getMatrix4(tempMatrix)
         );
         return this;
     }
