@@ -1,6 +1,5 @@
 export { ColorValues };
 export { Color };
-export { ColorBase };
 
 type ColorValues = [number, number, number, number];
 
@@ -19,8 +18,13 @@ interface ColorConstructor {
     array(...colors: Color[]): number[];
 }
 
-interface Color {
-    array: WritableArrayLike<number>;
+interface Color extends ArrayLike<number> {
+    readonly array: WritableArrayLike<number>;
+    readonly length: number;
+    0: number;
+    1: number;
+    2: number;
+    3: number;
     r: number;
     g: number;
     b: number;
@@ -35,16 +39,17 @@ interface Color {
         a: number
     ): Color;
     lerp(color: Color, t: number): Color;
-    valuesNormalized(): ColorValues;
+    normalize(): Color;
 }
 
 class ColorBase implements Color {
-    private _array: TypedArray;
+    [index: number]: number;
+    readonly array: TypedArray;
 
 	constructor()
 	constructor(type: new(length: number) => TypedArray)
 	constructor(type?: new(length: number) => TypedArray) {
-		this._array = new (type || Uint8Array)(9);
+		this.array = new (type || Uint8Array)(9);
     }
     
     static readonly BLACK = ColorBase.rgb(0, 0, 0);
@@ -53,14 +58,14 @@ class ColorBase implements Color {
     static readonly BLUE = ColorBase.rgb(0, 0, 255);
     static readonly WHITE = ColorBase.rgb(255, 255, 255);
 
-    static rgb(r: number, g: number, b: number): ColorBase {
-        const color =  new ColorBase()
+    static rgb(r: number, g: number, b: number): Color {
+        const color = new ColorBase()
         color.setValues(r, g, b, 255);
         return color;
     }
 
-    static rgba(r: number, g: number, b: number, a: number): ColorBase {
-        const color =  new ColorBase()
+    static rgba(r: number, g: number, b: number, a: number): Color {
+        const color = new ColorBase()
         color.setValues(r, g, b, a);
         return color;
     }
@@ -70,7 +75,7 @@ class ColorBase implements Color {
         let c;
         let i = 0;
         for (const color of colors) {
-            c = color._array;
+            c = color.array;
             a[i + 0] = c[0];
             a[i + 1] = c[1];
             a[i + 2] = c[2];
@@ -80,44 +85,76 @@ class ColorBase implements Color {
         return a;
     }
 
-    get array(): WritableArrayLike<number> {
-        return this._array;
+    get length(): number {
+        return 4;
     }
 
     get r(): number {
-        return this._array[0];
+        return this.array[0];
     }
 
     set r(r: number) {
-        this._array[0] = r;
+        this.array[0] = r;
     }
 
     get g(): number {
-        return this._array[1];
+        return this.array[1];
     }
 
     set g(g: number) {
-        this._array[1] = g;
+        this.array[1] = g;
     }
 
     get b(): number {
-        return this._array[2];
+        return this.array[2];
     }
 
     set b(b: number) {
-        this._array[2] = b;
+        this.array[2] = b;
     }
 
     get a(): number {
-        return this._array[3];
+        return this.array[3];
     }
 
     set a(a: number) {
-        this._array[3] = a;
+        this.array[3] = a;
     }
 
-    setValues(r: number, g: number, b: number, a: number): ColorBase {
-		const o = this._array;
+    get 0(): number {
+        return this.array[0];
+    }
+
+    set 0(r: number) {
+        this.array[0] = r;
+    }
+
+    get 1(): number {
+        return this.array[1];
+    }
+
+    set 1(g: number) {
+        this.array[1] = g;
+    }
+
+    get 2(): number {
+        return this.array[2];
+    }
+
+    set 2(b: number) {
+        this.array[2] = b;
+    }
+
+    get 3(): number {
+        return this.array[3];
+    }
+
+    set 3(a: number) {
+        this.array[3] = a;
+    }
+
+    setValues(r: number, g: number, b: number, a: number): this {
+		const o = this.array;
 
 		o[0] = r;
 		o[1] = g;
@@ -128,15 +165,15 @@ class ColorBase implements Color {
     }
     
     getValues(): ColorValues {
-		const c = this._array;
+		const c = this.array;
 		
 		return [
 			c[0], c[1], c[2], c[3]
 		];
 	}
     
-    copy(color: ColorBase): ColorBase {
-        const o = this._array;
+    copy(color: Color): this {
+        const o = this.array;
 
         o[0] = color.r;
         o[1] = color.g;
@@ -146,13 +183,13 @@ class ColorBase implements Color {
         return this;
 	}
 
-	clone(): ColorBase {
-		return new ColorBase().copy(this);
+	clone(): this {
+		return <this>(new ColorBase()).copy(this);
     }
     
-    lerp(color: ColorBase, t: number): ColorBase {
-		const o = this._array;
-		const c = color._array;
+    lerp(color: Color, t: number): this {
+		const o = this.array;
+		const c = color.array;
 
 		o[0] = t * (c[0] - o[0]);
 		o[1] = t * (c[1] - o[1]);
@@ -162,9 +199,32 @@ class ColorBase implements Color {
 		return this;
 	}
     
-    valuesNormalized(): ColorValues {
-        return [this.r / 255, this.g / 255, this.b / 255, this.a / 255];
-    }
+	normalize(): this {
+		const {array} = this;
+		const length = 255;
+        array[0] /= length;
+        array[1] /= length;
+        array[2] /= length;
+		return this;
+	}
+
+    [Symbol.iterator] (): Iterator<number> {
+		const {array} = this;
+		const {length} = array;
+		let i = 0;
+		return {
+			next() {
+				if (i < length) {
+					return {
+						value: array[i++], done: false
+					};
+				}
+				return {
+					value: undefined, done: true
+				}
+			}
+		}
+	}
 }
 
 const Color: ColorConstructor = ColorBase;

@@ -11,10 +11,10 @@ import { BufferDataUsage } from "../../engine/core/rendering/webgl/WebGLBufferUt
 import { FramebufferAttachment, FramebufferTextureTarget, RenderbufferPixelFormat, WebGLFramebufferUtilities } from "../../engine/core/rendering/webgl/WebGLFramebufferUtilities";
 import { WebGLPacketUtilities, PacketProperties } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
-import { BufferMask, Capabilities, TestFunction, WebGLRendererUtilities, WindingOrder } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
+import { BlendingEquation, BlendingMode, BufferMask, Capabilities, TestFunction, WebGLRendererUtilities, WindingOrder } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
 import { TexturePixelFormat, TexturePixelType, TextureMagFilter, TextureMinFilter, TextureTarget, TextureWrapMode, WebGLTextureUtilities, TextureInternalPixelFormat } from "../../engine/core/rendering/webgl/WebGLTextureUtilities";
 import { WebGLUniformBlockUtilities } from "../../engine/core/rendering/webgl/WebGLUniformBlockUtilities";
-import { AttributeDataType, DrawMode } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
+import { AttributeDataType, DrawMode, WebGLVertexArrayUtilities } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
 import { Quaternion } from "../../engine/libs/maths/algebra/quaternions/Quaternion";
@@ -112,7 +112,16 @@ export async function start() {
     console.trace(e);
   }
 }
-
+/*
+let file: File | undefined;
+const input = document.createElement("input");
+input.type = "file";
+document.body.append(input);
+input.addEventListener("input", () => {
+  file = input.files![0];
+  launchScene();
+});
+*/
 export async function launchScene() {
   let frameRequest: number;
   let render: (time: number) => void;
@@ -148,7 +157,7 @@ export async function launchScene() {
   canvas.style.width = `${canvasWidth}px`;
   canvas.style.height = `${canvasHeight}px`;
   
-  const gl = canvas.getContext("webgl2", {alpha: false}/*, {antialias: true}*//*, {preserveDrawingBuffer: true}*/);
+  const gl = canvas.getContext("webgl2"/*, {preserveDrawingBuffer: true}, {antialias: true}*//*, {preserveDrawingBuffer: true}*/);
   if (!gl) {
     return;
   }
@@ -159,32 +168,32 @@ export async function launchScene() {
   const phongVert = await fetch("assets/engine/shaders/common/phong.vert.glsl").then(resp => resp.text());
   const phongFrag = await fetch("assets/engine/shaders/common/phong.frag.glsl").then(resp => resp.text());
   const phongProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: phongVert, fragmentSource: phongFrag});
-  if (phongProgram == null) return;
+  if (phongProgram === null) return;
 
   const skyboxVert = await fetch("assets/engine/shaders/common/skybox.vert").then(resp => resp.text());
   const skyboxFrag = await fetch("assets/engine/shaders/common/skybox.frag").then(resp => resp.text());
   const skyboxProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: skyboxVert, fragmentSource: skyboxFrag});
-  if (skyboxProgram == null) return;
+  if (skyboxProgram === null) return;
   
   const textureVert = await fetch("assets/engine/shaders/common/texture.vert").then(resp => resp.text());
   const textureFrag = await fetch("assets/engine/shaders/common/texture.frag").then(resp => resp.text());
   const texProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: textureVert, fragmentSource: textureFrag});
-  if (texProgram == null) return;
+  if (texProgram === null) return;
 
   const basicVert = await fetch("assets/engine/shaders/common/basic.vert.glsl").then(resp => resp.text());
   const basicFrag = await fetch("assets/engine/shaders/common/basic.frag.glsl").then(resp => resp.text());
   const basicProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: basicVert, fragmentSource: basicFrag});
-  if (basicProgram == null) return;
+  if (basicProgram === null) return;
   
   const depthVert = await fetch("assets/engine/shaders/common/depth.vert.glsl").then(resp => resp.text());
   const depthFrag = await fetch("assets/engine/shaders/common/depth.frag.glsl").then(resp => resp.text());
   const depthProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: depthVert, fragmentSource: depthFrag});
-  if (depthProgram == null) return;
+  if (depthProgram === null) return;
 
   const linesVertex = await fetch("assets/engine/shaders/common/lines.vert.glsl").then(resp => resp.text());
   const linesFragment = await fetch("assets/engine/shaders/common/lines.frag.glsl").then(resp => resp.text());
   const linesProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: linesVertex, fragmentSource: linesFragment});
-  if (linesProgram == null) return;
+  if (linesProgram === null) return;
 
   async function fetchImage(url: string) {
     return fetch(url).then((resp) => {
@@ -371,13 +380,12 @@ export async function launchScene() {
   }*/
 
   const cubeGeometry =
-    //new QuadGeometry({heightSegments: 64, widthSegments: 64});
+    // new QuadGeometry({heightSegments: 64, widthSegments: 64});
     new CubeGeometry({height: 4, width: 4, depth: 4, heightSegments: 32, widthSegments: 32, depthSegments: 32});
-    //new SphereGeometry({widthSegments: 64, heightSegments: 64});
-    //new CylinderGeometry();
-    //new DodecahedronGeometry();
-
-  const cubeGeometryBuilder = cubeGeometry.toBuilder();
+    // new SphereGeometry({widthSegments: 64, heightSegments: 64});
+    // new CylinderGeometry();
+    // new DodecahedronGeometry();
+  
   const quad = new QuadGeometry({height: 2, width: 2});
   const quadGeometryBuilder = quad.toBuilder();
   const cube = new Transform();
@@ -399,7 +407,7 @@ export async function launchScene() {
   camera.transform.setTranslation(lightTransform.getTranslation(new Vector3()).scale(2));
   camera.transform.lookAt(new Vector3([0, 0, 0]), Space.up);
 
-  const viewDirectionProjectionInverse = camera.projection.clone().mult(new Matrix4().setIdentity().setRotation(camera.view.getRotation())).invert();
+  const viewDirectionProjectionInverse = camera.projection.clone().mult(Matrix4.identity().setRotation(camera.view.getRotation())).invert();
 /*
   addWidgets([
     ...createRotationWidgets(cube, "Cube"),
@@ -408,31 +416,74 @@ export async function launchScene() {
     ...createRelativePositionWidgets(camera.transform, "Camera"),
   ]);*/
 
-  const cubeVertices = cubeGeometryBuilder.verticesArray();
-  const cubeIndices = cubeGeometryBuilder.indicesArray();
-  const cubeNormals = cubeGeometryBuilder.verticesNormalsArray();
-  const cubeUVs = cubeGeometryBuilder.uvsArray();
-  const cubeTangents = cubeGeometryBuilder.tangentsArray();
-  const cubeLines = cubeGeometryBuilder.linesArray();
+  const cubeGeometryBuilder = cubeGeometry.toBuilder();
+  const cubeVerticesArray = cubeGeometryBuilder.verticesArray();
+  const cubeIndicesArray = cubeGeometryBuilder.indicesArray();
+  const cubeNormalsArray = cubeGeometryBuilder.normalsArray();
+  const cubeUVsArray= cubeGeometryBuilder.uvsArray();
+  const cubeTangentsArray = cubeGeometryBuilder.tangentsArray();
+  const cubeLinesArray = cubeGeometryBuilder.linesArray();
 
   const cubeGeometryBuffer = new GeometryBuffer({
-    a_position: { array: cubeVertices, type: AttributeDataType.VEC3 },
-    a_normal: { array: cubeNormals, type: AttributeDataType.VEC3 },
-    a_tangent: { array: cubeTangents, type: AttributeDataType.VEC3 },
-    a_uv: { array: cubeUVs, type: AttributeDataType.VEC2 },
-  }, true);
-  
+    a_position: { array: cubeVerticesArray, type: AttributeDataType.VEC3 },
+    a_normal: { array: cubeNormalsArray, type: AttributeDataType.VEC3 },
+    a_tangent: { array: cubeTangentsArray, type: AttributeDataType.VEC3 },
+    //a_lines: { array: cubeLinesArray, type: AttributeDataType.VEC3 },
+    a_uv: { array: cubeUVsArray, type: AttributeDataType.VEC2 },
+    a_color: { array: cubeNormalsArray, type: AttributeDataType.VEC3 },
+  }, cubeIndicesArray, true);
+
+  const cubeVertices = cubeGeometryBuffer.getAttribute("a_position")!;
+  const cubeIndices = cubeGeometryBuffer.indices!;
+  const cubeNormals = cubeGeometryBuffer.getAttribute("a_normal")!;
+  const cubeUVs = cubeGeometryBuffer.getAttribute("a_uv")!;
+  const cubeTangents = cubeGeometryBuffer.getAttribute("a_tangent")!;
+  const cubeColors = cubeGeometryBuffer.getAttribute("a_color")!;
+  //const cubeLines = cubeGeometryBuffer.getAttribute("a_lines")!;
+
+  // const blob = cubeGeometryBuffer.toBlob();
+  // const anchor = document.createElement("a");
+  // anchor.download = "dat.bin";
+  // anchor.href = URL.createObjectURL(blob);
+  // anchor.click();
+
+  // console.log(cubeGeometryBuffer);
+
+  // const cubeGeometryBuffer = await GeometryBuffer.fromBlob(file!);
+
+  // const cubeVertices = cubeGeometryBuffer.getAttribute("a_position")!;
+  // const cubeIndices = cubeGeometryBuffer.indices!;
+  // const cubeNormals = cubeGeometryBuffer.getAttribute("a_normal")!;
+  // const cubeUVs = cubeGeometryBuffer.getAttribute("a_uv")!;
+  // const cubeTangents = cubeGeometryBuffer.getAttribute("a_tangent")!;
+
   const phongCubePacketProperties: PacketProperties = {
     vertexArray: {
-      attributes: {
-        a_position: cubeGeometryBuffer.getAttribute("a_position")!,
-        a_normal: cubeGeometryBuffer.getAttribute("a_normal")!,
-        a_tangent: cubeGeometryBuffer.getAttribute("a_tangent")!,
-        a_uv: cubeGeometryBuffer.getAttribute("a_uv")!
+      bufferedAttributes: [
+        {
+          buffer: {
+            interleaved: true
+          },
+          attributes: {
+            a_position: cubeVertices,
+            a_tangent: cubeTangents,
+            a_uv: cubeUVs,
+            a_normal: cubeNormals
+          }
+        },
+        {
+          buffer: {
+            usage: BufferDataUsage.DYNAMIC_READ
+          },
+          attributes: {
+            a_color: cubeColors
+          }
+        }
+      ],
+      bufferedIndices: {
+        indices: cubeGeometryBuffer.indices
       },
-      indices: cubeIndices,
-      elementsCount: cubeIndices.length,
-      interleave: true
+      elementsCount: cubeGeometryBuffer.indices!.length,
     },
     uniformBlocks: [
       {
@@ -490,11 +541,11 @@ export async function launchScene() {
     vertexArray: {
       attributes: {
         a_position: {
-          array: cubeLines,
+          array: cubeLinesArray,
           type: AttributeDataType.VEC3
         }
       },
-      elementsCount: cubeLines.length / 2
+      elementsCount: cubeLinesArray.length / 2
     },
     uniformBlocks: [
         {
@@ -516,12 +567,21 @@ export async function launchScene() {
     }
   };
 
+  
+  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongProgram, phongCubePacketProperties)!;
+
   const basicPacketProperties: PacketProperties = {
     vertexArray: {
-      attributes: {
-        a_position: { array: cubeVertices, type: AttributeDataType.VEC3 },
+      //attributes: {a_position: cubeVertices},
+      bufferedAttributes: [
+        {
+          buffer: phongCubePacket.vertexArray.verticesBuffers[0]
+        }
+      ],
+      bufferedIndices: {
+        buffer: phongCubePacket.vertexArray.indicesBuffer
       },
-      indices: cubeIndices,
+      //indices: cubeIndices,
       elementsCount: cubeIndices.length
     },
     uniformBlocks: [
@@ -590,8 +650,6 @@ export async function launchScene() {
   };
 
   const linesPacket = WebGLPacketUtilities.createPacket(gl, linesProgram, linesProperties)!;
-  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongProgram, phongCubePacketProperties)!;
-  console.log(phongCubePacket);
   const basicPacket = WebGLPacketUtilities.createPacket(gl, basicProgram, basicPacketProperties)!;
   const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxProgram, skyboxPacketProperties)!;
   const depthPacket = WebGLPacketUtilities.createPacket(gl, depthProgram, depthPacketProperties)!;
@@ -643,6 +701,8 @@ export async function launchScene() {
   //WebGLRendererUtilities.frontFace(gl, WindingOrder.CW);
   WebGLRendererUtilities.enable(gl, Capabilities.DEPTH_TEST);
   WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
+  WebGLRendererUtilities.enable(gl, Capabilities.BLEND);
+  WebGLRendererUtilities.blendFunction(gl, BlendingMode.SRC_ALPHA, BlendingMode.ONE_MINUS_SRC_ALPHA);
   
   let lastFrameTime = 0;
   let deltaTime = 0;
@@ -673,6 +733,17 @@ export async function launchScene() {
   const cameraControl = new FreeCameraControl(camera);
 
   let frame = 0;
+
+  function shuffleArray<T extends {[index: number]: number; length: number;}>(array: T): T {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array;
+  }
+
   render = function(frameTime: number) {
     ++frame;
     if (paused) {
@@ -685,7 +756,7 @@ export async function launchScene() {
     lastFrameTime = frameTime;
     fps = 1 / deltaTime;
 
-    fpsElement.textContent = fps.toFixed(0);
+    fpsElement.textContent = fps.toFixed(1);
 
     cameraControl.update(deltaTime);
     lightTransform.setMatrix(camera.transform.matrix);
@@ -702,7 +773,7 @@ export async function launchScene() {
       direction *= -1;
     }
     
-    WebGLRendererUtilities.clearColor(gl, Color.GREEN.valuesNormalized());
+    WebGLRendererUtilities.clearColor(gl, Color.BLACK.normalize());
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
     
     viewDirectionProjectionInverse.copy(camera.projection).mult(new Matrix4().setIdentity().setRotation(camera.view.getRotation())).invert();
@@ -712,9 +783,21 @@ export async function launchScene() {
     WebGLFramebufferUtilities.bindFramebuffer(gl, framebuffer);
 
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
+    
+    WebGLRendererUtilities.depthFunction(gl, TestFunction.LEQUAL);
+
+    WebGLPacketUtilities.drawPacket(gl, skyboxPacket);
+
     WebGLRendererUtilities.depthFunction(gl, TestFunction.LESS);
+    
+    WebGLPacketUtilities.drawPacket(gl, skyboxPacket);
 
     WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, {
+      vertexArray: {
+        attributes: {
+          a_color: { array: shuffleArray(cubeColors.array) }
+        }
+      },
       uniformBlocks: [
         {
           block: phongUniformBlocks.modelBlock,
@@ -743,12 +826,12 @@ export async function launchScene() {
         }
       ]
     });
-    
-    WebGLPacketUtilities.drawPacket(gl, phongCubePacket);
 
-    WebGLPacketUtilities.drawPacket(gl, linesPacket);
-    
     WebGLPacketUtilities.drawPacket(gl, basicPacket);
+    //WebGLPacketUtilities.drawPacket(gl, linesPacket);
+
+    WebGLPacketUtilities.drawPacket(gl, phongCubePacket);
+    
     
     WebGLPacketUtilities.setPacketValues(gl, skyboxPacket, {
       uniforms: {
@@ -756,8 +839,8 @@ export async function launchScene() {
       }
     });
     
-    WebGLRendererUtilities.depthFunction(gl, TestFunction.LEQUAL);
-    WebGLPacketUtilities.drawPacket(gl, skyboxPacket);
+    // WebGLRendererUtilities.depthFunction(gl, TestFunction.LEQUAL);
+    // WebGLPacketUtilities.drawPacket(gl, skyboxPacket);
     
     // Framebuffer
     WebGLFramebufferUtilities.blit(gl, framebuffer, postFramebuffer,

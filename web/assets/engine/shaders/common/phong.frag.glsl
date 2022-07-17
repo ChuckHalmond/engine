@@ -13,6 +13,7 @@ precision highp sampler2DArray;
 //ENDDEFS
 
 in vec4 v_position;
+in vec3 v_color;
 in vec3 v_normal;
 in vec2 v_uv;
 
@@ -124,6 +125,11 @@ void main() {
       ambientFactor * u_ambientColor +
       diffuseFactor * lambertian * albedo +
       specularFactor * specular * u_specularColor,
+      0.6
+    );
+
+    o_outColor = vec4(
+      0.5 * (v_color + vec3(1.0)),
       1.0
     );
   /*}

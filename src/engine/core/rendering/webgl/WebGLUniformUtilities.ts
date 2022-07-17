@@ -1,11 +1,9 @@
-import { Interpolant } from "../../../libs/maths/calculus/interpolation/Interpolant";
 import { Program, WebGLProgramUtilities } from "./WebGLProgramUtilities";
-import { Texture, TextureTarget } from "./WebGLTextureUtilities";
+import { Texture } from "./WebGLTextureUtilities";
 
 export { UniformValue };
 export { UniformProperties };
 export { Uniform };
-export { UniformsList };
 export { UniformSetter };
 export { UniformsListSetter };
 export { WebGLUniformUtilities };
@@ -66,19 +64,13 @@ type Uniform = {
     props?: UniformProperties;
 }
 
-type UniformsList = {
-    [name: string]: Uniform
-};
-
 type UniformSetter = {
     type: UniformType;
     set: (value: any) => void;
 }
 
 type UniformsListSetter = {
-    setters: {
-        [name: string]: UniformSetter;
-    };
+    setters: Record<string, UniformSetter>;
     program: Program;
 }
 
@@ -365,17 +357,17 @@ class WebGLUniformUtilities {
         return null;
     }
 
-    static getUniformsListSetter(gl: WebGL2RenderingContext, program: Program, list: UniformsList): UniformsListSetter | null {
-        const {internal} = program;
+    static getUniformsListSetter(gl: WebGL2RenderingContext, program: Program, list: Record<string, Uniform>): UniformsListSetter | null {
+        const {internalProgram} = program;
         
         const uniformsNames = Object.keys(list);
-        let uniformIndices = gl.getUniformIndices(internal, uniformsNames);
-        if (uniformIndices == null) {
+        let uniformIndices = gl.getUniformIndices(internalProgram, uniformsNames);
+        if (uniformIndices === null) {
             console.error(`No uniform indices found.`);
             return null;
         }
 
-        const activeUniforms = gl.getProgramParameter(internal, gl.ACTIVE_UNIFORMS);
+        const activeUniforms = gl.getProgramParameter(internalProgram, gl.ACTIVE_UNIFORMS);
         const validUniformIndices = Array.from(uniformIndices).filter((index_i, i) => {
             const isValid = index_i >= 0 && index_i < activeUniforms;
             if (!isValid) {
@@ -384,15 +376,13 @@ class WebGLUniformUtilities {
             return isValid;
         });
         
-        const setters: {
-            [name: string]: UniformSetter;
-        } = {};
+        const setters: Record<string, UniformSetter> = {};
 
-        const activeUniformsInfo: WebGLActiveInfo[] = validUniformIndices.map(index => gl.getActiveUniform(internal, index)!);
+        const activeUniformsInfo: WebGLActiveInfo[] = validUniformIndices.map(index => gl.getActiveUniform(internalProgram, index)!);
         activeUniformsInfo.forEach(({name, type}) => {
             const uniform = list[name];
-            const location = gl.getUniformLocation(internal, name);
-            if (location == null) {
+            const location = gl.getUniformLocation(internalProgram, name);
+            if (location === null) {
                 console.warn(`Uniform ${name} could not be located.`);
                 return null;
             }
@@ -408,7 +398,7 @@ class WebGLUniformUtilities {
         };
     }
 
-    static setUniformsListValues(gl: WebGL2RenderingContext, setter: UniformsListSetter, list: UniformsList): void {
+    static setUniformsListValues(gl: WebGL2RenderingContext, setter: UniformsListSetter, list: Record<string, Uniform>): void {
         const {program, setters} = setter;
         WebGLProgramUtilities.useProgram(gl, program);
         

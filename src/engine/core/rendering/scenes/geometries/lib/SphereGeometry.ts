@@ -1,5 +1,5 @@
 import { GeometryBase } from "../Geometry";
-import { GeometryBuilder, Vertex } from "../GeometryBuilder";
+import { GeometryBuilder } from "../GeometryBuilder";
 
 export class SphereGeometry extends GeometryBase {
 	radius: number;
@@ -82,7 +82,7 @@ export class SphereGeometry extends GeometryBase {
 		}
 		
 		const {length: indicesCount} = indices;
-		const verticesArray: Vertex[] = [];
+		const verticesArray: number[] = [];
 		const uvsArray: number[][] = [];
 		for (let i = 0; i < indicesCount; i += 3) {
 			const vi1 = 3 * indices[i], vi2 = 3 * indices[i + 1], vi3 = 3 * indices[i + 2];

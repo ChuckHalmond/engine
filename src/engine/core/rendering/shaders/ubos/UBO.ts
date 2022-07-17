@@ -1,11 +1,11 @@
 import { UUID, Identifiable, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
 import { Flags } from "../../../../libs/patterns/flags/Flags";
-import { UniformsList } from "../../webgl/WebGLUniformUtilities";
+import { Uniform } from "../../webgl/WebGLUniformUtilities";
 
 export { UBO };
 export { UBOBase };
 
-interface UBO<L extends UniformsList = UniformsList> {
+interface UBO<L extends Record<string, Uniform> = Record<string, Uniform>> {
     readonly uuid: UUID;
     readonly name: string;
     subscribeReferences(): void;
@@ -16,7 +16,7 @@ interface UBO<L extends UniformsList = UniformsList> {
 
 type UBOCtor<U extends UBOBase, R extends {[key: string]: Identifiable} = {[key: string]: Identifiable}> = new(references: R) => U;
 
-abstract class UBOBase<R extends {[key: string]: Identifiable} = {[key: string]: Identifiable}, L extends UniformsList = UniformsList> implements UBO<L> {
+abstract class UBOBase<R extends {[key: string]: Identifiable} = {[key: string]: Identifiable}, L extends Record<string, Uniform> = Record<string, Uniform>> implements UBO<L> {
     
     readonly name: string;
     readonly uuid: UUID;

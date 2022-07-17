@@ -1,5 +1,5 @@
 import { GeometryBase } from "../../Geometry";
-import { GeometryBuilder, Vertex } from "../../GeometryBuilder";
+import { GeometryBuilder } from "../../GeometryBuilder";
 
 export { IcosahedronGeometry };
 
@@ -57,7 +57,7 @@ class IcosahedronGeometry extends GeometryBase {
 		];
 
 		const {length: indicesCount} = indices;
-		const verticesArray: Vertex[] = [];
+		const verticesArray: number[] = [];
 		for (let i = 0; i < indicesCount; i += 3) {
 			const vi1 = 3 * indices[i], vi2 = 3 * indices[i + 1], vi3 = 3 * indices[i + 2];
 			let v1 = verticesArray[vi1], v2 = verticesArray[vi2], v3 = verticesArray[vi3];

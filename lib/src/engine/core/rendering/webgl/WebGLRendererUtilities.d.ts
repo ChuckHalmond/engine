@@ -81,12 +81,11 @@ export declare class WebGLRendererUtilities {
     static frontFace(gl: WebGL2RenderingContext, winding: WindingOrder): void;
     static scissor(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void;
     static viewport(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number): void;
-    static clearColor(gl: WebGL2RenderingContext, color: [number, ...number[]] & {
-        length: 4;
-    }): void;
+    static clearColor(gl: WebGL2RenderingContext, color: ArrayLike<number>): void;
     static depthFunction(gl: WebGL2RenderingContext, func: TestFunction): void;
     static blendEquation(gl: WebGL2RenderingContext, equ: BlendingEquation): void;
     static blendFunction(gl: WebGL2RenderingContext, srcFunc: BlendingMode, dstFunc: BlendingMode): void;
+    static blendFunctionSeparate(gl: WebGL2RenderingContext, srcFunc: BlendingMode, dstFunc: BlendingMode, srcAlpha: number, dstAlpha: number): void;
     static stencilFunction(gl: WebGL2RenderingContext, func: TestFunction, ref: number, mask: number, face: Face): void;
     static stencilOperations(gl: WebGL2RenderingContext, fail: StencilAction, zFail: StencilAction, zPass: StencilAction, face: Face): void;
     static stencilMask(gl: WebGL2RenderingContext, mask: number, face: Face): void;

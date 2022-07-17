@@ -57,14 +57,14 @@ export async function main() {
     //instanced();
     //wireframe();
 
-    const myWorker = new Worker("./worker.js");
+    /*const myWorker = new Worker("./worker.js");
     const sab = new SharedArrayBuffer(1024);
     const array = new Uint32Array(sab);
     myWorker.addEventListener("message", (event) => {
         console.log(`Received back: ${array[10]}`);
     });
 
-    myWorker.postMessage(sab);
+    myWorker.postMessage(sab);*/
 
     start();
 

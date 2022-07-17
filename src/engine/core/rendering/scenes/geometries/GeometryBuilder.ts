@@ -4,21 +4,24 @@ import { BoundingBox } from "./bounding/BoundingBox";
 export { GeometryBuilder };
 
 interface GeometryBuilder {
-    halfEdges: Array<HalfEdge>;
-    vertices: Array<Vertex>;
-    faces: Array<Face>;
-    //clone(): GeometryBuilder;
-    addTriangleFace(v0: Vertex, v1: Vertex, v2: Vertex, properties?: {[key: string]: any;}): void;
-    addQuadFace(v0: Vertex, v1: Vertex, v2: Vertex, v3: Vertex, properties?: {[key: string]: any;}): void;
-    addVertex(vertex: number[] | Float32Array | Float64Array): Vertex;
-    addFace(vertices: Vertex[], properties?: {[key: string]: any;}[]): void;
+    readonly halfEdges: Array<HalfEdge>;
+    readonly vertices: Array<Vertex>;
+    readonly faces: Array<Face>;
+    clone(): GeometryBuilder;
+    addTriangleFace(v0: VertexID, v1: VertexID, v2: VertexID, properties?: {[key: string]: any;}): void;
+    addQuadFace(v0: VertexID, v1: VertexID, v2: VertexID, v3: VertexID, properties?: {[key: string]: any;}): void;
+    addVertex(vertex: number[] | Float32Array | Float64Array): VertexID;
+    addFace(vertices: VertexID[], properties?: {[key: string]: any;}[]): void;
     verticesArray(): Float32Array;
     uvsArray(): Float32Array;
     indicesArray(): Uint8Array | Uint16Array | Uint32Array;
     linesArray(): Float32Array;
-    verticesNormalsArray(): Float32Array;
+    normalsArray(): Float32Array;
     tangentsArray(): Float32Array;
     boundingBox(): BoundingBox;
+    faceHalfEdgesIterator(face: FaceID): FaceHalfEdgesIterator;
+    faceVerticesIterator(face: FaceID): FaceHalfEdgesIterator;
+    vertexFacesIterator(vertex: VertexID): VertexFacesIterator;
 }
 
 interface GeometryBuilderConstructor {
@@ -27,9 +30,9 @@ interface GeometryBuilderConstructor {
 }
 
 class GeometryBuilderBase implements GeometryBuilder {
-    halfEdges: Array<HalfEdge>;
-    vertices: Array<Vertex>;
-    faces: Array<Face>;
+    readonly halfEdges: Array<HalfEdge>;
+    readonly vertices: Array<Vertex>;
+    readonly faces: Array<Face>;
 
     constructor() {
         this.halfEdges = [];
@@ -37,113 +40,56 @@ class GeometryBuilderBase implements GeometryBuilder {
         this.faces = [];
     }
 
-    /*clone(): GeometryBuilder {
-        const {halfEdges, faces, vertices} = this;
-        const clone = new GeometryBuilder();
-        const cloneHalfEdges = new Map<HalfEdge, HalfEdge>();
-        const cloneFaces = new Map<Face, Face>();
-        const cloneVertices = new Map<Vertex, Vertex>();
-        halfEdges.forEach((halfEdge) => {
-            cloneHalfEdges.set(halfEdge, {
-                target: null,
-                twin: null,
-                prev: null,
-                next: null,
-                face: null
-            });
-        });
-        faces.forEach((face) => {
-            cloneFaces.set(face, {
-                halfEdge: null
-            });
-        });
-        vertices.forEach((vertex) => {
-            const {position} = vertex;
-            cloneVertices.set(vertex, {
-                position: position,
-                halfEdge: null
-            });
-        });
-        halfEdges.forEach((halfEdge) => {
-            const {face, next, prev, target, twin} = halfEdge;
-            const cloneHalfEdge = cloneHalfEdges.get(halfEdge)!;
-            if (face !== null) {
-                cloneHalfEdge.face = cloneFaces.get(face)!;
-            }
-            if (next !== null) {
-                cloneHalfEdge.next = cloneHalfEdges.get(next)!;
-            }
-            if (prev !== null) {
-                cloneHalfEdge.prev = cloneHalfEdges.get(prev)!;
-            }
-            if (target !== null) {
-                cloneHalfEdge.target = cloneVertices.get(target)!;
-            }
-            if (twin !== null) {
-                cloneHalfEdge.twin = cloneHalfEdges.get(twin)!;
-            }
-        });
-        faces.forEach((face) => {
-            const {halfEdge} = face;
-            const cloneFace = cloneFaces.get(face)!;
-            if (halfEdge) {
-                cloneFace.halfEdge = cloneHalfEdges.get(halfEdge)!;
-            }
-        });
-        vertices.forEach((vertex) => {
-            const {halfEdge} = vertex;
-            const cloneVertex = cloneVertices.get(vertex)!;
-            if (halfEdge) {
-                cloneVertex.halfEdge = cloneHalfEdges.get(halfEdge)!;
-            }
-        });
-        clone.halfEdges = Array.from(cloneHalfEdges.values());
-        clone.faces = Array.from(cloneFaces.values());
-        clone.vertices = Array.from(cloneVertices.values());
-        return clone;
-    }*/
+    clone(): GeometryBuilder {
+        return Object.assign(Object.create(this.constructor.prototype), structuredClone(this));
+    }
 
-    addTriangleFace(v0: Vertex, v1: Vertex, v2: Vertex, properties?: {[key: string]: any;}): void {
+    addTriangleFace(v0: VertexID, v1: VertexID, v2: VertexID, properties?: {[key: string]: any;}): void {
         this.addFace([v0, v1, v2], properties);
     }
 
-    addQuadFace(v0: Vertex, v1: Vertex, v2: Vertex, v3: Vertex, properties?: {[key: string]: any;}): void {
+    addQuadFace(v0: VertexID, v1: VertexID, v2: VertexID, v3: VertexID, properties?: {[key: string]: any;}): void {
         this.addFace([v0, v1, v2, v3], properties);
     }
     
-    addVertex(position: number[] | Float32Array | Float64Array): Vertex {
+    addVertex(position: number[] | Float32Array | Float64Array): VertexID {
         const {vertices} = this;
         const vertex: Vertex = {
             position: position,
-            halfEdge: null
+            halfEdgeID: null
         };
-        vertices.push(vertex);
-        return vertex;
+        return vertices.push(vertex) - 1;
     }
 
-    addFace(vertices: Vertex[], properties?: {[key: string]: any;}): void {
-        const {halfEdges, faces} = this;
-        if (vertices.length < 2) {
-            console.warn("At least 2 vertices are required to create a face.");
+    addFace(vertices: VertexID[], properties?: {[key: string]: any;}): void {
+        const {halfEdges: _halfEdges, vertices: _vertices, faces: _faces} = this;
+        const {length: faceVerticesCount} = vertices;
+        if (faceVerticesCount < 2) {
+            console.error(`At least 2 vertices are required to create a face.`);
             return;
         }
         const face: Face = {
-            halfEdge: null,
+            halfEdgeID: null,
             ...properties
         };
-        let source: Vertex | null = null;
-        let target: Vertex | null = null;
-        let firstHalfEdge: HalfEdge | null = null;
+        const faceID = _faces.length;
+        let sourceID: VertexID | null = null;
+        let targetID: VertexID | null = null;
+        let firstHalfEdgeID: HalfEdgeID | null = null;
         let halfEdge: HalfEdge | null = null;
-        let previousHalfEdge: HalfEdge | null = null;
-        for (let i = 0; i < vertices.length; i++) {
-            source = vertices[i];
-            target = (i < vertices.length - 1) ? vertices[i + 1] : vertices[0];
-            const existingHalfEdge = Array.from(new VertexFacesIterator(source)).find(
-                (face) => {
-                    if (face == null) return false;
-                    return Array.from(new FaceHalfEdgesIterator(face)).find(
-                        (halfEdge) => halfEdge.target === target && halfEdge.prev?.target === source
+        let halfEdgeID: HalfEdgeID | null = null;
+        let previousHalfEdgeID: HalfEdgeID | null = null;
+        for (let i = 0; i < faceVerticesCount; i++) {
+            sourceID = vertices[i];
+            targetID = (i < faceVerticesCount - 1) ? vertices[i + 1] : vertices[0];
+            const existingHalfEdge = Array.from(this.vertexFacesIterator(sourceID)).find(
+                (face_i) => {
+                    if (face_i === null) return false;
+                    return Array.from(this.faceHalfEdgesIterator(face_i)).find(
+                        (halfEdge_i) => {
+                            const {targetID: targetID_i, prevID: prevID_i} = _halfEdges[halfEdge_i];
+                            return targetID_i === targetID && _halfEdges[prevID_i ?? -1]?.targetID === sourceID;
+                        }
                     );
                 }
             );
@@ -151,124 +97,117 @@ class GeometryBuilderBase implements GeometryBuilder {
                 continue;
             }
             halfEdge = {
-                target: target,
-                twin: null,
-                next: null,
-                prev: null,
-                face: face
+                targetID: targetID,
+                twinID: null,
+                nextID: null,
+                prevID: null,
+                faceID: faceID
             };
-            if (previousHalfEdge == null) {
-                face.halfEdge = halfEdge;
-                firstHalfEdge = halfEdge;
+            halfEdgeID = _halfEdges.length;
+            if (previousHalfEdgeID === null) {
+                face.halfEdge = halfEdgeID;
+                firstHalfEdgeID = halfEdgeID;
             }
             else {
-                halfEdge.prev = previousHalfEdge;
-                previousHalfEdge.next = halfEdge;
+                halfEdge.prevID = previousHalfEdgeID;
+                _halfEdges[previousHalfEdgeID].nextID = halfEdgeID;
             }
-            if (source.halfEdge == null) {
-                source.halfEdge = halfEdge;
+            const source = _vertices[sourceID]!;
+            if (source.halfEdgeID === null) {
+                source.halfEdgeID = halfEdgeID;
             }
-            const twinHalfEdge = halfEdges.find(
-                halfEdge => halfEdge.target === source && halfEdge.prev?.target === target
+            const twinHalfEdge = _halfEdges.find(
+                (halfEdge_i) => {
+                    const {targetID: targetID_i, prevID: prevID_i} = halfEdge_i;
+                    return targetID_i === sourceID && _halfEdges[prevID_i ?? -1]?.targetID === targetID;
+                }
             ) ?? null;
             if (twinHalfEdge !== null) {
-                halfEdge.twin = twinHalfEdge;
-                twinHalfEdge.twin = halfEdge;
+                halfEdge.twinID = _halfEdges.indexOf(twinHalfEdge);
+                twinHalfEdge.twinID = halfEdgeID;
             }
-            previousHalfEdge = halfEdge;
-            halfEdges.push(halfEdge);
+            previousHalfEdgeID = halfEdgeID;
+            _halfEdges.push(halfEdge);
         }
-        if (halfEdge !== null && firstHalfEdge !== null) {
-            firstHalfEdge.prev = halfEdge;
-            halfEdge.next = firstHalfEdge;
+        if (halfEdge !== null && firstHalfEdgeID !== null) {
+            _halfEdges[firstHalfEdgeID].prevID = halfEdgeID;
+            halfEdge.nextID = firstHalfEdgeID;
         }
-        faces.push(face);
+        _faces.push(face);
     }
 
     linesArray(): Float32Array {
-        const {faces} = this;
-        return new Float32Array(faces.flatMap((face) => {
-            const faceVertices = Array.from(new FaceVerticesIterator(face));
+        const {faces, vertices} = this;
+        return new Float32Array(faces.flatMap((_, i) => {
+            const faceVertices = Array.from(this.faceVerticesIterator(i));
             if (faceVertices.length === 4) {
-                const v0 = faceVertices[0];
-                const v1 = faceVertices[1];
-                const v2 = faceVertices[2];
-                const v3 = faceVertices[3];
+                const [v0, v1, v2, v3] = faceVertices.map(vertex_i => vertices[vertex_i].position);
                 return [
-                    ...v0.position, ...v1.position,
-                    ...v1.position, ...v2.position,
-                    ...v2.position, ...v3.position,
-                    ...v3.position, ...v0.position
+                    ...v0, ...v1,
+                    ...v1, ...v2,
+                    ...v2, ...v3,
+                    ...v3, ...v0
                 ];
             }
             else {
-                const v0 = faceVertices[0];
-                const v1 = faceVertices[1];
-                const v2 = faceVertices[2];
+                const [v0, v1, v2] = faceVertices.map(vertex_i => vertices[vertex_i].position);
                 return [
-                    ...v0.position, ...v1.position,
-                    ...v1.position, ...v2.position,
-                    ...v2.position, ...v0.position
+                    ...v0, ...v1,
+                    ...v1, ...v2,
+                    ...v2, ...v0
                 ];
             }
         }));
     }
 
     verticesArray(): Float32Array {
-        const {faces} = this;
-        return new Float32Array(faces.flatMap((face) => {
-            return Array.from(new FaceVerticesIterator(face)).flatMap((vertex) => {
-                return Array.from(vertex.position);
+        const {faces, vertices} = this;
+        return new Float32Array(faces.flatMap((_, i) => {
+            return Array.from(this.faceVerticesIterator(i)).flatMap((vertex) => {
+                return Array.from(vertices[vertex].position);
             });
         }));
     }
 
     tangentsArray(): Float32Array {
-        const {faces} = this;
-        return new Float32Array(faces.flatMap((face) => {
-            const faceVertices = Array.from(new FaceVerticesIterator(face));
-            const faceUvs = face.uv as Array<Array<number>>;
-            const p0 = faceVertices[0].position;
-            const p1 = faceVertices[1].position;
-            const p2 = faceVertices[2].position;
-            const uv0 = faceUvs[0];
-            const uv1 = faceUvs[1];
-            const uv2 = faceUvs[2];
-            const edge1 = p1.map((p1_i, i) => p0[i] - p1_i);
-            const edge2 = p1.map((p1_i, i) => p2[i] - p1_i);
+        const {faces, vertices} = this;
+        return new Float32Array(faces.flatMap((face_i, i) => {
+            const faceVertices = Array.from(this.faceVerticesIterator(i));
+            const faceUvs = face_i.uv as Array<Array<number>>;
+            const [v0, v1, v2] = faceVertices.map(vertex_i => vertices[vertex_i].position);
+            const [uv0, uv1, uv2] = faceUvs;
+            const edge1 = v1.map((v1_i, i) => v0[i] - v1_i);
+            const edge2 = v1.map((v1_i, i) => v2[i] - v1_i);
             const deltaUV1 = uv1.map((uv1_i, i) => uv0[i] - uv1_i);
             const deltaUV2 = uv1.map((uv1_i, i) => uv2[i] - uv1_i);
             const f = 1.0 / (deltaUV1[0] * deltaUV2[1] - deltaUV1[1] * deltaUV2[0]);
             const tangent = edge1.map((edge1_i, i) => -(edge1_i * deltaUV2[1] - edge2[i] * deltaUV1[1]) * f);
             const length = Math.hypot(...tangent);
-            face.tangent = tangent.map(tangent_i => tangent_i / length);
+            face_i.tangent = tangent.map(tangent_i => tangent_i / length);
 
             return faceVertices.flatMap(() => {
-                return Array.from(face.tangent);
+                return Array.from(face_i.tangent);
             });
         }));
     }
 
-    verticesNormalsArray(): Float32Array {
-        const {faces} = this;
-        return new Float32Array(faces.flatMap((face) => {
-            const faceVertices = Array.from(new FaceVerticesIterator(face));
-            const p0 = faceVertices[0].position;
-            const p1 = faceVertices[1].position;
-            const p2 = faceVertices[2].position;
-            const edge1 = p1.map((p1_i, i) => p0[i] - p1_i);
-            const edge2 = p1.map((p1_i, i) => p2[i] - p1_i);
-            const components = edge1.length;
+    normalsArray(): Float32Array {
+        const {faces, vertices} = this;
+        return new Float32Array(faces.flatMap((face_i, i) => {
+            const faceVertices = Array.from(this.faceVerticesIterator(i));
+            const [v0, v1, v2] = faceVertices.map(vertex_i => vertices[vertex_i].position);
+            const edge1 = v1.map((v1_i, i) => v0[i] - v1_i);
+            const edge2 = v1.map((v1_i, i) => v2[i] - v1_i);
             const normal = edge1.map((_, i) => {
-                const ni = (i + 1) % components;
-                const pi = ((i - 1) + components) % components;
+                const ni = (i + 1) % 3;
+                const pi = ((i - 1) + 3) % 3;
                 return -(edge1[ni] * edge2[pi] - edge1[pi] * edge2[ni]);
             });
             const length = Math.hypot(...normal);
-            face.normal = normal.map(normal_i => normal_i / length);
+            face_i.normal = normal.map(normal_i => normal_i / length);
             
             return faceVertices.flatMap(() => {
-                return Array.from(face.normal);
+                return Array.from(face_i.normal);
             });
         }));
     }
@@ -282,12 +221,12 @@ class GeometryBuilderBase implements GeometryBuilder {
 
     indicesArray(): Uint8Array | Uint16Array | Uint32Array {
         const {faces} = this;
-        const count = faces.reduce((verticesCount, face) => {
-            return verticesCount + Array.from(new FaceVerticesIterator(face)).length;
+        const count = faces.reduce((verticesCount, _, i) => {
+            return verticesCount + Array.from(this.faceVerticesIterator(i)).length;
         }, 0);
         const arrayConstructor = (count < Math.pow(2, 8)) ? Uint8Array : (count < Math.pow(2, 16)) ? Uint16Array : Uint32Array;
-        return new arrayConstructor(faces.reduce(([indices, index], face) => {
-            const vertices = Array.from(new FaceVerticesIterator(face));
+        return new arrayConstructor(faces.reduce(([indices, index], face_i, i) => {
+            const vertices = Array.from(this.faceVerticesIterator(i));
             if (vertices.length === 4) {
                 return [indices.concat([index, index + 1, index + 2, index + 2, index + 3, index]), index + 4] as [number[], number];
             }
@@ -320,67 +259,89 @@ class GeometryBuilderBase implements GeometryBuilder {
         const max = new Vector3([maxX, maxY, maxZ]);
         return new BoundingBox(min, max);
     }
+    
+    faceHalfEdgesIterator(face: FaceID): FaceHalfEdgesIterator {
+        return new FaceHalfEdgesIterator(this, face);
+    }
+
+    faceVerticesIterator(face: FaceID): FaceHalfEdgesIterator {
+        return new FaceVerticesIterator(this, face);
+    }
+
+    vertexFacesIterator(vertex: VertexID): VertexFacesIterator {
+        return new VertexFacesIterator(this, vertex);
+    }
 }
 
 var GeometryBuilder: GeometryBuilderConstructor = GeometryBuilderBase;
 
+export type HalfEdgeID = number;
+export type FaceID = number;
+export type VertexID = number;
+
 export type HalfEdge = {
-    target: Vertex | null;
-    twin: HalfEdge | null;
-    prev: HalfEdge | null;
-    next: HalfEdge | null;
-    face: Face | null;
+    targetID: VertexID | null;
+    twinID: HalfEdgeID | null;
+    prevID: HalfEdgeID | null;
+    nextID: HalfEdgeID | null;
+    faceID: FaceID | null;
 }
 
 export type Face = {
-    halfEdge: HalfEdge | null;
+    halfEdgeID: HalfEdgeID | null;
     [key: string]: any;
 }
 
 export type Vertex = {
     position: number[] | Float32Array | Float64Array;
-    halfEdge: HalfEdge | null;
+    halfEdgeID: HalfEdgeID | null;
     properties?: {
         [key: string]: any;
     }
 }
 
 export class FaceHalfEdgesIterator {
-    #face: Face;
-    #halfEdge: HalfEdge | null;
+    geometry: GeometryBuilder;
+    faceID: FaceID;
+    halfEdgeID: HalfEdgeID | null;
 
-    constructor(face: Face) {
-        this.#face = face;
-        this.#halfEdge = null;
+    constructor(geometry: GeometryBuilder, face: FaceID) {
+        this.geometry = geometry;
+        this.faceID = face;
+        this.halfEdgeID = null;
     }
 
     reset(): void {
-        this.#halfEdge = null;
+        this.halfEdgeID = null;
     }
 
-    current(): HalfEdge | null {
-        return this.#halfEdge;
+    current(): HalfEdgeID | null {
+        return this.halfEdgeID;
     }
 
-    next(): IteratorResult<HalfEdge> {
-        if (this.#halfEdge == null) {
-            const firstHalfEdge = this.#face.halfEdge ?? null;
-            const nextHalfEdge = this.#face.halfEdge?.next ?? null;
-            this.#halfEdge = nextHalfEdge;
-            if (firstHalfEdge !== null) {
-                return {
-                    value: firstHalfEdge, done: nextHalfEdge == null
-                };
+    next(): IteratorResult<HalfEdgeID> {
+        const {halfEdgeID, faceID, geometry} = this;
+        const {faces, halfEdges} = geometry;
+        const face = faces[faceID];
+        if (face !== null) {
+            if (halfEdgeID === null) {
+                const firstHalfEdgeID = face.halfEdgeID ?? null;
+                const nextHalfEdgeID = faces[firstHalfEdgeID ?? -1]?.nextID ?? null;
+                this.halfEdgeID = nextHalfEdgeID;
+                if (firstHalfEdgeID !== null) {
+                    return {
+                        value: firstHalfEdgeID, done: nextHalfEdgeID === null
+                    };
+                }
             }
-        }
-        else if (this.#halfEdge !== this.#face.halfEdge) {
-            const halfEdge = this.#halfEdge;
-            const nextHalfEdge = halfEdge.next ?? null;
-            this.#halfEdge = nextHalfEdge;
-            if (halfEdge !== null) {
-                return {
-                    value: halfEdge, done: nextHalfEdge == null
-                };
+            else if (halfEdgeID !== face.halfEdge) {
+                const nextHalfEdgeID = halfEdges[halfEdgeID].nextID ?? null;
+                this.halfEdgeID = nextHalfEdgeID;
+                if (halfEdgeID !== null) {
+                    return {
+                        value: halfEdgeID, done: nextHalfEdgeID === null
+                    };
+                }
             }
         }
         return {
@@ -388,48 +349,58 @@ export class FaceHalfEdgesIterator {
         };
     }
 
-    [Symbol.iterator](): Iterator<HalfEdge> {
-        this.#halfEdge = null;
+    [Symbol.iterator](): Iterator<HalfEdgeID> {
+        this.halfEdgeID = null;
         return this;
     }
 }
 
 export class FaceVerticesIterator {
-    #face: Face;
-    #halfEdge: HalfEdge | null;
+    geometry: GeometryBuilder;
+    faceID: FaceID;
+    halfEdgeID: HalfEdgeID | null;
 
-    constructor(face: Face) {
-        this.#face = face;
-        this.#halfEdge = null;
+    constructor(geometry: GeometryBuilder, face: FaceID) {
+        this.geometry = geometry;
+        this.faceID = face;
+        this.halfEdgeID = null;
     }
 
     reset(): void {
-        this.#halfEdge = null;
+        this.halfEdgeID = null;
     }
 
-    current(): Vertex | null {
-        return this.#halfEdge?.prev?.target ?? null;
+    current(): VertexID | null {
+        const {halfEdgeID, geometry} = this;
+        const {halfEdges} = geometry;
+        return halfEdges[halfEdges[halfEdgeID ?? -1]?.prevID ?? -1]?.targetID ?? null;
     }
 
-    next(): IteratorResult<Vertex> {
-        if (this.#halfEdge == null) {
-            const firstVertex = this.#face.halfEdge?.prev?.target ?? null;
-            const nextHalfEdge = this.#face.halfEdge?.next ?? null;
-            this.#halfEdge = nextHalfEdge;
-            if (firstVertex !== null) {
-                return {
-                    value: firstVertex, done: nextHalfEdge == null
-                };
+    next(): IteratorResult<VertexID> {
+        const {halfEdgeID, geometry, faceID} = this;
+        const {faces, halfEdges} = geometry;
+        const face = faces[faceID ?? -1];
+        if (face !== null) {
+            const {halfEdge: faceHalfEdgeID} = face;
+            if (halfEdgeID === null) {
+                const firstVertexID = halfEdges[halfEdges[faceHalfEdgeID ?? -1].prevID ?? -1].targetID ?? null;
+                const nextHalfEdgeID = halfEdges[faceHalfEdgeID ?? -1].nextID ?? null;
+                this.halfEdgeID = nextHalfEdgeID;
+                if (firstVertexID !== null) {
+                    return {
+                        value: firstVertexID, done: nextHalfEdgeID === null
+                    };
+                }
             }
-        }
-        else if (this.#halfEdge !== this.#face.halfEdge) {
-            const vertex = this.#halfEdge.prev?.target ?? null;
-            const nextHalfEdge = this.#halfEdge.next ?? null;
-            this.#halfEdge = nextHalfEdge;
-            if (vertex !== null) {
-                return {
-                    value: vertex, done: nextHalfEdge == null
-                };
+            else if (halfEdgeID !== face.halfEdge) {
+                const vertex = halfEdges[halfEdges[halfEdgeID].prevID ?? -1].targetID ?? null;
+                const nextHalfEdgeID = halfEdges[halfEdgeID].nextID ?? null;
+                this.halfEdgeID = nextHalfEdgeID;
+                if (vertex !== null) {
+                    return {
+                        value: vertex, done: nextHalfEdgeID === null
+                    };
+                }
             }
         }
         return {
@@ -437,48 +408,58 @@ export class FaceVerticesIterator {
         };
     }
 
-    [Symbol.iterator](): Iterator<Vertex> {
-        this.#halfEdge = null;
+    [Symbol.iterator](): Iterator<VertexID> {
+        this.halfEdgeID = null;
         return this;
     }
 }
 
 export class VertexFacesIterator {
-    #halfEdge: HalfEdge | null;
-    #vertex: Vertex;
-
-    constructor(vertex: Vertex) {
-        this.#vertex = vertex;
-        this.#halfEdge = null;
+    geometry: GeometryBuilder;
+    halfEdgeID: HalfEdgeID | null;
+    vertexID: VertexID;
+    
+    constructor(geometry: GeometryBuilder, vertex: VertexID) {
+        this.geometry = geometry;
+        this.vertexID = vertex;
+        this.halfEdgeID = null;
     }
-
+    
     reset(): void {
-        this.#halfEdge = null;
+        this.halfEdgeID = null;
     }
 
-    current(): Face | null {
-        return this.#halfEdge?.face ?? null;
+    current(): FaceID | null {
+        const {geometry, halfEdgeID} = this;
+        const {halfEdges} = geometry;
+        return halfEdges[halfEdgeID ?? -1].faceID ?? null;
     }
 
-    next(): IteratorResult<Face>  {
-        if (this.#halfEdge == null) {
-            const face = this.#vertex.halfEdge?.face ?? null;
-            const nextHalfEdge = this.#vertex.halfEdge?.prev?.twin ?? null;
-            this.#halfEdge = nextHalfEdge;
-            if (face !== null) {
-                return {
-                    value: face, done: nextHalfEdge == null
-                };
+    next(): IteratorResult<FaceID>  {
+        const {halfEdgeID, vertexID, geometry} = this;
+        const {halfEdges, vertices} = geometry;
+        const vertex = vertices[vertexID ?? -1];
+        if (vertex) {
+            const {halfEdgeID: vertexHalfEdgeID} = vertex;
+            if (halfEdgeID === null) {
+                const faceID = halfEdges[vertexHalfEdgeID ?? -1]?.faceID ?? null;
+                const nextHalfEdgeID = halfEdges[halfEdges[vertexHalfEdgeID ?? -1]?.prevID ?? -1]?.twinID ?? null;
+                this.halfEdgeID = nextHalfEdgeID;
+                if (faceID !== null) {
+                    return {
+                        value: faceID, done: nextHalfEdgeID === null
+                    };
+                }
             }
-        }
-        else if (this.#halfEdge !== this.#vertex.halfEdge) {
-            const face = this.#halfEdge.face ?? null;
-            const nextHalfEdge = this.#halfEdge?.prev?.twin ?? null;
-            this.#halfEdge = nextHalfEdge;
-            if (face !== null) {
-                return {
-                    value: face, done: nextHalfEdge == null
-                };
+            else if (halfEdgeID !== vertex.halfEdgeID) {
+                const faceID = halfEdges[halfEdgeID]?.faceID ?? null;
+                const nextHalfEdgeID = halfEdges[halfEdges[halfEdgeID].prevID ?? -1].twinID ?? null;
+                this.halfEdgeID = nextHalfEdgeID;
+                if (faceID !== null) {
+                    return {
+                        value: faceID, done: nextHalfEdgeID === null
+                    };
+                }
             }
         }
         return {
@@ -486,8 +467,8 @@ export class VertexFacesIterator {
         };
     }
 
-    [Symbol.iterator](): Iterator<Face> {
-        this.#halfEdge = null;
+    [Symbol.iterator](): Iterator<FaceID> {
+        this.halfEdgeID = null;
         return this;
     }
 }

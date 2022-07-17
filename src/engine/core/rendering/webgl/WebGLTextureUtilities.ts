@@ -211,7 +211,7 @@ export type TextureProperties = {
 export type Texture = {
     name: string;
     unit: number;
-    internal: WebGLTexture;
+    internalTexture: WebGLTexture;
     properties?: TextureProperties;
 }
 
@@ -225,10 +225,8 @@ export class WebGLTextureUtilities {
     }
 
     static createTexture(gl: WebGL2RenderingContext, name: string, properties: TextureProperties): Texture | null {
-        const internal = gl.createTexture();
-        
-        if (internal === null) {
-            console.error("Could not create WebGLTexture.");
+        const internalTexture = gl.createTexture();
+        if (internalTexture === null) {
             return null;
         }
 
@@ -248,7 +246,7 @@ export class WebGLTextureUtilities {
         const activeTexture = gl.getParameter(gl.ACTIVE_TEXTURE);
         if (activeTexture !== unit) {
             gl.activeTexture(gl.TEXTURE0 + unit);
-            gl.bindTexture(target, internal);
+            gl.bindTexture(target, internalTexture);
         }
         
         switch (target) {
@@ -263,7 +261,7 @@ export class WebGLTextureUtilities {
                 break;
             }
             case TextureTarget.TEXTURE_CUBE_MAP: {
-                if (pixels == null) {
+                if (pixels === null) {
                     gl.texImage2D(target, lod, internalFormat, width, height, border, format, type, null);  
                 }
                 else {
@@ -319,7 +317,7 @@ export class WebGLTextureUtilities {
         
         return {
             unit,
-            internal,
+            internalTexture,
             name,
             properties: {
                 pixels,
@@ -351,9 +349,9 @@ export class WebGLTextureUtilities {
     }
 
     static deleteTexture(gl: WebGL2RenderingContext, texture: Texture): void {
-        const {internal, name} = texture;
-        if (gl.isTexture(internal)) {
-            gl.deleteTexture(internal);
+        const {internalTexture, name} = texture;
+        if (gl.isTexture(internalTexture)) {
+            gl.deleteTexture(internalTexture);
             this.#textureUnits.delete(name);
         }
     }

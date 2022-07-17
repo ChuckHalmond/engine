@@ -14,6 +14,7 @@ in vec2 a_uv;
 in vec3 a_tangent;
 in vec3 a_position;
 in vec3 a_normal;
+in vec3 a_color;
 
 uniform viewBlock {
     mat4 u_view;
@@ -50,6 +51,7 @@ uniform lightsBlock {
 
 out vec4 v_position;
 out vec3 v_normal;
+out vec3 v_color;
 
 out vec3 v_lightPos;
 out vec3 v_fragPos;
@@ -97,6 +99,7 @@ void main() {
     v_normal = vec3(normal * vec4(a_normal, 0.0));
     gl_Position = u_projection * vertPos;
     v_uv = a_uv;
+    v_color = a_color;
 }
 /*#version 300 es
 

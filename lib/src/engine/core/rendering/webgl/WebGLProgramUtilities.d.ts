@@ -3,12 +3,12 @@ export declare enum ShaderType {
     VERTEX_SHADER = 35633
 }
 export declare type Program = {
-    internal: WebGLProgram;
+    internalProgram: WebGLProgram;
     vertexShader: Shader;
     fragmentShader: Shader;
 };
 export declare type Shader = {
-    internal: WebGLShader;
+    internalShader: WebGLShader;
 };
 export declare type ProgramProperties = {
     vertexSource: string;

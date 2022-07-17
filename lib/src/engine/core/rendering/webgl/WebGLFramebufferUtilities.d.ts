@@ -74,7 +74,7 @@ export declare enum RenderbufferPixelFormat {
     STENCIL_INDEX8 = 36168
 }
 export declare type Renderbuffer = {
-    internal: WebGLRenderbuffer;
+    internalRenderbuffer: WebGLRenderbuffer;
 };
 export declare type RenderbufferProperties = {
     internalFormat: RenderbufferPixelFormat;
@@ -83,7 +83,7 @@ export declare type RenderbufferProperties = {
     samples?: number;
 };
 declare type Framebuffer = {
-    internal: WebGLFramebuffer;
+    internalFramebuffer: WebGLFramebuffer;
 };
 declare type FramebufferTextureAttachmentProperties = {
     attachment: FramebufferAttachment;

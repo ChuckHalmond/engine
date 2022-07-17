@@ -17,8 +17,7 @@ export declare enum BufferTarget {
     UNIFORM_BUFFER = 35345
 }
 declare type Buffer = {
-    internal: WebGLBuffer;
+    internalBuffer: WebGLBuffer;
     target: BufferTarget;
     usage: BufferDataUsage;
-    data: ArrayBuffer;
 };

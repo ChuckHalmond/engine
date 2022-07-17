@@ -20,8 +20,7 @@ export enum BufferTarget {
 }
 
 type Buffer = {
-    internal: WebGLBuffer;
+    internalBuffer: WebGLBuffer;
     target: BufferTarget;
     usage: BufferDataUsage;
-    data: ArrayBuffer;
 }

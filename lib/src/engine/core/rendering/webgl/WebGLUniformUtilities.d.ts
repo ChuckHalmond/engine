@@ -3,7 +3,6 @@ import { Texture } from "./WebGLTextureUtilities";
 export { UniformValue };
 export { UniformProperties };
 export { Uniform };
-export { UniformsList };
 export { UniformSetter };
 export { UniformsListSetter };
 export { WebGLUniformUtilities };
@@ -59,17 +58,12 @@ declare type Uniform = {
     value: UniformValue;
     props?: UniformProperties;
 };
-declare type UniformsList = {
-    [name: string]: Uniform;
-};
 declare type UniformSetter = {
     type: UniformType;
     set: (value: any) => void;
 };
 declare type UniformsListSetter = {
-    setters: {
-        [name: string]: UniformSetter;
-    };
+    setters: Record<string, UniformSetter>;
     program: Program;
 };
 export declare enum UniformDataType {
@@ -84,6 +78,6 @@ export declare enum UniformDataType {
 declare class WebGLUniformUtilities {
     static asArrayBufferView(uniformValue: UniformValue): ArrayBufferView;
     static getUniformSetter(gl: WebGL2RenderingContext, uniform: Uniform, location: WebGLUniformLocation, uniformType: UniformType): UniformSetter | null;
-    static getUniformsListSetter(gl: WebGL2RenderingContext, program: Program, list: UniformsList): UniformsListSetter | null;
-    static setUniformsListValues(gl: WebGL2RenderingContext, setter: UniformsListSetter, list: UniformsList): void;
+    static getUniformsListSetter(gl: WebGL2RenderingContext, program: Program, list: Record<string, Uniform>): UniformsListSetter | null;
+    static setUniformsListValues(gl: WebGL2RenderingContext, setter: UniformsListSetter, list: Record<string, Uniform>): void;
 }

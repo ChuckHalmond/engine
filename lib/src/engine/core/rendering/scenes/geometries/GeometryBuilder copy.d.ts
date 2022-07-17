@@ -19,12 +19,9 @@ interface GeometryBuilder {
     uvsArray(): Float32Array;
     indicesArray(): Uint8Array | Uint16Array | Uint32Array;
     linesArray(): Float32Array;
-    normalsArray(): Float32Array;
+    verticesNormalsArray(): Float32Array;
     tangentsArray(): Float32Array;
     boundingBox(): BoundingBox;
-    faceHalfEdgesIterator(face: FaceID): FaceHalfEdgesIterator;
-    faceVerticesIterator(face: FaceID): FaceHalfEdgesIterator;
-    vertexFacesIterator(vertex: VertexID): VertexFacesIterator;
 }
 interface GeometryBuilderConstructor {
     readonly prototype: GeometryBuilder;
@@ -35,27 +32,27 @@ export declare type HalfEdgeID = number;
 export declare type FaceID = number;
 export declare type VertexID = number;
 export declare type HalfEdge = {
-    targetID: VertexID | null;
-    twinID: HalfEdgeID | null;
-    prevID: HalfEdgeID | null;
-    nextID: HalfEdgeID | null;
-    faceID: FaceID | null;
+    target: VertexID | null;
+    twin: HalfEdgeID | null;
+    prev: HalfEdgeID | null;
+    next: HalfEdgeID | null;
+    face: FaceID | null;
 };
 export declare type Face = {
-    halfEdgeID: HalfEdgeID | null;
+    halfEdge: HalfEdgeID | null;
     [key: string]: any;
 };
 export declare type Vertex = {
     position: number[] | Float32Array | Float64Array;
-    halfEdgeID: HalfEdgeID | null;
+    halfEdge: HalfEdgeID | null;
     properties?: {
         [key: string]: any;
     };
 };
 export declare class FaceHalfEdgesIterator {
     geometry: GeometryBuilder;
-    faceID: FaceID;
-    halfEdgeID: HalfEdgeID | null;
+    face: FaceID;
+    halfEdge: HalfEdgeID | null;
     constructor(geometry: GeometryBuilder, face: FaceID);
     reset(): void;
     current(): HalfEdgeID | null;
@@ -64,8 +61,8 @@ export declare class FaceHalfEdgesIterator {
 }
 export declare class FaceVerticesIterator {
     geometry: GeometryBuilder;
-    faceID: FaceID;
-    halfEdgeID: HalfEdgeID | null;
+    face: FaceID;
+    halfEdge: HalfEdgeID | null;
     constructor(geometry: GeometryBuilder, face: FaceID);
     reset(): void;
     current(): VertexID | null;
@@ -74,8 +71,8 @@ export declare class FaceVerticesIterator {
 }
 export declare class VertexFacesIterator {
     geometry: GeometryBuilder;
-    halfEdgeID: HalfEdgeID | null;
-    vertexID: VertexID;
+    halfEdge: HalfEdgeID | null;
+    vertex: VertexID;
     constructor(geometry: GeometryBuilder, vertex: VertexID);
     reset(): void;
     current(): FaceID | null;

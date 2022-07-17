@@ -191,7 +191,7 @@ export declare type TextureProperties = {
 export declare type Texture = {
     name: string;
     unit: number;
-    internal: WebGLTexture;
+    internalTexture: WebGLTexture;
     properties?: TextureProperties;
 };
 export declare class WebGLTextureUtilities {

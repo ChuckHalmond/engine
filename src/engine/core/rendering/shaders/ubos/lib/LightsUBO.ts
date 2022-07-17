@@ -1,5 +1,4 @@
-import { Scene } from "../../../scenes/Scene";
-import { UniformsList } from "../../../webgl/WebGLUniformUtilities";
+import { Uniform } from "engine/core/rendering/webgl/WebGLUniformUtilities";
 import { UBOBase } from "../UBO";
 
 export { LightsUBO };
@@ -26,11 +25,11 @@ class LightsUBO extends UBOBase<LightsUBOReferences> implements LightsUBO {
         throw new Error("Method not implemented.");
     }
 
-    getUniformValues(): UniformsList {
+    getUniformValues(): Record<string, Uniform> {
         throw new Error("Method not implemented.");
     }
 
-    getDeltaUniformValues(): UniformsList | null {
+    getDeltaUniformValues(): Record<string, Uniform> | null {
         throw new Error("Method not implemented.");
     }
 }

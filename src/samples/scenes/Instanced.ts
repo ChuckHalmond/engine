@@ -70,13 +70,13 @@ function scene(canvas: HTMLCanvasElement) {
         `}
     );
 
-    if (program == null) {
+    if (program === null) {
         console.error("program null.");
         return;
     }
 
     const blocks = WebGLPacketUtilities.createUniformBlocks(gl, program, ["commonBlock"]);
-    if (blocks == null) {
+    if (blocks === null) {
         console.error("bindings null.");
         return;
     }
@@ -151,7 +151,7 @@ function scene(canvas: HTMLCanvasElement) {
     WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
 
     const packet = WebGLPacketUtilities.createPacket(gl, program, packetProperties);
-    if (packet == null) {
+    if (packet === null) {
         console.error("packet null.");
         return;
     }

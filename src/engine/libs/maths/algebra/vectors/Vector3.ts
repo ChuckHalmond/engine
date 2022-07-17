@@ -302,16 +302,17 @@ class Vector3Base {
 	}
 
 	normalize(): this {
+		const {array} = this;
 		const length = this.length();
 		if (length > Number.EPSILON) {
-			this.array[0] /= length;
-			this.array[1] /= length;
-			this.array[2] /= length;
+			array[0] /= length;
+			array[1] /= length;
+			array[2] /= length;
 		}
 		else {
-			this.array[0] = 0;
-			this.array[1] = 0;
-			this.array[2] = 0;
+			array[0] = 0;
+			array[1] = 0;
+			array[2] = 0;
 		}
 
 		return this;
@@ -450,17 +451,18 @@ class Vector3Base {
 	}
 
 	[Symbol.iterator] (): Iterator<number> {
-		const array = this.array;
+		const {array} = this;
+		const {length} = array;
 		let i = 0;
 		return {
 			next() {
-				if (i < array.length) {
+				if (i < length) {
 					return {
 						value: array[i++], done: false
 					};
 				}
 				return {
-					value: void 0, done: true
+					value: undefined, done: true
 				}
 			}
 		}

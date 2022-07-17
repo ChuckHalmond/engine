@@ -160,7 +160,7 @@ export async function launchScene() {
     const textures = [albedoMap, normalMap];
     textures.forEach((texture) => {
       gl.activeTexture(gl.TEXTURE0 + texture.unit);
-      gl.bindTexture(gl.TEXTURE_2D, texture.internal);
+      gl.bindTexture(gl.TEXTURE_2D, texture.internalTexture);
       gl.texParameterf(gl.TEXTURE_2D, anisotropicExtension.TEXTURE_MAX_ANISOTROPY_EXT, maxFiltering);
     });
   }
@@ -203,8 +203,8 @@ export async function launchScene() {
   timers.push(["indicesArray()", getDelta(timers)]);
   const quadVertices = quadGeometryBuilder.verticesArray();
   timers.push(["verticesArray()", getDelta(timers)]);
-  const quadNormals = quadGeometryBuilder.verticesNormalsArray();
-  timers.push(["verticesNormalsArray()", getDelta(timers)]);
+  const quadNormals = quadGeometryBuilder.normalsArray();
+  timers.push(["normalsArray()", getDelta(timers)]);
   const quadUVs = quadGeometryBuilder.uvsArray();
   timers.push(["uvsArray()", getDelta(timers)]);
   const quadTangents = quadGeometryBuilder.tangentsArray();
@@ -331,7 +331,6 @@ export async function launchScene() {
 
     cameraControl.update(deltaTime);
     
-    WebGLRendererUtilities.clearColor(gl, Color.GREEN.valuesNormalized());
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
 
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);

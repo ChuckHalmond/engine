@@ -104,7 +104,7 @@ export class WebGLRendererUtilities {
         gl.viewport(x, y, width, height);
     }
 
-    static clearColor(gl: WebGL2RenderingContext, color: [number, ...number[]] & { length: 4 }): void {
+    static clearColor(gl: WebGL2RenderingContext, color: ArrayLike<number>): void {
         gl.clearColor(color[0], color[1], color[2], color[3]);
     }
 
@@ -118,6 +118,10 @@ export class WebGLRendererUtilities {
 
     static blendFunction(gl: WebGL2RenderingContext, srcFunc: BlendingMode, dstFunc: BlendingMode): void {
         gl.blendFunc(srcFunc, dstFunc);
+    }
+
+    static blendFunctionSeparate(gl: WebGL2RenderingContext, srcFunc: BlendingMode, dstFunc: BlendingMode, srcAlpha: number, dstAlpha: number): void {
+        gl.blendFuncSeparate(srcFunc, dstFunc, srcAlpha, dstAlpha);
     }
 
     static stencilFunction(gl: WebGL2RenderingContext, func: TestFunction, ref: number, mask: number, face: Face): void {

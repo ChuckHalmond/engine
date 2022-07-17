@@ -40,14 +40,14 @@ export async function wireframe() {
   const wireframeProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: wireframeVertex, fragmentSource: wireframeFragment});
   const linesProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: linesVertex, fragmentSource: linesFragment});
 
-  if (wireframeProgram == null || linesProgram == null) {
+  if (wireframeProgram === null || linesProgram === null) {
     console.error("program null.");
     return;
   }
 
   const blocks = WebGLPacketUtilities.createUniformBlocks(gl, linesProgram, ["viewBlock", "linesBlock"]);
 
-  if (blocks == null) {
+  if (blocks === null) {
     console.error("bindings null.");
     return;
   }
@@ -111,7 +111,7 @@ export async function wireframe() {
   };
 
   const wireframePacket = WebGLPacketUtilities.createPacket(gl, linesProgram, wireframeProps);
-  if (wireframePacket == null) {
+  if (wireframePacket === null) {
     return console.error("vertWireframePacket null.");
   }
   

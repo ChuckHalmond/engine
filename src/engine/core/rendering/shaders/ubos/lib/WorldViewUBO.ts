@@ -1,9 +1,9 @@
 
+import { Uniform } from "engine/core/rendering/webgl/WebGLUniformUtilities";
 import { Matrix4 } from "../../../../../libs/maths/algebra/matrices/Matrix4";
 import { Matrix4Pool } from "../../../../../libs/maths/extensions/pools/Matrix4Pools";
 import { Transform } from "../../../../general/Transform";
 import { Camera } from "../../../scenes/cameras/Camera";
-import { UniformsList } from "../../../webgl/WebGLUniformUtilities";
 import { UBOBase } from "../UBO";
 
 export { WorldViewUBO };
@@ -31,8 +31,8 @@ class WorldViewUBO extends UBOBase<WorldViewUBOReferences> implements WorldViewU
         throw new Error("Method not implemented.");
     }
 
-    getUniformValues(): UniformsList {
-        let values: UniformsList = {};
+    getUniformValues(): Record<string, Uniform> {
+        let values: Record<string, Uniform> = {};
         const [worldInverseTranspose, worldViewProjection, cameraWorld, meshWorld] = Matrix4Pool.acquire(4);
         cameraWorld.copy(this._references.camera.transform.matrix);
         meshWorld.copy(this._references.meshTransform.matrix);
@@ -51,7 +51,7 @@ class WorldViewUBO extends UBOBase<WorldViewUBOReferences> implements WorldViewU
         return values;
     }
         
-    getDeltaUniformValues(): Partial<UniformsList> | null {
+    getDeltaUniformValues(): Partial<Record<string, Uniform>> | null {
         throw new Error("Method not implemented.");
     }
 }

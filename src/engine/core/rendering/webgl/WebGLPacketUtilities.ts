@@ -1,16 +1,16 @@
 import { VertexArray, VertexArrayValues, VertexArrayProperties, WebGLVertexArrayUtilities, DrawMode } from "./WebGLVertexArrayUtilities"
 import { Texture, TextureProperties, WebGLTextureUtilities } from "./WebGLTextureUtilities"
 import { UniformBlock, UniformBlockBuffer, UniformBufferProperties, WebGLUniformBlockUtilities } from "./WebGLUniformBlockUtilities"
-import { UniformsList, UniformsListSetter, WebGLUniformUtilities } from "./WebGLUniformUtilities"
+import { Uniform, UniformsListSetter, WebGLUniformUtilities } from "./WebGLUniformUtilities"
 import { Program } from "./WebGLProgramUtilities"
 
 export type PacketProperties = {
     vertexArray: VertexArrayProperties;
-    uniforms?: UniformsList;
+    uniforms?: Record<string, Uniform>;
     uniformBlocks?: {
         block: UniformBlock;
         buffer?: UniformBlockBuffer | UniformBufferProperties;
-        uniforms?: UniformsList;
+        uniforms?: Record<string, Uniform>;
     }[];
     options?: {
         drawMode?: DrawMode;
@@ -20,32 +20,28 @@ export type PacketProperties = {
 
 export type PacketValues = {
     vertexArray?: VertexArrayValues;
-    uniforms?: UniformsList;
+    uniforms?: Record<string, Uniform>;
     uniformBlocks?: {
         block: UniformBlock;
         buffer: UniformBlockBuffer;
-        uniforms: UniformsList;
+        uniforms: Record<string, Uniform>;
     }[];
 }
 
 export type Packet = {
-    vertexArray?: VertexArray;
+    vertexArray: VertexArray;
     uniformsSetter?: UniformsListSetter;
-    uniformBlocks?: {
-        [name: string]: {
-            block: UniformBlock;
-            buffer: UniformBlockBuffer;
-        }
-    };
+    uniformBlocks?: Record<string, {
+        block: UniformBlock;
+        buffer: UniformBlockBuffer;
+    }>;
     drawMode: DrawMode;
     instanceCount?: number;
 }
 
 export class WebGLPacketUtilities {
 
-    static createTextures(gl: WebGL2RenderingContext, textures: {
-        [name: string]: TextureProperties;
-    }): {[name: string]: Texture} {
+    static createTextures(gl: WebGL2RenderingContext, textures: Record<string, TextureProperties>): Record<string, Texture> {
         const _textures: {
             [key: string]: Texture
         } = {};
@@ -58,10 +54,8 @@ export class WebGLPacketUtilities {
         return _textures;
     }
 
-    static createUniformBlocks(gl: WebGL2RenderingContext, program: Program, uniformBlocks: string[]): {[name: string]: UniformBlock} {
-        const _uniformBlocks: {
-            [key: string]: UniformBlock
-        } = {};
+    static createUniformBlocks(gl: WebGL2RenderingContext, program: Program, uniformBlocks: string[]): Record<string, UniformBlock> {
+        const _uniformBlocks: Record<string, UniformBlock> = {};
         uniformBlocks.forEach((blockName) => {
             const uniformBlock = WebGLUniformBlockUtilities.createUniformBlock(
                 gl, program, blockName
@@ -78,44 +72,44 @@ export class WebGLPacketUtilities {
         const drawMode = options?.drawMode || DrawMode.TRIANGLES;
         const instanceCount = options?.instanceCount;
 
-        let vertexArray: VertexArray | undefined = void 0;
-        if (vertexArrayProperties !== void 0) {
-            vertexArray = WebGLVertexArrayUtilities.createVertexArray(gl, program, vertexArrayProperties) ?? void 0;
-            if (vertexArray == void 0) {
-                return null;
-            }
+        let vertexArray: VertexArray | null = null;
+        vertexArray = WebGLVertexArrayUtilities.createVertexArray(gl, program, vertexArrayProperties);
+        if (vertexArray === null) {
+            return null;
         }
       
         let uniformsSetter: UniformsListSetter | undefined = void 0;
         if (uniformsProperties !== void 0) {
             uniformsSetter = WebGLUniformUtilities.getUniformsListSetter(gl, program, uniformsProperties) ?? void 0;
-            if (uniformsSetter == void 0) {
+            if (uniformsSetter === void 0) {
                 return null;
             }
             WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, uniformsProperties);
         }
 
-        let uniformBlocks: {
-            [name: string]: {
-                block: UniformBlock;
-                buffer: UniformBlockBuffer;
-            }
-        } = {};
+        let uniformBlocks: Record<string, {
+            block: UniformBlock;
+            buffer: UniformBlockBuffer;
+        }> = {};
 
         if (uniformBlocksProperties !== void 0) {
             uniformBlocksProperties.forEach((uniformBlock) => {
-                const {block, buffer: bufferProperties, uniforms} = uniformBlock;
+                const {block, buffer: bufferOrBufferProperties, uniforms} = uniformBlock;
                 const {blockSize, name: blockName} = block;
                 let buffer: UniformBlockBuffer | null = null;
-                if (bufferProperties) {
-                    const {usage} = bufferProperties;
-                    buffer = "internal" in bufferProperties ? bufferProperties :
-                        WebGLUniformBlockUtilities.createUniformBuffer(gl, usage, blockSize);
+                if (bufferOrBufferProperties !== undefined) {
+                    if ("internalBuffer" in bufferOrBufferProperties) {
+                        buffer = bufferOrBufferProperties;
+                    }
+                    else {
+                        const {usage} = bufferOrBufferProperties;
+                        buffer = WebGLUniformBlockUtilities.createUniformBuffer(gl, usage, blockSize);
+                    }
                 }
                 else {
                     buffer = WebGLUniformBlockUtilities.createUniformBuffer(gl, blockSize);
                 }
-                if (buffer == null) {
+                if (buffer === null) {
                     return null;
                 }
                 WebGLUniformBlockUtilities.bindUniformBuffer(gl, block, buffer);

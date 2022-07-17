@@ -1,5 +1,5 @@
 import { GeometryBase } from "../geometry";
-import { GeometryBuilder, Vertex } from "../GeometryBuilder";
+import { GeometryBuilder } from "../GeometryBuilder";
 
 export { QuadGeometry };
 
@@ -56,7 +56,7 @@ class QuadGeometry extends GeometryBase {
 		}
 
 		const {length: indicesCount} = indices;
-		const verticesArray: Vertex[] = [];
+		const verticesArray: number[] = [];
 		const uvsArray: number[][] = [];
 		for (let i = 0; i < indicesCount; i += 3) {
 			const vi1 = 3 * indices[i], vi2 = 3 * indices[i + 1], vi3 = 3 * indices[i + 2];

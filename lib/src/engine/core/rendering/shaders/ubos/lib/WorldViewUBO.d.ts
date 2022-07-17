@@ -1,6 +1,6 @@
+import { Uniform } from "engine/core/rendering/webgl/WebGLUniformUtilities";
 import { Transform } from "../../../../general/Transform";
 import { Camera } from "../../../scenes/cameras/Camera";
-import { UniformsList } from "../../../webgl/WebGLUniformUtilities";
 import { UBOBase } from "../UBO";
 export { WorldViewUBO };
 declare type WorldViewUBOReferences = {
@@ -12,6 +12,6 @@ declare class WorldViewUBO extends UBOBase<WorldViewUBOReferences> implements Wo
     static getInstance(references: WorldViewUBOReferences): WorldViewUBO;
     subscribeReferences(): void;
     unsubscribeReferences(): void;
-    getUniformValues(): UniformsList;
-    getDeltaUniformValues(): Partial<UniformsList> | null;
+    getUniformValues(): Record<string, Uniform>;
+    getDeltaUniformValues(): Partial<Record<string, Uniform>> | null;
 }

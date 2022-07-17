@@ -1,5 +1,5 @@
-import { UniformsList, WebGLUniformUtilities } from "./WebGLUniformUtilities";
-import { Buffer, BufferDataUsage, BufferTarget } from "./WebGLBufferUtilities";
+import { Uniform, WebGLUniformUtilities } from "./WebGLUniformUtilities";
+import { Buffer, BufferDataUsage } from "./WebGLBufferUtilities";
 import { Program } from "./WebGLProgramUtilities";
 
 export type UniformBlock = {
@@ -11,11 +11,9 @@ export type UniformBlock = {
     bindingPoint: number;
 }
 
-export type UniformBlockLayout = {
-    [name: string]: {
-        offset: number;
-    }
-}
+export type UniformBlockLayout = Record<string, {
+    offset: number;
+}>;
 
 export type UniformBlockBuffer = Buffer & {
     rangeOffset?: number;
@@ -40,7 +38,7 @@ export class WebGLUniformBlockUtilities {
     }
 
     static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null {
-        const {internal} = program;
+        const {internalProgram} = program;
 
         let bindingPoint = this.#bindingPoints.get(name);
         if (bindingPoint == undefined) {
@@ -48,21 +46,21 @@ export class WebGLUniformBlockUtilities {
             this.#bindingPoints.set(name, bindingPoint);
         }
 
-        const blockIndex = gl.getUniformBlockIndex(internal, name);
+        const blockIndex = gl.getUniformBlockIndex(internalProgram, name);
         if (blockIndex === gl.INVALID_INDEX) {
             console.error(`Block '${name}' does not identify a valid uniform block.`);
             return null;
         }
 
-        gl.uniformBlockBinding(internal, blockIndex, bindingPoint);
+        gl.uniformBlockBinding(internalProgram, blockIndex, bindingPoint);
 
-        const blockSize = gl.getActiveUniformBlockParameter(internal, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE);
+        const blockSize = gl.getActiveUniformBlockParameter(internalProgram, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE);
         const layout: UniformBlockLayout = {};
-        const blockUniformsIndices = gl.getActiveUniformBlockParameter(internal, blockIndex, gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES);
-        const activeUniformsOffsets = gl.getActiveUniforms(internal, blockUniformsIndices, gl.UNIFORM_OFFSET);
+        const blockUniformsIndices = gl.getActiveUniformBlockParameter(internalProgram, blockIndex, gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES);
+        const activeUniformsOffsets = gl.getActiveUniforms(internalProgram, blockUniformsIndices, gl.UNIFORM_OFFSET);
         activeUniformsOffsets.forEach((uniformOffset_i: number, i: number) => {
             const uniformIndex = blockUniformsIndices[i];
-            const uniformInfo = gl.getActiveUniform(internal, uniformIndex);
+            const uniformInfo = gl.getActiveUniform(internalProgram, uniformIndex);
             if (uniformInfo !== null) {
                 const {name} = uniformInfo;
                 layout[name] = {
@@ -82,31 +80,28 @@ export class WebGLUniformBlockUtilities {
     }
 
     static createUniformBuffer(gl: WebGL2RenderingContext, byteLength: number, usage?: BufferDataUsage): UniformBlockBuffer | null {
-        const internal = gl.createBuffer();
-        if (internal == null) {
-            console.error("Could not create WebGLBuffer.");
+        const internalBuffer = gl.createBuffer();
+        if (internalBuffer === null) {
             return null;
         }
         
         const target = gl.UNIFORM_BUFFER;
-        gl.bindBuffer(target, internal);
+        gl.bindBuffer(target, internalBuffer);
 
-        usage = usage ?? BufferDataUsage.DYNAMIC_DRAW;
+        const DEFAULT_USAGE = BufferDataUsage.STATIC_READ;
+        usage = usage ?? DEFAULT_USAGE;
 
-        const data = new ArrayBuffer(byteLength);
-        gl.bufferData(target, data, usage);
+        gl.bufferData(target, byteLength, usage);
         
         return {
-            internal: internal,
-            target: target,
-            usage: usage,
-            data: data
+            internalBuffer,
+            target,
+            usage
         };
     }
 
-    static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): {
-        [name: string]: RangedUniformBlockBuffer
-    } | null {
+    static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): Record<string, RangedUniformBlockBuffer> | null {
+
         const offsetAlignment = gl.getParameter(gl.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
         const bufferByteLength = blocks.reduce(
             (size, block) => size + Math.max(Math.ceil(block.blockSize / offsetAlignment), 1) * offsetAlignment, 0
@@ -118,11 +113,11 @@ export class WebGLUniformBlockUtilities {
         }
 
         const buffer = this.createUniformBuffer(gl, bufferByteLength, usage);
-        if (buffer == null) {
+        if (buffer === null) {
             return null;
         }
 
-        let rangedUniformBuffers: {[name: string]: RangedUniformBlockBuffer} = {};
+        let rangedUniformBuffers: Record<string, RangedUniformBlockBuffer> = {};
         let rangeOffset = 0;
         blocks.forEach((block) => {
             const {blockSize: rangeSize, name} = block;
@@ -137,11 +132,11 @@ export class WebGLUniformBlockUtilities {
         return rangedUniformBuffers;
     }
 
-    static setUniformBufferValues(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBlockBuffer, uniforms: UniformsList): void {
-        const {internal} = buffer;
+    static setUniformBufferValues(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBlockBuffer, uniforms: Record<string, Uniform>): void {
+        const {internalBuffer} = buffer;
         const currentUniformBuffer = gl.getParameter(gl.UNIFORM_BUFFER_BINDING);
-        if (currentUniformBuffer !== internal) {
-            gl.bindBuffer(gl.UNIFORM_BUFFER, internal);
+        if (currentUniformBuffer !== internalBuffer) {
+            gl.bindBuffer(gl.UNIFORM_BUFFER, internalBuffer);
         }
         
         const {layout, name} = block;
@@ -157,17 +152,15 @@ export class WebGLUniformBlockUtilities {
     }
 
     static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBlockBuffer): void {
-        const {data, internal} = buffer;
+        const {internalBuffer} = buffer;
         const {bindingPoint} = block;
-        const {byteLength} = data;
         let {rangeOffset, rangeSize} = buffer;
 
-        if (rangeOffset) {
-            rangeSize = rangeSize ?? (byteLength - rangeOffset);
-            gl.bindBufferRange(gl.UNIFORM_BUFFER, bindingPoint, internal, rangeOffset, rangeSize);
+        if (rangeOffset !== undefined && rangeSize !== undefined) {
+            gl.bindBufferRange(gl.UNIFORM_BUFFER, bindingPoint, internalBuffer, rangeOffset, rangeSize);
         }
         else {
-            gl.bindBufferBase(gl.UNIFORM_BUFFER, bindingPoint, internal);
+            gl.bindBufferBase(gl.UNIFORM_BUFFER, bindingPoint, internalBuffer);
         }
     }
 }
