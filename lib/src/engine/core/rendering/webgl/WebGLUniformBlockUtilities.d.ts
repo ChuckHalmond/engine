@@ -30,5 +30,6 @@ export declare class WebGLUniformBlockUtilities {
     static createUniformBuffer(gl: WebGL2RenderingContext, byteLength: number, usage?: BufferDataUsage): UniformBlockBuffer | null;
     static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): Record<string, RangedUniformBlockBuffer> | null;
     static setUniformBufferValues(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBlockBuffer, uniforms: Record<string, Uniform>): void;
+    static setUniformBufferData(gl: WebGL2RenderingContext, buffer: UniformBlockBuffer, data: ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void;
     static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBlockBuffer): void;
 }

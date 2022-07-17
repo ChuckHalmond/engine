@@ -83,7 +83,7 @@ function scene(canvas: HTMLCanvasElement) {
 
     const packetProperties: PacketProperties = {
         vertexArray: {
-            attributes: {
+            vertexAttributes: {
                 a_translation: {
                     array: new Float32Array([
                         0, 0, 0,

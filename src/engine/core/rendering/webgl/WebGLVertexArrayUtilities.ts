@@ -1,8 +1,8 @@
 import { BufferDataUsage, Buffer } from "./WebGLBufferUtilities";
 import { Program, WebGLProgramUtilities } from "./WebGLProgramUtilities";
 
-export { VertexArrayAttributeValue };
-export { VertexArrayAttributeProperties };
+export { VertexAttributeValue };
+export { VertexAttributeProperties };
 export { VertexArrayProperties };
 export { VertexArrayValues };
 export { VertexArray };
@@ -45,9 +45,10 @@ export type AttributeArray =
     Int16Array | Uint16Array |
     Int8Array | Uint8Array;
 
-type VertexArrayAttributeProperties = {
+type VertexAttributeProperties = {
     array: AttributeArray;
     type: AttributeDataType;
+    buffer?: number;
     divisor?: number;
     normalize?: boolean;
     constant?: boolean;
@@ -55,14 +56,14 @@ type VertexArrayAttributeProperties = {
     srcLength?: number;
 }
 
-type VertexArrayAttributeValue = {
+type VertexAttributeValue = {
     array: AttributeArray;
     srcOffset?: number;
     srcLength?: number;
     constant?: boolean;
 }
 
-type VertexArrayAttributeSetter = {
+type VertexAttribute = {
     divisor: number;
     componentType: DataComponentType;
     numComponents: number;
@@ -75,21 +76,15 @@ type VertexArrayAttributeSetter = {
 }
 
 type VertexArrayProperties = {
-    attributes?: Record<string, VertexArrayAttributeProperties>;
-    bufferedAttributes?: {
-        buffer?: VertexArrayBuffer | VertexArrayBufferProperties;
-        attributes?: Record<string, VertexArrayAttributeProperties>;
-    }[];
-    indices?: Uint8Array | Uint16Array | Uint32Array;
-    bufferedIndices?: {
-        buffer?: VertexElementArrayBuffer | VertexElementArrayBufferProperties;
-        indices?: Uint8Array | Uint16Array | Uint32Array;
-    };
+    vertexBuffers?: (VertexArrayBuffer | VertexArrayBufferProperties)[];
+    vertexAttributes?: Record<string, VertexAttributeProperties>;
+    elementBuffer?: VertexElementArrayBuffer | VertexElementArrayBufferProperties;
+    elementIndices?: Uint8Array | Uint16Array | Uint32Array;
     elementsCount: number;
 }
 
 type VertexArrayValues = {
-    attributes: Record<string, VertexArrayAttributeValue>;
+    attributes: Record<string, VertexAttributeValue>;
     elementsCount?: number;
 }
 
@@ -98,11 +93,11 @@ type VertexArray = {
     program: Program;
     verticesBuffers: VertexArrayBuffer[];
     elementsCount: number;
-    indicesBuffer?: VertexElementArrayBuffer;
+    elementBuffer?: VertexElementArrayBuffer;
 }
 
 export type VertexArrayBuffer = Buffer & {
-    setters: Record<string, VertexArrayAttributeSetter>;
+    vertexAttributes: Record<string, VertexAttribute>;
     byteLength: number;
     byteStride: number;
     interleaved: boolean;
@@ -222,7 +217,7 @@ class WebGLVertexArrayUtilities {
         };
     }
 
-    static createVertexArrayBuffer(gl: WebGL2RenderingContext, program: Program, attributes: Record<string, VertexArrayAttributeProperties>, usage?: BufferDataUsage, interleaved?: boolean): VertexArrayBuffer | null {
+    static createVertexArrayBuffer(gl: WebGL2RenderingContext, program: Program, attributes: Record<string, VertexAttributeProperties>, usage?: BufferDataUsage, interleaved?: boolean): VertexArrayBuffer | null {
         const {internalProgram} = program;
 
         const DEFAULT_USAGE = BufferDataUsage.STATIC_READ;
@@ -245,7 +240,7 @@ class WebGLVertexArrayUtilities {
         const dataBuffer = new ArrayBuffer(byteLength);
         let byteStride = 0;
 
-        const setters: Record<string, VertexArrayAttributeSetter> = {};
+        const vertexAttributes: Record<string, VertexAttribute> = {};
         if (attributesEntries !== null) {
             byteStride = interleaved ? attributesEntries.reduce(
                 (stride, [_, attribute]) => {
@@ -331,7 +326,7 @@ class WebGLVertexArrayUtilities {
                             const bufferArray = new bufferArrayConstructor(dataBuffer, byteOffset);
                             bufferArray.set(array);
                         }
-                        setters[attributeName] = {
+                        vertexAttributes[attributeName] = {
                             constantValue,
                             numComponents,
                             divisor,
@@ -356,7 +351,7 @@ class WebGLVertexArrayUtilities {
             interleaved,
             byteStride,
             byteLength,
-            setters
+            vertexAttributes
         };
     }
 
@@ -367,17 +362,17 @@ class WebGLVertexArrayUtilities {
         attributesNames.forEach((attributeName) => {
             const {verticesBuffers} = vertexArray;
             const verticesBuffer = verticesBuffers.find(
-                (verticesBuffer) => attributeName in verticesBuffer.setters
+                (verticesBuffer) => attributeName in verticesBuffer.vertexAttributes
             );
             if (verticesBuffer) {
-                const {internalBuffer, target, byteStride, interleaved, setters} = verticesBuffer;
+                const {internalBuffer, target, byteStride, interleaved, vertexAttributes} = verticesBuffer;
                 const currentArrayBufferBinding = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
                 if (currentArrayBufferBinding !== internalBuffer) {
                     gl.bindBuffer(target, internalBuffer);
                 }
                 
                 const attribute = attributes[attributeName];
-                const {byteOffset, bytesPerElement} = setters[attributeName];
+                const {byteOffset, bytesPerElement} = vertexAttributes[attributeName];
                 const {array} = attribute;
                 const {length, BYTES_PER_ELEMENT} = array;
                 const elementsCount = bytesPerElement / BYTES_PER_ELEMENT;
@@ -404,27 +399,39 @@ class WebGLVertexArrayUtilities {
         }
     }
 
+    static setVertexArrayBufferData(gl: WebGL2RenderingContext, buffer: VertexArrayBuffer | VertexElementArrayBuffer, data: ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void {
+        const {internalBuffer, target} = buffer;
+        gl.bindBuffer(target, internalBuffer);
+        dstByteOffset = dstByteOffset ?? 0;
+        srcOffset = srcOffset ?? 0;
+        gl.bufferSubData(target, dstByteOffset, data, srcOffset, length);
+    }
+
     static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null {
-        const {attributes, bufferedAttributes, indices, bufferedIndices, elementsCount} = vertexArray;
+        const {vertexAttributes, vertexBuffers, elementIndices, elementBuffer: elementBufferOrBufferProperties, elementsCount} = vertexArray;
         const internalVertexArray = gl.createVertexArray();
         if (internalVertexArray === null) {
             return null;
         }
         gl.bindVertexArray(internalVertexArray);
 
+        const attributesEntries = vertexAttributes ? Object.entries(vertexAttributes) : [];
+        
         const {internalProgram} = program;
         const verticesBuffers: VertexArray["verticesBuffers"] = [];
-        if (bufferedAttributes) {
-            bufferedAttributes.forEach((bufferedAttribute_i) => {
+        if (vertexBuffers) {
+            vertexBuffers.forEach((buffer_i, i) => {
+                const attributes = Object.fromEntries(attributesEntries.filter(
+                    ([_, attribute_i]) => attribute_i.buffer == i 
+                ));
                 let buffer: VertexArrayBuffer | null = null;
-                const {buffer: bufferOrBufferProperties, attributes} = bufferedAttribute_i;
-                if (bufferOrBufferProperties !== undefined) {
-                    if ("internalBuffer" in bufferOrBufferProperties) {
-                        const {target, internalBuffer} = bufferOrBufferProperties;
-                        buffer = bufferOrBufferProperties;
+                if (buffer_i !== undefined) {
+                    if ("internalBuffer" in buffer_i) {
+                        const {target, internalBuffer} = buffer_i;
+                        buffer = buffer_i;
                         gl.bindBuffer(target, internalBuffer);
-                        const {byteStride, setters} = buffer;
-                        Object.entries(setters).forEach(([attributeName, setter]) => {
+                        const {byteStride, vertexAttributes} = buffer;
+                        Object.entries(vertexAttributes).forEach(([attributeName, setter]) => {
                             const {numComponents, componentType, normalize, byteOffset, divisor, constant, constantValue} = setter;
                             const location = gl.getAttribLocation(internalProgram, attributeName);
                             if (location > -1) {
@@ -432,19 +439,19 @@ class WebGLVertexArrayUtilities {
                                 if (divisor > 0) {
                                     gl.vertexAttribDivisor(location, divisor);
                                 }
-                                if (constant) {
+                                if (constant && constantValue) {
                                     switch (numComponents) {
                                         case 1:
-                                            gl.vertexAttrib1fv(location, constantValue!);
+                                            gl.vertexAttrib1fv(location, constantValue);
                                             break;
                                         case 2:
-                                            gl.vertexAttrib2fv(location, constantValue!);
+                                            gl.vertexAttrib2fv(location, constantValue);
                                             break;
                                         case 3:
-                                            gl.vertexAttrib3fv(location, constantValue!);
+                                            gl.vertexAttrib3fv(location, constantValue);
                                             break;
                                         case 4:
-                                            gl.vertexAttrib4fv(location, constantValue!);
+                                            gl.vertexAttrib4fv(location, constantValue);
                                             break;
                                     }
                                 }
@@ -454,13 +461,13 @@ class WebGLVertexArrayUtilities {
                             }
                         });
                     }
-                    else {
-                        const {usage, interleaved} = bufferOrBufferProperties;
-                        buffer = this.createVertexArrayBuffer(gl, program, attributes!, usage, interleaved);
+                    else if (attributes) {
+                        const {usage, interleaved} = buffer_i;
+                        buffer = this.createVertexArrayBuffer(gl, program, attributes, usage, interleaved);
                     }
                 }
-                else {
-                    buffer = this.createVertexArrayBuffer(gl, program, attributes!);
+                else if (attributes) {
+                    buffer = this.createVertexArrayBuffer(gl, program, attributes);
                 }
                 if (buffer === null) {
                     return null;
@@ -468,42 +475,36 @@ class WebGLVertexArrayUtilities {
                 verticesBuffers.push(buffer);
             });
         }
-        else if (attributes) {
+        else if (vertexAttributes) {
             let buffer: VertexArrayBuffer | null = null;
-            buffer = this.createVertexArrayBuffer(gl, program, attributes);
+            buffer = this.createVertexArrayBuffer(gl, program, vertexAttributes);
             if (buffer === null) {
                 return null;
             }
             verticesBuffers.push(buffer);
         }
         
-        let indicesBuffer: VertexElementArrayBuffer | null | undefined = undefined;
-        if (bufferedIndices) {
-            const {buffer: bufferOrBufferProps, indices} = bufferedIndices;
-            if (bufferOrBufferProps !== undefined) {
-                if ("internalBuffer" in bufferOrBufferProps) {
-                    const {target, internalBuffer} = bufferOrBufferProps;
-                    indicesBuffer = bufferOrBufferProps;
-                    gl.bindBuffer(target, internalBuffer);
-                }
-                else {
-                    indicesBuffer = this.createVertexElementArrayBuffer(gl, indices!);
-                }
+        let elementBuffer: VertexElementArrayBuffer | null | undefined = undefined;
+        if (elementBufferOrBufferProperties !== undefined) {
+            if ("internalBuffer" in elementBufferOrBufferProperties) {
+                const {target, internalBuffer} = elementBufferOrBufferProperties;
+                elementBuffer = elementBufferOrBufferProperties;
+                gl.bindBuffer(target, internalBuffer);
             }
-            else {
-                indicesBuffer = this.createVertexElementArrayBuffer(gl, indices!);
+            else if (elementIndices) {
+                elementBuffer = this.createVertexElementArrayBuffer(gl, elementIndices);
             }
         }
-        else if (indices) {
-            indicesBuffer = this.createVertexElementArrayBuffer(gl, indices!);
+        else if (elementIndices) {
+            elementBuffer = this.createVertexElementArrayBuffer(gl, elementIndices);
         }
-        if (indicesBuffer === null) {
+        if (elementBuffer === null) {
             return null;
         }
 
         return {
             verticesBuffers,
-            indicesBuffer,
+            elementBuffer,
             program,
             internalVertexArray,
             elementsCount,
@@ -518,7 +519,7 @@ class WebGLVertexArrayUtilities {
     }
 
     static drawVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray, mode: DrawMode, instanceCount?: number): void {
-        const {program, internalVertexArray, indicesBuffer, elementsCount} = vertexArray;
+        const {program, internalVertexArray, elementBuffer, elementsCount} = vertexArray;
 
         WebGLProgramUtilities.useProgram(gl, program);
         
@@ -527,8 +528,8 @@ class WebGLVertexArrayUtilities {
             gl.bindVertexArray(internalVertexArray);
         }
         
-        if (indicesBuffer) {
-            const {indexType} = indicesBuffer;
+        if (elementBuffer) {
+            const {indexType} = elementBuffer;
             if (instanceCount !== void 0) {
                 gl.drawElementsInstanced(mode, elementsCount, indexType, 0, instanceCount);
             }
@@ -545,50 +546,6 @@ class WebGLVertexArrayUtilities {
             }
         }
     }
-
-    /*static setVertexArrayAttributeValue(gl: WebGL2RenderingContext, vertexArray: VertexArray, attributeName: string, value: VertexArrayAttributeValue) {
-        //@TODO: Handle interleaved attributes
-        const {attributeSetters, verticesBuffer} = vertexArray;
-        const attributeSetter = attributeSetters[attributeName];
-        const {internal} = verticesBuffer;
-        const {array} = value;
-
-        const currentArrayBufferBinding = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
-        if (currentArrayBufferBinding !== internal) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, internal);
-        }
-
-        let {srcOffset, srcLength} = value;
-        srcOffset = srcOffset ?? 0;
-
-        if (attributeSetter !== void 0) {
-            const {byteOffset} = attributeSetter;
-            gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, array, srcOffset, srcLength);
-        }
-        else {
-            console.warn(`Attribute ${attributeName} does not exist in the setters.`);
-        }
-    }
-
-    static setVertexArrayValues(gl: WebGL2RenderingContext, vertexArray: VertexArray, values: VertexArrayValues): void {
-        const {indicesBuffer, verticesBuffer} = vertexArray;
-        const {attributes, indices, elementsCount} = values;
-
-        // Object.entries(attributes).forEach(([attributeName, attribute]) => {
-        //     this.setVertexArrayAttributeValue(gl, vertexArray, attributeName, attribute);
-        // });
-        this.setVertexArrayBufferValues(gl, verticesBuffer, values);
-
-        Object.assign(vertexArray, {elementsCount});
-
-        if (indices !== void 0 && indicesBuffer !== void 0) {
-            const currentElementArrayBufferBinding = gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING);
-            if (currentElementArrayBufferBinding !== indicesBuffer) {
-                gl.bindBuffer(BufferTarget.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-            }
-            gl.bufferSubData(BufferTarget.ELEMENT_ARRAY_BUFFER, 0, indices);
-        }
-    }*/
 
     static unbindVertexArray(gl: WebGL2RenderingContext): void {
         gl.bindVertexArray(null);

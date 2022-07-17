@@ -30,7 +30,7 @@ export type PacketValues = {
 
 export type Packet = {
     vertexArray: VertexArray;
-    uniformsSetter?: UniformsListSetter;
+    uniforms?: UniformsListSetter;
     uniformBlocks?: Record<string, {
         block: UniformBlock;
         buffer: UniformBlockBuffer;
@@ -78,13 +78,13 @@ export class WebGLPacketUtilities {
             return null;
         }
       
-        let uniformsSetter: UniformsListSetter | undefined = void 0;
+        let uniforms: UniformsListSetter | undefined = void 0;
         if (uniformsProperties !== void 0) {
-            uniformsSetter = WebGLUniformUtilities.getUniformsListSetter(gl, program, uniformsProperties) ?? void 0;
-            if (uniformsSetter === void 0) {
+            uniforms = WebGLUniformUtilities.getUniformsListSetter(gl, program, uniformsProperties) ?? void 0;
+            if (uniforms === void 0) {
                 return null;
             }
-            WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, uniformsProperties);
+            WebGLUniformUtilities.setUniformsListValues(gl, uniforms, uniformsProperties);
         }
 
         let uniformBlocks: Record<string, {
@@ -122,7 +122,7 @@ export class WebGLPacketUtilities {
 
         return {
             vertexArray,
-            uniformsSetter,
+            uniforms,
             uniformBlocks,
             drawMode,
             instanceCount
@@ -131,13 +131,13 @@ export class WebGLPacketUtilities {
 
     static setPacketValues(gl: WebGL2RenderingContext, packet: Packet, values: PacketValues): void {
         const {vertexArray: vertexArrayValues, uniforms: uniformsValues, uniformBlocks: uniformBlocksValues} = values;
-        const {vertexArray, uniformsSetter} = packet;
+        const {vertexArray, uniforms} = packet;
 
         if (vertexArrayValues && vertexArray) {
             WebGLVertexArrayUtilities.setVertexArrayValues(gl, vertexArray, vertexArrayValues);
         }
-        if (uniformsValues && uniformsSetter) {
-            WebGLUniformUtilities.setUniformsListValues(gl, uniformsSetter, uniformsValues);
+        if (uniformsValues && uniforms) {
+            WebGLUniformUtilities.setUniformsListValues(gl, uniforms, uniformsValues);
         }
         if (uniformBlocksValues) {
             uniformBlocksValues.forEach((uniformBlock_i) => {

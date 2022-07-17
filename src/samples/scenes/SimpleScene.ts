@@ -157,7 +157,7 @@ export async function launchScene() {
   canvas.style.width = `${canvasWidth}px`;
   canvas.style.height = `${canvasHeight}px`;
   
-  const gl = canvas.getContext("webgl2"/*, {preserveDrawingBuffer: true}, {antialias: true}*//*, {preserveDrawingBuffer: true}*/);
+  const gl = canvas.getContext("webgl2");
   if (!gl) {
     return;
   }
@@ -459,30 +459,22 @@ export async function launchScene() {
 
   const phongCubePacketProperties: PacketProperties = {
     vertexArray: {
-      bufferedAttributes: [
+      vertexBuffers: [
         {
-          buffer: {
-            interleaved: true
-          },
-          attributes: {
-            a_position: cubeVertices,
-            a_tangent: cubeTangents,
-            a_uv: cubeUVs,
-            a_normal: cubeNormals
-          }
+          interleaved: true
         },
         {
-          buffer: {
-            usage: BufferDataUsage.DYNAMIC_READ
-          },
-          attributes: {
-            a_color: cubeColors
-          }
-        }
+          usage: BufferDataUsage.DYNAMIC_READ
+        },
       ],
-      bufferedIndices: {
-        indices: cubeGeometryBuffer.indices
+      vertexAttributes: {
+        a_position: { ...cubeVertices, buffer: 0 },
+        a_tangent: { ...cubeTangents, buffer: 0 },
+        a_uv: { ...cubeUVs, buffer: 0 },
+        a_normal: { ...cubeNormals, buffer: 0 },
+        a_color: { ...cubeColors, buffer: 1 },
       },
+      elementIndices: cubeGeometryBuffer.indices,
       elementsCount: cubeGeometryBuffer.indices!.length,
     },
     uniformBlocks: [
@@ -539,7 +531,7 @@ export async function launchScene() {
 
   const linesProperties: PacketProperties = {
     vertexArray: {
-      attributes: {
+      vertexAttributes: {
         a_position: {
           array: cubeLinesArray,
           type: AttributeDataType.VEC3
@@ -572,16 +564,10 @@ export async function launchScene() {
 
   const basicPacketProperties: PacketProperties = {
     vertexArray: {
-      //attributes: {a_position: cubeVertices},
-      bufferedAttributes: [
-        {
-          buffer: phongCubePacket.vertexArray.verticesBuffers[0]
-        }
+      vertexBuffers: [
+        phongCubePacket.vertexArray.verticesBuffers[0]
       ],
-      bufferedIndices: {
-        buffer: phongCubePacket.vertexArray.indicesBuffer
-      },
-      //indices: cubeIndices,
+      elementBuffer: phongCubePacket.vertexArray.elementBuffer,
       elementsCount: cubeIndices.length
     },
     uniformBlocks: [
@@ -606,10 +592,10 @@ export async function launchScene() {
 
   const skyboxPacketProperties: PacketProperties = {
     vertexArray: {
-      attributes: {
+      vertexAttributes: {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
       },
-      indices: quadIndices,
+      elementIndices: quadIndices,
       elementsCount: quadIndices.length
     },
     uniforms: {
@@ -621,11 +607,11 @@ export async function launchScene() {
 
   const depthPacketProperties: PacketProperties = {
     vertexArray: {
-      attributes: {
+      vertexAttributes: {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
         a_uv: { array: quadUVs, type: AttributeDataType.VEC2 },
       },
-      indices: quadIndices,
+      elementIndices: quadIndices,
       elementsCount: quadIndices.length
     },
     uniforms: {
@@ -636,11 +622,11 @@ export async function launchScene() {
 
   const texPacketProperties: PacketProperties = {
     vertexArray: {
-      attributes: {
+      vertexAttributes: {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
         a_uv: { array: quadUVs, type: AttributeDataType.VEC2 },
       },
-      indices: quadIndices,
+      elementIndices: quadIndices,
       elementsCount: quadIndices.length
     },
     uniforms: {

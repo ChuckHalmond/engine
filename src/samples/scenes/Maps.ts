@@ -218,7 +218,7 @@ export async function launchScene() {
 
   const linesPacketProperties: PacketProperties = {
     vertexArray: {
-      attributes: {
+      vertexAttributes: {
         a_position: {
           array: quadLines,
           type: AttributeDataType.VEC3
@@ -252,13 +252,13 @@ export async function launchScene() {
 
   const phongPacketProperties: PacketProperties = {
     vertexArray: {
-      attributes: {
+      vertexAttributes: {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
         a_normal: { array: quadNormals, type: AttributeDataType.VEC3, constant: true },
         a_tangent: { array: quadTangents, type: AttributeDataType.VEC3, constant: true },
         a_uv: { array: quadUVs, type: AttributeDataType.VEC2 },
       },
-      indices: quadIndices,
+      elementIndices: quadIndices,
       elementsCount: quadIndices.length
     },
     uniformBlocks: [

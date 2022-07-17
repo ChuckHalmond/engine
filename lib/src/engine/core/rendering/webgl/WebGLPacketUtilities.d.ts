@@ -27,7 +27,7 @@ export declare type PacketValues = {
 };
 export declare type Packet = {
     vertexArray: VertexArray;
-    uniformsSetter?: UniformsListSetter;
+    uniforms?: UniformsListSetter;
     uniformBlocks?: Record<string, {
         block: UniformBlock;
         buffer: UniformBlockBuffer;

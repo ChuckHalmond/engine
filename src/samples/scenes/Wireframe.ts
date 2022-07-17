@@ -79,7 +79,7 @@ export async function wireframe() {
   
   const wireframeProps: PacketProperties = {
     vertexArray: {
-      attributes: {
+      vertexAttributes: {
         a_position: {
           array: cubeLines,
           type: AttributeDataType.VEC3

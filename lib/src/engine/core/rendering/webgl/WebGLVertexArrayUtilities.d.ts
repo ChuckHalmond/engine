@@ -1,7 +1,7 @@
 import { BufferDataUsage, Buffer } from "./WebGLBufferUtilities";
 import { Program } from "./WebGLProgramUtilities";
-export { VertexArrayAttributeValue };
-export { VertexArrayAttributeProperties };
+export { VertexAttributeValue };
+export { VertexAttributeProperties };
 export { VertexArrayProperties };
 export { VertexArrayValues };
 export { VertexArray };
@@ -35,22 +35,23 @@ export declare enum ElementArrayDataType {
     UNSIGNED_INT = 5125
 }
 export declare type AttributeArray = Float32Array | Int32Array | Uint32Array | Int16Array | Uint16Array | Int8Array | Uint8Array;
-declare type VertexArrayAttributeProperties = {
+declare type VertexAttributeProperties = {
     array: AttributeArray;
     type: AttributeDataType;
+    buffer?: number;
     divisor?: number;
     normalize?: boolean;
     constant?: boolean;
     srcOffset?: number;
     srcLength?: number;
 };
-declare type VertexArrayAttributeValue = {
+declare type VertexAttributeValue = {
     array: AttributeArray;
     srcOffset?: number;
     srcLength?: number;
     constant?: boolean;
 };
-declare type VertexArrayAttributeSetter = {
+declare type VertexAttribute = {
     divisor: number;
     componentType: DataComponentType;
     numComponents: number;
@@ -62,20 +63,14 @@ declare type VertexArrayAttributeSetter = {
     normalize: boolean;
 };
 declare type VertexArrayProperties = {
-    attributes?: Record<string, VertexArrayAttributeProperties>;
-    bufferedAttributes?: {
-        buffer?: VertexArrayBuffer | VertexArrayBufferProperties;
-        attributes?: Record<string, VertexArrayAttributeProperties>;
-    }[];
-    indices?: Uint8Array | Uint16Array | Uint32Array;
-    bufferedIndices?: {
-        buffer?: VertexElementArrayBuffer | VertexElementArrayBufferProperties;
-        indices?: Uint8Array | Uint16Array | Uint32Array;
-    };
+    vertexBuffers?: (VertexArrayBuffer | VertexArrayBufferProperties)[];
+    vertexAttributes?: Record<string, VertexAttributeProperties>;
+    elementBuffer?: VertexElementArrayBuffer | VertexElementArrayBufferProperties;
+    elementIndices?: Uint8Array | Uint16Array | Uint32Array;
     elementsCount: number;
 };
 declare type VertexArrayValues = {
-    attributes: Record<string, VertexArrayAttributeValue>;
+    attributes: Record<string, VertexAttributeValue>;
     elementsCount?: number;
 };
 declare type VertexArray = {
@@ -83,10 +78,10 @@ declare type VertexArray = {
     program: Program;
     verticesBuffers: VertexArrayBuffer[];
     elementsCount: number;
-    indicesBuffer?: VertexElementArrayBuffer;
+    elementBuffer?: VertexElementArrayBuffer;
 };
 export declare type VertexArrayBuffer = Buffer & {
-    setters: Record<string, VertexArrayAttributeSetter>;
+    vertexAttributes: Record<string, VertexAttribute>;
     byteLength: number;
     byteStride: number;
     interleaved: boolean;
@@ -111,8 +106,9 @@ declare class WebGLVertexArrayUtilities {
     static getAttributeArrayDataComponentType(array: AttributeArray): DataComponentType;
     static getDataComponentTypeBytesPerElement(type: DataComponentType): number;
     static createVertexElementArrayBuffer(gl: WebGL2RenderingContext, indices: Uint8Array | Uint16Array | Uint32Array): VertexElementArrayBuffer | null;
-    static createVertexArrayBuffer(gl: WebGL2RenderingContext, program: Program, attributes: Record<string, VertexArrayAttributeProperties>, usage?: BufferDataUsage, interleaved?: boolean): VertexArrayBuffer | null;
+    static createVertexArrayBuffer(gl: WebGL2RenderingContext, program: Program, attributes: Record<string, VertexAttributeProperties>, usage?: BufferDataUsage, interleaved?: boolean): VertexArrayBuffer | null;
     static setVertexArrayValues(gl: WebGL2RenderingContext, vertexArray: VertexArray, values: VertexArrayValues): void;
+    static setVertexArrayBufferData(gl: WebGL2RenderingContext, buffer: VertexArrayBuffer | VertexElementArrayBuffer, data: ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void;
     static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null;
     static deleteVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray): void;
     static drawVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray, mode: DrawMode, instanceCount?: number): void;
