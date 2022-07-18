@@ -103,10 +103,9 @@ export declare type VertexArrayBufferLayout = Record<string, {
     bytesPerElement: number;
 }>;
 declare class WebGLVertexArrayUtilities {
-    static getAttributeDataTypeNumComponents(type: AttributeDataType): number;
-    static getDataComponentTypeArrayConstructor(type: DataComponentType): typeof Float32Array | typeof Int32Array | typeof Uint32Array | typeof Int16Array | typeof Uint16Array | typeof Int8Array | typeof Uint8Array;
-    static getAttributeArrayDataComponentType(array: AttributeArray): DataComponentType;
-    static getDataComponentTypeBytesPerElement(type: DataComponentType): number;
+    static getDataTypeNumComponents(type: AttributeDataType): number;
+    static getComponentTypeArrayConstructor(type: DataComponentType): typeof Float32Array | typeof Int32Array | typeof Uint32Array | typeof Int16Array | typeof Uint16Array | typeof Int8Array | typeof Uint8Array;
+    static getArrayComponentType(array: AttributeArray): DataComponentType;
     static createVertexElementArrayBuffer(gl: WebGL2RenderingContext, indices: Uint8Array | Uint16Array | Uint32Array): VertexElementArrayBuffer | null;
     static createVertexArrayBuffer(gl: WebGL2RenderingContext, program: Program, attributes: Record<string, VertexAttributeProperties>, usage?: BufferDataUsage, interleaved?: boolean): VertexArrayBuffer | null;
     static setVertexArrayValues(gl: WebGL2RenderingContext, vertexArray: VertexArray, values: VertexArrayValues): void;

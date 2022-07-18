@@ -429,7 +429,8 @@ export async function launchScene() {
     a_tangent: { array: cubeTangentsArray, type: AttributeDataType.VEC3 },
     a_normal: { array: cubeNormalsArray, type: AttributeDataType.VEC3 },
     a_uv: { array: cubeUVsArray, type: AttributeDataType.VEC2 }
-  }, cubeIndicesArray, true);
+  }, cubeIndicesArray, false);
+  console.log(JSON.stringify(cubeGeometryBuffer.buffer));
 
   const cubeVertices = cubeGeometryBuffer.getAttribute("a_position")!;
   const cubeIndices = cubeGeometryBuffer.indices!;
@@ -459,14 +460,14 @@ export async function launchScene() {
     vertexArray: {
       vertexBuffers: [
         {
-          interleaved: true
+          interleaved: false
         },
         {
           usage: BufferDataUsage.DYNAMIC_READ
         },
       ],
       vertexAttributes: {
-        a_position: { ...cubeVertices, buffer: 0 },
+        a_position: { buffer: 0, type: AttributeDataType.VEC3, componentType: DataComponentType.FLOAT, byteLength: cubeNormals.array.byteLength },
         a_tangent: { buffer: 0, type: AttributeDataType.VEC3, componentType: DataComponentType.FLOAT, byteLength: cubeTangents.array.byteLength },
         a_normal: { ...cubeNormals, buffer: 0 },
         a_uv: { ...cubeUVs, buffer: 0 },
@@ -530,13 +531,13 @@ export async function launchScene() {
   const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongProgram, phongCubePacketProperties)!;
   WebGLVertexArrayUtilities.setVertexArrayBufferData(gl, phongCubePacket.vertexArray.verticesBuffers[1]!, cubeColors.array);
   WebGLVertexArrayUtilities.setVertexArrayBufferData(gl, phongCubePacket.vertexArray.verticesBuffers[0]!, new Uint8Array(cubeGeometryBuffer.buffer));
-  /*WebGLVertexArrayUtilities.setVertexArrayValues(gl, phongCubePacket.vertexArray, {
+  WebGLVertexArrayUtilities.setVertexArrayValues(gl, phongCubePacket.vertexArray, {
     attributes: {
-      a_tangent: {
-        array: cubeTangents.array
+      a_position: {
+        array: cubeVertices.array
       }
     }
-  });*/
+  });
 
   const linesProperties: PacketProperties = {
     vertexArray: {

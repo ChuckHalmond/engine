@@ -9,8 +9,7 @@ interface GeometryBufferConstructor {
     new(
         attributes: Record<string, GeometryBufferAttribute>,
         indices?: Uint8Array | Uint16Array | Uint32Array,
-        interleaved?: boolean,
-        usage?: BufferDataUsage
+        interleaved?: boolean
     ): GeometryBuffer;
     fromBlob(blob: Blob): Promise<GeometryBuffer>;
 }
@@ -18,14 +17,13 @@ interface GeometryBufferConstructor {
 interface GeometryBuffer {
     interleaved: boolean;
     buffer: ArrayBuffer;
-    usage: BufferDataUsage;
     stride: number;
     indices?: Uint8Array | Uint16Array | Uint32Array;
     attributes: Record<string, {
         type: AttributeDataType;
         componentType: DataComponentType;
-        offset: number;
-        count: number;
+        byteOffset: number;
+        byteLength: number;
         constant?: boolean;
         normalize?: boolean;
     }>;
@@ -41,32 +39,29 @@ interface GeometryBufferAttribute {
 }
 
 class GeometryBufferBase implements GeometryBuffer {
-    buffer!: ArrayBuffer;
-    attributes!: Record<string, {
+    buffer: ArrayBuffer;
+    attributes: Record<string, {
         type: AttributeDataType;
         componentType: DataComponentType;
-        offset: number;
-        count: number;
+        byteOffset: number;
+        byteLength: number;
         constant?: boolean;
         normalize?: boolean;
     }>;
     indices?: Uint8Array | Uint16Array | Uint32Array;
-    usage!: BufferDataUsage;
-    interleaved!: boolean;
-    stride!: number;
+    interleaved: boolean;
+    stride: number;
 
     constructor()
     constructor(
         attributes: Record<string, GeometryBufferAttribute>,
         indices?: Uint8Array | Uint16Array | Uint32Array,
-        interleaved?: boolean,
-        usage?: BufferDataUsage
+        interleaved?: boolean
     )
     constructor(
         attributes: Record<string, GeometryBufferAttribute> = {},
         indices?: Uint8Array | Uint16Array | Uint32Array,
-        interleaved?: boolean,
-        usage?: BufferDataUsage
+        interleaved?: boolean
     ) {
         if (attributes) {
             const attributesBuffers = Object.values(attributes);
@@ -77,7 +72,7 @@ class GeometryBufferBase implements GeometryBuffer {
             const stride = (interleaved) ? attributesBuffers.reduce(
                 (stride, attribute) => {
                     const {array, type} = attribute;
-                    return stride + array.BYTES_PER_ELEMENT * WebGLVertexArrayUtilities.getAttributeDataTypeNumComponents(type);
+                    return stride + array.BYTES_PER_ELEMENT * WebGLVertexArrayUtilities.getDataTypeNumComponents(type);
                 }, 0
             ) : 0;
             const bufferSlices = Math.trunc(bufferByteLength / stride);
@@ -87,21 +82,18 @@ class GeometryBufferBase implements GeometryBuffer {
             this.interleaved = interleaved ?? false;
             this.stride = stride;
             this.buffer = buffer;
-            this.usage = usage ?? BufferDataUsage.STATIC_READ;
             
             let byteOffset = 0;
             if (interleaved) {
                 Object.entries(attributes).forEach(([name, attribute]) => {
                     const {array, type, constant, normalize} = attribute;
-                    const componentType = WebGLVertexArrayUtilities.getAttributeArrayDataComponentType(array);
-                    const numComponents = WebGLVertexArrayUtilities.getAttributeDataTypeNumComponents(type);
-                    const bufferArrayConstructor = WebGLVertexArrayUtilities.getDataComponentTypeArrayConstructor(
-                        WebGLVertexArrayUtilities.getAttributeArrayDataComponentType(array)
+                    const componentType = WebGLVertexArrayUtilities.getArrayComponentType(array);
+                    const numComponents = WebGLVertexArrayUtilities.getDataTypeNumComponents(type);
+                    const bufferArrayConstructor = WebGLVertexArrayUtilities.getComponentTypeArrayConstructor(
+                        WebGLVertexArrayUtilities.getArrayComponentType(array)
                     );
-                    const {length, BYTES_PER_ELEMENT} = array;
-                    const count = length / numComponents;
+                    const {byteLength, BYTES_PER_ELEMENT} = array;
                     const bufferArray = new bufferArrayConstructor(buffer, byteOffset);
-                    const offset = byteOffset / BYTES_PER_ELEMENT;
                     const arrayStrideOffset = stride / BYTES_PER_ELEMENT;
                     for (let i = 0; i < bufferSlices; i++) {
                         let arraySliceIndex = i * numComponents;
@@ -115,8 +107,8 @@ class GeometryBufferBase implements GeometryBuffer {
                     }
                     this.attributes[name] = {
                         type,
-                        offset,
-                        count,
+                        byteOffset,
+                        byteLength,
                         componentType,
                         constant,
                         normalize
@@ -127,19 +119,16 @@ class GeometryBufferBase implements GeometryBuffer {
             else {
                 Object.entries(attributes).forEach(([name, attribute]) => {
                     const {array, type} = attribute;
-                    const {length, byteLength, BYTES_PER_ELEMENT} = array;
-                    const numComponents = WebGLVertexArrayUtilities.getAttributeDataTypeNumComponents(type);
-                    const count = length / numComponents;
-                    const componentType = WebGLVertexArrayUtilities.getAttributeArrayDataComponentType(array);
-                    const bufferArrayConstructor = WebGLVertexArrayUtilities.getDataComponentTypeArrayConstructor(
-                        WebGLVertexArrayUtilities.getAttributeArrayDataComponentType(array)
+                    const {byteLength} = array;
+                    const componentType = WebGLVertexArrayUtilities.getArrayComponentType(array);
+                    const bufferArrayConstructor = WebGLVertexArrayUtilities.getComponentTypeArrayConstructor(
+                        WebGLVertexArrayUtilities.getArrayComponentType(array)
                     );
                     const bufferArray = new bufferArrayConstructor(buffer, byteOffset);
-                    const offset = byteOffset / BYTES_PER_ELEMENT;
                     bufferArray.set(array);
                     this.attributes[name] = {
-                        offset,
-                        count,
+                        byteOffset,
+                        byteLength,
                         type,
                         componentType
                     };
@@ -147,15 +136,22 @@ class GeometryBufferBase implements GeometryBuffer {
                 });
             }
         }
+        else {
+            this.attributes = {};
+            this.indices = undefined;
+            this.interleaved = false;
+            this.stride = 0;
+            this.buffer = new ArrayBuffer(0);
+        }
     }
 
     toBlob(): Blob {
-        const {attributes, buffer, stride, interleaved, usage, indices} = this;
+        const {attributes, buffer, stride, interleaved, indices} = this;
         const bufferData = new Uint8Array(buffer);
         const {length: bufferLength} = bufferData;
         const indicesData = Uint8Array.from(indices ?? []);
         const indicesLength = indices?.length ?? 0;
-        const headerData = new TextEncoder().encode(JSON.stringify({attributes, stride, interleaved, usage}));
+        const headerData = new TextEncoder().encode(JSON.stringify({attributes, stride, interleaved}));
         const {length: headerLength} = headerData;
 
         const blobDataView = new Uint8Array(4 + headerLength + indicesLength + bufferLength);
@@ -181,33 +177,33 @@ class GeometryBufferBase implements GeometryBuffer {
         const arrayConstructor = (indicesLength < Math.pow(2, 8)) ? Uint8Array : (indicesLength < Math.pow(2, 16)) ? Uint16Array : Uint32Array;
         const indices = new arrayConstructor(arrayBuffer.slice(blobDataHeaderByteLength + headerLength * Uint8Array.BYTES_PER_ELEMENT, indicesLength * arrayConstructor.BYTES_PER_ELEMENT));
         const buffer = arrayBuffer.slice(blobDataHeaderByteLength + (indicesLength + headerLength) * Uint8Array.BYTES_PER_ELEMENT);
-        const header = <Pick<GeometryBuffer, "attributes" | "stride" | "interleaved" | "usage">>JSON.parse(new TextDecoder().decode(headerData));
-        const {attributes, interleaved, usage, stride} = header;
+        const header = <Pick<GeometryBuffer, "attributes" | "stride" | "interleaved">>JSON.parse(new TextDecoder().decode(headerData));
+        const {attributes, interleaved, stride} = header;
         const geometryBuffer = new GeometryBuffer();
         geometryBuffer.buffer = buffer;
         geometryBuffer.attributes = attributes;
         geometryBuffer.interleaved = interleaved;
-        geometryBuffer.usage = usage;
         geometryBuffer.stride = stride;
         geometryBuffer.indices = indices;
         return geometryBuffer;
     }
 
     getAttribute(name: string): GeometryBufferAttribute | null {
-        const attribute = this.attributes[name];
+        const {attributes} = this;
+        const attribute = attributes[name];
         if (attribute) {
-            const {count, type, offset, componentType} = attribute;
-            const attributeArrayConstructor = WebGLVertexArrayUtilities.getDataComponentTypeArrayConstructor(componentType);
-            const numComponents = WebGLVertexArrayUtilities.getAttributeDataTypeNumComponents(type);
-            const bufferByteLength = this.buffer.byteLength;
-            const interleaved = this.interleaved;
+            const {buffer, interleaved, stride} = this;
+            const {type, byteOffset, byteLength, componentType} = attribute;
+            const attributeArrayConstructor = WebGLVertexArrayUtilities.getComponentTypeArrayConstructor(componentType);
+            const bytesPerElement = attributeArrayConstructor.BYTES_PER_ELEMENT;
+            const length = byteLength / bytesPerElement;
+            const numComponents = WebGLVertexArrayUtilities.getDataTypeNumComponents(type);
+            const {byteLength: bufferByteLength} = buffer;
             const {BYTES_PER_ELEMENT} = attributeArrayConstructor;
-            const length = count * numComponents;
             const attributeArray = new attributeArrayConstructor(length);
-            const byteOffset = offset * BYTES_PER_ELEMENT;
             if (interleaved) {
-                const bufferArray = new attributeArrayConstructor(this.buffer, byteOffset);
-                const bufferStride = this.stride;
+                const bufferArray = new attributeArrayConstructor(buffer, byteOffset);
+                const bufferStride = stride;
                 const bufferSlices = Math.trunc(bufferByteLength / bufferStride);
                 const arrayStrideOffset = bufferStride / BYTES_PER_ELEMENT;
                 for (let i = 0; i < bufferSlices; i++) {
@@ -222,7 +218,7 @@ class GeometryBufferBase implements GeometryBuffer {
                 }
             }
             else {
-                const bufferArray = new attributeArrayConstructor(this.buffer, byteOffset, count);
+                const bufferArray = new attributeArrayConstructor(buffer, byteOffset, length);
                 attributeArray.set(bufferArray);
             }
             return {
