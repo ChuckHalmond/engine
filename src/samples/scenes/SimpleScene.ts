@@ -14,7 +14,7 @@ import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLPr
 import { BlendingEquation, BlendingMode, BufferMask, Capabilities, TestFunction, WebGLRendererUtilities, WindingOrder } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
 import { TexturePixelFormat, TexturePixelType, TextureMagFilter, TextureMinFilter, TextureTarget, TextureWrapMode, WebGLTextureUtilities, TextureInternalPixelFormat } from "../../engine/core/rendering/webgl/WebGLTextureUtilities";
 import { WebGLUniformBlockUtilities } from "../../engine/core/rendering/webgl/WebGLUniformBlockUtilities";
-import { AttributeDataType, DrawMode, WebGLVertexArrayUtilities } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
+import { AttributeDataType, DataComponentType, DrawMode, WebGLVertexArrayUtilities } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
 import { Quaternion } from "../../engine/libs/maths/algebra/quaternions/Quaternion";
@@ -426,11 +426,9 @@ export async function launchScene() {
 
   const cubeGeometryBuffer = new GeometryBuffer({
     a_position: { array: cubeVerticesArray, type: AttributeDataType.VEC3 },
-    a_normal: { array: cubeNormalsArray, type: AttributeDataType.VEC3 },
     a_tangent: { array: cubeTangentsArray, type: AttributeDataType.VEC3 },
-    //a_lines: { array: cubeLinesArray, type: AttributeDataType.VEC3 },
-    a_uv: { array: cubeUVsArray, type: AttributeDataType.VEC2 },
-    a_color: { array: cubeNormalsArray, type: AttributeDataType.VEC3 },
+    a_normal: { array: cubeNormalsArray, type: AttributeDataType.VEC3 },
+    a_uv: { array: cubeUVsArray, type: AttributeDataType.VEC2 }
   }, cubeIndicesArray, true);
 
   const cubeVertices = cubeGeometryBuffer.getAttribute("a_position")!;
@@ -438,7 +436,7 @@ export async function launchScene() {
   const cubeNormals = cubeGeometryBuffer.getAttribute("a_normal")!;
   const cubeUVs = cubeGeometryBuffer.getAttribute("a_uv")!;
   const cubeTangents = cubeGeometryBuffer.getAttribute("a_tangent")!;
-  const cubeColors = cubeGeometryBuffer.getAttribute("a_color")!;
+  const cubeColors = cubeGeometryBuffer.getAttribute("a_normal")!;
   //const cubeLines = cubeGeometryBuffer.getAttribute("a_lines")!;
 
   // const blob = cubeGeometryBuffer.toBlob();
@@ -469,10 +467,10 @@ export async function launchScene() {
       ],
       vertexAttributes: {
         a_position: { ...cubeVertices, buffer: 0 },
-        a_tangent: { ...cubeTangents, buffer: 0 },
-        a_uv: { ...cubeUVs, buffer: 0 },
+        a_tangent: { buffer: 0, type: AttributeDataType.VEC3, componentType: DataComponentType.FLOAT, byteLength: cubeTangents.array.byteLength },
         a_normal: { ...cubeNormals, buffer: 0 },
-        a_color: { ...cubeColors, buffer: 1 },
+        a_uv: { ...cubeUVs, buffer: 0 },
+        a_color: { buffer: 1, type: AttributeDataType.VEC3, componentType: DataComponentType.FLOAT, byteLength: cubeColors.array.byteLength },
       },
       elementIndices: cubeGeometryBuffer.indices,
       elementsCount: cubeGeometryBuffer.indices!.length,
@@ -529,6 +527,17 @@ export async function launchScene() {
     }
   };
 
+  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongProgram, phongCubePacketProperties)!;
+  WebGLVertexArrayUtilities.setVertexArrayBufferData(gl, phongCubePacket.vertexArray.verticesBuffers[1]!, cubeColors.array);
+  WebGLVertexArrayUtilities.setVertexArrayBufferData(gl, phongCubePacket.vertexArray.verticesBuffers[0]!, new Uint8Array(cubeGeometryBuffer.buffer));
+  /*WebGLVertexArrayUtilities.setVertexArrayValues(gl, phongCubePacket.vertexArray, {
+    attributes: {
+      a_tangent: {
+        array: cubeTangents.array
+      }
+    }
+  });*/
+
   const linesProperties: PacketProperties = {
     vertexArray: {
       vertexAttributes: {
@@ -558,9 +567,6 @@ export async function launchScene() {
       drawMode: DrawMode.LINES
     }
   };
-
-  
-  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongProgram, phongCubePacketProperties)!;
 
   const basicPacketProperties: PacketProperties = {
     vertexArray: {

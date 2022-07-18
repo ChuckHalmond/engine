@@ -36,8 +36,10 @@ export declare enum ElementArrayDataType {
 }
 export declare type AttributeArray = Float32Array | Int32Array | Uint32Array | Int16Array | Uint16Array | Int8Array | Uint8Array;
 declare type VertexAttributeProperties = {
-    array: AttributeArray;
     type: AttributeDataType;
+    array?: AttributeArray;
+    componentType?: DataComponentType;
+    byteLength?: number;
     buffer?: number;
     divisor?: number;
     normalize?: boolean;

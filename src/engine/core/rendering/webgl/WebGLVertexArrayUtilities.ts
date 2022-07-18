@@ -46,8 +46,10 @@ export type AttributeArray =
     Int8Array | Uint8Array;
 
 type VertexAttributeProperties = {
-    array: AttributeArray;
     type: AttributeDataType;
+    array?: AttributeArray;
+    componentType?: DataComponentType;
+    byteLength?: number;
     buffer?: number;
     divisor?: number;
     normalize?: boolean;
@@ -227,7 +229,7 @@ class WebGLVertexArrayUtilities {
 
         const attributesEntries = attributes ? Object.entries(attributes) : null;
         const byteLength = (attributesEntries !== null) ? attributesEntries.reduce(
-            (byteLength, [_, attribute]) => byteLength + attribute.array.byteLength, 0
+            (byteLength, [_, attribute]) => byteLength + (attribute.array?.byteLength ?? attribute.byteLength ?? 0), 0
         ) : 0;
         
         const internalBuffer = gl.createBuffer();
@@ -242,12 +244,22 @@ class WebGLVertexArrayUtilities {
 
         const vertexAttributes: Record<string, VertexAttribute> = {};
         if (attributesEntries !== null) {
+
+            attributesEntries.forEach(([_, attribute]) => {
+                const {array, componentType, byteLength} = attribute;
+                if (!array && !(componentType && byteLength)) {
+                    throw new Error("Every attribute requires either an array or a componentType and a byteLength");
+                }
+            });
+
             byteStride = interleaved ? attributesEntries.reduce(
                 (stride, [_, attribute]) => {
                     const {constant} = attribute;
                     if (!constant) {
-                        const {array, type} = attribute;
-                        return stride + array.BYTES_PER_ELEMENT * WebGLVertexArrayUtilities.getAttributeDataTypeNumComponents(type);
+                        const {array, type, componentType} = attribute;
+                        const bytesPerElement = array?.BYTES_PER_ELEMENT ?? this.getDataComponentTypeBytesPerElement(componentType!);
+                        const numComponents = WebGLVertexArrayUtilities.getAttributeDataTypeNumComponents(type);
+                        return stride + bytesPerElement * numComponents;
                     }
                     return stride;
                 }, 0
@@ -258,7 +270,7 @@ class WebGLVertexArrayUtilities {
     
             attributesEntries.forEach(([attributeName, attribute]) => {
                 const {array, type} = attribute;
-                let {constant, divisor, normalize} = attribute;
+                let {constant, divisor, normalize, componentType} = attribute;
                 constant = constant ?? false;
     
                 const location = gl.getAttribLocation(internalProgram, attributeName);
@@ -267,7 +279,8 @@ class WebGLVertexArrayUtilities {
                     return;
                 }
                 
-                const componentType = this.getAttributeArrayDataComponentType(array);
+                componentType = array ? this.getAttributeArrayDataComponentType(array) : componentType!;
+
                 const numComponents = this.getAttributeDataTypeNumComponents(type);
                 divisor = divisor ?? 0;
                 normalize = normalize ?? false;
@@ -277,19 +290,22 @@ class WebGLVertexArrayUtilities {
                     gl.vertexAttribDivisor(location, divisor);
                 }
                 if (constant) {
+                    if (!array) {
+                        throw new Error("constant flag requires an array parameter");
+                    }
                     constantValue = array;
                     switch (numComponents) {
                         case 1:
-                            gl.vertexAttrib1fv(location, array);
+                            gl.vertexAttrib1fv(location, constantValue);
                             break;
                         case 2:
-                            gl.vertexAttrib2fv(location, array);
+                            gl.vertexAttrib2fv(location, constantValue);
                             break;
                         case 3:
-                            gl.vertexAttrib3fv(location, array);
+                            gl.vertexAttrib3fv(location, constantValue);
                             break;
                         case 4:
-                            gl.vertexAttrib4fv(location, array);
+                            gl.vertexAttrib4fv(location, constantValue);
                             break;
                     }
                 }
@@ -297,34 +313,45 @@ class WebGLVertexArrayUtilities {
                     if (!constant) {
                         const {array, type} = attribute;
                         const numComponents = WebGLVertexArrayUtilities.getAttributeDataTypeNumComponents(type);
-                        let bytesPerElement = 0;
                         let byteLength = 0;
+                        let bytesPerElement = 0;
                         if (interleaved) {
-                            ({byteLength, BYTES_PER_ELEMENT: bytesPerElement} = array);
-                            const bufferArrayConstructor = WebGLVertexArrayUtilities.getDataComponentTypeArrayConstructor(
-                                WebGLVertexArrayUtilities.getAttributeArrayDataComponentType(array)
-                            );
-                            const bufferArray = new bufferArrayConstructor(dataBuffer, byteOffset);
-                            const arrayStrideOffset = byteStride / bytesPerElement;
-                            for (let i = 0; i < bufferSlices; i++) {
-                                let arraySliceIndex = i * numComponents;
-                                bufferArray.set(
-                                    array.slice(
-                                        arraySliceIndex,
-                                        arraySliceIndex + numComponents
-                                    ),
-                                    i * arrayStrideOffset
+                            if (array) {
+                                ({BYTES_PER_ELEMENT: bytesPerElement, byteLength} = array);
+                                const bufferArrayConstructor = WebGLVertexArrayUtilities.getDataComponentTypeArrayConstructor(
+                                    WebGLVertexArrayUtilities.getAttributeArrayDataComponentType(array)
                                 );
+                                const bufferArray = new bufferArrayConstructor(dataBuffer, byteOffset);
+                                const arrayStrideOffset = byteStride / bytesPerElement;
+                                for (let i = 0; i < bufferSlices; i++) {
+                                    let arraySliceIndex = i * numComponents;
+                                    bufferArray.set(
+                                        array.slice(
+                                            arraySliceIndex,
+                                            arraySliceIndex + numComponents
+                                        ),
+                                        i * arrayStrideOffset
+                                    );
+                                }
+                            }
+                            else {
+                                bytesPerElement = this.getDataComponentTypeBytesPerElement(componentType!);
+                                byteLength = attribute.byteLength!;
                             }
                         }
                         else {
-                            const {array} = attribute;
-                            ({byteLength, BYTES_PER_ELEMENT: bytesPerElement} = array);
-                            const bufferArrayConstructor = WebGLVertexArrayUtilities.getDataComponentTypeArrayConstructor(
-                                WebGLVertexArrayUtilities.getAttributeArrayDataComponentType(array)
-                            );
-                            const bufferArray = new bufferArrayConstructor(dataBuffer, byteOffset);
-                            bufferArray.set(array);
+                            if (array) {
+                                ({BYTES_PER_ELEMENT: bytesPerElement, byteLength} = array);
+                                const bufferArrayConstructor = WebGLVertexArrayUtilities.getDataComponentTypeArrayConstructor(
+                                    WebGLVertexArrayUtilities.getAttributeArrayDataComponentType(array)
+                                );
+                                const bufferArray = new bufferArrayConstructor(dataBuffer, byteOffset);
+                                bufferArray.set(array);
+                            }
+                            else {
+                                bytesPerElement = this.getDataComponentTypeBytesPerElement(componentType!);
+                                byteLength = attribute.byteLength!;
+                            }
                         }
                         vertexAttributes[attributeName] = {
                             constantValue,
