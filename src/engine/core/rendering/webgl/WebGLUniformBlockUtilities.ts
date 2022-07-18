@@ -29,6 +29,24 @@ export type UniformBufferProperties = {
     usage: BufferDataUsage;
 }
 
+
+//
+
+export type UniformBlocks = {
+    buffers: UniformBlockBuffer[];
+    blocks: Record<string, UniformBlock>;
+}
+
+export type UniformBlocksProperties = {
+    buffers: (UniformBlockBuffer | UniformBufferProperties)[];
+    blocks: Record<string, {
+        buffer: number;
+        uniforms: Record<string, Uniform>;
+    }>;
+}
+
+//
+
 export class WebGLUniformBlockUtilities {
 
     static #bindingPoints: Map<string, number> = new Map();

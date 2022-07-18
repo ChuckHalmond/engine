@@ -23,6 +23,17 @@ export declare type RangedUniformBlockBuffer = UniformBlockBuffer & {
 export declare type UniformBufferProperties = {
     usage: BufferDataUsage;
 };
+export declare type UniformBlocks = {
+    buffers: UniformBlockBuffer[];
+    blocks: Record<string, UniformBlock>;
+};
+export declare type UniformBlocksProperties = {
+    buffers: (UniformBlockBuffer | UniformBufferProperties)[];
+    blocks: Record<string, {
+        buffer: number;
+        uniforms: Record<string, Uniform>;
+    }>;
+};
 export declare class WebGLUniformBlockUtilities {
     #private;
     static getBindingPointsEntries(): IterableIterator<[string, number]>;
