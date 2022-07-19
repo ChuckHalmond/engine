@@ -1,7 +1,6 @@
 import { Program } from "./WebGLProgramUtilities";
 import { Texture } from "./WebGLTextureUtilities";
 export { UniformValue };
-export { UniformProperties };
 export { Uniform };
 export { UniformSetter };
 export { UniformsListSetter };
@@ -49,14 +48,11 @@ export declare enum UniformType {
     SAMPLER_CUBE_SHADOW = 36293
 }
 declare type UniformValue = number | Float32List | Uint32List | Int32List | Texture;
-declare type UniformProperties = {
+declare type Uniform = {
+    value: UniformValue;
     srcOffset?: number;
     srcLength?: number;
     transpose?: boolean;
-};
-declare type Uniform = {
-    value: UniformValue;
-    props?: UniformProperties;
 };
 declare type UniformSetter = {
     type: UniformType;

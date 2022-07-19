@@ -357,14 +357,6 @@ export async function launchScene() {
     }
   })!;
 
-  const phongUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, phongProgram, ["viewBlock", "modelBlock", "lightsBlock", "phongBlock"]);
-  const basicUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, basicProgram, ["viewBlock", "basicModelBlock"]);
-  const linesUniformBlocks = WebGLPacketUtilities.createUniformBlocks(gl, linesProgram, ["viewBlock", "modelBlock"]);
-
-  const phongPacketBuffers = WebGLUniformBlockUtilities.createRangedUniformBuffers(gl,
-    Object.values(phongUniformBlocks), BufferDataUsage.DYNAMIC_DRAW
-  )!;
-
   const {albedoMap, normalMap, displacementMap, skybox, fbColorTex, depthTex} = textures;
 
   /*const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
@@ -428,9 +420,8 @@ export async function launchScene() {
     a_position: { array: cubeVerticesArray, type: AttributeDataType.VEC3 },
     a_tangent: { array: cubeTangentsArray, type: AttributeDataType.VEC3 },
     a_normal: { array: cubeNormalsArray, type: AttributeDataType.VEC3 },
-    a_uv: { array: cubeUVsArray, type: AttributeDataType.VEC2 }
+    a_uv: { array: cubeUVsArray, type: AttributeDataType.VEC2 },
   }, cubeIndicesArray, false);
-  console.log(JSON.stringify(cubeGeometryBuffer.buffer));
 
   const cubeVertices = cubeGeometryBuffer.getAttribute("a_position")!;
   const cubeIndices = cubeGeometryBuffer.indices!;
@@ -438,6 +429,8 @@ export async function launchScene() {
   const cubeUVs = cubeGeometryBuffer.getAttribute("a_uv")!;
   const cubeTangents = cubeGeometryBuffer.getAttribute("a_tangent")!;
   const cubeColors = cubeGeometryBuffer.getAttribute("a_normal")!;
+  cubeColors.array.fill(1);
+  
   //const cubeLines = cubeGeometryBuffer.getAttribute("a_lines")!;
 
   // const blob = cubeGeometryBuffer.toBlob();
@@ -457,6 +450,7 @@ export async function launchScene() {
   // const cubeTangents = cubeGeometryBuffer.getAttribute("a_tangent")!;
 
   const phongCubePacketProperties: PacketProperties = {
+    program: phongProgram,
     vertexArray: {
       vertexBuffers: [
         {
@@ -476,58 +470,64 @@ export async function launchScene() {
       elementIndices: cubeGeometryBuffer.indices,
       elementsCount: cubeGeometryBuffer.indices!.length,
     },
-    uniforms: {
-      uniformBuffers: [
-        {
-          usage: BufferDataUsage.DYNAMIC_READ
-        }
-      ],
-      uniformBlocks: {
-        viewBlock: {
-          uniforms: {
-            u_view: { value: camera.view.array },
-            u_projection: { value: camera.projection.array },
-          }
-        },
-        modelBlock: {
-          uniforms: {
-            "models[0].u_model": { value: cube.matrix.array },
-            "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
-            "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array }
-          }
-        },
-        lightsBlock: {
-          uniforms: {
-            "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
-            "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
-            "lights[0].u_cutOff": { value: (2 / 360) * Math.PI },
-            "lights[0].u_lightColor": { value: [1, 0.8, 0.8] }
-          }
-        },
-        phongBlock: {
-          uniforms: {
-            u_ambientColor: { value: [0.1, 0.1, 0.1] },
-            u_diffuseColor: { value: [0.8, 0, 0] },
-            u_specularColor: { value: [1, 1, 1] },
-            u_ambientFactor: { value: 1 },
-            u_diffuseFactor: { value: 1 },
-            u_specularFactor: { value: 1 },
-            u_shininess: { value: 36 },
-            u_constant: { value: 1 }, 
-            u_linear: { value: 0.09 },
-            u_quadratic: { value: 0.032 }
-          }
+    uniformBuffers: [
+      {
+        usage: BufferDataUsage.DYNAMIC_READ
+      },
+      {
+        usage: BufferDataUsage.DYNAMIC_READ
+      }
+    ],
+    uniformBlocks: {
+      viewBlock: {
+        buffer: 0,
+        uniforms: {
+          u_view: { value: camera.view.array },
+          u_projection: { value: camera.projection.array },
         }
       },
-      uniformVariables: {
-        u_albedoMap: { value: albedoMap },
-        u_normalMap: { value: normalMap },
-        u_displacementMap: { value: displacementMap }
+      modelBlock: {
+        buffer: 0,
+        uniforms: {
+          "models[0].u_model": { value: cube.matrix.array },
+          "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
+          "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array }
+        }
+      },
+      lightsBlock: {
+        buffer: 0,
+        uniforms: {
+          "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
+          "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
+          "lights[0].u_cutOff": { value: (2 / 360) * Math.PI },
+          "lights[0].u_lightColor": { value: /*[1, 0.8, 0.8]*/Array.from(Color.RED) }
+        }
+      },
+      phongBlock: {
+        buffer: 1,
+        uniforms: {
+          "phong.u_ambientColor": { value: [0.1, 0.1, 0.1] },
+          "phong.u_diffuseColor": { value: [0.8, 0, 0] },
+          "phong.u_specularColor": { value: [1, 1, 1] },
+          "phong.u_ambientFactor": { value: 0.0008 },
+          "phong.u_diffuseFactor": { value: 1 },
+          "phong.u_specularFactor": { value: 1 },
+          "phong.u_shininess": { value: 36 },
+          "phong.u_constant": { value: 1 }, 
+          "phong.u_linear": { value: 0.09 },
+          "phong.u_quadratic": { value: 0.032 }
+        }
       }
+    },
+    uniforms: {
+      u_albedoMap: { value: albedoMap },
+      u_normalMap: { value: normalMap },
+      u_displacementMap: { value: displacementMap }
     }
   };
 
-  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongProgram, phongCubePacketProperties)!;
+  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongCubePacketProperties)!;
+  
   WebGLVertexArrayUtilities.setVertexArrayBufferData(gl, phongCubePacket.vertexArray.verticesBuffers[1]!, cubeColors.array);
   WebGLVertexArrayUtilities.setVertexArrayBufferData(gl, phongCubePacket.vertexArray.verticesBuffers[0]!, new Uint8Array(cubeGeometryBuffer.buffer));
   WebGLVertexArrayUtilities.setVertexArrayValues(gl, phongCubePacket.vertexArray, {
@@ -537,9 +537,15 @@ export async function launchScene() {
       }
     }
   });
-  console.log(phongCubePacket);
+
+  WebGLUniformBlockUtilities.setUniformBufferData(gl,
+    phongCubePacket.uniformBlocks!.phongBlock!.buffer!,
+    Color.lerp(Color.WHITE, Color.GREEN, 0.5).array,
+    phongCubePacket.uniformBlocks!.phongBlock!.layout["phong.u_ambientColor"]!.byteOffset!,
+  );
 
   const linesProperties: PacketProperties = {
+    program: linesProgram,
     vertexArray: {
       vertexAttributes: {
         a_position: {
@@ -547,25 +553,26 @@ export async function launchScene() {
           type: AttributeDataType.VEC3
         }
       },
+      drawMode: DrawMode.LINES,
       elementsCount: cubeLinesArray.length / 2
     },
-    uniforms: {
-      uniformBlocks: {
-        modelBlock: {},
-        viewBlock: {}
-      },
-      uniformVariables: {
-        u_color: {
-          value: new Float32Array([1, 0, 0])
-        }
-      }
+    uniformBuffers: [
+      phongCubePacket.uniformBlocks!.modelBlock.buffer!,
+      phongCubePacket.uniformBlocks!.viewBlock.buffer!
+    ],
+    uniformBlocks: {
+      modelBlock: { buffer: 0 },
+      viewBlock: { buffer: 1 }
     },
-    options: {
-      drawMode: DrawMode.LINES
+    uniforms: {
+      u_color: {
+        value: new Float32Array([1, 0, 0])
+      }
     }
   };
 
   const basicPacketProperties: PacketProperties = {
+    program: basicProgram,
     vertexArray: {
       vertexBuffers: [
         phongCubePacket.vertexArray.verticesBuffers[0]
@@ -573,20 +580,18 @@ export async function launchScene() {
       elementBuffer: phongCubePacket.vertexArray.elementBuffer,
       elementsCount: cubeIndices.length
     },
-    uniforms: {
-      uniformBuffers: [
-        phongCubePacket.uniforms!.uniformBlocks!.viewBlock.buffer!
-      ],
-      uniformBlocks: {
-        basicModelBlock: {
-          uniforms: {
-            u_model: { value: lightTransform.matrix.array },
-            u_color: { value: [1, 1, 0] }
-          }
-        },
-        viewBlock: {
-          buffer: 0
+    uniformBuffers: [
+      phongCubePacket.uniformBlocks!.viewBlock.buffer!
+    ],
+    uniformBlocks: {
+      basicModelBlock: {
+        uniforms: {
+          u_model: { value: lightTransform.matrix.array },
+          u_color: { value: [1, 1, 0] }
         }
+      },
+      viewBlock: {
+        buffer: 0
       }
     }
   };
@@ -597,6 +602,7 @@ export async function launchScene() {
   const quadWorld = new Matrix4().setIdentity();
 
   const skyboxPacketProperties: PacketProperties = {
+    program: skyboxProgram,
     vertexArray: {
       vertexAttributes: {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
@@ -605,15 +611,14 @@ export async function launchScene() {
       elementsCount: quadIndices.length
     },
     uniforms: {
-      uniformVariables: {
-        u_world: { value: quadWorld.array },
-        u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }, 
-        u_skybox: { value: skybox },
-      }
+      u_world: { value: quadWorld.array },
+      u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }, 
+      u_skybox: { value: skybox },
     }
   };
 
   const depthPacketProperties: PacketProperties = {
+    program: depthProgram,
     vertexArray: {
       vertexAttributes: {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
@@ -623,14 +628,13 @@ export async function launchScene() {
       elementsCount: quadIndices.length
     },
     uniforms: {
-      uniformVariables: {
-        u_world: { value: quadWorld.array },
-        u_tex: { value: depthTex }
-      }
+      u_world: { value: quadWorld.array },
+      u_tex: { value: depthTex }
     }
   };
 
   const texPacketProperties: PacketProperties = {
+    program: texProgram,
     vertexArray: {
       vertexAttributes: {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
@@ -640,18 +644,16 @@ export async function launchScene() {
       elementsCount: quadIndices.length
     },
     uniforms: {
-      uniformVariables: {
-        u_world: { value: quadWorld.array },
-        u_tex: { value: fbColorTex }
-      }
+      u_world: { value: quadWorld.array },
+      u_tex: { value: fbColorTex }
     }
   };
 
-  const linesPacket = WebGLPacketUtilities.createPacket(gl, linesProgram, linesProperties)!;
-  const basicPacket = WebGLPacketUtilities.createPacket(gl, basicProgram, basicPacketProperties)!;
-  const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxProgram, skyboxPacketProperties)!;
-  const depthPacket = WebGLPacketUtilities.createPacket(gl, depthProgram, depthPacketProperties)!;
-  const texPacket = WebGLPacketUtilities.createPacket(gl, texProgram, texPacketProperties)!;
+  const linesPacket = WebGLPacketUtilities.createPacket(gl, linesProperties)!;
+  const basicPacket = WebGLPacketUtilities.createPacket(gl, basicPacketProperties)!;
+  const skyboxPacket = WebGLPacketUtilities.createPacket(gl, skyboxPacketProperties)!;
+  const depthPacket = WebGLPacketUtilities.createPacket(gl, depthPacketProperties)!;
+  const texPacket = WebGLPacketUtilities.createPacket(gl, texPacketProperties)!;
 
   const framebuffer = WebGLFramebufferUtilities.createFramebuffer(gl)!;
   const maxSamples = WebGLRendererUtilities.getMaxSamples(gl);
@@ -787,51 +789,38 @@ export async function launchScene() {
     WebGLPacketUtilities.drawPacket(gl, skyboxPacket);
 
     WebGLRendererUtilities.depthFunction(gl, TestFunction.LESS);
-    
-    WebGLPacketUtilities.drawPacket(gl, skyboxPacket);
 
     WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, {
-      vertexArray: {
-        attributes: {
-          a_color: { array: shuffleArray(cubeColors.array) }
-        }
-      },
-      uniforms: {
-        uniformBlocks: {
-          modelBlock: {
-            uniforms: {
-              "models[0].u_model": { value: cube.matrix.array },
-              "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
-              "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array },
-            }
-          },
-          viewBlock: {
-            uniforms: {
-              u_view: { value: camera.view.array },
-              u_projection: { value: camera.projection.array },
-            }
-          },
-          lightsBlock: {
-            uniforms: {
-              "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
-              "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
-            }
+      uniformBlocks: {
+        modelBlock: {
+          uniforms: {
+            "models[0].u_model": { value: cube.matrix.array },
+            "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
+            "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array },
+          }
+        },
+        viewBlock: {
+          uniforms: {
+            u_view: { value: camera.view.array },
+            u_projection: { value: camera.projection.array },
+          }
+        },
+        lightsBlock: {
+          uniforms: {
+            "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
+            "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
           }
         }
       }
     });
 
-    WebGLPacketUtilities.drawPacket(gl, basicPacket);
-    //WebGLPacketUtilities.drawPacket(gl, linesPacket);
-
+    // WebGLPacketUtilities.drawPacket(gl, basicPacket);
+    // WebGLPacketUtilities.drawPacket(gl, linesPacket);
     WebGLPacketUtilities.drawPacket(gl, phongCubePacket);
-    
     
     WebGLPacketUtilities.setPacketValues(gl, skyboxPacket, {
       uniforms: {
-        uniformVariables: {
-          u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }
-        }
+        u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }
       }
     });
     

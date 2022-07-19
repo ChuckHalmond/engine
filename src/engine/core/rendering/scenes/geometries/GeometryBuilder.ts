@@ -345,7 +345,7 @@ export class FaceHalfEdgesIterator {
             }
         }
         return {
-            value: void 0, done: true
+            value: undefined, done: true
         };
     }
 
@@ -404,7 +404,7 @@ export class FaceVerticesIterator {
             }
         }
         return {
-            value: void 0, done: true
+            value: undefined, done: true
         };
     }
 
@@ -463,7 +463,7 @@ export class VertexFacesIterator {
             }
         }
         return {
-            value: void 0, done: true
+            value: undefined, done: true
         };
     }
 

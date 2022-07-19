@@ -43,10 +43,10 @@ export function addWidgets(widgets: Widget[]) {
             case "range":
                 input = document.createElement("input");
                 input.type = "range";
-                if (widget.min !== void 0) {
+                if (widget.min !== undefined) {
                     input.min = widget.min.toString();
                 }
-                if (widget.max !== void 0) {
+                if (widget.max !== undefined) {
                     input.max = widget.max.toString();
                 }
                 input.value = widget.value.toString();

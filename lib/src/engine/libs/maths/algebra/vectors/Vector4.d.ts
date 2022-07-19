@@ -44,7 +44,7 @@ interface Vector4 {
     writeIntoArray(out: WritableArrayLike<number>, offset?: number): void;
     readFromArray(arr: ArrayLike<number>, offset?: number): this;
 }
-declare class Vector4Base {
+declare class Vector4Base implements Vector4 {
     readonly array: Float32Array;
     constructor();
     constructor(values: Vector4Values);

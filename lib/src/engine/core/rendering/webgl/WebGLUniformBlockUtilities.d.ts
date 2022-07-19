@@ -6,7 +6,7 @@ export declare type UniformBlock = {
     blockIndex: number;
     program: Program;
     layout: Record<string, {
-        offset: number;
+        byteOffset: number;
     }>;
     blockSize: number;
     bindingPoint?: number;
@@ -16,18 +16,11 @@ export declare type UniformBlockProperties = {
     buffer?: number;
     uniforms?: Record<string, Uniform>;
 };
-export declare type UniformBlockValues = {
-    uniforms?: Record<string, Uniform>;
-};
 export declare type UniformBuffer = Buffer & {
+    byteLength: number;
     bindingPoint?: number;
-    bound?: boolean;
     rangeOffset?: number;
     rangeSize?: number;
-};
-export declare type RangedUniformBuffer = UniformBuffer & {
-    rangeOffset: number;
-    rangeSize: number;
 };
 export declare type UniformBufferProperties = {
     usage: BufferDataUsage;
@@ -44,7 +37,7 @@ export declare class WebGLUniformBlockUtilities {
     static getBindingPointsEntries(): IterableIterator<[string, number]>;
     static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null;
     static createUniformBuffer(gl: WebGL2RenderingContext, byteLength: number, bind?: boolean, usage?: BufferDataUsage): UniformBuffer | null;
-    static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): Record<string, RangedUniformBuffer> | null;
+    static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], bind?: boolean, usage?: BufferDataUsage): UniformBuffer[] | null;
     static setUniformBufferValues(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer, uniforms: Record<string, Uniform>): void;
     static setUniformBufferData(gl: WebGL2RenderingContext, buffer: UniformBuffer, data: ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void;
     static lastBindingPoint: number;

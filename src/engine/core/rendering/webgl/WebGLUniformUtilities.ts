@@ -2,7 +2,6 @@ import { Program, WebGLProgramUtilities } from "./WebGLProgramUtilities";
 import { Texture } from "./WebGLTextureUtilities";
 
 export { UniformValue };
-export { UniformProperties };
 export { Uniform };
 export { UniformSetter };
 export { UniformsListSetter };
@@ -53,15 +52,11 @@ export enum UniformType {
 
 type UniformValue = number | Float32List | Uint32List | Int32List | Texture;
 
-type UniformProperties = {
+type Uniform = {
+    value: UniformValue;
     srcOffset?: number;
     srcLength?: number;
     transpose?: boolean;
-}
-
-type Uniform = {
-    value: UniformValue;
-    props?: UniformProperties;
 }
 
 type UniformSetter = {
@@ -104,17 +99,13 @@ class WebGLUniformUtilities {
     }
 
     static getUniformSetter(gl: WebGL2RenderingContext, uniform: Uniform, location: WebGLUniformLocation , uniformType: UniformType): UniformSetter | null { 
-        const uniformValue = uniform.value;
-        let {props} = uniform;
-        props = props ?? {};
-
-        const {srcOffset, srcLength} = props;
-        let {transpose} = props;
+        const {value, srcOffset, srcLength} = uniform;
+        let {transpose} = uniform;
         transpose = transpose ?? false;
 
         switch (uniformType) {
             case UniformType.FLOAT:
-                if (typeof uniformValue === "number") {
+                if (typeof value === "number") {
                     return {
                         type: uniformType,
                         set: (num: number) => {
@@ -124,7 +115,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.UNSIGNED_INT:
-                if (typeof uniformValue === "number") {
+                if (typeof value === "number") {
                     return {
                         type: uniformType,
                         set: (num: number) => {
@@ -135,7 +126,7 @@ class WebGLUniformUtilities {
                 break;
             case UniformType.BOOL:
             case UniformType.INT:
-                if (typeof uniformValue === "number") {
+                if (typeof value === "number") {
                     return {
                         type: uniformType,
                         set: (num: number) => {
@@ -159,7 +150,7 @@ class WebGLUniformUtilities {
             case UniformType.UNSIGNED_INT_SAMPLER_3D:
             case UniformType.UNSIGNED_INT_SAMPLER_CUBE:
             case UniformType.UNSIGNED_INT_SAMPLER_2D_ARRAY:
-                if (typeof uniformValue == "object" && "unit" in uniformValue) {
+                if (typeof value == "object" && "unit" in value) {
                     return {
                         type: uniformType,
                         set: (tex: Texture) => {
@@ -170,7 +161,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_VEC2:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -181,7 +172,7 @@ class WebGLUniformUtilities {
                 break;
             case UniformType.BOOL_VEC2:
             case UniformType.INT_VEC2:
-                if (uniformValue instanceof Int32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Int32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Int32List) => {
@@ -191,7 +182,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.UNSIGNED_INT_VEC2:
-                if (uniformValue instanceof Uint32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Uint32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Uint32List) => {
@@ -201,7 +192,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_VEC3:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -212,7 +203,7 @@ class WebGLUniformUtilities {
                 break;
             case UniformType.BOOL_VEC3:
             case UniformType.INT_VEC3:	
-                if (uniformValue instanceof Int32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Int32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Int32List) => {
@@ -222,7 +213,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.UNSIGNED_INT_VEC3:
-                if (uniformValue instanceof Uint32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Uint32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Uint32List) => {
@@ -232,7 +223,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_VEC4:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -243,7 +234,7 @@ class WebGLUniformUtilities {
                 break;
             case UniformType.BOOL_VEC4:
             case UniformType.INT_VEC4:
-                if (uniformValue instanceof Int32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Int32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Int32List) => {
@@ -253,7 +244,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.UNSIGNED_INT_VEC4:
-                if (uniformValue instanceof Uint32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Uint32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Uint32List) => {
@@ -263,7 +254,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_MAT2:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -273,7 +264,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_MAT3:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -283,7 +274,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_MAT4:	
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -293,7 +284,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_MAT2x3:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -303,7 +294,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_MAT2x4:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -313,7 +304,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_MAT3x2:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -323,7 +314,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_MAT3x4:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -333,7 +324,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_MAT4x2:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -343,7 +334,7 @@ class WebGLUniformUtilities {
                 }
                 break;
             case UniformType.FLOAT_MAT4x3:
-                if (uniformValue instanceof Float32Array || Array.isArray(uniformValue)) {
+                if (value instanceof Float32Array || Array.isArray(value)) {
                     return {
                         type: uniformType,
                         set: (list: Float32List) => {
@@ -353,7 +344,6 @@ class WebGLUniformUtilities {
                 }
                 break;
         }
-
         return null;
     }
 

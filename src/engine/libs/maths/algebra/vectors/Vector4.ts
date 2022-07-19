@@ -53,7 +53,7 @@ interface Vector4 {
     readFromArray(arr: ArrayLike<number>, offset?: number): this;
 }
 
-class Vector4Base {
+class Vector4Base implements Vector4 {
 	readonly array: Float32Array;
 
 	constructor()

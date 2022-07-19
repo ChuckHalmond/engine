@@ -53,7 +53,7 @@ interface Vector3 extends Iterable<number> {
     writeIntoArray(out: WritableArrayLike<number>, offset?: number): void;
     readFromArray(arr: ArrayLike<number>, offset?: number): this;
 }
-declare class Vector3Base {
+declare class Vector3Base implements Vector3 {
     readonly array: Float32Array;
     constructor();
     constructor(array: ArrayLike<number>);

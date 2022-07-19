@@ -82,12 +82,16 @@ type VertexArrayProperties = {
     vertexAttributes?: Record<string, VertexAttributeProperties>;
     elementBuffer?: VertexElementArrayBuffer | VertexElementArrayBufferProperties;
     elementIndices?: Uint8Array | Uint16Array | Uint32Array;
-    elementsCount: number;
+    drawMode?: DrawMode;
+    elementsCount?: number;
+    instanceCount?: number;
 }
 
 type VertexArrayValues = {
     attributes: Record<string, VertexAttributeValue>;
+    drawMode?: DrawMode;
     elementsCount?: number;
+    instanceCount?: number;
 }
 
 type VertexArray = {
@@ -96,6 +100,8 @@ type VertexArray = {
     verticesBuffers: VertexArrayBuffer[];
     elementsCount: number;
     elementBuffer?: VertexElementArrayBuffer;
+    drawMode: DrawMode;
+    instanceCount: number;
 }
 
 export type VertexArrayBuffer = Buffer & {
@@ -137,9 +143,9 @@ class WebGLVertexArrayUtilities {
     }
 
     static getComponentTypeArrayConstructor(type: DataComponentType):
-        typeof Float32Array | typeof Int32Array | typeof Uint32Array |
-        typeof Int16Array | typeof Uint16Array |
-        typeof Int8Array | typeof Uint8Array {
+        Float32ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor |
+        Int16ArrayConstructor | Uint16ArrayConstructor |
+        Int8ArrayConstructor | Uint8ArrayConstructor {
         switch (type) {
             case DataComponentType.FLOAT:
                 return Float32Array;
@@ -418,7 +424,13 @@ class WebGLVertexArrayUtilities {
     }
 
     static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null {
-        const {vertexAttributes, vertexBuffers, elementIndices, elementBuffer: elementBufferOrBufferProperties, elementsCount} = vertexArray;
+        const {vertexAttributes, vertexBuffers, elementIndices, elementBuffer: elementBufferOrBufferProperties} = vertexArray;
+        let {elementsCount, instanceCount, drawMode} = vertexArray;
+
+        elementsCount = elementsCount ?? 0;
+        instanceCount = instanceCount ?? 0;
+        drawMode = drawMode ?? DrawMode.TRIANGLES;
+
         const internalVertexArray = gl.createVertexArray();
         if (internalVertexArray === null) {
             return null;
@@ -518,6 +530,8 @@ class WebGLVertexArrayUtilities {
             program,
             internalVertexArray,
             elementsCount,
+            instanceCount,
+            drawMode
         };
     }
 
@@ -528,8 +542,8 @@ class WebGLVertexArrayUtilities {
         }
     }
 
-    static drawVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray, mode: DrawMode, instanceCount?: number): void {
-        const {program, internalVertexArray, elementBuffer, elementsCount} = vertexArray;
+    static drawVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray): void {
+        const {program, internalVertexArray, elementBuffer, elementsCount, instanceCount, drawMode} = vertexArray;
 
         WebGLProgramUtilities.useProgram(gl, program);
         
@@ -540,19 +554,19 @@ class WebGLVertexArrayUtilities {
         
         if (elementBuffer) {
             const {indexType} = elementBuffer;
-            if (instanceCount !== void 0) {
-                gl.drawElementsInstanced(mode, elementsCount, indexType, 0, instanceCount);
+            if (instanceCount > 0) {
+                gl.drawElementsInstanced(drawMode, elementsCount, indexType, 0, instanceCount);
             }
             else {
-                gl.drawElements(mode, elementsCount, indexType, 0);
+                gl.drawElements(drawMode, elementsCount, indexType, 0);
             }
         }
         else {
-            if (instanceCount !== void 0) {
-                gl.drawArraysInstanced(mode, 0, elementsCount, instanceCount);
+            if (instanceCount > 0) {
+                gl.drawArraysInstanced(drawMode, 0, elementsCount, instanceCount);
             }
             else {
-                gl.drawArrays(mode, 0, elementsCount);
+                gl.drawArrays(drawMode, 0, elementsCount);
             }
         }
     }

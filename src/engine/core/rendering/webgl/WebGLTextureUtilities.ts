@@ -292,27 +292,27 @@ export class WebGLTextureUtilities {
 
         const {min, mag, wrapS, wrapT, wrapR, baseMipmapLevel, maxMipmapLevel, compareFunction, compareMode, minLod, maxLod} = properties;
 
-        if (min !== void 0)
+        if (min !== undefined)
             gl.texParameteri(target, TextureParameter.TEXTURE_MIN_FILTER, min);
-        if (mag !== void 0)
+        if (mag !== undefined)
             gl.texParameteri(target, TextureParameter.TEXTURE_MAG_FILTER, mag);
-        if (wrapS  !== void 0)
+        if (wrapS  !== undefined)
             gl.texParameteri(target, TextureParameter.TEXTURE_WRAP_S, wrapS);
-        if (wrapT !== void 0)
+        if (wrapT !== undefined)
             gl.texParameteri(target, TextureParameter.TEXTURE_WRAP_T, wrapT);
-        if (wrapR !== void 0)
+        if (wrapR !== undefined)
             gl.texParameteri(target, TextureParameter.TEXTURE_WRAP_R, wrapR);
-        if (baseMipmapLevel !== void 0)
+        if (baseMipmapLevel !== undefined)
             gl.texParameteri(target, TextureParameter.TEXTURE_BASE_LEVEL, baseMipmapLevel);
-        if (maxMipmapLevel !== void 0)
+        if (maxMipmapLevel !== undefined)
             gl.texParameteri(target, TextureParameter.TEXTURE_MAX_LEVEL, maxMipmapLevel);
-        if (compareFunction !== void 0)
+        if (compareFunction !== undefined)
             gl.texParameteri(target, TextureParameter.TEXTURE_COMPARE_FUNC, compareFunction);
-        if (compareMode !== void 0)
+        if (compareMode !== undefined)
             gl.texParameteri(target, TextureParameter.TEXTURE_COMPARE_MODE, compareMode);
-        if (minLod !== void 0)
+        if (minLod !== undefined)
             gl.texParameterf(target, TextureParameter.TEXTURE_MIN_LOD, minLod);
-        if (maxLod !== void 0)
+        if (maxLod !== undefined)
             gl.texParameterf(target, TextureParameter.TEXTURE_MAX_LOD, maxLod);
         
         return {

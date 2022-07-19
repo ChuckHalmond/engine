@@ -46,17 +46,21 @@ uniform lightsBlock {
   Light lights[MAX_LIGHTS];
 };
 
-uniform phongBlock {
+struct Phong {
   vec3 u_ambientColor;
-  vec3 u_diffuseColor;
-  vec3 u_specularColor;
   float u_ambientFactor;
+  vec3 u_diffuseColor;
   float u_diffuseFactor;
+  vec3 u_specularColor;
   float u_specularFactor;
   float u_shininess;
   float u_constant;
   float u_linear;
   float u_quadratic;
+};
+
+uniform phongBlock {
+  Phong phong;
 };
 
 #ifdef USE_NORMAL_MAP
@@ -75,6 +79,17 @@ void main() {
   vec3 lightColor = currentLight.u_lightColor;
   vec3 lightDirection = currentLight.u_lightDirection;
   float cutOff = currentLight.u_cutOff;
+
+  vec3 u_ambientColor = phong.u_ambientColor;
+  vec3 u_diffuseColor = phong.u_diffuseColor;
+  vec3 u_specularColor = phong.u_specularColor;
+  float u_ambientFactor = phong.u_ambientFactor;
+  float u_diffuseFactor = phong.u_diffuseFactor;
+  float u_specularFactor = phong.u_specularFactor;
+  float u_shininess = phong.u_shininess;
+  float u_constant = phong.u_constant;
+  float u_linear = phong.u_linear;
+  float u_quadratic = phong.u_quadratic;
   
   #ifdef USE_ALBEDO_MAP
     vec3 albedo = texture(u_albedoMap, v_uv).rgb;
@@ -117,20 +132,16 @@ void main() {
 
     float dist = length(v_lightPos - v_fragPos);
     float attenuation = 1.0 / (u_constant + u_linear * dist + u_quadratic * (dist * dist));    
-    float ambientFactor = u_ambientFactor * attenuation; 
-    float diffuseFactor = u_diffuseFactor * attenuation;
-    float specularFactor = u_specularFactor * attenuation;
+    float ambientFactor = u_ambientFactor; 
+    float diffuseFactor = u_diffuseFactor/* * attenuation*/;
+    float specularFactor = u_specularFactor/* * attenuation*/;
 
     o_outColor = vec4(
       ambientFactor * u_ambientColor +
-      diffuseFactor * lambertian * albedo +
+      diffuseFactor * lambertian * /*albedo*/v_color +
       specularFactor * specular * u_specularColor,
-      0.6
-    );
-
-    o_outColor = vec4(
-      0.5 * (v_color + vec3(1.0)),
       1.0
+      //0.6
     );
   /*}
   else {
