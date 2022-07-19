@@ -6,21 +6,31 @@ export type UniformBlock = {
     name: string;
     blockIndex: number;
     program: Program;
-    layout: UniformBlockLayout;
+    layout: Record<string, {
+        offset: number;
+    }>;
     blockSize: number;
-    bindingPoint: number;
+    bindingPoint?: number;
+    buffer?: UniformBuffer;
 }
 
-export type UniformBlockLayout = Record<string, {
-    offset: number;
-}>;
+export type UniformBlockProperties = {
+    buffer?: number;
+    uniforms?: Record<string, Uniform>;
+}
 
-export type UniformBlockBuffer = Buffer & {
+export type UniformBlockValues = {
+    uniforms?: Record<string, Uniform>;
+}
+
+export type UniformBuffer = Buffer & {
+    bindingPoint?: number;
+    bound?: boolean;
     rangeOffset?: number;
     rangeSize?: number;
 }
 
-export type RangedUniformBlockBuffer = UniformBlockBuffer & {
+export type RangedUniformBuffer = UniformBuffer & {
     rangeOffset: number;
     rangeSize: number;
 }
@@ -29,23 +39,13 @@ export type UniformBufferProperties = {
     usage: BufferDataUsage;
 }
 
-
-//
-
-export type UniformBlocks = {
-    buffers: UniformBlockBuffer[];
-    blocks: Record<string, UniformBlock>;
-}
-
 export type UniformBlocksProperties = {
-    buffers: (UniformBlockBuffer | UniformBufferProperties)[];
+    buffers: (UniformBuffer | UniformBufferProperties)[];
     blocks: Record<string, {
         buffer: number;
         uniforms: Record<string, Uniform>;
     }>;
 }
-
-//
 
 export class WebGLUniformBlockUtilities {
 
@@ -59,12 +59,12 @@ export class WebGLUniformBlockUtilities {
     static createUniformBlock(gl: WebGL2RenderingContext, program: Program, name: string): UniformBlock | null {
         const {internalProgram} = program;
 
-        const bindingPoints = this.#bindingPoints;
+        /*const bindingPoints = this.#bindingPoints;
         let bindingPoint = bindingPoints.get(name);
         if (bindingPoint == undefined) {
             bindingPoint = Math.max(-1, ...bindingPoints.values()) + 1;
             bindingPoints.set(name, bindingPoint);
-        }
+        }*/
 
         const blockIndex = gl.getUniformBlockIndex(internalProgram, name);
         if (blockIndex === gl.INVALID_INDEX) {
@@ -72,10 +72,12 @@ export class WebGLUniformBlockUtilities {
             return null;
         }
 
-        gl.uniformBlockBinding(internalProgram, blockIndex, bindingPoint);
+        //gl.uniformBlockBinding(internalProgram, blockIndex, bindingPoint);
 
         const blockSize = gl.getActiveUniformBlockParameter(internalProgram, blockIndex, gl.UNIFORM_BLOCK_DATA_SIZE);
-        const layout: UniformBlockLayout = {};
+        const layout: Record<string, {
+            offset: number;
+        }> = {};
         const blockUniformsIndices = gl.getActiveUniformBlockParameter(internalProgram, blockIndex, gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES);
         const activeUniformsOffsets = gl.getActiveUniforms(internalProgram, blockUniformsIndices, gl.UNIFORM_OFFSET);
         activeUniformsOffsets.forEach((uniformOffset_i: number, i: number) => {
@@ -92,14 +94,14 @@ export class WebGLUniformBlockUtilities {
         return {
             name,
             blockIndex,
-            bindingPoint,
+            //bindingPoint,
             blockSize,
             layout,
             program
         };
     }
 
-    static createUniformBuffer(gl: WebGL2RenderingContext, byteLength: number, usage?: BufferDataUsage): UniformBlockBuffer | null {
+    static createUniformBuffer(gl: WebGL2RenderingContext, byteLength: number, bind?: boolean, usage?: BufferDataUsage): UniformBuffer | null {
         const internalBuffer = gl.createBuffer();
         if (internalBuffer === null) {
             return null;
@@ -108,19 +110,25 @@ export class WebGLUniformBlockUtilities {
         const target = gl.UNIFORM_BUFFER;
         gl.bindBuffer(target, internalBuffer);
 
-        const DEFAULT_USAGE = BufferDataUsage.STATIC_READ;
-        usage = usage ?? DEFAULT_USAGE;
+        usage = usage ?? BufferDataUsage.STATIC_READ;
+        bind = bind ?? false;
+
+        const bindingPoint = bind ? this.lastBindingPoint++ : undefined;
+
+        const bound = false;
 
         gl.bufferData(target, byteLength, usage);
         
         return {
             internalBuffer,
+            bindingPoint,
+            bound,
             target,
             usage
         };
     }
 
-    static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): Record<string, RangedUniformBlockBuffer> | null {
+    static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], usage?: BufferDataUsage): Record<string, RangedUniformBuffer> | null {
 
         const offsetAlignment = gl.getParameter(gl.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
         const bufferByteLength = blocks.reduce(
@@ -132,17 +140,19 @@ export class WebGLUniformBlockUtilities {
             console.error(`Uniform block size is beyond MAX_UNIFORM_BLOCK_SIZE.`);
         }
 
-        const buffer = this.createUniformBuffer(gl, bufferByteLength, usage);
+        const buffer = this.createUniformBuffer(gl, bufferByteLength, false, usage);
         if (buffer === null) {
             return null;
         }
 
-        let rangedUniformBuffers: Record<string, RangedUniformBlockBuffer> = {};
+        let rangedUniformBuffers: Record<string, RangedUniformBuffer> = {};
         let rangeOffset = 0;
         blocks.forEach((block) => {
             const {blockSize: rangeSize, name} = block;
+            const bindingPoint = this.lastBindingPoint++;
             rangedUniformBuffers[name] = {
                 ...buffer,
+                bindingPoint,
                 rangeOffset,
                 rangeSize
             };
@@ -152,7 +162,7 @@ export class WebGLUniformBlockUtilities {
         return rangedUniformBuffers;
     }
 
-    static setUniformBufferValues(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBlockBuffer, uniforms: Record<string, Uniform>): void {
+    static setUniformBufferValues(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer, uniforms: Record<string, Uniform>): void {
         const {internalBuffer, target} = buffer;
         const currentUniformBuffer = gl.getParameter(gl.UNIFORM_BUFFER_BINDING);
         if (currentUniformBuffer !== internalBuffer) {
@@ -171,7 +181,7 @@ export class WebGLUniformBlockUtilities {
         });
     }
 
-    static setUniformBufferData(gl: WebGL2RenderingContext, buffer: UniformBlockBuffer, data: ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void {
+    static setUniformBufferData(gl: WebGL2RenderingContext, buffer: UniformBuffer, data: ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void {
         const {internalBuffer, target} = buffer;
         gl.bindBuffer(target, internalBuffer);
         dstByteOffset = dstByteOffset ?? 0;
@@ -179,16 +189,28 @@ export class WebGLUniformBlockUtilities {
         gl.bufferSubData(target, dstByteOffset, data, srcOffset, length);
     }
 
-    static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBlockBuffer): void {
-        const {internalBuffer, target} = buffer;
-        const {bindingPoint} = block;
-        let {rangeOffset, rangeSize} = buffer;
+    static lastBindingPoint = 0;
 
-        if (rangeOffset !== undefined && rangeSize !== undefined) {
-            gl.bindBufferRange(target, bindingPoint, internalBuffer, rangeOffset, rangeSize);
-        }
-        else {
-            gl.bindBufferBase(target, bindingPoint, internalBuffer);
+    static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void {
+        const {internalBuffer, target} = buffer;
+        let {rangeOffset, rangeSize} = buffer;
+        const {bindingPoint, bound} = buffer;
+        const {program, blockIndex} = block;
+        const {internalProgram} = program;
+
+        if (bindingPoint !== undefined) {
+            block.buffer = buffer;
+            gl.uniformBlockBinding(internalProgram, blockIndex, bindingPoint);
+            
+            if (bindingPoint !== undefined && !bound) {
+                if (rangeOffset !== undefined && rangeSize !== undefined) {
+                    gl.bindBufferRange(target, bindingPoint, internalBuffer, rangeOffset, rangeSize);
+                }
+                else {
+                    gl.bindBufferBase(target, bindingPoint, internalBuffer);
+                }
+                buffer.bound = true;
+            }
         }
     }
 }

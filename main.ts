@@ -11,10 +11,7 @@ import { GOLDEN_RATIO } from "./src/engine/libs/maths/geometry/GeometryConstants
 import { Triangle } from "./src/engine/libs/maths/geometry/primitives/Triangle";
 import { Space } from "./src/engine/libs/maths/geometry/space/Space";
 import { buildArrayFromIndexedArrays } from "./src/engine/utils/Snippets";
-import { instanced } from "./src/samples/scenes/Instanced";
-import { startMaps } from "./src/samples/scenes/Maps";
 import { start } from "./src/samples/scenes/SimpleScene";
-import { wireframe } from "./src/samples/scenes/Wireframe";
 /*
 function windingOrder(v0: Vector3, v1: Vector3, v2: Vector3) {
     const triangle = new Triangle(v0, v1, v2);

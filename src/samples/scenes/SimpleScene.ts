@@ -476,55 +476,54 @@ export async function launchScene() {
       elementIndices: cubeGeometryBuffer.indices,
       elementsCount: cubeGeometryBuffer.indices!.length,
     },
-    uniformBlocks: [
-      {
-        block: phongUniformBlocks.viewBlock,
-        buffer: phongPacketBuffers.viewBlock,
-        uniforms: {
-          u_view: { value: camera.view.array },
-          u_projection: { value: camera.projection.array },
-        }
-      },
-      {
-        block: phongUniformBlocks.modelBlock,
-        buffer: phongPacketBuffers.modelBlock,
-        uniforms: {
-          "models[0].u_model": { value: cube.matrix.array },
-          "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
-          "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array }
-        }
-      },
-      {
-        block: phongUniformBlocks.lightsBlock,
-        buffer: phongPacketBuffers.lightsBlock,
-        uniforms: {
-          "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
-          "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
-          "lights[0].u_cutOff": { value: (2 / 360) * Math.PI },
-          "lights[0].u_lightColor": { value: [1, 0.8, 0.8] }
-        }
-      },
-      {
-        block: phongUniformBlocks.phongBlock,
-        buffer: phongPacketBuffers.phongBlock,
-        uniforms: {
-          u_ambientColor: { value: [0.1, 0.1, 0.1] },
-          u_diffuseColor: { value: [0.8, 0, 0] },
-          u_specularColor: { value: [1, 1, 1] },
-          u_ambientFactor: { value: 1 },
-          u_diffuseFactor: { value: 1 },
-          u_specularFactor: { value: 1 },
-          u_shininess: { value: 36 },
-          u_constant: { value: 1 }, 
-          u_linear: { value: 0.09 },
-          u_quadratic: { value: 0.032 }
-        }
-      }
-    ],
     uniforms: {
-      u_albedoMap: { value: albedoMap },
-      u_normalMap: { value: normalMap },
-      u_displacementMap: { value: displacementMap }
+      uniformBuffers: [
+        {
+          usage: BufferDataUsage.DYNAMIC_READ
+        }
+      ],
+      uniformBlocks: {
+        viewBlock: {
+          uniforms: {
+            u_view: { value: camera.view.array },
+            u_projection: { value: camera.projection.array },
+          }
+        },
+        modelBlock: {
+          uniforms: {
+            "models[0].u_model": { value: cube.matrix.array },
+            "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
+            "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array }
+          }
+        },
+        lightsBlock: {
+          uniforms: {
+            "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
+            "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
+            "lights[0].u_cutOff": { value: (2 / 360) * Math.PI },
+            "lights[0].u_lightColor": { value: [1, 0.8, 0.8] }
+          }
+        },
+        phongBlock: {
+          uniforms: {
+            u_ambientColor: { value: [0.1, 0.1, 0.1] },
+            u_diffuseColor: { value: [0.8, 0, 0] },
+            u_specularColor: { value: [1, 1, 1] },
+            u_ambientFactor: { value: 1 },
+            u_diffuseFactor: { value: 1 },
+            u_specularFactor: { value: 1 },
+            u_shininess: { value: 36 },
+            u_constant: { value: 1 }, 
+            u_linear: { value: 0.09 },
+            u_quadratic: { value: 0.032 }
+          }
+        }
+      },
+      uniformVariables: {
+        u_albedoMap: { value: albedoMap },
+        u_normalMap: { value: normalMap },
+        u_displacementMap: { value: displacementMap }
+      }
     }
   };
 
@@ -538,6 +537,7 @@ export async function launchScene() {
       }
     }
   });
+  console.log(phongCubePacket);
 
   const linesProperties: PacketProperties = {
     vertexArray: {
@@ -549,19 +549,15 @@ export async function launchScene() {
       },
       elementsCount: cubeLinesArray.length / 2
     },
-    uniformBlocks: [
-        {
-          block: linesUniformBlocks.modelBlock,
-          buffer: phongPacketBuffers.modelBlock
-        },
-        {
-          block: linesUniformBlocks.viewBlock,
-          buffer: phongPacketBuffers.viewBlock
-        }
-    ],
     uniforms: {
-      u_color: {
-        value: new Float32Array([1, 0, 0])
+      uniformBlocks: {
+        modelBlock: {},
+        viewBlock: {}
+      },
+      uniformVariables: {
+        u_color: {
+          value: new Float32Array([1, 0, 0])
+        }
       }
     },
     options: {
@@ -577,19 +573,22 @@ export async function launchScene() {
       elementBuffer: phongCubePacket.vertexArray.elementBuffer,
       elementsCount: cubeIndices.length
     },
-    uniformBlocks: [
-      {
-        block: basicUniformBlocks.basicModelBlock,
-        uniforms: {
-          u_model: { value: lightTransform.matrix.array },
-          u_color: { value: [1, 1, 0] }
+    uniforms: {
+      uniformBuffers: [
+        phongCubePacket.uniforms!.uniformBlocks!.viewBlock.buffer!
+      ],
+      uniformBlocks: {
+        basicModelBlock: {
+          uniforms: {
+            u_model: { value: lightTransform.matrix.array },
+            u_color: { value: [1, 1, 0] }
+          }
+        },
+        viewBlock: {
+          buffer: 0
         }
-      },
-      {
-        block: basicUniformBlocks.viewBlock,
-        buffer: phongPacketBuffers.viewBlock,
       }
-    ]
+    }
   };
 
   const quadIndices = quadGeometryBuilder.indicesArray();
@@ -606,9 +605,11 @@ export async function launchScene() {
       elementsCount: quadIndices.length
     },
     uniforms: {
-      u_world: { value: quadWorld.array },
-      u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }, 
-      u_skybox: { value: skybox },
+      uniformVariables: {
+        u_world: { value: quadWorld.array },
+        u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }, 
+        u_skybox: { value: skybox },
+      }
     }
   };
 
@@ -622,8 +623,10 @@ export async function launchScene() {
       elementsCount: quadIndices.length
     },
     uniforms: {
-      u_world: { value: quadWorld.array },
-      u_tex: { value: depthTex }
+      uniformVariables: {
+        u_world: { value: quadWorld.array },
+        u_tex: { value: depthTex }
+      }
     }
   };
 
@@ -637,8 +640,10 @@ export async function launchScene() {
       elementsCount: quadIndices.length
     },
     uniforms: {
-      u_world: { value: quadWorld.array },
-      u_tex: { value: fbColorTex }
+      uniformVariables: {
+        u_world: { value: quadWorld.array },
+        u_tex: { value: fbColorTex }
+      }
     }
   };
 
@@ -791,33 +796,29 @@ export async function launchScene() {
           a_color: { array: shuffleArray(cubeColors.array) }
         }
       },
-      uniformBlocks: [
-        {
-          block: phongUniformBlocks.modelBlock,
-          buffer: phongPacketBuffers.modelBlock,
-          uniforms: {
-            "models[0].u_model": { value: cube.matrix.array },
-            "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
-            "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array },
-          }
-        },
-        {
-          block: phongUniformBlocks.viewBlock,
-          buffer: phongPacketBuffers.viewBlock,
-          uniforms: {
-            u_view: { value: camera.view.array },
-            u_projection: { value: camera.projection.array },
-          }
-        },
-        {
-          block: phongUniformBlocks.lightsBlock,
-          buffer: phongPacketBuffers.lightsBlock,
-          uniforms: {
-            "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
-            "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
+      uniforms: {
+        uniformBlocks: {
+          modelBlock: {
+            uniforms: {
+              "models[0].u_model": { value: cube.matrix.array },
+              "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
+              "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array },
+            }
+          },
+          viewBlock: {
+            uniforms: {
+              u_view: { value: camera.view.array },
+              u_projection: { value: camera.projection.array },
+            }
+          },
+          lightsBlock: {
+            uniforms: {
+              "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
+              "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
+            }
           }
         }
-      ]
+      }
     });
 
     WebGLPacketUtilities.drawPacket(gl, basicPacket);
@@ -828,7 +829,9 @@ export async function launchScene() {
     
     WebGLPacketUtilities.setPacketValues(gl, skyboxPacket, {
       uniforms: {
-        u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }
+        uniformVariables: {
+          u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }
+        }
       }
     });
     

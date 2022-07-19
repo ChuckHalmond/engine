@@ -1,16 +1,15 @@
 import { VertexArray, VertexArrayValues, VertexArrayProperties, DrawMode } from "./WebGLVertexArrayUtilities";
 import { Texture, TextureProperties } from "./WebGLTextureUtilities";
-import { UniformBlock, UniformBlockBuffer, UniformBufferProperties } from "./WebGLUniformBlockUtilities";
+import { UniformBlock, UniformBlockProperties, UniformBuffer, UniformBufferProperties } from "./WebGLUniformBlockUtilities";
 import { Uniform, UniformsListSetter } from "./WebGLUniformUtilities";
 import { Program } from "./WebGLProgramUtilities";
 export declare type PacketProperties = {
     vertexArray: VertexArrayProperties;
-    uniforms?: Record<string, Uniform>;
-    uniformBlocks?: {
-        block: UniformBlock;
-        buffer?: UniformBlockBuffer | UniformBufferProperties;
-        uniforms?: Record<string, Uniform>;
-    }[];
+    uniforms?: {
+        uniformBuffers?: (UniformBufferProperties | UniformBuffer)[];
+        uniformBlocks?: Record<string, UniformBlockProperties>;
+        uniformVariables?: Record<string, Uniform>;
+    };
     options?: {
         drawMode?: DrawMode;
         instanceCount?: number;
@@ -18,20 +17,19 @@ export declare type PacketProperties = {
 };
 export declare type PacketValues = {
     vertexArray?: VertexArrayValues;
-    uniforms?: Record<string, Uniform>;
-    uniformBlocks?: {
-        block: UniformBlock;
-        buffer: UniformBlockBuffer;
-        uniforms: Record<string, Uniform>;
-    }[];
+    uniforms?: {
+        uniformVariables?: Record<string, Uniform>;
+        uniformBlocks?: Record<string, {
+            uniforms: Record<string, Uniform>;
+        }>;
+    };
 };
 export declare type Packet = {
     vertexArray: VertexArray;
-    uniforms?: UniformsListSetter;
-    uniformBlocks?: Record<string, {
-        block: UniformBlock;
-        buffer: UniformBlockBuffer;
-    }>;
+    uniforms?: {
+        uniformSetters: UniformsListSetter;
+        uniformBlocks?: Record<string, UniformBlock>;
+    };
     drawMode: DrawMode;
     instanceCount?: number;
 };
