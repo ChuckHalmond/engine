@@ -136,13 +136,12 @@ void main() {
     float diffuseFactor = u_diffuseFactor/* * attenuation*/;
     float specularFactor = u_specularFactor/* * attenuation*/;
 
-    o_outColor = vec4(
+    o_outColor.rgb = vec3(
       ambientFactor * u_ambientColor +
       diffuseFactor * lambertian * /*albedo*/v_color +
-      specularFactor * specular * u_specularColor,
-      1.0
-      //0.6
+      specularFactor * specular * u_specularColor
     );
+    o_outColor.a = 0.5;
   /*}
   else {
     o_outColor = vec4(
