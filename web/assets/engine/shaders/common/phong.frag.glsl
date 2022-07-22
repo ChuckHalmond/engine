@@ -70,6 +70,16 @@ uniform phongBlock {
   uniform sampler2D u_albedoMap;
 #endif
 
+uniform sampler2DArray u_albedoMaps;
+
+uniform subTexture {
+  float u_xOffset;
+  float u_yOffset;
+  float u_zOffset;
+  float u_xScaling;
+  float u_yScaling;
+};
+
 out vec4 o_outColor;
 
 void main() {
@@ -91,8 +101,10 @@ void main() {
   float u_linear = phong.u_linear;
   float u_quadratic = phong.u_quadratic;
   
+  vec3 uv = vec3(v_uv.x * u_xScaling + u_xOffset, v_uv.y * u_yScaling + u_yOffset, u_zOffset);
+  
   #ifdef USE_ALBEDO_MAP
-    vec3 albedo = texture(u_albedoMap, v_uv).rgb;
+    vec3 albedo = texture(u_albedoMaps, uv).rgb;
   #else
     vec3 albedo = vec3(0.0, 1.0, 0.0);
   #endif
@@ -138,10 +150,10 @@ void main() {
 
     o_outColor.rgb = vec3(
       ambientFactor * u_ambientColor +
-      diffuseFactor * lambertian * /*albedo*/v_color +
+      diffuseFactor * lambertian * albedo/*v_color*/ +
       specularFactor * specular * u_specularColor
     );
-    o_outColor.a = 0.5;
+    o_outColor.a = 1.0;
   /*}
   else {
     o_outColor = vec4(

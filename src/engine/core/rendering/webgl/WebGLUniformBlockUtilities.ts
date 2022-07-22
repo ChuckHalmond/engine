@@ -20,7 +20,6 @@ export type UniformBlockProperties = {
 }
 
 export type UniformBuffer = Buffer & {
-    byteLength: number;
     bindingPoint?: number;
     rangeOffset?: number;
     rangeSize?: number;

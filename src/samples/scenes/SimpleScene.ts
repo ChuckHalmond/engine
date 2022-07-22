@@ -167,7 +167,6 @@ export async function launchScene() {
   // Shaders
   const phongVert = await fetch("assets/engine/shaders/common/phong.vert.glsl").then(resp => resp.text());
   const phongFrag = await fetch("assets/engine/shaders/common/phong.frag.glsl").then(resp => resp.text());
-  const phong2Frag = await fetch("assets/engine/shaders/common/phong2.frag.glsl").then(resp => resp.text());
   const phongProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: phongVert, fragmentSource: phongFrag});
   if (phongProgram === null) return;
 
@@ -214,6 +213,7 @@ export async function launchScene() {
   }
   // Images
   const albedoMapImg = await fetchImage("assets/engine/img/NormalMap.png");
+  const brickwallImg = await fetchImage("assets/engine/img/brickwall.jpg");
   const normalMapImg = await fetchImage("assets/engine/img/NormalMap_0.png");
   const displacementMapImg = await fetchImage("assets/engine/img/DisplacementMap.png");
   const skyboxXPosImg = await fetchImage("assets/engine/img/skybox_x_pos.png");
@@ -300,6 +300,36 @@ export async function launchScene() {
     //     }
     //   ]
     // },
+    albedoMaps: {
+      pixels: null,
+      width: brickwallImg.width, height: brickwallImg.height, depth: 2,
+      target: TextureTarget.TEXTURE_2D_ARRAY,
+      type: TexturePixelType.UNSIGNED_BYTE,
+      format: TexturePixelFormat.RGB,
+      internalFormat: TextureInternalPixelFormat.RGB8,
+      subimages: [
+        {
+          pixels: albedoMapImg,
+          xoffset: 0,
+          yoffset: 0,
+          zoffset: 0,
+          width: albedoMapImg.width,
+          height: albedoMapImg.height,
+          depth: 1
+        },
+        {
+          pixels: brickwallImg,
+          xoffset: 0,
+          yoffset: 0,
+          zoffset: 1,
+          width: brickwallImg.width,
+          height: brickwallImg.height,
+          depth: 1
+        }
+      ],
+      min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
+      mag: TextureMagFilter.LINEAR
+    },
     normalMap: {
       pixels: normalMapImg,
       width: normalMapImg.width, height: normalMapImg.height,
@@ -358,7 +388,7 @@ export async function launchScene() {
     }
   })!;
 
-  const {albedoMap, normalMap, displacementMap, skybox, fbColorTex, depthTex} = textures;
+  const {albedoMap, albedoMaps, normalMap, displacementMap, skybox, fbColorTex, depthTex} = textures;
 
   /*const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
   if (anisotropicExtension) {
@@ -480,6 +510,15 @@ export async function launchScene() {
       }
     ],
     uniformBlocks: {
+      subTexture: {
+        uniforms: {
+          u_xOffset: { value: 0 },
+          u_yOffset: { value: 0 },
+          u_zOffset: { value: 0 },
+          u_xScaling: { value: albedoMapImg.width / brickwallImg.width },
+          u_yScaling: { value: albedoMapImg.height / brickwallImg.height }
+        }
+      },
       viewBlock: {
         buffer: 0,
         /*uniforms: {
@@ -523,7 +562,8 @@ export async function launchScene() {
     uniforms: {
       u_albedoMap: { value: albedoMap },
       u_normalMap: { value: normalMap },
-      u_displacementMap: { value: displacementMap }
+      u_displacementMap: { value: displacementMap },
+      u_albedoMaps: { value: albedoMaps }
     }
   };
 
@@ -786,11 +826,8 @@ export async function launchScene() {
     return array;
   }
 
-  //WebGLProgramUtilities.recompileProgram(gl, phongProgram, {fragmentSource: phong2Frag});
-  //WebGLProgramUtilities.recompileProgram(gl, phongProgram, {fragmentSource: phong2Frag});
-
-  /*WebGLProgramUtilities.recompileProgram(gl, phongProgram, {fragmentSource: phong2Frag});
-  phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongCubePacketProperties)!;*/
+  // WebGLProgramUtilities.recompileProgram(gl, phongProgram, {fragmentSource: phong2Frag});
+  // phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongCubePacketProperties)!;
   
   WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, phongPacketInitValues);
 
@@ -866,8 +903,8 @@ export async function launchScene() {
       }
     });
 
-    WebGLPacketUtilities.drawPacket(gl, basicPacket);
-    WebGLPacketUtilities.drawPacket(gl, linesPacket);
+    // WebGLPacketUtilities.drawPacket(gl, basicPacket);
+    // WebGLPacketUtilities.drawPacket(gl, linesPacket);
     WebGLPacketUtilities.drawPacket(gl, phongCubePacket);
     
     WebGLPacketUtilities.setPacketValues(gl, skyboxPacket, {

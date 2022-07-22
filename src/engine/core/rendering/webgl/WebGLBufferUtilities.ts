@@ -23,4 +23,5 @@ type Buffer = {
     internalBuffer: WebGLBuffer;
     target: BufferTarget;
     usage: BufferDataUsage;
+    byteLength: number;
 }

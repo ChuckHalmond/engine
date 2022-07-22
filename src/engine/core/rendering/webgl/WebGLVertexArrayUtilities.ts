@@ -195,6 +195,7 @@ class WebGLVertexArrayUtilities {
         }
         const usage = BufferDataUsage.STATIC_READ;
         const target = gl.ELEMENT_ARRAY_BUFFER;
+        const {byteLength} = indices;
         const indexType = this.getElementArrayBufferType(indices);
 
         gl.bindBuffer(target, internalBuffer);
@@ -204,6 +205,7 @@ class WebGLVertexArrayUtilities {
             internalBuffer,
             target,
             usage,
+            byteLength,
             indexType
         };
     }
@@ -363,9 +365,9 @@ class WebGLVertexArrayUtilities {
             internalBuffer,
             target,
             usage,
+            byteLength,
             interleaved,
             byteStride,
-            byteLength,
             vertexAttributes
         };
     }

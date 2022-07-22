@@ -17,7 +17,6 @@ export declare type UniformBlockProperties = {
     uniforms?: Record<string, Uniform>;
 };
 export declare type UniformBuffer = Buffer & {
-    byteLength: number;
     bindingPoint?: number;
     rangeOffset?: number;
     rangeSize?: number;
