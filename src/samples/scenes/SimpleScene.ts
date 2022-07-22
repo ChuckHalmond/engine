@@ -9,7 +9,7 @@ import { CubeGeometry } from "../../engine/core/rendering/scenes/geometries/lib/
 import { QuadGeometry } from "../../engine/core/rendering/scenes/geometries/lib/QuadGeometry";
 import { BufferDataUsage } from "../../engine/core/rendering/webgl/WebGLBufferUtilities";
 import { FramebufferAttachment, FramebufferTextureTarget, RenderbufferPixelFormat, WebGLFramebufferUtilities } from "../../engine/core/rendering/webgl/WebGLFramebufferUtilities";
-import { WebGLPacketUtilities, PacketProperties } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
+import { WebGLPacketUtilities, PacketProperties, PacketValues } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
 import { BlendingEquation, BlendingMode, BufferMask, Capabilities, TestFunction, WebGLRendererUtilities, WindingOrder } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
 import { TexturePixelFormat, TexturePixelType, TextureMagFilter, TextureMinFilter, TextureTarget, TextureWrapMode, WebGLTextureUtilities, TextureInternalPixelFormat } from "../../engine/core/rendering/webgl/WebGLTextureUtilities";
@@ -167,6 +167,7 @@ export async function launchScene() {
   // Shaders
   const phongVert = await fetch("assets/engine/shaders/common/phong.vert.glsl").then(resp => resp.text());
   const phongFrag = await fetch("assets/engine/shaders/common/phong.frag.glsl").then(resp => resp.text());
+  const phong2Frag = await fetch("assets/engine/shaders/common/phong2.frag.glsl").then(resp => resp.text());
   const phongProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: phongVert, fragmentSource: phongFrag});
   if (phongProgram === null) return;
 
@@ -481,13 +482,61 @@ export async function launchScene() {
     uniformBlocks: {
       viewBlock: {
         buffer: 0,
+        /*uniforms: {
+          u_view: { value: camera.view.array },
+          u_projection: { value: camera.projection.array },
+        }*/
+      },
+      modelBlock: {
+        buffer: 0,
+        /*uniforms: {
+          "models[0].u_model": { value: cube.matrix.array },
+          "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
+          "models[0].u_normal": { value: camera.view.mult(cube.matrix).invert().transpose().array }
+        }*/
+      },
+      lightsBlock: {
+        buffer: 0,
+        /*uniforms: {
+          "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
+          "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
+          "lights[0].u_cutOff": { value: (2 / 360) * Math.PI },
+          "lights[0].u_lightColor": { value: Array.from(Color.RED) }
+        }*/
+      },
+      phongBlock: {
+        buffer: 1,
+        /*uniforms: {
+          "phong.u_ambientColor": { value: [0.1, 0.1, 0.1] },
+          "phong.u_diffuseColor": { value: [0.8, 0, 0] },
+          "phong.u_specularColor": { value: [1, 1, 1] },
+          "phong.u_ambientFactor": { value: 0.0008 },
+          "phong.u_diffuseFactor": { value: 1 },
+          "phong.u_specularFactor": { value: 1 },
+          "phong.u_shininess": { value: 36 },
+          "phong.u_constant": { value: 1 }, 
+          "phong.u_linear": { value: 0.09 },
+          "phong.u_quadratic": { value: 0.032 }
+        }*/
+      }
+    },
+    uniforms: {
+      u_albedoMap: { value: albedoMap },
+      u_normalMap: { value: normalMap },
+      u_displacementMap: { value: displacementMap }
+    }
+  };
+
+  const phongPacketInitValues = <PacketValues>{
+    program: phongProgram,
+    uniformBlocks: {
+      viewBlock: {
         uniforms: {
           u_view: { value: camera.view.array },
           u_projection: { value: camera.projection.array },
         }
       },
       modelBlock: {
-        buffer: 0,
         uniforms: {
           "models[0].u_model": { value: cube.matrix.array },
           "models[0].u_modelView": { value: camera.view.mult(cube.matrix).array },
@@ -495,7 +544,6 @@ export async function launchScene() {
         }
       },
       lightsBlock: {
-        buffer: 0,
         uniforms: {
           "lights[0].u_lightWorldPos": { value: Array.from(lightTransform.getTranslation(new Vector3())) },
           "lights[0].u_lightDirection": { value: Array.from(lightTransform.getBackward(new Vector3())) },
@@ -504,7 +552,6 @@ export async function launchScene() {
         }
       },
       phongBlock: {
-        buffer: 1,
         uniforms: {
           "phong.u_ambientColor": { value: [0.1, 0.1, 0.1] },
           "phong.u_diffuseColor": { value: [0.8, 0, 0] },
@@ -518,15 +565,10 @@ export async function launchScene() {
           "phong.u_quadratic": { value: 0.032 }
         }
       }
-    },
-    uniforms: {
-      u_albedoMap: { value: albedoMap },
-      u_normalMap: { value: normalMap },
-      u_displacementMap: { value: displacementMap }
     }
-  };
+  }
 
-  const phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongCubePacketProperties)!;
+  let phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongCubePacketProperties)!;
   
   WebGLVertexArrayUtilities.setVertexArrayBufferData(gl, phongCubePacket.vertexArray.verticesBuffers[1]!, cubeColors.array);
   WebGLVertexArrayUtilities.setVertexArrayBufferData(gl, phongCubePacket.vertexArray.verticesBuffers[0]!, new Uint8Array(cubeGeometryBuffer.buffer));
@@ -578,7 +620,7 @@ export async function launchScene() {
         phongCubePacket.vertexArray.verticesBuffers[0]
       ],
       elementBuffer: phongCubePacket.vertexArray.elementBuffer,
-      elementsCount: cubeIndices.length
+      elementsCount: phongCubePacket.vertexArray.elementsCount
     },
     uniformBuffers: [
       phongCubePacket.uniformBlocks!.viewBlock.buffer!
@@ -628,8 +670,8 @@ export async function launchScene() {
       elementsCount: quadIndices.length
     },
     uniforms: {
-      u_world: { value: quadWorld.array },
-      u_tex: { value: depthTex }
+      u_depthWorld: { value: quadWorld.array },
+      u_depthTex: { value: depthTex }
     }
   };
 
@@ -744,6 +786,14 @@ export async function launchScene() {
     return array;
   }
 
+  //WebGLProgramUtilities.recompileProgram(gl, phongProgram, {fragmentSource: phong2Frag});
+  //WebGLProgramUtilities.recompileProgram(gl, phongProgram, {fragmentSource: phong2Frag});
+
+  /*WebGLProgramUtilities.recompileProgram(gl, phongProgram, {fragmentSource: phong2Frag});
+  phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongCubePacketProperties)!;*/
+  
+  WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, phongPacketInitValues);
+
   render = function(frameTime: number) {
     ++frame;
     if (paused) {
@@ -779,7 +829,9 @@ export async function launchScene() {
     viewDirectionProjectionInverse.copy(camera.projection).mult(new Matrix4().setIdentity().setRotation(camera.view.getRotation())).invert();
 
     // Framebuffer
-    // WebGLFramebufferUtilities.bindFramebuffer(gl, depthFramebuffer);
+
+    WebGLRendererUtilities.viewport(gl, 0, 0, canvas.width, canvas.height);
+
     WebGLFramebufferUtilities.bindFramebuffer(gl, framebuffer);
 
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
@@ -814,8 +866,8 @@ export async function launchScene() {
       }
     });
 
-    // WebGLPacketUtilities.drawPacket(gl, basicPacket);
-    // WebGLPacketUtilities.drawPacket(gl, linesPacket);
+    WebGLPacketUtilities.drawPacket(gl, basicPacket);
+    WebGLPacketUtilities.drawPacket(gl, linesPacket);
     WebGLPacketUtilities.drawPacket(gl, phongCubePacket);
     
     WebGLPacketUtilities.setPacketValues(gl, skyboxPacket, {
@@ -834,18 +886,25 @@ export async function launchScene() {
       BufferMask.COLOR_BUFFER_BIT,
       TextureMagFilter.LINEAR
     );
-    // WebGLFramebufferUtilities.blit(gl, framebuffer, postFramebuffer,
-    //   [0, 0, canvas.width, canvas.height],
-    //   [0, 0, canvas.width, canvas.height],
-    //   BufferMask.DEPTH_BUFFER_BIT,
-    //   TextureMagFilter.NEAREST
-    // );
-
-    // WebGLFramebufferUtilities.unbindFramebuffer(gl);
-    // WebGLPacketUtilities.drawPacket(gl, depthPacket);
+    
+    WebGLFramebufferUtilities.blit(gl, framebuffer, postFramebuffer,
+      [0, 0, canvas.width, canvas.height],
+      [0, 0, canvas.width, canvas.height],
+      BufferMask.DEPTH_BUFFER_BIT,
+      TextureMagFilter.NEAREST
+    );
 
     WebGLFramebufferUtilities.unbindFramebuffer(gl);
+    
     WebGLPacketUtilities.drawPacket(gl, texPacket);
+
+    const newWidth = canvas.width / 4;
+    const newHeight = canvas.height / 4;
+    WebGLRendererUtilities.viewport(gl, 0, canvas.height - newHeight, newWidth, newHeight);
+
+    WebGLRendererUtilities.depthFunction(gl, TestFunction.ALWAYS);
+
+    WebGLPacketUtilities.drawPacket(gl, depthPacket);
 
     Input.clear();
 

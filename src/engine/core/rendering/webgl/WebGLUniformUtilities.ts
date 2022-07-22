@@ -392,14 +392,15 @@ class WebGLUniformUtilities {
         const {program, setters} = setter;
         WebGLProgramUtilities.useProgram(gl, program);
         
-        Object.keys(list).forEach((name) => {
-            if (!(name in setters)) {
-                console.warn(`Uniform ${name} does not match any of the given setters.`);
+        Object.entries(list).forEach(([uniformName, uniform]) => {
+            if (uniformName in setters) {
+                const setter = setters[uniformName];
+                const {value} = uniform;
+                setter.set(value);
             }
-            const setter = setters[name];
-            const uniform = list[name];
-            const {value} = uniform;
-            setter.set(value);
+            else {
+                console.error(`Uniform ${uniformName} does not match any of the given setters.`);
+            }
         });
     }
 }

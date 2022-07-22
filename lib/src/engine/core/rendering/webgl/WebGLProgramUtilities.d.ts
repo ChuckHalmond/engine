@@ -9,6 +9,8 @@ export declare type Program = {
 };
 export declare type Shader = {
     internalShader: WebGLShader;
+    type: ShaderType;
+    source: string;
 };
 export declare type ProgramProperties = {
     vertexSource: string;
@@ -18,8 +20,8 @@ export declare type ProgramProperties = {
 };
 export declare class WebGLProgramUtilities {
     static createShader(gl: WebGL2RenderingContext, type: ShaderType, source: string): Shader | null;
-    static deleteShader(gl: WebGL2RenderingContext, shader: Shader): void;
     static createProgram(gl: WebGL2RenderingContext, properties: ProgramProperties): Program | null;
+    static recompileProgram(gl: WebGL2RenderingContext, program: Program, properties: Partial<ProgramProperties>): Program;
     static deleteProgram(gl: WebGL2RenderingContext, program: Program): void;
     static useProgram(gl: WebGL2RenderingContext, program: Program): void;
 }

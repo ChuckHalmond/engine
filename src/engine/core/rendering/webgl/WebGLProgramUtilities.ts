@@ -11,6 +11,8 @@ export type Program = {
 
 export type Shader = {
     internalShader: WebGLShader;
+    type: ShaderType;
+    source: string;
 }
 
 export type ProgramProperties = {
@@ -33,7 +35,9 @@ export class WebGLProgramUtilities {
         const success = gl.getShaderParameter(internalShader, gl.COMPILE_STATUS);
         if (success) {
             return {
-                internalShader
+                type,
+                internalShader,
+                source
             };
         }
 
@@ -45,19 +49,9 @@ export class WebGLProgramUtilities {
         gl.deleteShader(internalShader);
         return null;
     }
-
-    static deleteShader(gl: WebGL2RenderingContext, shader: Shader): void {
-        const {internalShader} = shader;
-        if (gl.isShader(internalShader)) {
-            gl.deleteShader(internalShader);
-        }
-    }
     
     static createProgram(gl: WebGL2RenderingContext, properties: ProgramProperties): Program | null {
         const {vertexSource, fragmentSource} = properties;
-
-        //@TODO: bindAttribLocation ?
-        //@TODO: definitions ?
 
         const vertexShader = this.createShader(gl, ShaderType.VERTEX_SHADER, vertexSource);
         if (vertexShader === null) {
@@ -70,10 +64,15 @@ export class WebGLProgramUtilities {
         }
         
         const internalProgram = gl.createProgram();
-
         if (internalProgram === null) {
             return null;
         }
+
+        const program: Program = {
+            internalProgram,
+            vertexShader,
+            fragmentShader
+        };
         
         gl.attachShader(internalProgram, vertexShader.internalShader);
         gl.attachShader(internalProgram, fragmentShader.internalShader);
@@ -81,38 +80,60 @@ export class WebGLProgramUtilities {
 
         const success = gl.getProgramParameter(internalProgram, gl.LINK_STATUS);
         if (success) {
-            return {
-                internalProgram,
-                vertexShader,
-                fragmentShader
-            };
+            return program;
         }
 
         const programInfoLog = gl.getProgramInfoLog(internalProgram);
-        const vsInfoLog = gl.getProgramInfoLog(internalProgram);
-        const fsInfoLog = gl.getProgramInfoLog(internalProgram);
         if (programInfoLog !== null) {
-            console.warn(`Program info: ${programInfoLog}`);
-            console.warn(`VS info: ${vsInfoLog}`);
-            console.warn(`FS info: ${fsInfoLog}`);
+            const vertexInfoLog = gl.getShaderInfoLog(vertexShader.internalShader);
+            const fragmentInfoLog = gl.getShaderInfoLog(fragmentShader.internalShader);
+            console.warn(programInfoLog);
+            console.warn(vertexInfoLog);
+            console.warn(fragmentInfoLog);
         }
-        
-        gl.deleteProgram(internalProgram);
+        this.deleteProgram(gl, program);
 
         return null;
+    }
+
+    static recompileProgram(gl: WebGL2RenderingContext, program: Program, properties: Partial<ProgramProperties>) {
+        const {internalProgram, vertexShader, fragmentShader} = program;
+        let {vertexSource, fragmentSource} = properties;
+        if (typeof vertexSource === "string") {
+            const {internalShader} = vertexShader;
+            gl.shaderSource(internalShader, vertexSource);
+            gl.compileShader(internalShader);
+            vertexShader.source = vertexSource;
+        }
+        if (typeof fragmentSource === "string") {
+            const {internalShader} = fragmentShader;
+            gl.shaderSource(internalShader, fragmentSource);
+            gl.compileShader(internalShader);
+            fragmentShader.source = fragmentSource;
+        }
+        gl.linkProgram(internalProgram);
+
+        const success = gl.getProgramParameter(internalProgram, gl.LINK_STATUS);
+        if (success) {
+            return program;
+        }
+
+        const programInfoLog = gl.getProgramInfoLog(internalProgram);
+        if (programInfoLog !== null) {
+            const vertexInfoLog = gl.getShaderInfoLog(vertexShader.internalShader);
+            const fragmentInfoLog = gl.getShaderInfoLog(fragmentShader.internalShader);
+            console.warn(programInfoLog);
+            console.warn(vertexInfoLog);
+            console.warn(fragmentInfoLog);
+        }
+        return program;
     }
     
     static deleteProgram(gl: WebGL2RenderingContext, program: Program) {
         const {vertexShader, fragmentShader, internalProgram} = program;
-        if (gl.isShader(vertexShader)) {
-            gl.deleteShader(vertexShader);
-        }
-        if (gl.isShader(fragmentShader)) {
-            gl.deleteShader(fragmentShader);
-        }
-        if (gl.isProgram(internalProgram)) {
-            gl.deleteProgram(internalProgram);
-        }
+        gl.deleteShader(vertexShader.internalShader);
+        gl.deleteShader(fragmentShader.internalShader);
+        gl.deleteProgram(internalProgram);
     }
 
     static useProgram(gl: WebGL2RenderingContext, program: Program) {
