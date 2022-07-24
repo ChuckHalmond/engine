@@ -8,7 +8,6 @@ export class PerspectiveCamera extends CameraBase {
         aspect: number,
         zNear: number,
         zFar: number) {
-        
         super(Matrix4.perspective(fov, aspect, zNear, zFar));
     }
 

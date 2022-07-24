@@ -123,7 +123,6 @@ input.addEventListener("input", () => {
 });
 */
 export async function launchScene() {
-  let frameRequest: number;
   let render: (time: number) => void;
   let fps: number = 0;
   let paused = false;
@@ -859,16 +858,6 @@ export async function launchScene() {
 
   const targetPosition = new Vector3([2, -2, -2]);
   const targetRotation = Quaternion.fromAxisAngle(Space.down, Math.PI / 3);
-  
-  function animate(transform: Transform, initPosition: Vector3, initRotation: Quaternion, targetPosition: Vector3, targetRotation: Quaternion, t: number) {
-    /*transform.setTranslation(
-      new Vector3().lerp(initPosition, targetPosition, t)
-    );*/
-    //transform.setRotation(transform.getRotation(new Quaternion()).slerp(initRotation, targetRotation, t));
-    
-    //transform.rotate(new Quaternion().slerp(initRotation, targetRotation, t));
-    transform.rotate(Quaternion.fromAxisAngle(Space.down, Math.PI / 128));
-  }
 
   Input.initialize(canvas);
   
@@ -876,31 +865,18 @@ export async function launchScene() {
 
   const cameraControl = new FreeCameraControl(camera);
 
-  let frame = 0;
-
-  function shuffleArray<T extends {[index: number]: number; length: number;}>(array: T): T {
-    for (var i = array.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-    }
-    return array;
-  }
-
   // WebGLProgramUtilities.recompileProgram(gl, phongProgram, {fragmentSource: phong2Frag});
   // phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongCubePacketProperties)!;
   
   WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, phongPacketInitValues);
-
+  WebGLRendererUtilities.clearColor(gl, Color.BLACK.normalize());
+  
   render = function(frameTime: number) {
-    ++frame;
     if (paused) {
       return;
     }
     
     frameTime *= 0.001;
-
     deltaTime = frameTime - lastFrameTime;
     lastFrameTime = frameTime;
     fps = 1 / deltaTime;
@@ -910,19 +886,14 @@ export async function launchScene() {
     cameraControl.update(deltaTime);
     lightTransform.setMatrix(camera.transform.matrix);
 
-    animate(
-      cube,
-      initPosition, initRotation,
-      targetPosition, targetRotation,
-      t
-    );
+    cube.rotate(Quaternion.fromAxisAngle(Space.down, Math.PI / 128));
     
     t += deltaTime * direction * 0.5;
     if (t > 1 || t < 0) {
       direction *= -1;
     }
     
-    WebGLRendererUtilities.clearColor(gl, Color.BLACK.normalize());
+    
     WebGLRendererUtilities.clear(gl, BufferMask.COLOR_BUFFER_BIT | BufferMask.DEPTH_BUFFER_BIT);
     
     viewDirectionProjectionInverse.copy(camera.projection).mult(new Matrix4().setIdentity().setRotation(camera.view.getRotation())).invert();
@@ -1007,7 +978,7 @@ export async function launchScene() {
 
     Input.clear();
 
-    frameRequest = requestAnimationFrame(render);
+    requestAnimationFrame(render);
   }
 
   /*const stream = gl.canvas.captureStream(60);

@@ -1,3 +1,4 @@
+import { shadows } from "./src/samples/scenes/Shadows";
 import { Entity } from "./src/engine/core/general/Entity";
 import { Scene } from "./src/engine/core/general/Scene";
 import { FaceHalfEdgesIterator, FaceVerticesIterator, Vertex, VertexFacesIterator } from "./src/engine/core/rendering/scenes/geometries/GeometryBuilder";
@@ -63,7 +64,8 @@ export async function main() {
 
     myWorker.postMessage(sab);*/
 
-    start();
+    //start();
+    shadows();
 
     //startMaps();
 

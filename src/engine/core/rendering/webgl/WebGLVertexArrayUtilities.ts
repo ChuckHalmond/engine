@@ -209,7 +209,7 @@ class WebGLVertexArrayUtilities {
             indexType
         };
     }
-
+    
     static createVertexArrayBuffer(gl: WebGL2RenderingContext, program: Program, attributes: Record<string, VertexAttributeProperties>, usage?: BufferDataUsage, interleaved?: boolean): VertexArrayBuffer | null {
         const {internalProgram} = program;
 

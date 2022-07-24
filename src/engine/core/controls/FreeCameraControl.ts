@@ -30,14 +30,14 @@ class FreeCameraControlBase {
     }
 
     update(deltaTime: number) {
-        const cameraTransform = this.camera.transform;
+        const {camera, rotationSpeed, translationSpeed} = this;
+        const {transform: cameraTransform} = camera;
+        const lastPointerPosition = this.#lastPointerPosition;
         const cameraPosition = cameraTransform.getTranslation(new Vector3());
         const cameraForward = cameraTransform.getBackward(new Vector3());
-        const cameraForwardArray = cameraForward.array;
-        const lastPointerPosition = this.#lastPointerPosition;
-        const rotationSpeed = this.rotationSpeed;
-        const translationSpeed = this.translationSpeed;
-        let cameraUpSign = cameraTransform.getUp(new Vector3()).dot(Space.up);
+        const {array: cameraForwardArray} = cameraForward;
+        const {origin, up, down} = Space;
+        let cameraUpSign = cameraTransform.getUp(new Vector3()).dot(up);
       
         if (Input.getKey(Key.Z) || Input.getKey(Key.ARROW_UP)) {
             const forward = cameraTransform.getBackward(new Vector3()).scale(translationSpeed * deltaTime);
@@ -67,8 +67,8 @@ class FreeCameraControlBase {
                 const dy = (lastPointerPosition.y - newPointerPosition.y) * rotationSpeed * deltaTime;
                 cameraPosition.copy(cameraTransform.getTranslation(new Vector3()));
                 if (dx !== 0 || dy !== 0) {
-                    cameraUpSign = Math.sign(cameraTransform.getUp(new Vector3()).dot(Space.up));
-                    cameraForward.toSpherical(Space.origin);
+                    cameraUpSign = Math.sign(cameraTransform.getUp(new Vector3()).dot(up));
+                    cameraForward.toSpherical(origin);
                     const theta = cameraForwardArray[1];
                     const phi = cameraForwardArray[2];
                     const newTheta = theta + cameraUpSign * -dy;
@@ -81,8 +81,8 @@ class FreeCameraControlBase {
                         cameraForwardArray[2] = (phi - dx) % (2 * Math.PI);
                         cameraForwardArray[1] = theta + cameraUpSign * -dy;
                     }
-                    cameraForward.toCartesian(Space.origin);
-                    cameraTransform.lookAt(cameraPosition.add(cameraForward), (cameraUpSign > 0) ? Space.up : Space.down);
+                    cameraForward.toCartesian(origin);
+                    cameraTransform.lookAt(cameraPosition.add(cameraForward), (cameraUpSign > 0) ? up : down);
                 }
                 lastPointerPosition.copy(newPointerPosition);
             }

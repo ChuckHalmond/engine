@@ -51,10 +51,10 @@ class ColorBase implements Color {
     }
     
     static readonly BLACK = new ColorBase(0, 0, 0);
-    static readonly RED = new ColorBase(255, 0, 0);
-    static readonly GREEN = new ColorBase(0, 255, 0);
-    static readonly BLUE = new ColorBase(0, 0, 255);
-    static readonly WHITE = new ColorBase(255, 255, 255);
+    static readonly RED = new ColorBase(1, 0, 0);
+    static readonly GREEN = new ColorBase(0, 1, 0);
+    static readonly BLUE = new ColorBase(0, 0, 1);
+    static readonly WHITE = new ColorBase(1, 1, 1);
 
     static array(...colors: Color[]): number[] {
         const a = new Array<number>(colors.length * 4);
