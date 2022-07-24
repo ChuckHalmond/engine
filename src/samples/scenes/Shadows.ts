@@ -8,7 +8,7 @@ import { QuadGeometry } from "../../engine/core/rendering/scenes/geometries/lib/
 import { WebGLPacketUtilities } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
 import { BufferMask, Capabilities, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
-import { AttributeDataType } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
+import { AttributeDataType, WebGLVertexArrayUtilities } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Vector3 } from "../../engine/libs/maths/algebra/vectors/Vector3";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
@@ -27,6 +27,8 @@ export async function shadows() {
         return;
     }
 
+    WebGLVertexArrayUtilities.enableMultidrawExtension(gl);
+
     const playpause = document.createElement("button");
     playpause.textContent = "Pause";
     let paused = false;
@@ -42,8 +44,8 @@ export async function shadows() {
 
     document.body.append(playpause, canvas);
 
-    const basicVert = await fetch("assets/engine/shaders/common/basic.vert.glsl").then(resp => resp.text());
-    const basicFrag = await fetch("assets/engine/shaders/common/basic.frag.glsl").then(resp => resp.text());
+    const basicVert = await fetch("assets/engine/shaders/common/multi/basic.vert.glsl").then(resp => resp.text());
+    const basicFrag = await fetch("assets/engine/shaders/common/multi/basic.frag.glsl").then(resp => resp.text());
     const basicProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: basicVert, fragmentSource: basicFrag});
     if (basicProgram === null) return;
 
@@ -59,34 +61,43 @@ export async function shadows() {
     const cubeTransform = new Transform();
     cubeTransform.setTranslation(camera.getFront(new Vector3()).scale(4));
 
-    
-    const cubeGeometry = new QuadGeometry({
-        width: 4, height: 4
-    });
+    const quadTransform = new Transform();
+    quadTransform.setTranslation(camera.getFront(new Vector3()).scale(8));
+
+    const cubeGeometry = new CubeGeometry();
     const cubeGeometryBuilder = cubeGeometry.toBuilder();
     const cubeVerticesArray = cubeGeometryBuilder.verticesArray();
     const cubeIndicesArray = cubeGeometryBuilder.indicesArray();
 
-    const quadGeometry = new CubeGeometry();
+    const quadGeometry = new QuadGeometry({
+        width: 4, height: 4
+    });
     const quadGeometryBuilder = quadGeometry.toBuilder();
     const quadVerticesArray = quadGeometryBuilder.verticesArray();
     const quadIndicesArray = quadGeometryBuilder.indicesArray();
     
-    //@TODO: why does inverting the order of concat interfere with the rendering?
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
         program: basicProgram,
         vertexArray: {
             vertexAttributes: {
                 a_position: { array: Float32Array.of(...quadVerticesArray, ...cubeVerticesArray), type: AttributeDataType.VEC3 }
             },
-            elementIndices: Uint16Array.of(...quadIndicesArray, ...cubeIndicesArray),
-            elementsCount: cubeIndicesArray.length + quadIndicesArray.length,
+            elementIndices: Uint16Array.of(...quadIndicesArray, ...cubeIndicesArray.map(i => i + quadIndicesArray.length)),
+            multiDraw: {
+                countsList: [quadIndicesArray.length + cubeIndicesArray.length, quadIndicesArray.length + cubeIndicesArray.length],
+                countsOffset: 0,
+                offsetsList: [0, 0],
+                offsetsOffset: 0,
+                drawCount: 2
+            }
         },
         uniformBlocks: {
             basicModelBlock: {
                 uniforms: {
-                    u_model: { value: cubeTransform.matrix.array },
-                    u_color: { value: [1, 1, 0] }
+                    "models[0].u_model": { value: cubeTransform.matrix.array },
+                    "models[0].u_color": { value: [1, 0, 0] },
+                    "models[1].u_model": { value: quadTransform.matrix.array },
+                    "models[1].u_color": { value: [0, 1, 0] }
                 }
             },
             viewBlock: {

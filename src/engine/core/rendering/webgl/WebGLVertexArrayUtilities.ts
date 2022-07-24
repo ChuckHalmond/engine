@@ -85,6 +85,17 @@ type VertexArrayProperties = {
     drawMode?: DrawMode;
     elementsCount?: number;
     instanceCount?: number;
+    multiDraw?: {
+        firstsList?: Iterable<number> | Int32Array;
+        firstsOffset?: number;
+        countsList?: Iterable<number> | Int32Array;
+        countsOffset?: number;
+        offsetsList?: Iterable<number> | Int32Array;
+        offsetsOffset?: number;
+        instanceCountsList?: Iterable<number> | Int32Array;
+        instanceCountsOffset?: number;
+        drawCount?: number;
+    }
 }
 
 type VertexArrayValues = {
@@ -102,6 +113,17 @@ type VertexArray = {
     elementBuffer?: VertexElementArrayBuffer;
     drawMode: DrawMode;
     instanceCount: number;
+    multiDraw?: {
+        firstsList?: Iterable<number> | Int32Array;
+        firstsOffset?: number;
+        countsList?: Iterable<number> | Int32Array;
+        countsOffset?: number;
+        offsetsList?: Iterable<number> | Int32Array;
+        offsetsOffset?: number;
+        instanceCountsList?: Iterable<number> | Int32Array;
+        instanceCountsOffset?: number;
+        drawCount?: number;
+    }
 }
 
 export type VertexArrayBuffer = Buffer & {
@@ -426,7 +448,7 @@ class WebGLVertexArrayUtilities {
     }
 
     static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null {
-        const {vertexAttributes, vertexBuffers, elementIndices, elementBuffer: elementBufferOrBufferProperties} = vertexArray;
+        const {vertexAttributes, vertexBuffers, elementIndices, elementBuffer: elementBufferOrBufferProperties, multiDraw} = vertexArray;
         let {elementsCount, instanceCount, drawMode} = vertexArray;
 
         elementsCount = elementsCount ?? 0;
@@ -533,7 +555,8 @@ class WebGLVertexArrayUtilities {
             internalVertexArray,
             elementsCount,
             instanceCount,
-            drawMode
+            drawMode,
+            multiDraw
         };
     }
 
@@ -544,8 +567,14 @@ class WebGLVertexArrayUtilities {
         }
     }
 
+    static #multiDrawExtension: WEBGL_multi_draw | null = null;
+
+    static enableMultidrawExtension(gl: WebGL2RenderingContext) {
+        this.#multiDrawExtension = gl.getExtension("WEBGL_multi_draw");
+    }
+
     static drawVertexArray(gl: WebGL2RenderingContext, vertexArray: VertexArray): void {
-        const {program, internalVertexArray, elementBuffer, elementsCount, instanceCount, drawMode} = vertexArray;
+        const {program, internalVertexArray, elementBuffer, elementsCount, instanceCount, drawMode, multiDraw} = vertexArray;
 
         WebGLProgramUtilities.useProgram(gl, program);
         
@@ -559,6 +588,22 @@ class WebGLVertexArrayUtilities {
             if (instanceCount > 0) {
                 gl.drawElementsInstanced(drawMode, elementsCount, indexType, 0, instanceCount);
             }
+            else if (multiDraw) {
+                const multiDrawExtension = this.#multiDrawExtension!;
+                const {countsList, countsOffset, offsetsList, offsetsOffset, drawCount, instanceCountsList, instanceCountsOffset} = multiDraw;
+                if (instanceCountsList && instanceCountsOffset) {
+                    multiDrawExtension.multiDrawElementsInstancedWEBGL(
+                        drawMode, countsList!, countsOffset!, indexType!,
+                        offsetsList!, offsetsOffset!, instanceCountsList, instanceCountsOffset, drawCount!
+                    );
+                }
+                else {
+                    multiDrawExtension.multiDrawElementsWEBGL(
+                        drawMode, countsList!, countsOffset!, indexType!,
+                        offsetsList!, offsetsOffset!, drawCount!
+                    );
+                }
+            }
             else {
                 gl.drawElements(drawMode, elementsCount, indexType, 0);
             }
@@ -566,6 +611,22 @@ class WebGLVertexArrayUtilities {
         else {
             if (instanceCount > 0) {
                 gl.drawArraysInstanced(drawMode, 0, elementsCount, instanceCount);
+            }
+            else if (multiDraw) {
+                const multiDrawExtension = this.#multiDrawExtension!;
+                const {countsList, countsOffset, firstsList, firstsOffset, drawCount, instanceCountsList, instanceCountsOffset} = multiDraw;
+                if (instanceCountsList && instanceCountsOffset) {
+                    multiDrawExtension.multiDrawArraysInstancedWEBGL(
+                        drawMode, countsList!, countsOffset!,
+                        firstsList!, firstsOffset!, instanceCountsList, instanceCountsOffset, drawCount!
+                    );
+                }
+                else {
+                    multiDrawExtension.multiDrawArraysWEBGL(
+                        drawMode, countsList!, countsOffset!,
+                        firstsList!, firstsOffset!, drawCount!
+                    );
+                }
             }
             else {
                 gl.drawArrays(drawMode, 0, elementsCount);
