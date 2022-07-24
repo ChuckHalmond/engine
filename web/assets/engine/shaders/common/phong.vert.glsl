@@ -5,7 +5,7 @@
 
 //DEFS
 #define USE_NORMAL_MAP
-#define USE_DISPLACEMENT_MAP
+//#define USE_DISPLACEMENT_MAP
 #define MAX_INSTANCES 2
 #define MAX_LIGHTS 2
 //ENDDEFS
@@ -49,6 +49,14 @@ uniform lightsBlock {
     Light lights[MAX_LIGHTS];
 };
 
+uniform subTexture {
+  float u_xOffset;
+  float u_yOffset;
+  float u_zOffset;
+  float u_xScaling;
+  float u_yScaling;
+};
+
 out vec4 v_position;
 out vec3 v_normal;
 out vec3 v_color;
@@ -56,6 +64,7 @@ out vec3 v_color;
 out vec3 v_lightPos;
 out vec3 v_fragPos;
 out vec2 v_uv;
+out vec2 v_uv2;
 
 #ifdef USE_DISPLACEMENT_MAP
     uniform sampler2D u_displacementMap;
@@ -99,6 +108,7 @@ void main() {
     v_normal = vec3(normal * vec4(a_normal, 0.0));
     gl_Position = u_projection * vertPos;
     v_uv = a_uv;
+    v_uv2 = vec2(a_uv.x * u_xScaling + u_xOffset, a_uv.y * u_yScaling + u_yOffset);
     v_color = a_color;
 }
 /*#version 300 es

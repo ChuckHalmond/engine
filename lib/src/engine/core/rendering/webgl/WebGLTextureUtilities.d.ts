@@ -176,6 +176,7 @@ export declare type TextureProperties = {
         height: number;
         depth?: number;
     }[];
+    mipmap?: boolean;
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
     wrapS?: TextureWrapMode;

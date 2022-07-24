@@ -215,6 +215,7 @@ export async function launchScene() {
   const albedoMapImg = await fetchImage("assets/engine/img/NormalMap.png");
   const brickwallImg = await fetchImage("assets/engine/img/brickwall.jpg");
   const normalMapImg = await fetchImage("assets/engine/img/NormalMap_0.png");
+  const normalMap2Img = await fetchImage("assets/engine/img/Normal_Map_1024.png");
   const displacementMapImg = await fetchImage("assets/engine/img/DisplacementMap.png");
   const skyboxXPosImg = await fetchImage("assets/engine/img/skybox_x_pos.png");
   const skyboxXNegImg = await fetchImage("assets/engine/img/skybox_x_neg.png");
@@ -222,113 +223,174 @@ export async function launchScene() {
   const skyboxYNegImg = await fetchImage("assets/engine/img/skybox_y_neg.png");
   const skyboxZPosImg = await fetchImage("assets/engine/img/skybox_z_pos.png");
   const skyboxZNegImg = await fetchImage("assets/engine/img/skybox_z_neg.png");
+  const colorsImg = await fetchImage("assets/engine/img/colors.png");
 
+  const PADDING = 1;
+
+  const paddedImage = function(image: HTMLImageElement) {
+    const canvas = document.createElement("canvas");
+    const {width, height} = image;
+    const paddedWidth = width + PADDING * 2;
+    const paddedHeight = height + PADDING * 2;
+    canvas.width = paddedWidth;
+    canvas.height = paddedHeight;
+    const ctx = canvas.getContext("2d")!;
+    // Draws upper and lower extensions
+    /*ctx.drawImage(image, 0, 0, width, 1, 0, 0, paddedWidth, 1);
+    ctx.drawImage(image, 0, height - 1, width, 1, 0, height + 1, paddedWidth, 1);
+    // Draws left and right extensions
+    ctx.drawImage(image, 0, 0, 1, height, 0, 0, 1, paddedHeight);
+    ctx.drawImage(image, width - 1, 0, 1, height, width + 1, 0, 1, paddedHeight);*/
+    
+    // Draws original image
+    ctx.drawImage(image, 0, 0, paddedWidth, paddedHeight);
+    ctx.drawImage(image, PADDING, PADDING, width, height);
+    const data = ctx.getImageData(0, 0, paddedWidth, paddedHeight);
+    /*document.body.append(image);
+    const img = new Image();
+    img.src = canvas.toDataURL();
+    document.body.append(img);*/
+    return {
+      width,
+      height,
+      paddedWidth,
+      paddedHeight, 
+      data
+    };
+  }
+
+  const paddedBrickwallImg = paddedImage(brickwallImg);
+  const paddedAlbedoMapImg = paddedImage(albedoMapImg);
+  const paddedNormalMap2 = paddedImage(normalMap2Img);
+  const paddedColorsImg = paddedImage(colorsImg);
   /*const norm16Extension = gl.getExtension("EXT_texture_norm16");
   if (norm16Extension) {
     console.log(`Extension EXT_texture_norm16 activated.`);
   }*/
 
   const textures = WebGLPacketUtilities.createTextures(gl, {
-    albedoMap: {
-      pixels: albedoMapImg,
-      width: albedoMapImg.width, height: albedoMapImg.height,
-      target: TextureTarget.TEXTURE_2D,
-      type: TexturePixelType.UNSIGNED_BYTE,
-      format: TexturePixelFormat.RGB,
-      internalFormat: TextureInternalPixelFormat.RGB,
-
-      min: TextureMinFilter.NEAREST,
-      mag: TextureMagFilter.NEAREST,
-    },
     // albedoMap: {
-    //   pixels: null,
-    //   width: 8, height: 8, depth: 2,
-    //   // pixels: albedoMapImg,
-    //   // width: albedoMapImg.width, height: albedoMapImg.height,
-    //   target: TextureTarget.TEXTURE_2D_ARRAY,
+    //   pixels: albedoMapImg,
+    //   width: albedoMapImg.width, height: albedoMapImg.height,
+    //   target: TextureTarget.TEXTURE_2D,
     //   type: TexturePixelType.UNSIGNED_BYTE,
-
-    //   /*wrapS: TextureWrapMode.CLAMP_TO_EDGE,
-    //   wrapT: TextureWrapMode.CLAMP_TO_EDGE,
-    //   wrapR: TextureWrapMode.CLAMP_TO_EDGE,*/
-
-    //   format: TexturePixelFormat.LUMINANCE,
-    //   internalFormat: TextureInternalPixelFormat.LUMINANCE,
-
-    //   // format: TexturePixelFormat.RGB,
-    //   // internalFormat: TextureInternalPixelFormat.RGB
+    //   format: TexturePixelFormat.RGB,
+    //   internalFormat: TextureInternalPixelFormat.RGB,
 
     //   min: TextureMinFilter.NEAREST,
     //   mag: TextureMagFilter.NEAREST,
-
-    //   subimages: [
-    //     {
-    //       pixels: new Uint8Array([
-    //         0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-    //         0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-    //         0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-    //         0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-    //         0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-    //         0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-    //         0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
-    //         0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
-    //       ]),
-    //       xoffset: 0,
-    //       yoffset: 0,
-    //       zoffset: 0,
-    //       width: 8,
-    //       height: 8,
-    //       depth: 1
-    //     },
-    //     {
-    //       pixels: new Uint8Array([
-    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-    //         0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
-    //       ]),
-    //       xoffset: 0,
-    //       yoffset: 0,
-    //       zoffset: 1,
-    //       width: 8,
-    //       height: 8,
-    //       depth: 1
-    //     }
-    //   ]
     // },
-    albedoMaps: {
+    albedoMap: {
       pixels: null,
-      width: brickwallImg.width, height: brickwallImg.height, depth: 2,
+      width: 8, height: 8, depth: 2,
+      // pixels: albedoMapImg,
+      // width: albedoMapImg.width, height: albedoMapImg.height,
       target: TextureTarget.TEXTURE_2D_ARRAY,
       type: TexturePixelType.UNSIGNED_BYTE,
-      format: TexturePixelFormat.RGB,
-      internalFormat: TextureInternalPixelFormat.RGB8,
+
+      /*wrapS: TextureWrapMode.CLAMP_TO_EDGE,
+      wrapT: TextureWrapMode.CLAMP_TO_EDGE,
+      wrapR: TextureWrapMode.CLAMP_TO_EDGE,*/
+
+      format: TexturePixelFormat.LUMINANCE,
+      internalFormat: TextureInternalPixelFormat.LUMINANCE,
+
+      // format: TexturePixelFormat.RGB,
+      // internalFormat: TextureInternalPixelFormat.RGB
+
+      min: TextureMinFilter.NEAREST,
+      mag: TextureMagFilter.NEAREST,
+
       subimages: [
         {
-          pixels: albedoMapImg,
+          pixels: new Uint8Array([
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+            0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC,
+            0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF, 0xCC, 0xFF,
+          ]),
           xoffset: 0,
           yoffset: 0,
           zoffset: 0,
-          width: albedoMapImg.width,
-          height: albedoMapImg.height,
+          width: 8,
+          height: 8,
           depth: 1
         },
         {
-          pixels: brickwallImg,
+          pixels: new Uint8Array([
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+            0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+          ]),
           xoffset: 0,
           yoffset: 0,
           zoffset: 1,
-          width: brickwallImg.width,
-          height: brickwallImg.height,
+          width: 8,
+          height: 8,
           depth: 1
         }
+      ]
+    },
+    albedoMaps: {
+      pixels: null,
+      width: paddedBrickwallImg.paddedWidth, height: paddedBrickwallImg.paddedHeight, depth: 4,
+      target: TextureTarget.TEXTURE_2D_ARRAY,
+      type: TexturePixelType.UNSIGNED_BYTE,
+      format: TexturePixelFormat.RGB,
+      internalFormat: TextureInternalPixelFormat.RGB,
+      subimages: [
+        {
+          pixels: paddedBrickwallImg.data,
+          xoffset: 0,
+          yoffset: 0,
+          zoffset: 0,
+          width: paddedBrickwallImg.paddedWidth,
+          height: paddedBrickwallImg.paddedHeight,
+          depth: 1
+        },
+        {
+          pixels: paddedAlbedoMapImg.data,
+          xoffset: 0,
+          yoffset: 0,
+          zoffset: 1,
+          width: paddedAlbedoMapImg.paddedWidth,
+          height: paddedAlbedoMapImg.paddedHeight,
+          depth: 1
+        },
+        {
+          pixels: paddedNormalMap2.data,
+          xoffset: 0,
+          yoffset: 0,
+          zoffset: 2,
+          width: paddedNormalMap2.paddedWidth,
+          height: paddedNormalMap2.paddedHeight,
+          depth: 1
+        },
+        {
+          pixels: paddedColorsImg.data,
+          xoffset: 0,
+          yoffset: 0,
+          zoffset: 3,
+          width: paddedColorsImg.paddedWidth,
+          height: paddedColorsImg.paddedHeight,
+          depth: 1
+        },
       ],
-      min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
-      mag: TextureMagFilter.LINEAR
+      // wrapS: TextureWrapMode.CLAMP_TO_EDGE,
+      // wrapT: TextureWrapMode.CLAMP_TO_EDGE,
+      // wrapR: TextureWrapMode.CLAMP_TO_EDGE,
+      min: TextureMinFilter.LINEAR,
+      mag: TextureMagFilter.LINEAR,
+      // mipmap: false
     },
     normalMap: {
       pixels: normalMapImg,
@@ -336,7 +398,7 @@ export async function launchScene() {
       target: TextureTarget.TEXTURE_2D,
       type: TexturePixelType.UNSIGNED_BYTE,
       format: TexturePixelFormat.RGB,
-      internalFormat: TextureInternalPixelFormat.RGB8,
+      internalFormat: TextureInternalPixelFormat.RGB,
       min: TextureMinFilter.LINEAR_MIPMAP_LINEAR,
       mag: TextureMagFilter.LINEAR
     },
@@ -346,7 +408,7 @@ export async function launchScene() {
       target: TextureTarget.TEXTURE_2D,
       type: TexturePixelType.UNSIGNED_BYTE,
       format: TexturePixelFormat.RGBA,
-      internalFormat: TextureInternalPixelFormat.RGBA8
+      internalFormat: TextureInternalPixelFormat.RGBA
     },
     skybox: {
       pixels: {
@@ -358,7 +420,7 @@ export async function launchScene() {
       target: TextureTarget.TEXTURE_CUBE_MAP,
       type: TexturePixelType.UNSIGNED_BYTE,
       format: TexturePixelFormat.RGBA,
-      internalFormat: TextureInternalPixelFormat.RGBA8
+      internalFormat: TextureInternalPixelFormat.RGBA
     },
     fbColorTex: {
       width: canvas.width, height: canvas.height,
@@ -366,7 +428,7 @@ export async function launchScene() {
       target: TextureTarget.TEXTURE_2D,
       type: TexturePixelType.UNSIGNED_BYTE,
       format: TexturePixelFormat.RGBA,
-      internalFormat: TextureInternalPixelFormat.RGBA8,
+      internalFormat: TextureInternalPixelFormat.RGBA,
       mag: TextureMagFilter.LINEAR,
       min: TextureMinFilter.LINEAR,
       wrapS: TextureWrapMode.CLAMP_TO_EDGE,
@@ -390,17 +452,18 @@ export async function launchScene() {
 
   const {albedoMap, albedoMaps, normalMap, displacementMap, skybox, fbColorTex, depthTex} = textures;
 
-  /*const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
+  const anisotropicTargetTextures = [albedoMaps];
+  const anisotropicExtension = gl.getExtension("EXT_texture_filter_anisotropic");
   if (anisotropicExtension) {
     console.log(`Extension EXT_texture_filter_anisotropic activated.`);
     const maxFiltering = gl.getParameter(anisotropicExtension.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
-    const textures = [albedoMap, normalMap];
-    textures.forEach((texture) => {
-      gl.activeTexture(gl.TEXTURE0 + texture.unit);
-      gl.bindTexture(gl.TEXTURE_2D, texture.internal);
-      gl.texParameterf(gl.TEXTURE_2D, anisotropicExtension.TEXTURE_MAX_ANISOTROPY_EXT, maxFiltering);
+    anisotropicTargetTextures.forEach((texture) => {
+      const {properties, internalTexture} = texture;
+      const {target} = properties!;
+      gl.bindTexture(target, internalTexture);
+      gl.texParameterf(target, anisotropicExtension.TEXTURE_MAX_ANISOTROPY_EXT, maxFiltering);
     });
-  }*/
+  }
 
   const cubeGeometry =
     // new QuadGeometry({heightSegments: 64, widthSegments: 64});
@@ -460,7 +523,6 @@ export async function launchScene() {
   const cubeUVs = cubeGeometryBuffer.getAttribute("a_uv")!;
   const cubeTangents = cubeGeometryBuffer.getAttribute("a_tangent")!;
   const cubeColors = cubeGeometryBuffer.getAttribute("a_normal")!;
-  cubeColors.array.fill(1);
   
   //const cubeLines = cubeGeometryBuffer.getAttribute("a_lines")!;
 
@@ -512,11 +574,11 @@ export async function launchScene() {
     uniformBlocks: {
       subTexture: {
         uniforms: {
-          u_xOffset: { value: 0 },
-          u_yOffset: { value: 0 },
-          u_zOffset: { value: 0 },
-          u_xScaling: { value: albedoMapImg.width / brickwallImg.width },
-          u_yScaling: { value: albedoMapImg.height / brickwallImg.height }
+          u_xOffset: { value: PADDING / paddedBrickwallImg.paddedWidth },
+          u_yOffset: { value: PADDING / paddedBrickwallImg.paddedHeight },
+          u_zOffset: { value: 1 },
+          u_xScaling: { value: paddedAlbedoMapImg.width / paddedBrickwallImg.paddedWidth },
+          u_yScaling: { value: paddedAlbedoMapImg.height / paddedBrickwallImg.paddedHeight }
         }
       },
       viewBlock: {
@@ -780,7 +842,7 @@ export async function launchScene() {
 
   WebGLRendererUtilities.viewport(gl, 0, 0, gl.canvas.width, gl.canvas.height);
 
-  //WebGLRendererUtilities.frontFace(gl, WindingOrder.CW);
+  // WebGLRendererUtilities.frontFace(gl, WindingOrder.CW);
   WebGLRendererUtilities.enable(gl, Capabilities.DEPTH_TEST);
   WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
   WebGLRendererUtilities.enable(gl, Capabilities.BLEND);
@@ -808,7 +870,7 @@ export async function launchScene() {
     transform.rotate(Quaternion.fromAxisAngle(Space.down, Math.PI / 128));
   }
 
-  Input.initialize(gl.canvas);
+  Input.initialize(canvas);
   
   WebGLFramebufferUtilities.unbindFramebuffer(gl);
 

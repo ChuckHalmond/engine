@@ -16,6 +16,7 @@ in vec4 v_position;
 in vec3 v_color;
 in vec3 v_normal;
 in vec2 v_uv;
+in vec2 v_uv2;
 
 in vec3 v_lightPos;
 in vec3 v_fragPos;
@@ -100,11 +101,10 @@ void main() {
   float u_constant = phong.u_constant;
   float u_linear = phong.u_linear;
   float u_quadratic = phong.u_quadratic;
-  
-  vec3 uv = vec3(v_uv.x * u_xScaling + u_xOffset, v_uv.y * u_yScaling + u_yOffset, u_zOffset);
-  
+
+  //vec3 uv = vec3(v_uv.x * u_xScaling + u_xOffset, v_uv.y * u_yScaling + u_yOffset, u_zOffset);
   #ifdef USE_ALBEDO_MAP
-    vec3 albedo = texture(u_albedoMaps, uv).rgb;
+    vec3 albedo = texture(u_albedoMaps, vec3(v_uv2, u_zOffset)).rgb;
   #else
     vec3 albedo = vec3(0.0, 1.0, 0.0);
   #endif

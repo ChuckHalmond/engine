@@ -191,6 +191,7 @@ export type TextureProperties = {
         depth?: number;
     }[];
 
+    mipmap?: boolean;
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
 
@@ -237,11 +238,12 @@ export class WebGLTextureUtilities {
         }
 
         const {pixels, target, subimages, width, height, format, internalFormat, type} = properties;
-        let {lod, border, depth} = properties;
+        let {lod, border, depth, mipmap} = properties;
 
         lod = lod ?? 0;
         border = border ?? 0;
         depth = depth ?? 0;
+        mipmap = mipmap ?? true;
 
         const activeTexture = gl.getParameter(gl.ACTIVE_TEXTURE);
         if (activeTexture !== unit) {
@@ -288,7 +290,9 @@ export class WebGLTextureUtilities {
                 break;
             }
         }
-        gl.generateMipmap(target);
+        if (mipmap) {
+            gl.generateMipmap(target);
+        }
 
         const {min, mag, wrapS, wrapT, wrapR, baseMipmapLevel, maxMipmapLevel, compareFunction, compareMode, minLod, maxLod} = properties;
 
