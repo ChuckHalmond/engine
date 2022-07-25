@@ -8,7 +8,7 @@ import { QuadGeometry } from "../../engine/core/rendering/scenes/geometries/lib/
 import { WebGLPacketUtilities } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
 import { BufferMask, Capabilities, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
-import { AttributeDataType, WebGLVertexArrayUtilities } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
+import { AttributeDataType, DrawMode, WebGLVertexArrayUtilities } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Vector3 } from "../../engine/libs/maths/algebra/vectors/Vector3";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
@@ -27,7 +27,7 @@ export async function shadows() {
         return;
     }
 
-    WebGLVertexArrayUtilities.enableMultidrawExtension(gl);
+    WebGLPacketUtilities.enableMultidrawExtension(gl);
 
     const playpause = document.createElement("button");
     playpause.textContent = "Pause";
@@ -82,14 +82,7 @@ export async function shadows() {
             vertexAttributes: {
                 a_position: { array: Float32Array.of(...quadVerticesArray, ...cubeVerticesArray), type: AttributeDataType.VEC3 }
             },
-            elementIndices: Uint16Array.of(...quadIndicesArray, ...cubeIndicesArray.map(i => i + quadIndicesArray.length)),
-            multiDraw: {
-                countsList: [quadIndicesArray.length + cubeIndicesArray.length, quadIndicesArray.length + cubeIndicesArray.length],
-                countsOffset: 0,
-                offsetsList: [0, 0],
-                offsetsOffset: 0,
-                drawCount: 2
-            }
+            elementIndices: Uint16Array.of(...quadIndicesArray, ...cubeIndicesArray.map(i => i + quadIndicesArray.length))
         },
         uniformBlocks: {
             basicModelBlock: {
@@ -105,6 +98,16 @@ export async function shadows() {
                     u_view: { value: camera.view.array },
                     u_projection: { value: camera.projection.array }
                 }
+            }
+        },
+        drawCommand: {
+            mode: DrawMode.TRIANGLES,
+            multiDraw: {
+                countsList: [quadIndicesArray.length, cubeIndicesArray.length],
+                countsOffset: 0,
+                offsetsList: [0, quadIndicesArray.length * Uint16Array.BYTES_PER_ELEMENT],
+                offsetsOffset: 0,
+                drawCount: 2
             }
         }
     });
@@ -141,7 +144,14 @@ export async function shadows() {
             }
         });
 
-        WebGLPacketUtilities.drawPacket(gl, cubePacket);
+        WebGLPacketUtilities.drawPacket(gl, cubePacket, /*{
+            mode: DrawMode.TRIANGLES,
+            multiDraw: {
+                ...cubePacket.drawCommand.multiDraw!,
+                countsList: [quadIndicesArray.length + cubeIndicesArray.length, quadIndicesArray.length + cubeIndicesArray.length],
+                offsetsList: [0, 0],
+            }
+        }*/);
         
         Input.clear();
 

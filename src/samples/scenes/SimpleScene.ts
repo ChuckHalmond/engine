@@ -559,8 +559,7 @@ export async function launchScene() {
         a_uv: { ...cubeUVs, buffer: 0 },
         a_color: { buffer: 1, type: AttributeDataType.VEC3, componentType: DataComponentType.FLOAT, byteLength: cubeColors.array.byteLength },
       },
-      elementIndices: cubeGeometryBuffer.indices,
-      elementsCount: cubeGeometryBuffer.indices!.length,
+      elementIndices: cubeGeometryBuffer.indices
     },
     uniformBuffers: [
       {
@@ -625,6 +624,10 @@ export async function launchScene() {
       u_normalMap: { value: normalMap },
       u_displacementMap: { value: displacementMap },
       u_albedoMaps: { value: albedoMaps }
+    },
+    drawCommand: {
+      mode: DrawMode.TRIANGLES,
+      elementsCount: cubeGeometryBuffer.indices!.length,
     }
   };
 
@@ -695,9 +698,7 @@ export async function launchScene() {
           array: cubeLinesArray,
           type: AttributeDataType.VEC3
         }
-      },
-      drawMode: DrawMode.LINES,
-      elementsCount: cubeLinesArray.length / 2
+      }
     },
     uniformBuffers: [
       phongCubePacket.uniformBlocks!.modelBlock.buffer!,
@@ -711,6 +712,10 @@ export async function launchScene() {
       u_color: {
         value: new Float32Array([1, 0, 0])
       }
+    },
+    drawCommand: {
+      mode: DrawMode.LINES,
+      elementsCount: cubeLinesArray.length / 2
     }
   };
 
@@ -720,8 +725,7 @@ export async function launchScene() {
       vertexBuffers: [
         phongCubePacket.vertexArray.verticesBuffers[0]
       ],
-      elementBuffer: phongCubePacket.vertexArray.elementBuffer,
-      elementsCount: phongCubePacket.vertexArray.elementsCount
+      elementBuffer: phongCubePacket.vertexArray.elementBuffer
     },
     uniformBuffers: [
       phongCubePacket.uniformBlocks!.viewBlock.buffer!
@@ -736,6 +740,10 @@ export async function launchScene() {
       viewBlock: {
         buffer: 0
       }
+    },
+    drawCommand: {
+      mode: DrawMode.TRIANGLES,
+      elementsCount: phongCubePacket.drawCommand.elementsCount
     }
   };
 
@@ -750,13 +758,16 @@ export async function launchScene() {
       vertexAttributes: {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
       },
-      elementIndices: quadIndices,
-      elementsCount: quadIndices.length
+      elementIndices: quadIndices
     },
     uniforms: {
       u_world: { value: quadWorld.array },
       u_viewDirectionProjectionInverse: { value: viewDirectionProjectionInverse.array }, 
       u_skybox: { value: skybox },
+    },
+    drawCommand: {
+      mode: DrawMode.TRIANGLES,
+      elementsCount: quadIndices.length
     }
   };
 
@@ -767,12 +778,15 @@ export async function launchScene() {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
         a_uv: { array: quadUVs, type: AttributeDataType.VEC2 },
       },
-      elementIndices: quadIndices,
-      elementsCount: quadIndices.length
+      elementIndices: quadIndices
     },
     uniforms: {
       u_depthWorld: { value: quadWorld.array },
       u_depthTex: { value: depthTex }
+    },
+    drawCommand: {
+      mode: DrawMode.TRIANGLES,
+      elementsCount: quadIndices.length
     }
   };
 
@@ -783,12 +797,15 @@ export async function launchScene() {
         a_position: { array: quadVertices, type: AttributeDataType.VEC3 },
         a_uv: { array: quadUVs, type: AttributeDataType.VEC2 },
       },
-      elementIndices: quadIndices,
-      elementsCount: quadIndices.length
+      elementIndices: quadIndices
     },
     uniforms: {
       u_world: { value: quadWorld.array },
       u_tex: { value: fbColorTex }
+    },
+    drawCommand: {
+      mode: DrawMode.TRIANGLES,
+      elementsCount: quadIndices.length
     }
   };
 

@@ -82,20 +82,6 @@ type VertexArrayProperties = {
     vertexAttributes?: Record<string, VertexAttributeProperties>;
     elementBuffer?: VertexElementArrayBuffer | VertexElementArrayBufferProperties;
     elementIndices?: Uint8Array | Uint16Array | Uint32Array;
-    drawMode?: DrawMode;
-    elementsCount?: number;
-    instanceCount?: number;
-    multiDraw?: {
-        firstsList?: Iterable<number> | Int32Array;
-        firstsOffset?: number;
-        countsList?: Iterable<number> | Int32Array;
-        countsOffset?: number;
-        offsetsList?: Iterable<number> | Int32Array;
-        offsetsOffset?: number;
-        instanceCountsList?: Iterable<number> | Int32Array;
-        instanceCountsOffset?: number;
-        drawCount?: number;
-    }
 }
 
 type VertexArrayValues = {
@@ -109,21 +95,7 @@ type VertexArray = {
     internalVertexArray: WebGLVertexArrayObject;
     program: Program;
     verticesBuffers: VertexArrayBuffer[];
-    elementsCount: number;
     elementBuffer?: VertexElementArrayBuffer;
-    drawMode: DrawMode;
-    instanceCount: number;
-    multiDraw?: {
-        firstsList?: Iterable<number> | Int32Array;
-        firstsOffset?: number;
-        countsList?: Iterable<number> | Int32Array;
-        countsOffset?: number;
-        offsetsList?: Iterable<number> | Int32Array;
-        offsetsOffset?: number;
-        instanceCountsList?: Iterable<number> | Int32Array;
-        instanceCountsOffset?: number;
-        drawCount?: number;
-    }
 }
 
 export type VertexArrayBuffer = Buffer & {
@@ -433,10 +405,6 @@ class WebGLVertexArrayUtilities {
                 }
             }
         });
-
-        if (elementsCount !== undefined) {
-            vertexArray.elementsCount = elementsCount;
-        }
     }
 
     static setVertexArrayBufferData(gl: WebGL2RenderingContext, buffer: VertexArrayBuffer | VertexElementArrayBuffer, data: ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void {
@@ -448,13 +416,8 @@ class WebGLVertexArrayUtilities {
     }
 
     static createVertexArray(gl: WebGL2RenderingContext, program: Program, vertexArray: VertexArrayProperties): VertexArray | null {
-        const {vertexAttributes, vertexBuffers, elementIndices, elementBuffer: elementBufferOrBufferProperties, multiDraw} = vertexArray;
-        let {elementsCount, instanceCount, drawMode} = vertexArray;
-
-        elementsCount = elementsCount ?? 0;
-        instanceCount = instanceCount ?? 0;
-        drawMode = drawMode ?? DrawMode.TRIANGLES;
-
+        const {vertexAttributes, vertexBuffers, elementIndices, elementBuffer: elementBufferOrBufferProperties} = vertexArray;
+        
         const internalVertexArray = gl.createVertexArray();
         if (internalVertexArray === null) {
             return null;
@@ -552,11 +515,7 @@ class WebGLVertexArrayUtilities {
             verticesBuffers,
             elementBuffer,
             program,
-            internalVertexArray,
-            elementsCount,
-            instanceCount,
-            drawMode,
-            multiDraw
+            internalVertexArray
         };
     }
 
@@ -567,7 +526,7 @@ class WebGLVertexArrayUtilities {
         }
     }
 
-    static #multiDrawExtension: WEBGL_multi_draw | null = null;
+    /*static #multiDrawExtension: WEBGL_multi_draw | null = null;
 
     static enableMultidrawExtension(gl: WebGL2RenderingContext) {
         this.#multiDrawExtension = gl.getExtension("WEBGL_multi_draw");
@@ -636,7 +595,7 @@ class WebGLVertexArrayUtilities {
 
     static unbindVertexArray(gl: WebGL2RenderingContext): void {
         gl.bindVertexArray(null);
-    }
+    }*/
 
     static getElementArrayBufferType(indices: Uint8Array | Uint16Array | Uint32Array): ElementArrayDataType {
         if (indices instanceof Uint8Array) {

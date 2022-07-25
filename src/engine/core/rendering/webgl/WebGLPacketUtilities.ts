@@ -1,8 +1,8 @@
-import { VertexArray, VertexArrayValues, VertexArrayProperties, WebGLVertexArrayUtilities } from "./WebGLVertexArrayUtilities"
+import { VertexArray, VertexArrayValues, VertexArrayProperties, WebGLVertexArrayUtilities, DrawMode } from "./WebGLVertexArrayUtilities"
 import { Texture, TextureProperties, WebGLTextureUtilities } from "./WebGLTextureUtilities"
 import { UniformBlock, UniformBlockProperties, UniformBuffer, UniformBufferProperties, WebGLUniformBlockUtilities } from "./WebGLUniformBlockUtilities"
 import { Uniform, UniformsListSetter, WebGLUniformUtilities } from "./WebGLUniformUtilities"
-import { Program } from "./WebGLProgramUtilities"
+import { Program, WebGLProgramUtilities } from "./WebGLProgramUtilities"
 
 export type PacketProperties = {
     program: Program;
@@ -10,6 +10,22 @@ export type PacketProperties = {
     uniformBuffers?: (UniformBufferProperties | UniformBuffer)[];
     uniformBlocks?: Record<string, UniformBlockProperties>;
     uniforms?: Record<string, Uniform>;
+    drawCommand: {
+        mode: DrawMode;
+        elementsCount?: number;
+        instanceCount?: number;
+        multiDraw?: {
+            firstsList?: Iterable<number> | Int32Array;
+            firstsOffset?: number;
+            countsList?: Iterable<number> | Int32Array;
+            countsOffset?: number;
+            offsetsList?: Iterable<number> | Int32Array;
+            offsetsOffset?: number;
+            instanceCountsList?: Iterable<number> | Int32Array;
+            instanceCountsOffset?: number;
+            drawCount?: number;
+        }
+    }
 }
 
 export type PacketValues = {
@@ -25,6 +41,24 @@ export type Packet = {
     vertexArray: VertexArray;
     uniforms?: UniformsListSetter;
     uniformBlocks?: Record<string, UniformBlock>;
+    drawCommand: PacketDrawCommand;
+}
+
+export interface PacketDrawCommand {
+    mode: DrawMode;
+    elementsCount?: number;
+    instanceCount?: number;
+    multiDraw?: {
+        firstsList?: Iterable<number> | Int32Array;
+        firstsOffset?: number;
+        countsList?: Iterable<number> | Int32Array;
+        countsOffset?: number;
+        offsetsList?: Iterable<number> | Int32Array;
+        offsetsOffset?: number;
+        instanceCountsList?: Iterable<number> | Int32Array;
+        instanceCountsOffset?: number;
+        drawCount?: number;
+    };
 }
 
 export class WebGLPacketUtilities {
@@ -44,6 +78,7 @@ export class WebGLPacketUtilities {
     
     static createPacket(gl: WebGL2RenderingContext, packet: PacketProperties): Packet | null {
         const {program, vertexArray: vertexArrayProperties, uniforms: uniformsProperties, uniformBlocks: uniformBlocksProperties, uniformBuffers: uniformBuffersProperties} = packet;
+        const {drawCommand} = packet;
 
         let vertexArray: VertexArray | null = null;
         vertexArray = WebGLVertexArrayUtilities.createVertexArray(gl, program, vertexArrayProperties);
@@ -147,7 +182,8 @@ export class WebGLPacketUtilities {
             program,
             vertexArray,
             uniforms,
-            uniformBlocks
+            uniformBlocks,
+            drawCommand
         };
     }
 
@@ -155,13 +191,13 @@ export class WebGLPacketUtilities {
         const {vertexArray: vertexArrayValues, uniforms: uniformsValues, uniformBlocks: uniformsBlocksValues} = values;
         const {vertexArray, uniforms, uniformBlocks} = packet;
 
-        if (vertexArrayValues && vertexArray) {
+        if (vertexArrayValues !== undefined) {
             WebGLVertexArrayUtilities.setVertexArrayValues(gl, vertexArray, vertexArrayValues);
         }
-        if (uniforms && uniformsValues) {
+        if (uniforms !== undefined && uniformsValues !== undefined) {
             WebGLUniformUtilities.setUniformsListValues(gl, uniforms, uniformsValues);
         }
-        if (uniformBlocks && uniformsBlocksValues) {
+        if (uniformBlocks !== undefined && uniformsBlocksValues !== undefined) {
             const uniformBlocksValuesEntries = uniformsBlocksValues ? Object.entries(uniformsBlocksValues) : [];
             uniformBlocksValuesEntries.forEach(([blockName, uniformBlock]) => {
                 const {uniforms} = uniformBlock;
@@ -174,11 +210,72 @@ export class WebGLPacketUtilities {
         }
     }
 
-    static drawPacket(gl: WebGL2RenderingContext, packet: Packet): void {
+    static #multiDrawExtension: WEBGL_multi_draw | null = null;
+
+    static enableMultidrawExtension(gl: WebGL2RenderingContext) {
+        this.#multiDrawExtension = gl.getExtension("WEBGL_multi_draw");
+    }
+
+    static drawPacket(gl: WebGL2RenderingContext, packet: Packet, drawCommand: PacketDrawCommand = packet.drawCommand): void {
         const {vertexArray} = packet;
-        if (vertexArray) {
-            WebGLVertexArrayUtilities.drawVertexArray(gl, vertexArray);
+        const {program, internalVertexArray, elementBuffer} = vertexArray;
+        const {mode, elementsCount, instanceCount, multiDraw} = drawCommand;
+
+        WebGLProgramUtilities.useProgram(gl, program);
+        
+        const currentVertexArray = gl.getParameter(gl.VERTEX_ARRAY_BINDING);
+        if (currentVertexArray !== internalVertexArray) {
+            gl.bindVertexArray(internalVertexArray);
         }
-        //@TODO: getError ?
+        
+        if (elementBuffer) {
+            const {indexType} = elementBuffer;
+            if (instanceCount !== undefined && elementsCount !== undefined) {
+                gl.drawElementsInstanced(mode, elementsCount, indexType, 0, instanceCount);
+            }
+            else if (multiDraw) {
+                const multiDrawExtension = this.#multiDrawExtension!;
+                const {countsList, countsOffset, offsetsList, offsetsOffset, drawCount, instanceCountsList, instanceCountsOffset} = multiDraw;
+                if (instanceCountsList !== undefined && instanceCountsOffset !== undefined) {
+                    multiDrawExtension.multiDrawElementsInstancedWEBGL(
+                        mode, countsList!, countsOffset!, indexType!,
+                        offsetsList!, offsetsOffset!, instanceCountsList, instanceCountsOffset, drawCount!
+                    );
+                }
+                else {
+                    multiDrawExtension.multiDrawElementsWEBGL(
+                        mode, countsList!, countsOffset!, indexType!,
+                        offsetsList!, offsetsOffset!, drawCount!
+                    );
+                }
+            }
+            else if (elementsCount !== undefined) {
+                gl.drawElements(mode, elementsCount, indexType, 0);
+            }
+        }
+        else {
+            if (instanceCount !== undefined && elementsCount !== undefined) {
+                gl.drawArraysInstanced(mode, 0, elementsCount, instanceCount);
+            }
+            else if (multiDraw) {
+                const multiDrawExtension = this.#multiDrawExtension!;
+                const {countsList, countsOffset, firstsList, firstsOffset, drawCount, instanceCountsList, instanceCountsOffset} = multiDraw;
+                if (instanceCountsList !== undefined && instanceCountsOffset !== undefined) {
+                    multiDrawExtension.multiDrawArraysInstancedWEBGL(
+                        mode, countsList!, countsOffset!,
+                        firstsList!, firstsOffset!, instanceCountsList, instanceCountsOffset, drawCount!
+                    );
+                }
+                else {
+                    multiDrawExtension.multiDrawArraysWEBGL(
+                        mode, countsList!, countsOffset!,
+                        firstsList!, firstsOffset!, drawCount!
+                    );
+                }
+            }
+            else if (elementsCount !== undefined) {
+                gl.drawArrays(mode, 0, elementsCount);
+            }
+        }
     }
 }
