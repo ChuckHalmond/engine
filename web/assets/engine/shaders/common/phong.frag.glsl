@@ -16,25 +16,10 @@ in vec4 v_position;
 in vec3 v_color;
 in vec3 v_normal;
 in vec2 v_uv;
-in vec2 v_uv2;
+in vec3 v_uv2;
 
 in vec3 v_lightPos;
 in vec3 v_fragPos;
-
-uniform viewBlock {
-  mat4 u_view;
-  mat4 u_projection;
-};
-
-struct Model {
-  mat4 u_model;
-  mat4 u_modelView;
-  mat4 u_normal;
-};
-
-uniform modelBlock {
-  Model models[MAX_INSTANCES]; 
-};
 
 struct Light {
   vec3 u_lightWorldPos;
@@ -73,14 +58,6 @@ uniform phongBlock {
 
 uniform sampler2DArray u_albedoMaps;
 
-uniform subTexture {
-  float u_xOffset;
-  float u_yOffset;
-  float u_zOffset;
-  float u_xScaling;
-  float u_yScaling;
-};
-
 out vec4 o_outColor;
 
 void main() {
@@ -104,7 +81,7 @@ void main() {
 
   //vec3 uv = vec3(v_uv.x * u_xScaling + u_xOffset, v_uv.y * u_yScaling + u_yOffset, u_zOffset);
   #ifdef USE_ALBEDO_MAP
-    vec3 albedo = texture(u_albedoMaps, vec3(v_uv2, u_zOffset)).rgb;
+    vec3 albedo = texture(u_albedoMaps, v_uv2).rgb;
   #else
     vec3 albedo = vec3(0.0, 1.0, 0.0);
   #endif

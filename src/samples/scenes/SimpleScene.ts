@@ -133,7 +133,7 @@ export async function launchScene() {
       paused = !paused;
       playPause.textContent = paused ? "Play" : "Pause";
       if (!paused) {
-        render(0);
+        requestAnimationFrame(render);
       }
     };
   }
@@ -998,7 +998,7 @@ export async function launchScene() {
     requestAnimationFrame(render);
   }
 
-  /*const stream = gl.canvas.captureStream(60);
+  const stream = gl.canvas.captureStream(60);
   const rec = new MediaRecorder(stream, {
     mimeType: "video/webm; codecs=vp9",
     audioBitsPerSecond: 0,
@@ -1016,9 +1016,13 @@ export async function launchScene() {
     anchor.href = URL.createObjectURL(blob);
     anchor.click();
   });
-  rec.start();*/
+  rec.start();
+
+  setTimeout(() => {
+    rec.stop();
+  }, 5_000);
   
-  render(0);
+  requestAnimationFrame(render);
   
   // const saveSVG = document.querySelector<SVGSVGElement>("svg#save")!;
   // const getSVGImageData = (svg: SVGSVGElement) => new Promise((resolve: (value: string) => void) => {

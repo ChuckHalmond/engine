@@ -37,7 +37,7 @@ export async function shadows() {
         paused = !paused;
         playpause.textContent = paused ? "Play" : "Pause";
         if (!paused) {
-            render(0);
+            requestAnimationFrame(render);
         }
       };
     }
@@ -62,7 +62,7 @@ export async function shadows() {
     cubeTransform.setTranslation(camera.getFront(new Vector3()).scale(4));
 
     const quadTransform = new Transform();
-    quadTransform.setTranslation(camera.getFront(new Vector3()).scale(8));
+    quadTransform.setTranslation(cubeTransform.getTranslation(new Vector3()).scale(2));
 
     const cubeGeometry = new CubeGeometry();
     const cubeGeometryBuilder = cubeGeometry.toBuilder();
@@ -70,7 +70,7 @@ export async function shadows() {
     const cubeIndicesArray = cubeGeometryBuilder.indicesArray();
 
     const quadGeometry = new QuadGeometry({
-        width: 4, height: 4
+        width: 2, height: 2
     });
     const quadGeometryBuilder = quadGeometry.toBuilder();
     const quadVerticesArray = quadGeometryBuilder.verticesArray();
@@ -87,10 +87,14 @@ export async function shadows() {
         uniformBlocks: {
             basicModelBlock: {
                 uniforms: {
-                    "models[0].u_model": { value: cubeTransform.matrix.array },
-                    "models[0].u_color": { value: [1, 0, 0] },
-                    "models[1].u_model": { value: quadTransform.matrix.array },
-                    "models[1].u_color": { value: [0, 1, 0] }
+                    "models[0].instances[0].u_model": { value: cubeTransform.matrix.array },
+                    "models[0].instances[0].u_color": { value: [1, 0, 0] },
+                    "models[1].instances[0].u_model": { value: quadTransform.matrix.array },
+                    "models[1].instances[0].u_color": { value: [0, 1, 0] },
+                    "models[0].instances[1].u_model": { value: cubeTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
+                    "models[0].instances[1].u_color": { value: [0, 0, 1] },
+                    "models[1].instances[1].u_model": { value: quadTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
+                    "models[1].instances[1].u_color": { value: [0, 1, 1] }
                 }
             },
             viewBlock: {
@@ -107,11 +111,14 @@ export async function shadows() {
                 countsOffset: 0,
                 offsetsList: [0, quadIndicesArray.length * Uint16Array.BYTES_PER_ELEMENT],
                 offsetsOffset: 0,
+                instanceCountsList: [2, 2],
+                instanceCountsOffset: 0,
                 drawCount: 2
             }
         }
     });
     if (cubePacket === null) return;
+    console.log(cubePacket);
 
     WebGLRendererUtilities.viewport(gl, 0, 0, canvas.width, canvas.height);
     WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
@@ -144,19 +151,19 @@ export async function shadows() {
             }
         });
 
-        WebGLPacketUtilities.drawPacket(gl, cubePacket, /*{
+        WebGLPacketUtilities.drawPacket(gl, cubePacket, {
             mode: DrawMode.TRIANGLES,
             multiDraw: {
                 ...cubePacket.drawCommand.multiDraw!,
-                countsList: [quadIndicesArray.length + cubeIndicesArray.length, quadIndicesArray.length + cubeIndicesArray.length],
-                offsetsList: [0, 0],
+                /*instanceCountsOffset: 1,
+                drawCount: 1*/
             }
-        }*/);
+        });
         
         Input.clear();
 
         requestAnimationFrame(render);
     }
 
-    render(0);
+    requestAnimationFrame(render);
 }

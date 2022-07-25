@@ -64,8 +64,8 @@ export async function main() {
 
     myWorker.postMessage(sab);*/
 
-    //start();
-    shadows();
+    start();
+    //shadows();
 
     //startMaps();
 

@@ -1,14 +1,9 @@
 #version 300 es
 
-//EXTS
-//ENDEXTS
-
-//DEFS
 #define USE_NORMAL_MAP
-//#define USE_DISPLACEMENT_MAP
+#define USE_DISPLACEMENT_MAP
 #define MAX_INSTANCES 2
 #define MAX_LIGHTS 2
-//ENDDEFS
 
 in vec2 a_uv;
 in vec3 a_tangent;
@@ -20,13 +15,6 @@ uniform viewBlock {
     mat4 u_view;
     mat4 u_projection;
 };
-/*
-uniform modelBlock {
-    mat4 u_model[MAX_INSTANCES];
-    mat4 u_modelView[MAX_INSTANCES];
-    mat4 u_normal[MAX_INSTANCES];
-};
-*/
 
 struct Model {
     mat4 u_model;
@@ -64,7 +52,7 @@ out vec3 v_color;
 out vec3 v_lightPos;
 out vec3 v_fragPos;
 out vec2 v_uv;
-out vec2 v_uv2;
+out vec3 v_uv2;
 
 #ifdef USE_DISPLACEMENT_MAP
     uniform sampler2D u_displacementMap;
@@ -108,7 +96,7 @@ void main() {
     v_normal = vec3(normal * vec4(a_normal, 0.0));
     gl_Position = u_projection * vertPos;
     v_uv = a_uv;
-    v_uv2 = vec2(a_uv.x * u_xScaling + u_xOffset, a_uv.y * u_yScaling + u_yOffset);
+    v_uv2 = vec3(a_uv.x * u_xScaling + u_xOffset, a_uv.y * u_yScaling + u_yOffset, u_zOffset);
     v_color = a_color;
 }
 /*#version 300 es
