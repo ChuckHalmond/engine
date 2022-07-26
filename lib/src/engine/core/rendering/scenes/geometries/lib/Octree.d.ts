@@ -4,8 +4,9 @@ export declare class Octree {
     region: BoundingBox;
     objects: Object3D[];
     parent: Octree | null;
-    octants: Array<Octree>;
+    octants: Octree[];
     MIN_SIZE: number;
+    MAX_ENTITES: number;
     constructor(region: BoundingBox, objects?: Object3D[], parent?: Octree);
     update(): void;
 }

@@ -9,8 +9,8 @@ export declare type Vector2Values = [number, ...number[]] & {
 interface Vector2Constructor {
     readonly prototype: Vector2;
     new (): Vector2;
-    new (values: Vector2Values): Vector2;
-    new (values?: Vector2Values): Vector2;
+    new (a: number, y: number): Vector2;
+    new (array: ArrayLike<number>): Vector2;
 }
 interface Vector2 {
     readonly array: Float32Array;
@@ -45,9 +45,10 @@ interface Vector2 {
     readFromArray(arr: ArrayLike<number>, offset?: number): this;
 }
 declare class Vector2Base {
-    array: Float32Array;
+    readonly array: Float32Array;
     constructor();
-    constructor(values: Vector2Values);
+    constructor(array: ArrayLike<number>);
+    constructor(x: number, y: number);
     get values(): Vector2Values;
     set values(values: Vector2Values);
     get x(): number;

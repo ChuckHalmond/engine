@@ -11,6 +11,8 @@ export class Octree {
 
     MIN_SIZE = 1;
 
+    MAX_ENTITES = 8;
+
     constructor(region: BoundingBox, objects?: Object3D[], parent?: Octree) {
         this.region = region;
         this.objects = objects ?? [];
@@ -18,12 +20,10 @@ export class Octree {
         const {min, max} = region;
         const {x: minX, y: minY, z: minZ} = min;
         const {x: maxX, y: maxY, z: maxZ} = max;
-        const center = new Vector3(
-            (minX + maxX) / 2,
-            (minY + maxY) / 2,
-            (minZ + maxZ) / 2,
-        );
-        const {x: centerX, y: centerY, z: centerZ} = center;
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        const centerZ = (minZ + maxZ) / 2;
+        const center = new Vector3(centerX, centerY, centerZ);
         this.octants = [
             new Octree(new BoundingBox(min, center)),
             new Octree(new BoundingBox(new Vector3(centerX, minY, minZ), new Vector3(maxX, centerY, centerZ))),
@@ -38,5 +38,13 @@ export class Octree {
 
     update() {
         
+    }
+
+    expand(): void {
+
+    }
+
+    collapse(): void {
+
     }
 }

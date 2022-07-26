@@ -1,4 +1,5 @@
 import { Injector } from "../../../patterns/injectors/Injector";
+import { MathError } from "../../MathError";
 import { Matrix2 } from "../matrices/Matrix2";
 
 export { Vector2Injector };
@@ -10,8 +11,8 @@ export type Vector2Values = [number, ...number[]] & { length: 2 };
 interface Vector2Constructor {
 	readonly prototype: Vector2;
 	new(): Vector2;
-	new(values: Vector2Values): Vector2;
-	new(values?: Vector2Values): Vector2;
+	new(a: number, y: number): Vector2;
+  	new(array: ArrayLike<number>): Vector2;
 }
 
 interface Vector2 {
@@ -48,14 +49,34 @@ interface Vector2 {
 }
 
 class Vector2Base {
-	array: Float32Array;
+	readonly array: Float32Array;
 
 	constructor()
-	constructor(values: Vector2Values)
-	constructor(values?: Vector2Values) {
-		this.array = (values) ? new Float32Array([
-			values[0], values[1]
-		]) : new Float32Array([0, 0]);
+	constructor(array: ArrayLike<number>)
+	  constructor(
+	  x: number, y: number
+	)
+	constructor(
+	  ...args: any[]
+	) {
+		if (typeof args[0] === "number") {
+			this.array = new Float32Array([args[0], args[1]]);
+		}
+		else if (typeof args[0] === "object") {
+			const array = args[0];
+			if (array.length < 2) {
+				throw new MathError(`Array must be of length 2 at least.`);
+			}
+			if (array instanceof Float32Array) {
+				this.array = array;
+			}
+			else {
+				this.array = new Float32Array(array);
+			}
+		}
+		else {
+			this.array = new Float32Array([0, 0]);
+		}
 	}
 
 	get values(): Vector2Values {

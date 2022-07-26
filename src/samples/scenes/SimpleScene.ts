@@ -998,7 +998,7 @@ export async function launchScene() {
     requestAnimationFrame(render);
   }
 
-  const stream = gl.canvas.captureStream(60);
+  /*const stream = gl.canvas.captureStream(60);
   const rec = new MediaRecorder(stream, {
     mimeType: "video/webm; codecs=vp9",
     audioBitsPerSecond: 0,
@@ -1020,7 +1020,7 @@ export async function launchScene() {
 
   setTimeout(() => {
     rec.stop();
-  }, 5_000);
+  }, 5_000);*/
   
   requestAnimationFrame(render);
   
