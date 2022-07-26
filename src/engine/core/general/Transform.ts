@@ -19,6 +19,8 @@ interface TransformConstructor {
 const tempMatrix = new Matrix4();
 
 interface Transform {
+    hasChanged: boolean;
+
     readonly localArray: Float32Array;
     readonly array: Float32Array;
     readonly uuid: UUID;
@@ -61,13 +63,16 @@ class TransformBase implements Transform {
     readonly owner: Object3D | null;
 
     readonly matrix: Matrix4;
-    readonly localMatrix: Matrix4;
+    readonly localMatrix: Matrix4;;
 
-    private _hasChanged: boolean;
+    hasChanged: boolean;
+    readonly isStatic: boolean;
 
-    constructor(owner?: Object3D) {
+    constructor(owner?: Object3D, isStatic?: boolean) {
         this.uuid = UUIDGenerator.newUUID();
         this.owner = owner || null;
+
+        this.isStatic = isStatic ?? false;
         
         this.array = new Float32Array(16);
         this.localArray = new Float32Array(16);
@@ -75,7 +80,7 @@ class TransformBase implements Transform {
         this.matrix = new Matrix4(this.array).setIdentity();
         this.localMatrix = new Matrix4(this.localArray).setIdentity();
 
-        this._hasChanged = false;
+        this.hasChanged = false;
     }
 
     getMatrix(matrix: Matrix4): Matrix4 {
@@ -222,10 +227,6 @@ class TransformBase implements Transform {
         vectorArray[1] = -thisArray[ 9];
         vectorArray[2] = -thisArray[10];
         return vector;
-    }
-
-    get hasChanged() {
-        return this._hasChanged;
     }
 
     getTranslation(vector: Vector3): Vector3 {

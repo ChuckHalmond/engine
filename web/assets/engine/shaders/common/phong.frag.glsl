@@ -78,8 +78,7 @@ void main() {
   float u_constant = phong.u_constant;
   float u_linear = phong.u_linear;
   float u_quadratic = phong.u_quadratic;
-
-  //vec3 uv = vec3(v_uv.x * u_xScaling + u_xOffset, v_uv.y * u_yScaling + u_yOffset, u_zOffset);
+  
   #ifdef USE_ALBEDO_MAP
     vec3 albedo = texture(u_albedoMaps, v_uv2).rgb;
   #else

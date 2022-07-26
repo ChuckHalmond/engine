@@ -1,33 +1,42 @@
 import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
+import { Object3D } from "../../objects/Object3D";
 import { BoundingBox } from "../bounding/BoundingBox";
-/*
+
 export class Octree {
     region: BoundingBox;
-    objects: Array<any>;
+    objects: Object3D[];
     
-    parent: Octree;
-    octants: Array<Octree>;
+    parent: Octree | null;
+    octants: Octree[];
 
-    MIN_SIZE = 1; 
+    MIN_SIZE = 1;
 
-    constructor(region: BoundingBox, objects: Array<any>) {
+    constructor(region: BoundingBox, objects?: Object3D[], parent?: Octree) {
         this.region = region;
-        this.objects = objects;
-        const {min: regionMin, max: regionMax} = region;
-        const center = new Vector3([
-            (regionMin.x + regionMax.x) / 2,
-            (regionMin.y + regionMax.y) / 2,
-            (regionMin.z + regionMax.z) / 2,
-        ]);
+        this.objects = objects ?? [];
+        this.parent = parent ?? null;
+        const {min, max} = region;
+        const {x: minX, y: minY, z: minZ} = min;
+        const {x: maxX, y: maxY, z: maxZ} = max;
+        const center = new Vector3(
+            (minX + maxX) / 2,
+            (minY + maxY) / 2,
+            (minZ + maxZ) / 2,
+        );
+        const {x: centerX, y: centerY, z: centerZ} = center;
         this.octants = [
-            new Octree(new BoundingBox(regionMin, center)),
-            new Octree(new BoundingBox(new Vector3(center.X, m_region.Min.Y, m_region.Min.Z), new Vector3(m_region.Max.X, center.Y, center.Z));
-            new Octree(new BoundingBox(new Vector3(center.X, m_region.Min.Y, center.Z), new Vector3(m_region.Max.X, center.Y, m_region.Max.Z));
-            new Octree(new BoundingBox(new Vector3(m_region.Min.X, m_region.Min.Y, center.Z), new Vector3(center.X, center.Y, m_region.Max.Z));
-            new Octree(new BoundingBox(new Vector3(m_region.Min.X, center.Y, m_region.Min.Z), new Vector3(center.X, m_region.Max.Y, center.Z));
-            new Octree(new BoundingBox(new Vector3(center.X, center.Y, m_region.Min.Z), new Vector3(m_region.Max.X, m_region.Max.Y, center.Z));
-            new Octree(new BoundingBox(center, m_region.Max);
-            new Octree(new BoundingBox(new Vector3(m_region.Min.X, center.Y, center.Z), new Vector3(center.X, m_region.Max.Y, m_region.Max.Z));
+            new Octree(new BoundingBox(min, center)),
+            new Octree(new BoundingBox(new Vector3(centerX, minY, minZ), new Vector3(maxX, centerY, centerZ))),
+            new Octree(new BoundingBox(new Vector3(centerX, minY, centerZ), new Vector3(maxX, centerY, maxZ))),
+            new Octree(new BoundingBox(new Vector3(minX, minY, centerZ), new Vector3(centerX, centerY, maxZ))),
+            new Octree(new BoundingBox(new Vector3(minX, centerY, minZ), new Vector3(centerX, maxY, centerZ))),
+            new Octree(new BoundingBox(new Vector3(centerX, centerY, minZ), new Vector3(maxX, maxY, centerZ))),
+            new Octree(new BoundingBox(center, max)),
+            new Octree(new BoundingBox(new Vector3(minX, centerY, centerZ), new Vector3(centerX, maxY, maxZ)))
         ];
     }
-}*/
+
+    update() {
+        
+    }
+}

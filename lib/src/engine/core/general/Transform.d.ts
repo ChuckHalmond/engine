@@ -11,6 +11,7 @@ interface TransformConstructor {
     new (owner: Object3D): Transform;
 }
 interface Transform {
+    hasChanged: boolean;
     readonly localArray: Float32Array;
     readonly array: Float32Array;
     readonly uuid: UUID;
@@ -45,8 +46,9 @@ declare class TransformBase implements Transform {
     readonly owner: Object3D | null;
     readonly matrix: Matrix4;
     readonly localMatrix: Matrix4;
-    private _hasChanged;
-    constructor(owner?: Object3D);
+    hasChanged: boolean;
+    readonly isStatic: boolean;
+    constructor(owner?: Object3D, isStatic?: boolean);
     getMatrix(matrix: Matrix4): Matrix4;
     setMatrix(matrix: Matrix4): this;
     getLocalMatrix(matrix: Matrix4): Matrix4;
@@ -57,7 +59,6 @@ declare class TransformBase implements Transform {
     getDown(vector: Vector3): Vector3;
     getForward(vector: Vector3): Vector3;
     getBackward(vector: Vector3): Vector3;
-    get hasChanged(): boolean;
     getTranslation(vector: Vector3): Vector3;
     setTranslation(vector: Vector3): this;
     translate(vector: Vector3): this;

@@ -1,4 +1,4 @@
-import { Transform, TransformBase } from "../../../general/Transform";
+import { Transform } from "../../../general/Transform";
 
 export { Object3D };
 export { Object3DBase };
@@ -11,6 +11,6 @@ class Object3DBase implements Object3D {
     readonly transform: Transform;
 
     constructor() {
-        this.transform = new TransformBase(this);
+        this.transform = new Transform(this);
     }
 }
