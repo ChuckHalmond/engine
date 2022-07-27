@@ -20,6 +20,8 @@ export class Octree {
     nonStaticEntities: OctreeEntity[];
     staticEntities: OctreeEntity[];
 
+    expanded: boolean;
+
     constructor(region: BoundingBox, parent?: Octree, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]) {
         this.region = region;
         this.parent = parent ?? null;
@@ -42,9 +44,10 @@ export class Octree {
             new Octree(new BoundingBox(center, max)),
             new Octree(new BoundingBox(new Vector3(minX, centerY, centerZ), new Vector3(centerX, maxY, maxZ)))*/
         ];
+        this.expanded = false;
     }
 
-    set(region: BoundingBox, parent?: Octree, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]) {
+    /*set(region: BoundingBox, parent?: Octree, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]) {
         this.region = region;
         this.parent = parent ?? null;
         this.nonStaticEntities = nonStaticEntities ?? [];
@@ -103,10 +106,10 @@ export class Octree {
                 }
             };
         });
-    }
+    }*/
 
-    entitiesWithinFrustrum(frustrum: Frustrum) {
-        const {octants, region} = this;
+    *entitiesWithinFrustrum(frustrum: Frustrum): IterableIterator<OctreeEntity> {
+        const {region, expanded, octants, staticEntities, nonStaticEntities} = this;
 
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = frustrum;
         const {normal: nearPlaneNormal} = nearPlane;
@@ -116,11 +119,11 @@ export class Octree {
         const {normal: leftPlaneNormal} = leftPlane;
         const {normal: rightPlaneNormal} = rightPlane;
 
-        const {min, max} = region;
-        const {x: minX, y: minY, z: minZ} = min;
-        const {x: maxX, y: maxY, z: maxZ} = max;
-        const intersects = 
-            nearPlane.distanceToPoint(tempVector.setValues(
+        const intersectsWithFrustrum = (box: BoundingBox) => {
+            const {min, max} = box;
+            const {x: minX, y: minY, z: minZ} = min;
+            const {x: maxX, y: maxY, z: maxZ} = max;
+            return nearPlane.distanceToPoint(tempVector.setValues(
                 nearPlaneNormal.x > 0 ? maxX : minX,
                 nearPlaneNormal.y > 0 ? maxY : minY,
                 nearPlaneNormal.z > 0 ? maxZ : minZ
@@ -150,19 +153,19 @@ export class Octree {
                 bottomPlaneNormal.y > 0 ? maxY : minY,
                 bottomPlaneNormal.z > 0 ? maxZ : minZ
             )) >= 0;
-
-        if (octants) {
-            octants.forEach((octant) => {
-
-                if (intersects) {
-
-                }
-            });
+        };
+        if (intersectsWithFrustrum(region)) {
+            if (expanded) {
+                octants.forEach(octant => octant.entitiesWithinFrustrum(frustrum));
+            }
+            else {
+                yield *[...staticEntities, ...nonStaticEntities];
+            }
         }
-        else {
+    }
 
-        }
-		return intersects;
+    init(): void {
+        this.update();
     }
 
     update(): void {
@@ -193,60 +196,68 @@ export class Octree {
     }
 
     expand(): void {
-        const {octants, region, staticEntities, nonStaticEntities} = this;
-        const {min, max} = region;
-        const {x: minX, y: minY, z: minZ} = min;
-        const {x: maxX, y: maxY, z: maxZ} = max;
-        const centerX = (minX + maxX) / 2;
-        const centerY = (minY + maxY) / 2;
-        const centerZ = (minZ + maxZ) / 2;
-        const center = new Vector3(centerX, centerY, centerZ);
-        octants.push(
-            new Octree(new BoundingBox(min, center), this),
-            new Octree(new BoundingBox(new Vector3(centerX, minY, minZ), new Vector3(maxX, centerY, centerZ)), this),
-            new Octree(new BoundingBox(new Vector3(centerX, minY, centerZ), new Vector3(maxX, centerY, maxZ)), this),
-            new Octree(new BoundingBox(new Vector3(minX, minY, centerZ), new Vector3(centerX, centerY, maxZ)), this),
-            new Octree(new BoundingBox(new Vector3(minX, centerY, minZ), new Vector3(centerX, maxY, centerZ)), this),
-            new Octree(new BoundingBox(new Vector3(centerX, centerY, minZ), new Vector3(maxX, maxY, centerZ)), this),
-            new Octree(new BoundingBox(center, max), this),
-            new Octree(new BoundingBox(new Vector3(minX, centerY, centerZ), new Vector3(centerX, maxY, maxZ)), this)
-        );
-        staticEntities.forEach((entity) => {
-            const enclosingOctants = octants.filter(
-                octant => octant.region.hits(entity.box)
+        const {expanded} = this;
+        if (!expanded) {
+            const {octants, region, staticEntities, nonStaticEntities} = this;
+            const {min, max} = region;
+            const {x: minX, y: minY, z: minZ} = min;
+            const {x: maxX, y: maxY, z: maxZ} = max;
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            const centerZ = (minZ + maxZ) / 2;
+            const center = new Vector3(centerX, centerY, centerZ);
+            octants.push(
+                new Octree(new BoundingBox(min, center), this),
+                new Octree(new BoundingBox(new Vector3(centerX, minY, minZ), new Vector3(maxX, centerY, centerZ)), this),
+                new Octree(new BoundingBox(new Vector3(centerX, minY, centerZ), new Vector3(maxX, centerY, maxZ)), this),
+                new Octree(new BoundingBox(new Vector3(minX, minY, centerZ), new Vector3(centerX, centerY, maxZ)), this),
+                new Octree(new BoundingBox(new Vector3(minX, centerY, minZ), new Vector3(centerX, maxY, centerZ)), this),
+                new Octree(new BoundingBox(new Vector3(centerX, centerY, minZ), new Vector3(maxX, maxY, centerZ)), this),
+                new Octree(new BoundingBox(center, max), this),
+                new Octree(new BoundingBox(new Vector3(minX, centerY, centerZ), new Vector3(centerX, maxY, maxZ)), this)
             );
-            if (enclosingOctants) {
-                enclosingOctants.forEach(
-                    (octant) => octant.staticEntities.push(entity)
+            staticEntities.forEach((entity) => {
+                const enclosingOctants = octants.filter(
+                    octant => octant.region.hits(entity.box)
                 );
-            }
-        });
-        nonStaticEntities.forEach((entity) => {
-            const enclosingOctants = octants.filter(
-                octant => octant.region.hits(entity.box)
-            );
-            if (enclosingOctants) {
-                enclosingOctants.forEach(
-                    (octant) => octant.nonStaticEntities.push(entity)
+                if (enclosingOctants) {
+                    enclosingOctants.forEach(
+                        (octant) => octant.staticEntities.push(entity)
+                    );
+                }
+            });
+            nonStaticEntities.forEach((entity) => {
+                const enclosingOctants = octants.filter(
+                    octant => octant.region.hits(entity.box)
                 );
-            }
-        });
-        staticEntities.length = 0;
-        nonStaticEntities.length = 0;
-        octants.forEach((octant) => {
-            if (octant.staticEntities.length + octant.nonStaticEntities.length > this.MAX_ENTITES) {
-                octant.expand();
-            }
-        });
+                if (enclosingOctants) {
+                    enclosingOctants.forEach(
+                        (octant) => octant.nonStaticEntities.push(entity)
+                    );
+                }
+            });
+            staticEntities.length = 0;
+            nonStaticEntities.length = 0;
+            octants.forEach((octant) => {
+                if (octant.staticEntities.length + octant.nonStaticEntities.length > this.MAX_ENTITES) {
+                    octant.expand();
+                }
+            });
+            this.expanded = true;
+        }
     }
 
     collapse(): void {
-        const {octants, staticEntities, nonStaticEntities} = this;
-        octants.forEach((octant) => {
-            const {staticEntities: octantStaticEntities, nonStaticEntities: octantNonStaticEntities} = octant;
-            staticEntities.push(...octantStaticEntities);
-            nonStaticEntities.push(...octantNonStaticEntities);
-            octant.dispose();
-        });
+        const {expanded} = this;
+        if (expanded) {
+            const {octants, staticEntities, nonStaticEntities} = this;
+            octants.forEach((octant) => {
+                const {staticEntities: octantStaticEntities, nonStaticEntities: octantNonStaticEntities} = octant;
+                staticEntities.push(...octantStaticEntities);
+                nonStaticEntities.push(...octantNonStaticEntities);
+                octant.dispose();
+            });
+            this.expanded = false;
+        }
     }
 }

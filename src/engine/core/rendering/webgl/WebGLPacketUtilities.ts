@@ -113,8 +113,7 @@ export class WebGLPacketUtilities {
                     const relatedBlocks = <UniformBlock[]>relatedBlockProperties.map(
                         ([blockName, _]) => WebGLUniformBlockUtilities.createUniformBlock(gl, program, blockName)
                     );
-                    const {length: relatedBlocksCount} = relatedBlocks;
-                    
+                    const {length: relatedBlocksCount} = relatedBlocks;        
                     if ("internalBuffer" in uniformBuffersProperty_i) {
                         relatedBlocks.forEach((block_i) => {
                             const {name} = block_i!;
@@ -124,9 +123,12 @@ export class WebGLPacketUtilities {
                     }
                     else {
                         if (relatedBlocksCount > 0) {
-                            const {usage} = uniformBuffersProperty_i;
+                            const {usage, data} = uniformBuffersProperty_i;
                             if (relatedBlocksCount > 1) {
                                 const rangedBuffers = WebGLUniformBlockUtilities.createRangedUniformBuffers(gl, <UniformBlock[]>relatedBlocks, true, usage)!;
+                                if (data) {
+                                    WebGLUniformBlockUtilities.setUniformBufferData(gl, rangedBuffers[0], data);
+                                }
                                 relatedBlocks.forEach((block_i, i) => {
                                     const {name} = block_i!;
                                     const rangedBuffer = rangedBuffers[i];
@@ -144,6 +146,9 @@ export class WebGLPacketUtilities {
                                 const buffer = WebGLUniformBlockUtilities.createUniformBuffer(gl, blockSize, true, usage);
                                 if (buffer === null) {
                                     return null;
+                                }
+                                if (data) {
+                                    WebGLUniformBlockUtilities.setUniformBufferData(gl, buffer, data);
                                 }
                                 WebGLUniformBlockUtilities.bindUniformBuffer(gl, relatedBlock!, buffer!);
                                 const {uniforms} = relatedBlockProperties[0][1];
@@ -262,14 +267,14 @@ export class WebGLPacketUtilities {
                 const {countsList, countsOffset, firstsList, firstsOffset, drawCount, instanceCountsList, instanceCountsOffset} = multiDraw;
                 if (instanceCountsList !== undefined && instanceCountsOffset !== undefined) {
                     multiDrawExtension.multiDrawArraysInstancedWEBGL(
-                        mode, countsList!, countsOffset!,
-                        firstsList!, firstsOffset!, instanceCountsList, instanceCountsOffset, drawCount!
+                        mode, firstsList!, firstsOffset!,
+                        countsList!, countsOffset!, instanceCountsList, instanceCountsOffset, drawCount!
                     );
                 }
                 else {
                     multiDrawExtension.multiDrawArraysWEBGL(
-                        mode, countsList!, countsOffset!,
-                        firstsList!, firstsOffset!, drawCount!
+                        mode, firstsList!, firstsOffset!, 
+                        countsList!, countsOffset!, drawCount!
                     );
                 }
             }

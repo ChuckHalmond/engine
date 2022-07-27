@@ -27,6 +27,7 @@ export type UniformBuffer = Buffer & {
 
 export type UniformBufferProperties = {
     usage: BufferDataUsage;
+    data?: ArrayBuffer;
 }
 
 export type UniformBlocksProperties = {
@@ -154,13 +155,18 @@ export class WebGLUniformBlockUtilities {
         });
     }
 
-    static setUniformBufferData(gl: WebGL2RenderingContext, buffer: UniformBuffer, data: ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void {
+    static setUniformBufferData(gl: WebGL2RenderingContext, buffer: UniformBuffer, data: ArrayBuffer | ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void {
         const {internalBuffer, target} = buffer;
         let {rangeOffset} = buffer;
         gl.bindBuffer(target, internalBuffer);
         const byteOffset = (rangeOffset ?? 0) + (dstByteOffset ?? 0);
-        srcOffset = srcOffset ?? 0;
-        gl.bufferSubData(target, byteOffset, data, srcOffset, length);
+        if (data instanceof ArrayBuffer) {
+            gl.bufferSubData(target, byteOffset, data);
+        }
+        else {
+            srcOffset = srcOffset ?? 0;
+            gl.bufferSubData(target, byteOffset, data, srcOffset, length);
+        }
     }
 
     static lastBindingPoint = 0;

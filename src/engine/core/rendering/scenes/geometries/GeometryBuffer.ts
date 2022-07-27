@@ -1,4 +1,3 @@
-import { BufferDataUsage } from "../../webgl/WebGLBufferUtilities";
 import { AttributeArray, AttributeDataType, DataComponentType, WebGLVertexArrayUtilities } from "../../webgl/WebGLVertexArrayUtilities";
 
 export { GeometryBuffer };

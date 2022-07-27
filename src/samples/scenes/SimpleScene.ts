@@ -503,11 +503,11 @@ export async function launchScene() {
 
   const cubeGeometryBuilder = cubeGeometry.toBuilder();
   const cubeVerticesArray = cubeGeometryBuilder.verticesArray();
-  const cubeIndicesArray = cubeGeometryBuilder.indicesArray();
+  const cubeIndicesArray = cubeGeometryBuilder.trianglesIndicesArray();
   const cubeNormalsArray = cubeGeometryBuilder.normalsArray();
   const cubeUVsArray= cubeGeometryBuilder.uvsArray();
   const cubeTangentsArray = cubeGeometryBuilder.tangentsArray();
-  const cubeLinesArray = cubeGeometryBuilder.linesArray();
+  const cubeLinesArray = cubeGeometryBuilder.verticesArray();
 
   const cubeGeometryBuffer = new GeometryBuffer({
     a_position: { array: cubeVerticesArray, type: AttributeDataType.VEC3 },
@@ -747,7 +747,7 @@ export async function launchScene() {
     }
   };
 
-  const quadIndices = quadGeometryBuilder.indicesArray();
+  const quadIndices = quadGeometryBuilder.trianglesIndicesArray();
   const quadVertices = quadGeometryBuilder.verticesArray();
   const quadUVs = quadGeometryBuilder.uvsArray();
   const quadWorld = new Matrix4().setIdentity();

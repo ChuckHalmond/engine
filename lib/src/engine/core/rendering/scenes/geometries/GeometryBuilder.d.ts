@@ -17,8 +17,8 @@ interface GeometryBuilder {
     }[]): void;
     verticesArray(): Float32Array;
     uvsArray(): Float32Array;
-    indicesArray(): Uint8Array | Uint16Array | Uint32Array;
-    linesArray(): Float32Array;
+    trianglesIndicesArray(): Uint8Array | Uint16Array | Uint32Array;
+    linesIndicesArray(): Uint8Array | Uint16Array | Uint32Array;
     normalsArray(): Float32Array;
     tangentsArray(): Float32Array;
     boundingBox(): BoundingBox;

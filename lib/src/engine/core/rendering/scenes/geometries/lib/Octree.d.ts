@@ -11,9 +11,10 @@ export declare class Octree {
     MAX_ENTITES: number;
     nonStaticEntities: OctreeEntity[];
     staticEntities: OctreeEntity[];
+    expanded: boolean;
     constructor(region: BoundingBox, parent?: Octree, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]);
-    set(region: BoundingBox, parent?: Octree, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]): void;
-    entitiesWithinFrustrum(frustrum: Frustrum): boolean;
+    entitiesWithinFrustrum(frustrum: Frustrum): IterableIterator<OctreeEntity>;
+    init(): void;
     update(): void;
     dispose(): void;
     expand(): void;

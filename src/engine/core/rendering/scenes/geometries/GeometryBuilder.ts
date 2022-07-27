@@ -15,8 +15,8 @@ interface GeometryBuilder {
     addFace(vertices: VertexID[], properties?: {[key: string]: any;}[]): void;
     verticesArray(): Float32Array;
     uvsArray(): Float32Array;
-    indicesArray(): Uint8Array | Uint16Array | Uint32Array;
-    linesArray(): Float32Array;
+    trianglesIndicesArray(): Uint8Array | Uint16Array | Uint32Array;
+    linesIndicesArray(): Uint8Array | Uint16Array | Uint32Array;
     normalsArray(): Float32Array;
     tangentsArray(): Float32Array;
     boundingBox(): BoundingBox;
@@ -220,18 +220,33 @@ class GeometryBuilderBase implements GeometryBuilder {
         }));
     }
 
-    indicesArray(): Uint8Array | Uint16Array | Uint32Array {
+    trianglesIndicesArray(): Uint8Array | Uint16Array | Uint32Array {
         const {faces} = this;
         const count = faces.reduce((verticesCount, _, i) => {
             return verticesCount + Array.from(this.faceVerticesIterator(i)).length;
         }, 0);
         const arrayConstructor = (count < Math.pow(2, 8)) ? Uint8Array : (count < Math.pow(2, 16)) ? Uint16Array : Uint32Array;
         return new arrayConstructor(faces.reduce(([indices, index], face_i, i) => {
-            const vertices = Array.from(this.faceVerticesIterator(i));
+            /*const vertices = Array.from(this.faceVerticesIterator(i));
             if (vertices.length === 4) {
                 return [indices.concat([index, index + 1, index + 2, index + 2, index + 3, index]), index + 4] as [number[], number];
-            }
+            }*/
             return [indices.concat([index, index + 1, index + 2]), index + 3] as [number[], number];
+        }, [[], 0] as [number[], number])[0]);
+    }
+
+    linesIndicesArray(): Uint8Array | Uint16Array | Uint32Array {
+        const {faces} = this;
+        const count = faces.reduce((verticesCount, _, i) => {
+            return verticesCount + Array.from(this.faceVerticesIterator(i)).length * 2;
+        }, 0);
+        const arrayConstructor = (count < Math.pow(2, 8)) ? Uint8Array : (count < Math.pow(2, 16)) ? Uint16Array : Uint32Array;
+        return new arrayConstructor(faces.reduce(([indices, index], face_i, i) => {
+            /*const vertices = Array.from(this.faceVerticesIterator(i));
+            if (vertices.length === 4) {
+                return [indices.concat([index, index + 1, index + 1, index + 2, index + 3, index + 3, index]), index + 4] as [number[], number];
+            }*/
+            return [indices.concat([index, index + 1, index + 1, index + 2, index + 2, index]), index + 3] as [number[], number];
         }, [[], 0] as [number[], number])[0]);
     }
 

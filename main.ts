@@ -1,4 +1,4 @@
-import { shadows } from "./src/samples/scenes/Shadows";
+import { multiDraw } from "./src/samples/scenes/MultiDraw";
 import { Entity } from "./src/engine/core/general/Entity";
 import { Scene } from "./src/engine/core/general/Scene";
 import { FaceHalfEdgesIterator, FaceVerticesIterator, Vertex, VertexFacesIterator } from "./src/engine/core/rendering/scenes/geometries/GeometryBuilder";
@@ -13,6 +13,7 @@ import { Triangle } from "./src/engine/libs/maths/geometry/primitives/Triangle";
 import { Space } from "./src/engine/libs/maths/geometry/space/Space";
 import { buildArrayFromIndexedArrays } from "./src/engine/utils/Snippets";
 import { start } from "./src/samples/scenes/SimpleScene";
+import { octree } from "./src/samples/scenes/Octree";
 /*
 function windingOrder(v0: Vector3, v1: Vector3, v2: Vector3) {
     const triangle = new Triangle(v0, v1, v2);
@@ -64,8 +65,9 @@ export async function main() {
 
     myWorker.postMessage(sab);*/
 
-    start();
-    //shadows();
+    octree();
+    //start();
+    //multiDraw();
 
     //startMaps();
 

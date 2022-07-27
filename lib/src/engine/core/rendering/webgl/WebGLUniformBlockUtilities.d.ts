@@ -23,6 +23,7 @@ export declare type UniformBuffer = Buffer & {
 };
 export declare type UniformBufferProperties = {
     usage: BufferDataUsage;
+    data?: ArrayBuffer;
 };
 export declare type UniformBlocksProperties = {
     buffers: (UniformBuffer | UniformBufferProperties)[];
@@ -38,7 +39,7 @@ export declare class WebGLUniformBlockUtilities {
     static createUniformBuffer(gl: WebGL2RenderingContext, byteLength: number, bind?: boolean, usage?: BufferDataUsage): UniformBuffer | null;
     static createRangedUniformBuffers(gl: WebGL2RenderingContext, blocks: UniformBlock[], bind?: boolean, usage?: BufferDataUsage): UniformBuffer[] | null;
     static setUniformBufferValues(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer, uniforms: Record<string, Uniform>): void;
-    static setUniformBufferData(gl: WebGL2RenderingContext, buffer: UniformBuffer, data: ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void;
+    static setUniformBufferData(gl: WebGL2RenderingContext, buffer: UniformBuffer, data: ArrayBuffer | ArrayBufferView, dstByteOffset?: number, srcOffset?: number, length?: number): void;
     static lastBindingPoint: number;
     static bindUniformBuffer(gl: WebGL2RenderingContext, block: UniformBlock, buffer: UniformBuffer): void;
 }

@@ -13,7 +13,7 @@ import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Vector3 } from "../../engine/libs/maths/algebra/vectors/Vector3";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
 
-export async function shadows() {
+export async function multiDraw() {
     const canvas = document.createElement("canvas");
     canvas.style.display = "block";
     canvas.tabIndex = 0;
@@ -67,14 +67,14 @@ export async function shadows() {
     const cubeGeometry = new CubeGeometry();
     const cubeGeometryBuilder = cubeGeometry.toBuilder();
     const cubeVerticesArray = cubeGeometryBuilder.verticesArray();
-    const cubeIndicesArray = cubeGeometryBuilder.indicesArray();
+    const cubeIndicesArray = cubeGeometryBuilder.trianglesIndicesArray();
 
     const quadGeometry = new QuadGeometry({
         width: 2, height: 2
     });
     const quadGeometryBuilder = quadGeometry.toBuilder();
     const quadVerticesArray = quadGeometryBuilder.verticesArray();
-    const quadIndicesArray = quadGeometryBuilder.indicesArray();
+    const quadIndicesArray = quadGeometryBuilder.trianglesIndicesArray();
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
         program: basicProgram,
