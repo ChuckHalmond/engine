@@ -1,17 +1,17 @@
-import { PoolAutoExtendPolicy, PoolBase, Pool } from "./Pool";
+import { PoolAutoExtendPolicy, Pool } from "./Pool";
 
-export { StackPool };
+export { RegularPool };
 
-interface StackPool<O extends object = object> extends Pool<O> {
-    release(count: number): void;
+interface RegularPool<O extends object = object> extends Pool<O> {
+    release(...objects: O[]): void;
 }
 
-interface StackPoolConstructor {
-    readonly prototype: StackPool;
-    new<O extends object>(constructor: Constructor<O>, options?: {args?: ConstructorParameters<Constructor<O>>, policy?: PoolAutoExtendPolicy, size?: number}): StackPool<O>;
+interface RegularPoolConstructor {
+    readonly prototype: RegularPool;
+    new<O extends object>(constructor: Constructor<O>, options?: {args?: ConstructorParameters<Constructor<O>>, policy?: PoolAutoExtendPolicy, size?: number}): RegularPool<O>;
 }
 
-class StackPoolBase<O extends object = object> extends PoolBase<O> implements Pool<O> {
+class RegularPoolBase<O extends object = object> extends Pool<O> implements RegularPool<O> {
     objects: Array<O>;
     top: number;
 
@@ -37,12 +37,8 @@ class StackPoolBase<O extends object = object> extends PoolBase<O> implements Po
         return this.objects.slice(top, target);
     }
 
-    release(count: number): void {
-        const top = this.top;
-        if (count > top) {
-            console.warn("Releasing under zero.");
-        }
-        this.top = Math.max(top - count, 0);
+    release(...objects: O[]): void {
+        objects.forEach((object) => {});
     }
 
     extend(count: number): void {
@@ -50,12 +46,6 @@ class StackPoolBase<O extends object = object> extends PoolBase<O> implements Po
             return new this.ctor();
         }));
     }
-    
-    clear(): void {
-        this.objects = [];
-        this.top = 0;
-        this.autoExtendTicks = 0;
-    }
 }
 
-var StackPool: StackPoolConstructor = StackPoolBase;
+var RegularPool: RegularPoolConstructor = RegularPoolBase;

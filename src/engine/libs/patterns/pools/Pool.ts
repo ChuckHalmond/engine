@@ -8,48 +8,59 @@ enum PoolAutoExtendPolicy {
     AUTO_EXTEND_POW2 = 2
 }
 
+interface PoolConstructor {
+    readonly prototype: Pool;
+    new<O extends object>(constructor: Constructor<O>, policy?: PoolAutoExtendPolicy): Pool<O>;
+}
+
 interface Pool<O extends object = object> {
     readonly ctor: Constructor<O>;
     readonly autoExtendPolicy: PoolAutoExtendPolicy;
+    autoExtend(): void;
     acquire(count: number): O[];
-    release(count: number): void;
+    release(...args: any[]): void;
     extend(count: number): void;
     clear(): void;
 }
 
-abstract class PoolBase<O extends object = object> implements Pool<O> {
-    protected _ctor: Constructor<O>;
-    protected _autoExtendPolicy: PoolAutoExtendPolicy;
-    protected _autoExtendTicks: number;
+class PoolBase<O extends object = object> implements Pool<O> {
+    readonly ctor: Constructor<O>;
+    autoExtendPolicy: PoolAutoExtendPolicy;
+    autoExtendTicks: number;
 
-    protected constructor(constructor: Constructor<O>, policy?: PoolAutoExtendPolicy) {
-        this._ctor = constructor;
-        this._autoExtendPolicy = policy || PoolAutoExtendPolicy.AUTO_EXTEND_ONE;
-        this._autoExtendTicks = 0;
-    }
-
-    get ctor(): Constructor<O> {
-        return this._ctor;
-    }
-
-    get autoExtendPolicy(): PoolAutoExtendPolicy {
-        return this._autoExtendPolicy;
+    constructor(constructor: Constructor<O>, policy?: PoolAutoExtendPolicy) {
+        this.ctor = constructor;
+        this.autoExtendPolicy = policy || PoolAutoExtendPolicy.AUTO_EXTEND_ONE;
+        this.autoExtendTicks = 0;
     }
 
     autoExtend(): void {
-        switch (this._autoExtendPolicy) {
+        switch (this.autoExtendPolicy) {
             case PoolAutoExtendPolicy.AUTO_EXTEND_ONE:
                 this.extend(1);
                 break;
             case PoolAutoExtendPolicy.AUTO_EXTEND_POW2:
-                this.extend(Math.pow(2, this._autoExtendTicks));
+                this.extend(Math.pow(2, this.autoExtendTicks));
                 break;
         }
-        this._autoExtendTicks++;
+        this.autoExtendTicks++;
     }
 
-    abstract acquire(count: number): O[];
-    abstract release(count: number): void;
-    abstract extend(count: number): void;
-    abstract clear(): void;
+    acquire(count: number): O[] {
+        throw new Error("Not implemented");
+    }
+
+    release(...args: any[]): void {
+        throw new Error("Not implemented");
+    }
+
+    extend(count: number): void {
+        throw new Error("Not implemented");
+    }
+
+    clear(): void {
+        throw new Error("Not implemented");
+    }
 }
+
+var Pool: PoolConstructor = PoolBase;

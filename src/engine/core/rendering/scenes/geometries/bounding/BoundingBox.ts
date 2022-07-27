@@ -1,5 +1,6 @@
 import { Matrix4 } from "../../../../../libs/maths/algebra/matrices/Matrix4";
 import { Vector3 } from "../../../../../libs/maths/algebra/vectors/Vector3";
+import { Frustrum } from "../../../../../libs/physics/collisions/Frustrum";
 
 export { BoundingBox };
 

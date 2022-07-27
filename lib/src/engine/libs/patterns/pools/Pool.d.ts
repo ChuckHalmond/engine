@@ -6,24 +6,28 @@ declare enum PoolAutoExtendPolicy {
     AUTO_EXTEND_ONE = 1,
     AUTO_EXTEND_POW2 = 2
 }
+interface PoolConstructor {
+    readonly prototype: Pool;
+    new <O extends object>(constructor: Constructor<O>, policy?: PoolAutoExtendPolicy): Pool<O>;
+}
 interface Pool<O extends object = object> {
     readonly ctor: Constructor<O>;
     readonly autoExtendPolicy: PoolAutoExtendPolicy;
+    autoExtend(): void;
     acquire(count: number): O[];
-    release(count: number): void;
+    release(...args: any[]): void;
     extend(count: number): void;
     clear(): void;
 }
-declare abstract class PoolBase<O extends object = object> implements Pool<O> {
-    protected _ctor: Constructor<O>;
-    protected _autoExtendPolicy: PoolAutoExtendPolicy;
-    protected _autoExtendTicks: number;
-    protected constructor(constructor: Constructor<O>, policy?: PoolAutoExtendPolicy);
-    get ctor(): Constructor<O>;
-    get autoExtendPolicy(): PoolAutoExtendPolicy;
+declare class PoolBase<O extends object = object> implements Pool<O> {
+    readonly ctor: Constructor<O>;
+    autoExtendPolicy: PoolAutoExtendPolicy;
+    autoExtendTicks: number;
+    constructor(constructor: Constructor<O>, policy?: PoolAutoExtendPolicy);
     autoExtend(): void;
-    abstract acquire(count: number): O[];
-    abstract release(count: number): void;
-    abstract extend(count: number): void;
-    abstract clear(): void;
+    acquire(count: number): O[];
+    release(...args: any[]): void;
+    extend(count: number): void;
+    clear(): void;
 }
+declare var Pool: PoolConstructor;

@@ -1,6 +1,7 @@
 import { PoolAutoExtendPolicy, Pool } from "./Pool";
 export { StackPool };
 interface StackPool<O extends object = object> extends Pool<O> {
+    release(count: number): void;
 }
 interface StackPoolConstructor {
     readonly prototype: StackPool;
