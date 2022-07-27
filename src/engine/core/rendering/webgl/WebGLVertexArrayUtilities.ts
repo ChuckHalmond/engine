@@ -31,7 +31,7 @@ export enum DataComponentType {
 export enum AttributeDataType {
     VEC2 = "VEC2",
     VEC3 = "VEC3",
-    VEC4 = "VEC4"
+    VEC4 = "VEC4",
 }
 
 export enum ElementArrayDataType {

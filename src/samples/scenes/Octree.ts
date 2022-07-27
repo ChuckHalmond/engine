@@ -77,29 +77,6 @@ export async function octree() {
     const quadGeometryBuilder = quadGeometry.toBuilder();
     const quadLinesArray = quadGeometryBuilder.verticesArray();
     const quadLinesIndicesArray = quadGeometryBuilder.linesIndicesArray();
-
-    const geometryBuffer = new GeometryBuffer({
-        u_model: {
-            array: Float32Array.of(
-                ...cubeTransform.matrix.array,
-                ...quadTransform.matrix.array,
-                ...cubeTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array,
-                ...quadTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array
-            ),
-            type: AttributeDataType.VEC3
-        },
-        u_color: {
-            array: Float32Array.of(
-                ...[1, 0, 0, 1],
-                ...[0, 1, 0, 1],
-                ...[0, 0, 1, 1],
-                ...[0, 1, 1, 1]
-            ),
-            type: AttributeDataType.VEC3
-        }
-    }, undefined, true);
-
-    console.log(geometryBuffer);
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
         program: linesProgram,
@@ -112,23 +89,22 @@ export async function octree() {
         uniformBuffers: [
             {
                 //TODO: data as arraybuffer
-                usage:  BufferDataUsage.STATIC_READ,
-                data: geometryBuffer.buffer
+                usage:  BufferDataUsage.STATIC_READ
             }
         ],
         uniformBlocks: {
             basicModelBlock: {
                 buffer: 0,
-                /*uniforms: {
+                uniforms: {
                     "models[0].instances[0].u_model": { value: cubeTransform.matrix.array },
                     "models[0].instances[0].u_color": { value: [1, 0, 0] },
-                    "models[1].instances[0].u_model": { value: quadTransform.matrix.array },
-                    "models[1].instances[0].u_color": { value: [0, 1, 0] },
                     "models[0].instances[1].u_model": { value: cubeTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
                     "models[0].instances[1].u_color": { value: [0, 0, 1] },
+                    "models[1].instances[0].u_model": { value: quadTransform.matrix.array },
+                    "models[1].instances[0].u_color": { value: [0, 1, 0] },
                     "models[1].instances[1].u_model": { value: quadTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
                     "models[1].instances[1].u_color": { value: [0, 1, 1] }
-                }*/
+                }
             },
             viewBlock: {
                 uniforms: {
@@ -151,10 +127,6 @@ export async function octree() {
         }
     });
     if (cubePacket === null) return;
-
-    console.log(cubePacket);
-    
-    console.log(geometryBuffer.getAttribute("u_color"));
     
     WebGLRendererUtilities.viewport(gl, 0, 0, canvas.width, canvas.height);
     WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
