@@ -1,11 +1,14 @@
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
+import { Vector3 } from "../../../../../libs/maths/algebra/vectors/Vector3";
 import { Frustrum } from "../../../../../libs/physics/collisions/Frustrum";
 import { BoundingBox } from "../bounding/BoundingBox";
 
 const tempVector = new Vector3();
 
+const SQRT3 = Math.sqrt(3);
+
 interface OctreeEntity {
     box: BoundingBox;
+    containedIn: number[];
 }
 
 export class Octree {
@@ -21,29 +24,17 @@ export class Octree {
     staticEntities: OctreeEntity[];
 
     expanded: boolean;
+    id: number;
 
-    constructor(region: BoundingBox, parent?: Octree, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]) {
+    static count = 0;
+
+    constructor(region: BoundingBox, parent?: Octree | null, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]) {
+        this.id = Octree.count++;
         this.region = region;
         this.parent = parent ?? null;
         this.nonStaticEntities = nonStaticEntities ?? [];
         this.staticEntities = staticEntities ?? [];
-        /*const {min, max} = region;
-        const {x: minX, y: minY, z: minZ} = min;
-        const {x: maxX, y: maxY, z: maxZ} = max;
-        const centerX = (minX + maxX) / 2;
-        const centerY = (minY + maxY) / 2;
-        const centerZ = (minZ + maxZ) / 2;
-        const center = new Vector3(centerX, centerY, centerZ);*/
-        this.octants = [
-            /*new Octree(new BoundingBox(min, center)),
-            new Octree(new BoundingBox(new Vector3(centerX, minY, minZ), new Vector3(maxX, centerY, centerZ))),
-            new Octree(new BoundingBox(new Vector3(centerX, minY, centerZ), new Vector3(maxX, centerY, maxZ))),
-            new Octree(new BoundingBox(new Vector3(minX, minY, centerZ), new Vector3(centerX, centerY, maxZ))),
-            new Octree(new BoundingBox(new Vector3(minX, centerY, minZ), new Vector3(centerX, maxY, centerZ))),
-            new Octree(new BoundingBox(new Vector3(centerX, centerY, minZ), new Vector3(maxX, maxY, centerZ))),
-            new Octree(new BoundingBox(center, max)),
-            new Octree(new BoundingBox(new Vector3(minX, centerY, centerZ), new Vector3(centerX, maxY, maxZ)))*/
-        ];
+        this.octants = new Array(8);
         this.expanded = false;
     }
 
@@ -165,12 +156,15 @@ export class Octree {
     }
 
     init(): void {
-        this.update();
+        const {nonStaticEntities, staticEntities} = this;
+        if (nonStaticEntities.length + staticEntities.length > this.MAX_ENTITES) {
+            this.expand();
+        }
     }
 
     update(): void {
         let octree: Octree = this;
-        const {octants, nonStaticEntities} = this;
+        const {octants, nonStaticEntities, expanded} = this;
         nonStaticEntities.forEach((entity_i, i) => {
             while (!entity_i.box.hits(octree.region) && octree.parent) {
                 octree = octree.parent;
@@ -179,71 +173,112 @@ export class Octree {
                 nonStaticEntities.copyWithin(i, i + 1);
                 nonStaticEntities.length--;
                 const octreeEntitiesCount = octree.nonStaticEntities.push(entity_i);
+
+                //
+                entity_i.containedIn.push(octree.id);
+                //
+                
                 if (octreeEntitiesCount > this.MAX_ENTITES) {
                     octree.expand();
                 }
             }
         });
-        octants.forEach((octant) => {
-            octant.update();
-        });
-    }
-
-    dispose(): void {
-        const {nonStaticEntities, staticEntities} = this;
-        nonStaticEntities.length = 0;
-        staticEntities.length = 0;
+        if (expanded) {
+            octants.forEach((octant) => {
+                octant.update();
+            });
+            const entitiesCount = octants.reduce((count, octant) => {
+                const {nonStaticEntities, staticEntities} = octant;
+                return count + nonStaticEntities.length + staticEntities.length;
+            }, 0);
+            if (entitiesCount < this.MAX_ENTITES) {
+                this.collapse();
+            }
+        }
     }
 
     expand(): void {
         const {expanded} = this;
         if (!expanded) {
-            const {octants, region, staticEntities, nonStaticEntities} = this;
+            const {region} = this;
             const {min, max} = region;
-            const {x: minX, y: minY, z: minZ} = min;
-            const {x: maxX, y: maxY, z: maxZ} = max;
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
-            const centerZ = (minZ + maxZ) / 2;
-            const center = new Vector3(centerX, centerY, centerZ);
-            octants.push(
-                new Octree(new BoundingBox(min, center), this),
-                new Octree(new BoundingBox(new Vector3(centerX, minY, minZ), new Vector3(maxX, centerY, centerZ)), this),
-                new Octree(new BoundingBox(new Vector3(centerX, minY, centerZ), new Vector3(maxX, centerY, maxZ)), this),
-                new Octree(new BoundingBox(new Vector3(minX, minY, centerZ), new Vector3(centerX, centerY, maxZ)), this),
-                new Octree(new BoundingBox(new Vector3(minX, centerY, minZ), new Vector3(centerX, maxY, centerZ)), this),
-                new Octree(new BoundingBox(new Vector3(centerX, centerY, minZ), new Vector3(maxX, maxY, centerZ)), this),
-                new Octree(new BoundingBox(center, max), this),
-                new Octree(new BoundingBox(new Vector3(minX, centerY, centerZ), new Vector3(centerX, maxY, maxZ)), this)
-            );
-            staticEntities.forEach((entity) => {
-                const enclosingOctants = octants.filter(
-                    octant => octant.region.hits(entity.box)
-                );
-                if (enclosingOctants) {
-                    enclosingOctants.forEach(
-                        (octant) => octant.staticEntities.push(entity)
+            if (min.distance(max) > SQRT3 * this.MIN_SIZE) {
+                const {octants, staticEntities, nonStaticEntities} = this;
+                const {x: minX, y: minY, z: minZ} = min;
+                const {x: maxX, y: maxY, z: maxZ} = max;
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                const centerZ = (minZ + maxZ) / 2;
+                const center = new Vector3(centerX, centerY, centerZ);
+                octants[0] = new Octree(new BoundingBox(min, center), this);
+                octants[1] = new Octree(new BoundingBox(new Vector3(centerX, minY, minZ), new Vector3(maxX, centerY, centerZ)), this);
+                octants[2] = new Octree(new BoundingBox(new Vector3(centerX, minY, centerZ), new Vector3(maxX, centerY, maxZ)), this);
+                octants[3] = new Octree(new BoundingBox(new Vector3(minX, minY, centerZ), new Vector3(centerX, centerY, maxZ)), this);
+                octants[4] = new Octree(new BoundingBox(new Vector3(minX, centerY, minZ), new Vector3(centerX, maxY, centerZ)), this);
+                octants[5] = new Octree(new BoundingBox(new Vector3(centerX, centerY, minZ), new Vector3(maxX, maxY, centerZ)), this);
+                octants[6] = new Octree(new BoundingBox(center, max), this);
+                octants[7] = new Octree(new BoundingBox(new Vector3(minX, centerY, centerZ), new Vector3(centerX, maxY, maxZ)), this);
+                staticEntities.forEach((entity) => {
+                    const enclosingOctants = octants.filter(
+                        octant => octant.region.hits(entity.box)
                     );
-                }
-            });
-            nonStaticEntities.forEach((entity) => {
-                const enclosingOctants = octants.filter(
-                    octant => octant.region.hits(entity.box)
-                );
-                if (enclosingOctants) {
-                    enclosingOctants.forEach(
-                        (octant) => octant.nonStaticEntities.push(entity)
+                    if (enclosingOctants) {
+                        enclosingOctants.forEach(
+                            (octant) => {
+                                octant.staticEntities.push(entity);
+
+                                //
+                                entity.containedIn.push(octant.id);
+                                //
+                            }
+                        );
+                    }
+                });
+                nonStaticEntities.forEach((entity) => {
+                    const enclosingOctants = octants.filter(
+                        octant => octant.region.hits(entity.box)
                     );
-                }
-            });
-            staticEntities.length = 0;
-            nonStaticEntities.length = 0;
-            octants.forEach((octant) => {
-                if (octant.staticEntities.length + octant.nonStaticEntities.length > this.MAX_ENTITES) {
-                    octant.expand();
-                }
-            });
-            this.expanded = true;
+                    if (enclosingOctants) {
+                        enclosingOctants.forEach(
+                            (octant) => {
+                                console.log(`${octant.id}[min: ${Array.from(octant.region.min)}, max: ${Array.from(octant.region.max)}] encloses [min: ${Array.from(entity.box.min)}, max: ${Array.from(entity.box.max)}]`)
+                                octant.nonStaticEntities.push(entity);
+
+                                //
+                                entity.containedIn.push(octant.id);
+                                //
+                            }
+                        );
+                    }
+                });
+                staticEntities.length = 0;
+
+                //
+                staticEntities.forEach((entity) => {
+                    const index = entity.containedIn.indexOf(this.id);
+                    entity.containedIn.copyWithin(index, index + 1);
+                    entity.containedIn.length--;
+                });
+                //
+
+                nonStaticEntities.length = 0;
+
+                //
+                nonStaticEntities.forEach((entity) => {
+                    const index = entity.containedIn.indexOf(this.id);
+                    entity.containedIn.copyWithin(index, index + 1);
+                    entity.containedIn.length--;
+                });
+                //
+
+                octants.forEach((octant) => {
+                    const {staticEntities, nonStaticEntities} = octant;
+                    if (staticEntities.length + nonStaticEntities.length > this.MAX_ENTITES) {
+                        octant.expand();
+                    }
+                });
+                this.expanded = true;
+            }
         }
     }
 
@@ -254,8 +289,38 @@ export class Octree {
             octants.forEach((octant) => {
                 const {staticEntities: octantStaticEntities, nonStaticEntities: octantNonStaticEntities} = octant;
                 staticEntities.push(...octantStaticEntities);
+                
+                //
+                octantStaticEntities.forEach((entity) => {
+                    entity.containedIn.push(this.id);
+                });
+                //
+
                 nonStaticEntities.push(...octantNonStaticEntities);
-                octant.dispose();
+
+                //
+                octantNonStaticEntities.forEach((entity) => {
+                    entity.containedIn.push(this.id);
+                });
+                //
+
+                octantNonStaticEntities.length = 0;
+                //
+                octantNonStaticEntities.forEach((entity) => {
+                    const index = entity.containedIn.indexOf(octant.id);
+                    entity.containedIn.copyWithin(index, index + 1);
+                    entity.containedIn.length--;
+                });
+                //
+
+                octantStaticEntities.length = 0;
+                //
+                octantStaticEntities.forEach((entity) => {
+                    const index = entity.containedIn.indexOf(octant.id);
+                    entity.containedIn.copyWithin(index, index + 1);
+                    entity.containedIn.length--;
+                });
+                //
             });
             this.expanded = false;
         }

@@ -3,7 +3,9 @@ import { FreeCameraControl } from "../../engine/core/controls/FreeCameraControl"
 import { Transform } from "../../engine/core/general/Transform";
 import { Input } from "../../engine/core/input/Input";
 import { PerspectiveCamera } from "../../engine/core/rendering/scenes/cameras/PerspectiveCamera";
+import { BoundingBox } from "../../engine/core/rendering/scenes/geometries/bounding/BoundingBox";
 import { GeometryBuffer } from "../../engine/core/rendering/scenes/geometries/GeometryBuffer";
+import { Octree } from "../../engine/core/rendering/scenes/geometries/lib/Octree";
 import { CubeGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/CubeGeometry";
 import { QuadGeometry } from "../../engine/core/rendering/scenes/geometries/lib/QuadGeometry";
 import { BufferDataUsage } from "../../engine/core/rendering/webgl/WebGLBufferUtilities";
@@ -12,6 +14,7 @@ import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLPr
 import { BufferMask, Capabilities, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
 import { AttributeDataType, DrawMode, WebGLVertexArrayUtilities } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
+import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
 import { Vector3 } from "../../engine/libs/maths/algebra/vectors/Vector3";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
 
@@ -71,40 +74,111 @@ export async function octree() {
     const cubeLinesArray = cubeGeometryBuilder.verticesArray();
     const cubeLinesIndicesArray = cubeGeometryBuilder.linesIndicesArray();
 
-    const quadGeometry = new QuadGeometry({
-        width: 2, height: 2
+    const rootScaling = 16;
+    const rootBox = new BoundingBox(
+        new Vector3(-rootScaling, -rootScaling, -rootScaling),
+        new Vector3(rootScaling, rootScaling, rootScaling)
+    );
+
+    const entityBoxScalingRatio = 2;
+    const entityBoxTranslationRatio = 4;
+
+    const staticEntitiesCount = 5;
+    const staticEntities = new Array(staticEntitiesCount).fill(0).map(() => {
+        const coordRands = new Array(6).fill(0).map(() => {
+            const randDigit = Math.random() * entityBoxTranslationRatio;
+            const randSign = Math.sign(Math.random() - 0.5);
+            return randDigit * randSign;
+        });
+        const scalingRand = Math.random() * entityBoxScalingRatio;
+        coordRands.forEach((coord_i, i, coords) => {
+            coords[i] = coord_i * scalingRand;
+        });
+        return {
+            box: new BoundingBox(
+                new Vector3(coordRands.slice(0, 3)),
+                new Vector3(coordRands.slice(3, 6))
+            ),
+            containedIn: []
+        };
     });
-    const quadGeometryBuilder = quadGeometry.toBuilder();
-    const quadLinesArray = quadGeometryBuilder.verticesArray();
-    const quadLinesIndicesArray = quadGeometryBuilder.linesIndicesArray();
+    const nonStaticEntitiesCount = 5;
+    const nonStaticEntities = new Array(nonStaticEntitiesCount).fill(0).map(() => {
+        const coordRands = new Array(6).fill(0).map(() => {
+            const randDigit = Math.random() * entityBoxTranslationRatio;
+            const randSign = Math.sign(Math.random() - 0.5);
+            return randDigit * randSign;
+        });
+        const scalingRand = Math.random() * entityBoxScalingRatio;
+        coordRands.forEach((coord_i, i, coords) => {
+            coords[i] = coord_i * scalingRand;
+        });
+        return {
+            box: new BoundingBox(
+                new Vector3(coordRands.slice(0, 3)),
+                new Vector3(coordRands.slice(3, 6))
+            ),
+            containedIn: []
+        };
+    });
+
+    const octree = new Octree(
+        rootBox,
+        null,
+        Array.from(nonStaticEntities),
+        Array.from(staticEntities)
+    );
+
+    const uniformEntries = [...staticEntities, ...nonStaticEntities].flatMap((entity_i, i) => {
+        const {box} = entity_i;
+        const {min, max} = box;
+        const {x: minX, y: minY, z: minZ} = min;
+        const {x: maxX, y: maxY, z: maxZ} = max;
+        const boxWidth = Math.abs(maxX - minX);
+        const boxHeight = Math.abs(maxY - minY);
+        const boxDepth = Math.abs(maxZ - minZ);
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        const centerZ = (minZ + maxZ) / 2;
+        const boxCenter = new Vector3(centerX, centerY, centerZ);
+
+        const mat = Matrix4.identity().translate(boxCenter).scale(new Vector3(boxWidth, boxHeight, boxDepth));
+        return [
+            [`models[0].instances[${i}].u_model`, {value: mat.array}],
+            [`models[0].instances[${i}].u_color`, {value: [1, 0, 0]}]
+        ]
+    });
+    
+    octree.init();
+
+    console.log(octree);
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
         program: linesProgram,
         vertexArray: {
             vertexAttributes: {
-                a_position: { array: Float32Array.of(...quadLinesArray, ...cubeLinesArray), type: AttributeDataType.VEC3 }
+                a_position: { array: cubeLinesArray, type: AttributeDataType.VEC3 }
             },
-            elementIndices: Uint16Array.of(...quadLinesIndicesArray, ...cubeLinesIndicesArray.map(i => i + quadLinesIndicesArray.length))
+            elementIndices: cubeLinesIndicesArray
         },
         uniformBuffers: [
             {
-                //TODO: data as arraybuffer
                 usage:  BufferDataUsage.STATIC_READ
             }
         ],
         uniformBlocks: {
             basicModelBlock: {
                 buffer: 0,
-                uniforms: {
+                uniforms: Object.fromEntries(uniformEntries)/*{
                     "models[0].instances[0].u_model": { value: cubeTransform.matrix.array },
                     "models[0].instances[0].u_color": { value: [1, 0, 0] },
-                    "models[0].instances[1].u_model": { value: cubeTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
-                    "models[0].instances[1].u_color": { value: [0, 0, 1] },
                     "models[1].instances[0].u_model": { value: quadTransform.matrix.array },
                     "models[1].instances[0].u_color": { value: [0, 1, 0] },
+                    "models[0].instances[1].u_model": { value: cubeTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
+                    "models[0].instances[1].u_color": { value: [0, 0, 1] },
                     "models[1].instances[1].u_model": { value: quadTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
                     "models[1].instances[1].u_color": { value: [0, 1, 1] }
-                }
+                }*/
             },
             viewBlock: {
                 uniforms: {
@@ -115,15 +189,8 @@ export async function octree() {
         },
         drawCommand: {
             mode: DrawMode.LINES,
-            multiDraw: {
-                countsList: [quadLinesIndicesArray.length, cubeLinesIndicesArray.length],
-                countsOffset: 0,
-                offsetsList: [0, quadLinesIndicesArray.length * Uint16Array.BYTES_PER_ELEMENT],
-                offsetsOffset: 0,
-                instanceCountsList: [2, 2],
-                instanceCountsOffset: 0,
-                drawCount: 2
-            }
+            elementsCount: cubeLinesIndicesArray.length,
+            instanceCount: staticEntitiesCount + nonStaticEntitiesCount,
         }
     });
     if (cubePacket === null) return;

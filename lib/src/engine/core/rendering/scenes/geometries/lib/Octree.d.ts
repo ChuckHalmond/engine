@@ -2,6 +2,7 @@ import { Frustrum } from "../../../../../libs/physics/collisions/Frustrum";
 import { BoundingBox } from "../bounding/BoundingBox";
 interface OctreeEntity {
     box: BoundingBox;
+    containedIn: number[];
 }
 export declare class Octree {
     region: BoundingBox;
@@ -12,11 +13,12 @@ export declare class Octree {
     nonStaticEntities: OctreeEntity[];
     staticEntities: OctreeEntity[];
     expanded: boolean;
-    constructor(region: BoundingBox, parent?: Octree, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]);
+    id: number;
+    static count: number;
+    constructor(region: BoundingBox, parent?: Octree | null, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]);
     entitiesWithinFrustrum(frustrum: Frustrum): IterableIterator<OctreeEntity>;
     init(): void;
     update(): void;
-    dispose(): void;
     expand(): void;
     collapse(): void;
 }
