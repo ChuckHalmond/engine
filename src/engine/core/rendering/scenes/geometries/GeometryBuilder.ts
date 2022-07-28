@@ -227,10 +227,10 @@ class GeometryBuilderBase implements GeometryBuilder {
         }, 0);
         const arrayConstructor = (count < Math.pow(2, 8)) ? Uint8Array : (count < Math.pow(2, 16)) ? Uint16Array : Uint32Array;
         return new arrayConstructor(faces.reduce(([indices, index], face_i, i) => {
-            /*const vertices = Array.from(this.faceVerticesIterator(i));
+            const vertices = Array.from(this.faceVerticesIterator(i));
             if (vertices.length === 4) {
-                return [indices.concat([index, index + 1, index + 2, index + 2, index + 3, index]), index + 4] as [number[], number];
-            }*/
+                return [indices.concat([index, index + 1, index + 2, index + 1, index + 3, index + 2]), index + 4] as [number[], number];
+            }
             return [indices.concat([index, index + 1, index + 2]), index + 3] as [number[], number];
         }, [[], 0] as [number[], number])[0]);
     }
@@ -242,10 +242,10 @@ class GeometryBuilderBase implements GeometryBuilder {
         }, 0);
         const arrayConstructor = (count < Math.pow(2, 8)) ? Uint8Array : (count < Math.pow(2, 16)) ? Uint16Array : Uint32Array;
         return new arrayConstructor(faces.reduce(([indices, index], face_i, i) => {
-            /*const vertices = Array.from(this.faceVerticesIterator(i));
+            const vertices = Array.from(this.faceVerticesIterator(i));
             if (vertices.length === 4) {
-                return [indices.concat([index, index + 1, index + 1, index + 2, index + 3, index + 3, index]), index + 4] as [number[], number];
-            }*/
+                return [indices.concat([index, index + 1, index + 1, index + 3, index + 3, index + 2, index + 2, index]), index + 4] as [number[], number];
+            }
             return [indices.concat([index, index + 1, index + 1, index + 2, index + 2, index]), index + 3] as [number[], number];
         }, [[], 0] as [number[], number])[0]);
     }

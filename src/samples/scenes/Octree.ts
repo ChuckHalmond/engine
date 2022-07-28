@@ -60,14 +60,8 @@ export async function octree() {
     const zFar = 100;
 
     const camera = new PerspectiveCamera(fov, aspect, zNear, zFar);
-    camera.transform.setTranslation(new Vector3([1, 0, 0]));
+    camera.transform.setTranslation(new Vector3([0, 0, 25]));
     const cameraControl = new FreeCameraControl(camera)
-    
-    const cubeTransform = new Transform();
-    cubeTransform.setTranslation(camera.getFront(new Vector3()).scale(4));
-
-    const quadTransform = new Transform();
-    quadTransform.setTranslation(cubeTransform.getTranslation(new Vector3()).scale(2));
 
     const cubeGeometry = new CubeGeometry();
     const cubeGeometryBuilder = cubeGeometry.toBuilder();
@@ -81,9 +75,9 @@ export async function octree() {
     );
 
     const entityBoxScalingRatio = 2;
-    const entityBoxTranslationRatio = 4;
+    const entityBoxTranslationRatio = 8;
 
-    const staticEntitiesCount = 5;
+    const staticEntitiesCount = 8;
     const staticEntities = new Array(staticEntitiesCount).fill(0).map(() => {
         const coordRands = new Array(6).fill(0).map(() => {
             const randDigit = Math.random() * entityBoxTranslationRatio;
@@ -98,11 +92,10 @@ export async function octree() {
             box: new BoundingBox(
                 new Vector3(coordRands.slice(0, 3)),
                 new Vector3(coordRands.slice(3, 6))
-            ),
-            containedIn: []
+            )
         };
     });
-    const nonStaticEntitiesCount = 5;
+    const nonStaticEntitiesCount = 8;
     const nonStaticEntities = new Array(nonStaticEntitiesCount).fill(0).map(() => {
         const coordRands = new Array(6).fill(0).map(() => {
             const randDigit = Math.random() * entityBoxTranslationRatio;
@@ -117,8 +110,7 @@ export async function octree() {
             box: new BoundingBox(
                 new Vector3(coordRands.slice(0, 3)),
                 new Vector3(coordRands.slice(3, 6))
-            ),
-            containedIn: []
+            )
         };
     });
 
@@ -128,6 +120,20 @@ export async function octree() {
         Array.from(nonStaticEntities),
         Array.from(staticEntities)
     );
+    
+    octree.init();
+
+    const entitiesCount = staticEntities.length + nonStaticEntities.length;
+    const octants = octree.innerOctants();
+    const octantsCount = octants.length;
+
+    console.log(octree);
+    console.log(staticEntities);
+    console.log(nonStaticEntities);
+    octants.forEach((octant_i, i) => {
+        console.log(`Octant ${i} contains static entities ${octant_i.staticEntities.map(entity => staticEntities.indexOf(entity))}`);
+        console.log(`Octant ${i} contains non-static entities ${octant_i.nonStaticEntities.map(entity => nonStaticEntities.indexOf(entity))}`);
+    });
 
     const uniformEntries = [...staticEntities, ...nonStaticEntities].flatMap((entity_i, i) => {
         const {box} = entity_i;
@@ -146,12 +152,28 @@ export async function octree() {
         return [
             [`models[0].instances[${i}].u_model`, {value: mat.array}],
             [`models[0].instances[${i}].u_color`, {value: [1, 0, 0]}]
-        ]
-    });
+        ];
+    }).concat(
+        ...octants.map((octree, i) => {
+            const {region} = octree;
+            const {min, max} = region;
+            const {x: minX, y: minY, z: minZ} = min;
+            const {x: maxX, y: maxY, z: maxZ} = max;
+            const boxWidth = Math.abs(maxX - minX);
+            const boxHeight = Math.abs(maxY - minY);
+            const boxDepth = Math.abs(maxZ - minZ);
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            const centerZ = (minZ + maxZ) / 2;
+            const boxCenter = new Vector3(centerX, centerY, centerZ);
     
-    octree.init();
-
-    console.log(octree);
+            const mat = Matrix4.identity().translate(boxCenter).scale(new Vector3(boxWidth, boxHeight, boxDepth));
+            return [
+                [`models[0].instances[${entitiesCount + i}].u_model`, {value: mat.array}],
+                [`models[0].instances[${entitiesCount + i}].u_color`, {value: [0, 1, 0]}]
+            ];
+        })
+    );
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
         program: linesProgram,
@@ -163,7 +185,7 @@ export async function octree() {
         },
         uniformBuffers: [
             {
-                usage:  BufferDataUsage.STATIC_READ
+                usage: BufferDataUsage.STATIC_READ
             }
         ],
         uniformBlocks: {
@@ -190,7 +212,7 @@ export async function octree() {
         drawCommand: {
             mode: DrawMode.LINES,
             elementsCount: cubeLinesIndicesArray.length,
-            instanceCount: staticEntitiesCount + nonStaticEntitiesCount,
+            instanceCount: entitiesCount + octantsCount,
         }
     });
     if (cubePacket === null) return;

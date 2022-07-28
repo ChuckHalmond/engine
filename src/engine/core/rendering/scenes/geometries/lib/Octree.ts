@@ -8,7 +8,6 @@ const SQRT3 = Math.sqrt(3);
 
 interface OctreeEntity {
     box: BoundingBox;
-    containedIn: number[];
 }
 
 export class Octree {
@@ -36,6 +35,10 @@ export class Octree {
         this.staticEntities = staticEntities ?? [];
         this.octants = new Array(8);
         this.expanded = false;
+    }
+
+    innerOctants(): Octree[] {
+        return [this, ...this.octants.flatMap(octant => octant.innerOctants())];
     }
 
     /*set(region: BoundingBox, parent?: Octree, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]) {
@@ -173,11 +176,6 @@ export class Octree {
                 nonStaticEntities.copyWithin(i, i + 1);
                 nonStaticEntities.length--;
                 const octreeEntitiesCount = octree.nonStaticEntities.push(entity_i);
-
-                //
-                entity_i.containedIn.push(octree.id);
-                //
-                
                 if (octreeEntitiesCount > this.MAX_ENTITES) {
                     octree.expand();
                 }
@@ -226,10 +224,6 @@ export class Octree {
                         enclosingOctants.forEach(
                             (octant) => {
                                 octant.staticEntities.push(entity);
-
-                                //
-                                entity.containedIn.push(octant.id);
-                                //
                             }
                         );
                     }
@@ -241,42 +235,19 @@ export class Octree {
                     if (enclosingOctants) {
                         enclosingOctants.forEach(
                             (octant) => {
-                                console.log(`${octant.id}[min: ${Array.from(octant.region.min)}, max: ${Array.from(octant.region.max)}] encloses [min: ${Array.from(entity.box.min)}, max: ${Array.from(entity.box.max)}]`)
                                 octant.nonStaticEntities.push(entity);
-
-                                //
-                                entity.containedIn.push(octant.id);
-                                //
                             }
                         );
                     }
                 });
                 staticEntities.length = 0;
-
-                //
-                staticEntities.forEach((entity) => {
-                    const index = entity.containedIn.indexOf(this.id);
-                    entity.containedIn.copyWithin(index, index + 1);
-                    entity.containedIn.length--;
-                });
-                //
-
                 nonStaticEntities.length = 0;
-
-                //
-                nonStaticEntities.forEach((entity) => {
-                    const index = entity.containedIn.indexOf(this.id);
-                    entity.containedIn.copyWithin(index, index + 1);
-                    entity.containedIn.length--;
-                });
-                //
-
-                octants.forEach((octant) => {
+                /*octants.forEach((octant) => {
                     const {staticEntities, nonStaticEntities} = octant;
                     if (staticEntities.length + nonStaticEntities.length > this.MAX_ENTITES) {
                         octant.expand();
                     }
-                });
+                });*/
                 this.expanded = true;
             }
         }
@@ -289,38 +260,9 @@ export class Octree {
             octants.forEach((octant) => {
                 const {staticEntities: octantStaticEntities, nonStaticEntities: octantNonStaticEntities} = octant;
                 staticEntities.push(...octantStaticEntities);
-                
-                //
-                octantStaticEntities.forEach((entity) => {
-                    entity.containedIn.push(this.id);
-                });
-                //
-
                 nonStaticEntities.push(...octantNonStaticEntities);
-
-                //
-                octantNonStaticEntities.forEach((entity) => {
-                    entity.containedIn.push(this.id);
-                });
-                //
-
                 octantNonStaticEntities.length = 0;
-                //
-                octantNonStaticEntities.forEach((entity) => {
-                    const index = entity.containedIn.indexOf(octant.id);
-                    entity.containedIn.copyWithin(index, index + 1);
-                    entity.containedIn.length--;
-                });
-                //
-
                 octantStaticEntities.length = 0;
-                //
-                octantStaticEntities.forEach((entity) => {
-                    const index = entity.containedIn.indexOf(octant.id);
-                    entity.containedIn.copyWithin(index, index + 1);
-                    entity.containedIn.length--;
-                });
-                //
             });
             this.expanded = false;
         }

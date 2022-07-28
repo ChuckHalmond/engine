@@ -70,8 +70,9 @@ export class CubeGeometry extends GeometryBase {
 					const b = verticesCount + ix + gridX1 * (iy + 1);
 					const c = verticesCount + (ix + 1) + gridX1 * (iy + 1);
 					const d = verticesCount + (ix + 1) + gridX1 * iy;
-					indices.push(a, b, d);
-					indices.push(b, c, d);
+					// indices.push(a, b, d);
+					// indices.push(b, c, d);
+					indices.push(a, b, d, c);
 				}
 			}
 			verticesCount += index;
@@ -80,10 +81,10 @@ export class CubeGeometry extends GeometryBase {
 		const {length: indicesCount} = indices;
 		const verticesArray: number[] = [];
 		const uvsArray: number[][] = [];
-		for (let i = 0; i < indicesCount; i += 3) {
-			const vi1 = 3 * indices[i], vi2 = 3 * indices[i + 1], vi3 = 3 * indices[i + 2];
-			const ui1 = 2 * indices[i], ui2 = 2 * indices[i + 1], ui3 = 2 * indices[i + 2];
-			let v1 = verticesArray[vi1], v2 = verticesArray[vi2], v3 = verticesArray[vi3];
+		for (let i = 0; i < indicesCount; i += 4) {
+			const vi1 = 3 * indices[i], vi2 = 3 * indices[i + 1], vi3 = 3 * indices[i + 2], vi4 = 3 * indices[i + 3];
+			const ui1 = 2 * indices[i], ui2 = 2 * indices[i + 1], ui3 = 2 * indices[i + 2], ui4 = 2 * indices[i + 3];
+			let v1 = verticesArray[vi1], v2 = verticesArray[vi2], v3 = verticesArray[vi3], v4 = verticesArray[vi4];
 			if (v1 === undefined) {
 				v1 = builder.addVertex([vertices[vi1], vertices[vi1 + 1], vertices[vi1 + 2]]), verticesArray[vi1] = v1;
 			}
@@ -93,7 +94,11 @@ export class CubeGeometry extends GeometryBase {
 			if (v3 === undefined) {
 				v3 = builder.addVertex([vertices[vi3], vertices[vi3 + 1], vertices[vi3 + 2]]), verticesArray[vi3] = v3;
 			}
-			let uv1 = uvsArray[ui1], uv2 = uvsArray[ui2], uv3 = uvsArray[ui3];
+			//
+			if (v4 === undefined) {
+				v4 = builder.addVertex([vertices[vi4], vertices[vi4 + 1], vertices[vi4 + 2]]), verticesArray[vi4] = v4;
+			}
+			let uv1 = uvsArray[ui1], uv2 = uvsArray[ui2], uv3 = uvsArray[ui3], uv4 = uvsArray[ui4];
 			if (uv1 === undefined) {
 				uv1 = [uvs[ui1], uvs[ui1 + 1]], uvsArray[ui1] = uv1;
 			}
@@ -103,8 +108,15 @@ export class CubeGeometry extends GeometryBase {
 			if (uv3 === undefined) {
 				uv3 = [uvs[ui3], uvs[ui3 + 1]], uvsArray[ui3] = uv3;
 			}
-			builder.addTriangleFace(v1, v2, v3, {
+			//
+			if (uv4 === undefined) {
+				uv4 = [uvs[ui4], uvs[ui4 + 1]], uvsArray[ui4] = uv4;
+			}
+			/*builder.addTriangleFace(v1, v2, v3, {
 				uv: [uv1, uv2, uv3]
+			});*/
+			builder.addQuadFace(v1, v2, v3, v4, {
+				uv: [uv1, uv2, uv3, uv4]
 			});
 		}
 		
