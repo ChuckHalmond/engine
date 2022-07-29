@@ -17,7 +17,7 @@ export class Octree {
     octants: Octree[];
 
     MIN_SIZE = 1;
-    MAX_ENTITES = 8;
+    MAX_ENTITES = 10;
 
     nonStaticEntities: OctreeEntity[];
     staticEntities: OctreeEntity[];
@@ -242,12 +242,12 @@ export class Octree {
                 });
                 staticEntities.length = 0;
                 nonStaticEntities.length = 0;
-                /*octants.forEach((octant) => {
+                octants.forEach((octant) => {
                     const {staticEntities, nonStaticEntities} = octant;
                     if (staticEntities.length + nonStaticEntities.length > this.MAX_ENTITES) {
                         octant.expand();
                     }
-                });*/
+                });
                 this.expanded = true;
             }
         }

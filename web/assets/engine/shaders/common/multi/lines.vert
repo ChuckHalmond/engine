@@ -2,8 +2,8 @@
 
 #extension GL_ANGLE_multi_draw : require
 
-#define MAX_DRAW_COUNT 10
-#define MAX_INSTANCE_COUNT 40
+#define MAX_DRAW_COUNT 1
+#define MAX_INSTANCE_COUNT 250
 
 in vec4 a_position;
 

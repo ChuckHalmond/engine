@@ -47,7 +47,36 @@ export async function octree() {
       };
     }
 
-    document.body.append(playpause, canvas);
+    let updateSelection: Function;
+    let selectionMatrix = new Matrix4();
+
+    const [minXInput, minYInput, minZInput, maxXInput, maxYInput, maxZInput] = new Array(6).fill(0).map(() => {
+        const input  = document.createElement("input");
+        input.type = "number";
+        input.valueAsNumber = 0;
+        input.onchange = () => {
+            const {valueAsNumber: minX} = minXInput;
+            const {valueAsNumber: minY} = minYInput;
+            const {valueAsNumber: minZ} = minZInput;
+            const {valueAsNumber: maxX} = maxXInput;
+            const {valueAsNumber: maxY} = maxYInput;
+            const {valueAsNumber: maxZ} = maxZInput;
+            const boxWidth = Math.abs(maxX - minX);
+            const boxHeight = Math.abs(maxY - minY);
+            const boxDepth = Math.abs(maxZ - minZ);
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            const centerZ = (minZ + maxZ) / 2;
+            const boxCenter = new Vector3(centerX, centerY, centerZ);
+            const boxScaling =new Vector3(boxWidth, boxHeight, boxDepth);
+            selectionMatrix.setIdentity().translate(boxCenter).scale(boxScaling);
+        };
+        return input;
+    });
+
+    document.body.append(
+        minXInput, minYInput, minZInput, maxXInput, maxYInput, maxZInput, playpause, canvas
+    );
 
     const linesVert = await fetch("assets/engine/shaders/common/multi/lines.vert").then(resp => resp.text());
     const linesFrag = await fetch("assets/engine/shaders/common/multi/lines.frag").then(resp => resp.text());
@@ -75,7 +104,7 @@ export async function octree() {
     );
 
     const entityBoxScalingRatio = 2;
-    const entityBoxTranslationRatio = 8;
+    const entityBoxTranslationRatio = 12;
 
     const staticEntitiesCount = 8;
     const staticEntities = new Array(staticEntitiesCount).fill(0).map(() => {
@@ -86,8 +115,9 @@ export async function octree() {
         });
         const scalingRand = Math.random() * entityBoxScalingRatio;
         coordRands.forEach((coord_i, i, coords) => {
-            coords[i] = coord_i * scalingRand;
+            coords[i] = Math.round(coord_i * scalingRand);
         });
+        coordRands.sort((a, b) => a - b);
         return {
             box: new BoundingBox(
                 new Vector3(coordRands.slice(0, 3)),
@@ -104,8 +134,9 @@ export async function octree() {
         });
         const scalingRand = Math.random() * entityBoxScalingRatio;
         coordRands.forEach((coord_i, i, coords) => {
-            coords[i] = coord_i * scalingRand;
+            coords[i] = Math.round(coord_i * scalingRand);
         });
+        coordRands.sort((a, b) => a - b);
         return {
             box: new BoundingBox(
                 new Vector3(coordRands.slice(0, 3)),
@@ -124,16 +155,79 @@ export async function octree() {
     octree.init();
 
     const entitiesCount = staticEntities.length + nonStaticEntities.length;
-    const octants = octree.innerOctants();
+    const octants = octree.innerOctants().slice(1);
     const octantsCount = octants.length;
 
-    console.log(octree);
+    // const colors = [
+    //     "silver",
+    //     "gray",
+    //     "white",
+    //     "maroon",
+    //     "red",
+    //     "purple",
+    //     "fuchsia",
+    //     "green",
+    //     "lime",
+    //     "olive",
+    //     "yellow",
+    //     "navy",
+    //     "blue",
+    //     "teal",
+    //     "aqua"
+    // ];
+
+    /*console.log(octree);
     console.log(staticEntities);
-    console.log(nonStaticEntities);
-    octants.forEach((octant_i, i) => {
-        console.log(`Octant ${i} contains static entities ${octant_i.staticEntities.map(entity => staticEntities.indexOf(entity))}`);
-        console.log(`Octant ${i} contains non-static entities ${octant_i.nonStaticEntities.map(entity => nonStaticEntities.indexOf(entity))}`);
+    console.log(nonStaticEntities);*/
+    console.table(
+        octants.map((octant_i, i) => {
+            const {min, max} = octant_i.region;
+            const storedStaticEntites = octant_i.staticEntities.map(entity => staticEntities.indexOf(entity));
+            const storedNonStaticEntities = octant_i.nonStaticEntities.map(entity => nonStaticEntities.indexOf(entity));
+            const testedStaticEntities = staticEntities
+                .map((entity_i, i) => octant_i.region.hits(entity_i.box) ? i : null)
+                .filter(entity => entity !== null);
+            const testedNonStaticEntities = nonStaticEntities
+                .map((entity_i, i) => octant_i.region.hits(entity_i.box) ? i : null)
+                .filter(entity => entity !== null);
+            return {
+                min: Array.from(min).join(","),
+                max: Array.from(max).join(","),
+                storedStaticEntites: Array.from(storedStaticEntites).join(","),
+                storedNonStaticEntities: Array.from(storedNonStaticEntities).join(","),
+                testedStaticEntities: Array.from(testedStaticEntities).join(","),
+                testedNonStaticEntities: Array.from(testedNonStaticEntities).join(","),
+            };
+            /*console.log(`Octant ${i} makes region [${Array.from(min)}, ${Array.from(max)}]`);
+            console.log(`Octant ${i} contains static entities ${}`);
+            console.log(`Octant ${i} contains non-static entities ${octant_i.nonStaticEntities.map(entity => nonStaticEntities.indexOf(entity))}`);*/
+        })
+    );
+
+    console.table(
+        staticEntities.map((entity_i, i) => {
+            const {box} = entity_i;
+            const {min, max} = box;
+            return {
+                min: Array.from(min).join(","),
+                max: Array.from(max).join(","),
+            }
+        })
+    );
+
+    /*staticEntities.forEach((entity_i, i) => {
+        octants.forEach((octant_j, j) => {
+            const collides = octant_j.region.hits(entity_i.box);
+            console.log(`Static entity ${i} ${collides ? "does" : "does not"} collide with octant ${j}`);
+        });
     });
+
+    nonStaticEntities.forEach((entity_i, i) => {
+        octants.forEach((octant_j, j) => {
+            const collides = octant_j.region.hits(entity_i.box);
+            console.log(`Non-static entity ${i} ${collides ? "does" : "does not"} collide with octant ${j}`);
+        });
+    });*/
 
     const uniformEntries = [...staticEntities, ...nonStaticEntities].flatMap((entity_i, i) => {
         const {box} = entity_i;
@@ -147,10 +241,10 @@ export async function octree() {
         const centerY = (minY + maxY) / 2;
         const centerZ = (minZ + maxZ) / 2;
         const boxCenter = new Vector3(centerX, centerY, centerZ);
-
-        const mat = Matrix4.identity().translate(boxCenter).scale(new Vector3(boxWidth, boxHeight, boxDepth));
+        const boxScaling = new Vector3(boxWidth, boxHeight, boxDepth);
+        const matrix = Matrix4.identity().translate(boxCenter).scale(boxScaling);
         return [
-            [`models[0].instances[${i}].u_model`, {value: mat.array}],
+            [`models[0].instances[${i}].u_model`, {value: matrix.array}],
             [`models[0].instances[${i}].u_color`, {value: [1, 0, 0]}]
         ];
     }).concat(
@@ -166,14 +260,17 @@ export async function octree() {
             const centerY = (minY + maxY) / 2;
             const centerZ = (minZ + maxZ) / 2;
             const boxCenter = new Vector3(centerX, centerY, centerZ);
-    
-            const mat = Matrix4.identity().translate(boxCenter).scale(new Vector3(boxWidth, boxHeight, boxDepth));
+            const boxScaling =new Vector3(boxWidth, boxHeight, boxDepth);
+            const matrix = Matrix4.identity().translate(boxCenter).scale(boxScaling);
             return [
-                [`models[0].instances[${entitiesCount + i}].u_model`, {value: mat.array}],
+                [`models[0].instances[${entitiesCount + i}].u_model`, {value: matrix.array}],
                 [`models[0].instances[${entitiesCount + i}].u_color`, {value: [0, 1, 0]}]
             ];
         })
-    );
+    ).concat([
+        [`models[0].instances[${entitiesCount + octantsCount}].u_model`, {value: selectionMatrix.array}],
+        [`models[0].instances[${entitiesCount + octantsCount}].u_color`, {value: [0, 0, 1]}]
+    ]);
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
         program: linesProgram,
@@ -212,7 +309,7 @@ export async function octree() {
         drawCommand: {
             mode: DrawMode.LINES,
             elementsCount: cubeLinesIndicesArray.length,
-            instanceCount: entitiesCount + octantsCount,
+            instanceCount: entitiesCount + octantsCount + 1,
         }
     });
     if (cubePacket === null) return;
@@ -243,6 +340,16 @@ export async function octree() {
                     uniforms: {
                         u_view: { value: camera.view.array },
                         u_projection: { value: camera.projection.array }
+                    }
+                }
+            }
+        });
+
+        WebGLPacketUtilities.setPacketValues(gl, cubePacket, {
+            uniformBlocks: {
+                basicModelBlock: {
+                    uniforms: {
+                        [`models[0].instances[${entitiesCount + octantsCount}].u_model`]: {value: selectionMatrix.array}
                     }
                 }
             }
