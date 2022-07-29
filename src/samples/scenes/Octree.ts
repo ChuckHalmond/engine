@@ -97,7 +97,7 @@ export async function octree() {
     const cubeLinesArray = cubeGeometryBuilder.verticesArray();
     const cubeLinesIndicesArray = cubeGeometryBuilder.linesIndicesArray();
 
-    const rootScaling = 16;
+    const rootScaling = 32;
     const rootBox = new BoundingBox(
         new Vector3(-rootScaling, -rootScaling, -rootScaling),
         new Vector3(rootScaling, rootScaling, rootScaling)
@@ -106,7 +106,7 @@ export async function octree() {
     const entityBoxScalingRatio = 2;
     const entityBoxTranslationRatio = 12;
 
-    const staticEntitiesCount = 8;
+    const staticEntitiesCount = 16;
     const staticEntities = new Array(staticEntitiesCount).fill(0).map(() => {
         const coordRands = new Array(6).fill(0).map(() => {
             const randDigit = Math.random() * entityBoxTranslationRatio;
@@ -125,7 +125,7 @@ export async function octree() {
             )
         };
     });
-    const nonStaticEntitiesCount = 8;
+    const nonStaticEntitiesCount = 16;
     const nonStaticEntities = new Array(nonStaticEntitiesCount).fill(0).map(() => {
         const coordRands = new Array(6).fill(0).map(() => {
             const randDigit = Math.random() * entityBoxTranslationRatio;
@@ -157,6 +157,7 @@ export async function octree() {
     const entitiesCount = staticEntities.length + nonStaticEntities.length;
     const octants = octree.innerOctants().slice(1);
     const octantsCount = octants.length;
+    const instancesCount = entitiesCount + octantsCount + 1;
 
     // const colors = [
     //     "silver",
@@ -191,6 +192,7 @@ export async function octree() {
                 .map((entity_i, i) => octant_i.region.hits(entity_i.box) ? i : null)
                 .filter(entity => entity !== null);
             return {
+                size: min.distance(max),
                 min: Array.from(min).join(","),
                 max: Array.from(max).join(","),
                 storedStaticEntites: Array.from(storedStaticEntites).join(","),
@@ -244,8 +246,8 @@ export async function octree() {
         const boxScaling = new Vector3(boxWidth, boxHeight, boxDepth);
         const matrix = Matrix4.identity().translate(boxCenter).scale(boxScaling);
         return [
-            [`models[0].instances[${i}].u_model`, {value: matrix.array}],
-            [`models[0].instances[${i}].u_color`, {value: [1, 0, 0]}]
+            [`instances[${i}].u_model`, {value: matrix.array}],
+            [`instances[${i}].u_color`, {value: [1, 0, 0]}]
         ];
     }).concat(
         ...octants.map((octree, i) => {
@@ -263,13 +265,13 @@ export async function octree() {
             const boxScaling =new Vector3(boxWidth, boxHeight, boxDepth);
             const matrix = Matrix4.identity().translate(boxCenter).scale(boxScaling);
             return [
-                [`models[0].instances[${entitiesCount + i}].u_model`, {value: matrix.array}],
-                [`models[0].instances[${entitiesCount + i}].u_color`, {value: [0, 1, 0]}]
+                [`instances[${entitiesCount + i}].u_model`, {value: matrix.array}],
+                [`instances[${entitiesCount + i}].u_color`, {value: [0, 1, 0]}]
             ];
         })
     ).concat([
-        [`models[0].instances[${entitiesCount + octantsCount}].u_model`, {value: selectionMatrix.array}],
-        [`models[0].instances[${entitiesCount + octantsCount}].u_color`, {value: [0, 0, 1]}]
+        [`instances[${entitiesCount + octantsCount}].u_model`, {value: selectionMatrix.array}],
+        [`instances[${entitiesCount + octantsCount}].u_color`, {value: [0, 0, 1]}]
     ]);
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
@@ -289,14 +291,14 @@ export async function octree() {
             basicModelBlock: {
                 buffer: 0,
                 uniforms: Object.fromEntries(uniformEntries)/*{
-                    "models[0].instances[0].u_model": { value: cubeTransform.matrix.array },
-                    "models[0].instances[0].u_color": { value: [1, 0, 0] },
-                    "models[1].instances[0].u_model": { value: quadTransform.matrix.array },
-                    "models[1].instances[0].u_color": { value: [0, 1, 0] },
-                    "models[0].instances[1].u_model": { value: cubeTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
-                    "models[0].instances[1].u_color": { value: [0, 0, 1] },
-                    "models[1].instances[1].u_model": { value: quadTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
-                    "models[1].instances[1].u_color": { value: [0, 1, 1] }
+                    "instances[0].u_model": { value: cubeTransform.matrix.array },
+                    "instances[0].u_color": { value: [1, 0, 0] },
+                    "instances[0].u_model": { value: quadTransform.matrix.array },
+                    "instances[0].u_color": { value: [0, 1, 0] },
+                    "instances[1].u_model": { value: cubeTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
+                    "instances[1].u_color": { value: [0, 0, 1] },
+                    "instances[1].u_model": { value: quadTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
+                    "instances[1].u_color": { value: [0, 1, 1] }
                 }*/
             },
             viewBlock: {
@@ -309,7 +311,7 @@ export async function octree() {
         drawCommand: {
             mode: DrawMode.LINES,
             elementsCount: cubeLinesIndicesArray.length,
-            instanceCount: entitiesCount + octantsCount + 1,
+            instanceCount: instancesCount
         }
     });
     if (cubePacket === null) return;
@@ -349,7 +351,7 @@ export async function octree() {
             uniformBlocks: {
                 basicModelBlock: {
                     uniforms: {
-                        [`models[0].instances[${entitiesCount + octantsCount}].u_model`]: {value: selectionMatrix.array}
+                        [`instances[${instancesCount - 1}].u_model`]: {value: selectionMatrix.array}
                     }
                 }
             }

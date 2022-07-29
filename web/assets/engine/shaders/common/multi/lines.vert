@@ -2,8 +2,7 @@
 
 #extension GL_ANGLE_multi_draw : require
 
-#define MAX_DRAW_COUNT 1
-#define MAX_INSTANCE_COUNT 250
+#define MAX_INSTANCE_COUNT 640
 
 in vec4 a_position;
 
@@ -19,18 +18,14 @@ struct BasicModelInstance {
   vec3 u_color;
 };
 
-struct BasicModel {
+uniform basicModelBlock {
   BasicModelInstance instances[MAX_INSTANCE_COUNT];
 };
 
-uniform basicModelBlock {
-  BasicModel models[MAX_DRAW_COUNT];
-};
-
 void main() {
-  BasicModelInstance basicModel = models[gl_DrawID].instances[gl_InstanceID];
-  mat4 model = basicModel.u_model;
-  vec3 color = basicModel.u_color;
-  gl_Position = u_projection * u_view  * model * a_position;
+  // see Uniform Block to StructuredBuffer Translation in chrome
+  mat4 model = instances[gl_InstanceID].u_model;
+  vec3 color = instances[gl_InstanceID].u_color;
+  gl_Position = u_projection * u_view * model * a_position;
   v_color = color;
 }

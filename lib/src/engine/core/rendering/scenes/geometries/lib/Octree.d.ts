@@ -7,7 +7,7 @@ export declare class Octree {
     region: BoundingBox;
     parent: Octree | null;
     octants: Octree[];
-    MIN_SIZE: number;
+    MAX_DEPTH: number;
     MAX_ENTITES: number;
     nonStaticEntities: OctreeEntity[];
     staticEntities: OctreeEntity[];
@@ -15,6 +15,7 @@ export declare class Octree {
     id: number;
     static count: number;
     constructor(region: BoundingBox, parent?: Octree | null, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]);
+    get depth(): number;
     innerOctants(): Octree[];
     entitiesWithinFrustrum(frustrum: Frustrum): IterableIterator<OctreeEntity>;
     init(): void;

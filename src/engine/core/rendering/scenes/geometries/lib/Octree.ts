@@ -4,8 +4,6 @@ import { BoundingBox } from "../bounding/BoundingBox";
 
 const tempVector = new Vector3();
 
-const SQRT3 = Math.sqrt(3);
-
 interface OctreeEntity {
     box: BoundingBox;
 }
@@ -16,7 +14,7 @@ export class Octree {
     parent: Octree | null;
     octants: Octree[];
 
-    MIN_SIZE = 1;
+    MAX_DEPTH = 3;
     MAX_ENTITES = 10;
 
     nonStaticEntities: OctreeEntity[];
@@ -35,6 +33,10 @@ export class Octree {
         this.staticEntities = staticEntities ?? [];
         this.octants = new Array(8);
         this.expanded = false;
+    }
+
+    get depth(): number {
+        return (this.parent?.depth ?? -1) + 1;
     }
 
     innerOctants(): Octree[] {
@@ -196,11 +198,14 @@ export class Octree {
     }
 
     expand(): void {
-        const {expanded} = this;
+        const {expanded, depth} = this;
         if (!expanded) {
             const {region} = this;
             const {min, max} = region;
-            if (min.distance(max) > SQRT3 * this.MIN_SIZE) {
+            if (/*min.distance(max) > SQRT3 **/ depth < this.MAX_DEPTH) {
+                
+                console.log(depth);
+                console.log("expand");
                 const {octants, staticEntities, nonStaticEntities} = this;
                 const {x: minX, y: minY, z: minZ} = min;
                 const {x: maxX, y: maxY, z: maxZ} = max;
@@ -240,8 +245,8 @@ export class Octree {
                         );
                     }
                 });
-                staticEntities.length = 0;
-                nonStaticEntities.length = 0;
+                staticEntities.splice(0);
+                nonStaticEntities.splice(0);
                 octants.forEach((octant) => {
                     const {staticEntities, nonStaticEntities} = octant;
                     if (staticEntities.length + nonStaticEntities.length > this.MAX_ENTITES) {
@@ -256,13 +261,14 @@ export class Octree {
     collapse(): void {
         const {expanded} = this;
         if (expanded) {
+            console.log("collapse");
             const {octants, staticEntities, nonStaticEntities} = this;
             octants.forEach((octant) => {
                 const {staticEntities: octantStaticEntities, nonStaticEntities: octantNonStaticEntities} = octant;
                 staticEntities.push(...octantStaticEntities);
                 nonStaticEntities.push(...octantNonStaticEntities);
-                octantNonStaticEntities.length = 0;
-                octantStaticEntities.length = 0;
+                octantStaticEntities.splice(0);
+                octantNonStaticEntities.splice(0);
             });
             this.expanded = false;
         }
