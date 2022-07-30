@@ -10,7 +10,6 @@ export class OrthographicCamera extends CameraBase {
         top: number,
         near: number,
         far: number) {
-        
         super(Matrix4.orthographic(left, right, bottom, top, near, far));
     }
 
@@ -22,7 +21,7 @@ export class OrthographicCamera extends CameraBase {
         near: number,
         far: number): Camera {
         
-        this._projection.setOrthographic(left, right, bottom, top, near, far);
+        this.projection.setOrthographic(left, right, bottom, top, near, far);
         this.updateFrustrum();
         return this;
     }

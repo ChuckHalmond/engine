@@ -13,30 +13,27 @@ interface Camera extends Object3D {
   readonly uuid: UUID;
   readonly viewProjection: Matrix4;
   readonly projection: Matrix4;
-  readonly view: Matrix4
+  readonly view: Matrix4;
+  readonly frustrum: Frustrum;
   isViewing(mesh: Mesh): boolean;
 }
 
 class CameraBase extends Object3DBase {
     readonly uuid: UUID;
-    protected _projection: Matrix4;
-    private _frustrum: Frustrum;
+    readonly projection: Matrix4;
+    readonly frustrum: Frustrum;
   
     constructor()
     constructor(projection: Matrix4)
     constructor(projection?: Matrix4) {
       super();
       this.uuid = UUIDGenerator.newUUID();
-      this._projection = projection || new Matrix4();
-      this._frustrum = new Frustrum().setFromPerspectiveMatrix(this._projection);
+      this.projection = projection || new Matrix4();
+      this.frustrum = new Frustrum().setFromPerspectiveMatrix(this.projection);
     }
 
     getFront(vector: Vector3): Vector3 {
       return this.transform.getBackward(vector);
-    }
-
-    get projection(): Matrix4 {
-      return this._projection.clone();
     }
 
     get view(): Matrix4 {
@@ -57,6 +54,6 @@ class CameraBase extends Object3DBase {
     }
 
     protected updateFrustrum(): void {
-      this._frustrum.setFromPerspectiveMatrix(this._projection);
+      this.frustrum.setFromPerspectiveMatrix(this.projection);
     }
 }

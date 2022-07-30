@@ -86,7 +86,7 @@ export async function octree() {
     const fov = (1 / 3) * Math.PI;
     const aspect = canvas.width / canvas.height;
     const zNear = 0.1;
-    const zFar = 100;
+    const zFar = 1000;
 
     const camera = new PerspectiveCamera(fov, aspect, zNear, zFar);
     camera.transform.setTranslation(new Vector3([0, 0, 25]));
@@ -104,14 +104,12 @@ export async function octree() {
     );
 
     const entityBoxScalingRatio = 2;
-    const entityBoxTranslationRatio = 12;
+    const entityBoxTranslationRatio = rootScaling - 2;
 
     const staticEntitiesCount = 16;
     const staticEntities = new Array(staticEntitiesCount).fill(0).map(() => {
         const coordRands = new Array(6).fill(0).map(() => {
-            const randDigit = Math.random() * entityBoxTranslationRatio;
-            const randSign = Math.sign(Math.random() - 0.5);
-            return randDigit * randSign;
+            return Math.random() * entityBoxTranslationRatio * Math.sign(Math.random() - 0.5);
         });
         const scalingRand = Math.random() * entityBoxScalingRatio;
         coordRands.forEach((coord_i, i, coords) => {
@@ -128,9 +126,7 @@ export async function octree() {
     const nonStaticEntitiesCount = 16;
     const nonStaticEntities = new Array(nonStaticEntitiesCount).fill(0).map(() => {
         const coordRands = new Array(6).fill(0).map(() => {
-            const randDigit = Math.random() * entityBoxTranslationRatio;
-            const randSign = Math.sign(Math.random() - 0.5);
-            return randDigit * randSign;
+            return Math.random() * entityBoxTranslationRatio * Math.sign(Math.random() - 0.5);
         });
         const scalingRand = Math.random() * entityBoxScalingRatio;
         coordRands.forEach((coord_i, i, coords) => {
@@ -182,6 +178,7 @@ export async function octree() {
     console.log(nonStaticEntities);*/
     console.table(
         octants.map((octant_i, i) => {
+            const {id} = octant_i;
             const {min, max} = octant_i.region;
             const storedStaticEntites = octant_i.staticEntities.map(entity => staticEntities.indexOf(entity));
             const storedNonStaticEntities = octant_i.nonStaticEntities.map(entity => nonStaticEntities.indexOf(entity));
@@ -192,6 +189,7 @@ export async function octree() {
                 .map((entity_i, i) => octant_i.region.hits(entity_i.box) ? i : null)
                 .filter(entity => entity !== null);
             return {
+                id,
                 size: min.distance(max),
                 min: Array.from(min).join(","),
                 max: Array.from(max).join(","),
@@ -262,7 +260,7 @@ export async function octree() {
             const centerY = (minY + maxY) / 2;
             const centerZ = (minZ + maxZ) / 2;
             const boxCenter = new Vector3(centerX, centerY, centerZ);
-            const boxScaling =new Vector3(boxWidth, boxHeight, boxDepth);
+            const boxScaling = new Vector3(boxWidth, boxHeight, boxDepth);
             const matrix = Matrix4.identity().translate(boxCenter).scale(boxScaling);
             return [
                 [`instances[${entitiesCount + i}].u_model`, {value: matrix.array}],

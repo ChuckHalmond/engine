@@ -19,7 +19,7 @@ export class Octree {
 
     nonStaticEntities: OctreeEntity[];
     staticEntities: OctreeEntity[];
-
+    
     expanded: boolean;
     id: number;
 
@@ -203,8 +203,6 @@ export class Octree {
             const {region} = this;
             const {min, max} = region;
             if (/*min.distance(max) > SQRT3 **/ depth < this.MAX_DEPTH) {
-                
-                console.log(depth);
                 console.log("expand");
                 const {octants, staticEntities, nonStaticEntities} = this;
                 const {x: minX, y: minY, z: minZ} = min;
@@ -212,14 +210,13 @@ export class Octree {
                 const centerX = (minX + maxX) / 2;
                 const centerY = (minY + maxY) / 2;
                 const centerZ = (minZ + maxZ) / 2;
-                const center = new Vector3(centerX, centerY, centerZ);
-                octants[0] = new Octree(new BoundingBox(min, center), this);
+                octants[0] = new Octree(new BoundingBox(new Vector3(minX, minY, minZ), new Vector3(centerX, centerY, centerZ)), this);
                 octants[1] = new Octree(new BoundingBox(new Vector3(centerX, minY, minZ), new Vector3(maxX, centerY, centerZ)), this);
                 octants[2] = new Octree(new BoundingBox(new Vector3(centerX, minY, centerZ), new Vector3(maxX, centerY, maxZ)), this);
                 octants[3] = new Octree(new BoundingBox(new Vector3(minX, minY, centerZ), new Vector3(centerX, centerY, maxZ)), this);
                 octants[4] = new Octree(new BoundingBox(new Vector3(minX, centerY, minZ), new Vector3(centerX, maxY, centerZ)), this);
                 octants[5] = new Octree(new BoundingBox(new Vector3(centerX, centerY, minZ), new Vector3(maxX, maxY, centerZ)), this);
-                octants[6] = new Octree(new BoundingBox(center, max), this);
+                octants[6] = new Octree(new BoundingBox(new Vector3(centerX, centerY, centerZ), new Vector3(maxX, maxY, maxZ)), this);
                 octants[7] = new Octree(new BoundingBox(new Vector3(minX, centerY, centerZ), new Vector3(centerX, maxY, maxZ)), this);
                 staticEntities.forEach((entity) => {
                     const enclosingOctants = octants.filter(
@@ -227,9 +224,7 @@ export class Octree {
                     );
                     if (enclosingOctants) {
                         enclosingOctants.forEach(
-                            (octant) => {
-                                octant.staticEntities.push(entity);
-                            }
+                            (octant) => octant.staticEntities.push(entity)
                         );
                     }
                 });
@@ -239,14 +234,12 @@ export class Octree {
                     );
                     if (enclosingOctants) {
                         enclosingOctants.forEach(
-                            (octant) => {
-                                octant.nonStaticEntities.push(entity);
-                            }
+                            (octant) => octant.nonStaticEntities.push(entity)
                         );
                     }
                 });
-                staticEntities.splice(0);
-                nonStaticEntities.splice(0);
+                staticEntities.length = 0;
+                nonStaticEntities.length = 0;
                 octants.forEach((octant) => {
                     const {staticEntities, nonStaticEntities} = octant;
                     if (staticEntities.length + nonStaticEntities.length > this.MAX_ENTITES) {

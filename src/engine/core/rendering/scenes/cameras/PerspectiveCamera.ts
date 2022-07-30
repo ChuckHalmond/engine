@@ -17,7 +17,7 @@ export class PerspectiveCamera extends CameraBase {
         zNear: number,
         zFar: number): PerspectiveCamera
     {
-        this._projection.setPerspective(fov, aspect, zNear, zFar);
+        this.projection.setPerspective(fov, aspect, zNear, zFar);
         this.updateFrustrum();
         return this;
     }
