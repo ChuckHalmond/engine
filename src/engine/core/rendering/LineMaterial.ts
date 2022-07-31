@@ -2,6 +2,12 @@ import { Color } from "../../libs/graphics/colors/Color";
 
 export { LineMaterial };
 
+declare global {
+    interface Materials {
+        "line": LineMaterial;
+    }
+}
+
 interface LineMaterialProperties {
     color?: Color;
 }
