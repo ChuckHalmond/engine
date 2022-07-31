@@ -1,4 +1,3 @@
-import { Octree } from "./scenes/geometries/lib/Octree";
 
 interface RenderingSystem {
 

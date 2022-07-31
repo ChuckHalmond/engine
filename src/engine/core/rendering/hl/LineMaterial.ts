@@ -1,4 +1,4 @@
-import { Color } from "../../libs/graphics/colors/Color";
+import { Color } from "../../../libs/graphics/colors/Color";
 
 export { LineMaterial };
 

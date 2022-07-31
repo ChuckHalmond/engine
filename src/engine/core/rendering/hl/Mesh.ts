@@ -1,4 +1,4 @@
-import { Geometry } from "./scenes/geometries/Geometry";
+import { Geometry } from "../scenes/geometries/Geometry";
 
 export { Mesh };
 
