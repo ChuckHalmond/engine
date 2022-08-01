@@ -25,8 +25,8 @@ export async function octree() {
     canvas.oncontextmenu = () => {
         return false;
     };
-    canvas.width = 600;
-    canvas.height = 500;
+    canvas.width = 1000;
+    canvas.height = 800;
     const gl = canvas.getContext("webgl2");
     if (gl == null) {
         return;
@@ -104,9 +104,9 @@ export async function octree() {
     );
 
     const entityBoxScalingRatio = 2;
-    const entityBoxTranslationRatio = rootScaling - 2;
+    const entityBoxTranslationRatio = rootScaling - 4;
 
-    const staticEntitiesCount = 16;
+    const staticEntitiesCount = 8;
     const staticEntities = new Array(staticEntitiesCount).fill(0).map(() => {
         const coordRands = new Array(6).fill(0).map(() => {
             return Math.random() * entityBoxTranslationRatio * Math.sign(Math.random() - 0.5);
@@ -123,7 +123,7 @@ export async function octree() {
             )
         };
     });
-    const nonStaticEntitiesCount = 16;
+    const nonStaticEntitiesCount = 8;
     const nonStaticEntities = new Array(nonStaticEntitiesCount).fill(0).map(() => {
         const coordRands = new Array(6).fill(0).map(() => {
             return Math.random() * entityBoxTranslationRatio * Math.sign(Math.random() - 0.5);
