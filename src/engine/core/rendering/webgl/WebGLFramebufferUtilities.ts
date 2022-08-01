@@ -143,7 +143,7 @@ export class WebGLFramebufferUtilities {
         };
     }
 
-    static createRenderbuffer(gl: WebGL2RenderingContext, props: RenderbufferProperties): Renderbuffer | null {
+    static createRenderbuffer(gl: WebGL2RenderingContext, properties: RenderbufferProperties): Renderbuffer | null {
         const internalRenderbuffer = gl.createRenderbuffer();
         if (internalRenderbuffer === null) {
             return null;
@@ -151,16 +151,17 @@ export class WebGLFramebufferUtilities {
 
         gl.bindRenderbuffer(gl.RENDERBUFFER, internalRenderbuffer);
         
-        if (typeof props.samples !== "undefined") {
-            gl.renderbufferStorageMultisample(gl.RENDERBUFFER, props.samples, props.internalFormat, props.width, props.height);
+        const {samples, internalFormat, width, height} = properties;
+        if (typeof samples !== "undefined") {
+            gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, internalFormat, width, height);
         }
         else {
-            gl.renderbufferStorage(gl.RENDERBUFFER, props.internalFormat, props.width, props.height);
+            gl.renderbufferStorage(gl.RENDERBUFFER, internalFormat, width, height);
         }
         gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 
         return {
-            ...props,
+            ...properties,
             internalRenderbuffer
         };
     }

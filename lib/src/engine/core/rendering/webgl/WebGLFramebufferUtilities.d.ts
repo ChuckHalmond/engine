@@ -118,7 +118,7 @@ declare type FramebufferRenderbufferAttachmentProperties = {
 declare type FramebufferRenderbufferAttachment = FramebufferRenderbufferAttachmentProperties & Framebuffer;
 export declare class WebGLFramebufferUtilities {
     static createFramebuffer(gl: WebGL2RenderingContext): Framebuffer | null;
-    static createRenderbuffer(gl: WebGL2RenderingContext, props: RenderbufferProperties): Renderbuffer | null;
+    static createRenderbuffer(gl: WebGL2RenderingContext, properties: RenderbufferProperties): Renderbuffer | null;
     static attachTexture(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...properties: FramebufferTextureAttachmentProperties[]): FramebufferTextureAttachment[];
     static drawBuffers(gl: WebGL2RenderingContext, framebuffer: Framebuffer, drawBuffers: DrawBuffer[]): void;
     static attachRenderbuffer(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...props: FramebufferRenderbufferAttachmentProperties[]): FramebufferRenderbufferAttachment[];
