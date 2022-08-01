@@ -78,6 +78,27 @@ export enum RenderbufferPixelFormat {
     STENCIL_INDEX8 = 0x8D48
 }
 
+export enum DrawBuffer {
+    NONE = 0x0000,
+    BACK = 0x0405,
+    COLOR_ATTACHMENT0 = 0x8CE0,
+    COLOR_ATTACHMENT1 = 0x8CE1,
+    COLOR_ATTACHMENT2 = 0x8CE2,
+    COLOR_ATTACHMENT3 = 0x8CE3,
+    COLOR_ATTACHMENT4 = 0x8CE4,
+    COLOR_ATTACHMENT5 = 0x8CE5,
+    COLOR_ATTACHMENT6 = 0x8CE6,
+    COLOR_ATTACHMENT7 = 0x8CE7,
+    COLOR_ATTACHMENT8 = 0x8CE8,
+    COLOR_ATTACHMENT9 = 0x8CE9,
+    COLOR_ATTACHMENT10 = 0x8CEA,
+    COLOR_ATTACHMENT11 = 0x8CEB,
+    COLOR_ATTACHMENT12 = 0x8CEC,
+    COLOR_ATTACHMENT13 = 0x8CED,
+    COLOR_ATTACHMENT14 = 0x8CEE,
+    COLOR_ATTACHMENT15 = 0x8CEF,
+
+}
 export type Renderbuffer = {
     internalRenderbuffer: WebGLRenderbuffer;
 }
@@ -144,17 +165,19 @@ export class WebGLFramebufferUtilities {
         };
     }
 
-    static attachTexture(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...props: FramebufferTextureAttachmentProperties[]): FramebufferTextureAttachment[] {
+    static attachTexture(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...properties: FramebufferTextureAttachmentProperties[]): FramebufferTextureAttachment[] {
         const {internalFramebuffer} = framebuffer;
         const currentFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
         if (currentFramebuffer !== internalFramebuffer) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, internalFramebuffer);
         }
         
-        const attachments = props.map((props) => {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, props.attachment, props.textureTarget, props.texture.internalTexture, 0);
+        const attachments = properties.map((properties) => {
+            const {attachment, textureTarget, texture} = properties;
+            const {internalTexture} = texture;
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, textureTarget, internalTexture, 0);
             return {
-                ...props,
+                ...properties,
                 ...framebuffer
             };
         });
@@ -164,7 +187,26 @@ export class WebGLFramebufferUtilities {
             console.warn(`Incomplete framebuffer status: ${FramebufferStatus[status]}`);
         }
 
+        this.unbindFramebuffer(gl);
+
         return attachments;
+    }
+
+    static drawBuffers(gl: WebGL2RenderingContext, framebuffer: Framebuffer, drawBuffers: DrawBuffer[]): void {
+        const {internalFramebuffer} = framebuffer;
+        const currentFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+        if (currentFramebuffer !== internalFramebuffer) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, internalFramebuffer);
+        }
+        
+        gl.drawBuffers(drawBuffers);
+
+        const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        if (status !== FramebufferStatus.FRAMEBUFFER_COMPLETE) {
+            console.warn(`Incomplete framebuffer status: ${FramebufferStatus[status]}`);
+        }
+
+        this.unbindFramebuffer(gl);
     }
 
     static attachRenderbuffer(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...props: FramebufferRenderbufferAttachmentProperties[]): FramebufferRenderbufferAttachment[] {
@@ -187,6 +229,8 @@ export class WebGLFramebufferUtilities {
             console.warn(`Incomplete framebuffer status: ${FramebufferStatus[status]}`);
         }
 
+        this.unbindFramebuffer(gl);
+
         return attachments;
     }
 
@@ -204,6 +248,8 @@ export class WebGLFramebufferUtilities {
         }
         
         gl.blitFramebuffer(readRectangle[0], readRectangle[1], readRectangle[2], readRectangle[3], drawRectangle[0], drawRectangle[1], drawRectangle[2], drawRectangle[3], mask, filter);
+
+        this.unbindFramebuffer(gl);
     }
 
     static readPixels(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number, format: TexturePixelFormat, type: TexturePixelType, pixels: ArrayBufferView): void {

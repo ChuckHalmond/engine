@@ -14,6 +14,13 @@ export enum BufferMask {
     COLOR_BUFFER_BIT = 0x00004000
 }
 
+export enum Buffer {
+    COLOR = 0x1800,
+    DEPTH = 0x1801,
+    STENCIL = 0x1802,
+    DEPTH_STENCIL = 0x84F9
+}
+
 export enum TestFunction {
     NEVER = 0x0200,
     LESS = 0x0201,
@@ -140,6 +147,10 @@ export class WebGLRendererUtilities {
         gl.colorMask(red, green, blue, alpha);
     }
 
+    static depthMask(gl: WebGL2RenderingContext, flag: boolean) {
+        gl.depthMask(flag);
+    }
+
     static enable(gl: WebGL2RenderingContext, capability: Capabilities): void {
         gl.enable(capability);
     }
@@ -158,5 +169,21 @@ export class WebGLRendererUtilities {
 
     static getMaxSamples(gl: WebGL2RenderingContext): number {
         return gl.getParameter(gl.MAX_SAMPLES) as number;
+    }
+
+    static drawBuffers(gl: WebGL2RenderingContext, buffers: Iterable<number>): void {
+        gl.drawBuffers(buffers);
+    }
+
+    static clearBuffers(gl: WebGL2RenderingContext, buffer: Buffer, index: number, values: Float32Array | Int32Array | Uint32Array, srcOffset?: number): void {
+        if (values instanceof Float32Array) {
+            gl.clearBufferfv(buffer, index, values, srcOffset);
+        }
+        else if (values instanceof Int32Array) {
+            gl.clearBufferiv(buffer, index, values, srcOffset);
+        }
+        else if (values instanceof Uint32Array) {
+            gl.clearBufferuiv(buffer, index, values, srcOffset);
+        }
     }
 }

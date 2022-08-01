@@ -73,6 +73,26 @@ export declare enum RenderbufferPixelFormat {
     DEPTH32F_STENCIL8 = 36013,
     STENCIL_INDEX8 = 36168
 }
+export declare enum DrawBuffer {
+    NONE = 0,
+    BACK = 1029,
+    COLOR_ATTACHMENT0 = 36064,
+    COLOR_ATTACHMENT1 = 36065,
+    COLOR_ATTACHMENT2 = 36066,
+    COLOR_ATTACHMENT3 = 36067,
+    COLOR_ATTACHMENT4 = 36068,
+    COLOR_ATTACHMENT5 = 36069,
+    COLOR_ATTACHMENT6 = 36070,
+    COLOR_ATTACHMENT7 = 36071,
+    COLOR_ATTACHMENT8 = 36072,
+    COLOR_ATTACHMENT9 = 36073,
+    COLOR_ATTACHMENT10 = 36074,
+    COLOR_ATTACHMENT11 = 36075,
+    COLOR_ATTACHMENT12 = 36076,
+    COLOR_ATTACHMENT13 = 36077,
+    COLOR_ATTACHMENT14 = 36078,
+    COLOR_ATTACHMENT15 = 36079
+}
 export declare type Renderbuffer = {
     internalRenderbuffer: WebGLRenderbuffer;
 };
@@ -99,7 +119,8 @@ declare type FramebufferRenderbufferAttachment = FramebufferRenderbufferAttachme
 export declare class WebGLFramebufferUtilities {
     static createFramebuffer(gl: WebGL2RenderingContext): Framebuffer | null;
     static createRenderbuffer(gl: WebGL2RenderingContext, props: RenderbufferProperties): Renderbuffer | null;
-    static attachTexture(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...props: FramebufferTextureAttachmentProperties[]): FramebufferTextureAttachment[];
+    static attachTexture(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...properties: FramebufferTextureAttachmentProperties[]): FramebufferTextureAttachment[];
+    static drawBuffers(gl: WebGL2RenderingContext, framebuffer: Framebuffer, drawBuffers: DrawBuffer[]): void;
     static attachRenderbuffer(gl: WebGL2RenderingContext, framebuffer: Framebuffer, ...props: FramebufferRenderbufferAttachmentProperties[]): FramebufferRenderbufferAttachment[];
     static blit(gl: WebGL2RenderingContext, readFramebuffer: Framebuffer | null, drawFramebuffer: Framebuffer | null, readRectangle: number[], drawRectangle: number[], mask: BufferMask, filter: TextureMagFilter): void;
     static readPixels(gl: WebGL2RenderingContext, x: number, y: number, width: number, height: number, format: TexturePixelFormat, type: TexturePixelType, pixels: ArrayBufferView): void;

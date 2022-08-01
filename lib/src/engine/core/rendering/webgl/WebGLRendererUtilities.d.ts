@@ -12,6 +12,12 @@ export declare enum BufferMask {
     STENCIL_BUFFER_BIT = 1024,
     COLOR_BUFFER_BIT = 16384
 }
+export declare enum Buffer {
+    COLOR = 6144,
+    DEPTH = 6145,
+    STENCIL = 6146,
+    DEPTH_STENCIL = 34041
+}
 export declare enum TestFunction {
     NEVER = 512,
     LESS = 513,
@@ -90,9 +96,12 @@ export declare class WebGLRendererUtilities {
     static stencilOperations(gl: WebGL2RenderingContext, fail: StencilAction, zFail: StencilAction, zPass: StencilAction, face: Face): void;
     static stencilMask(gl: WebGL2RenderingContext, mask: number, face: Face): void;
     static colorMask(gl: WebGL2RenderingContext, red: boolean, green: boolean, blue: boolean, alpha: boolean): void;
+    static depthMask(gl: WebGL2RenderingContext, flag: boolean): void;
     static enable(gl: WebGL2RenderingContext, capability: Capabilities): void;
     static disable(gl: WebGL2RenderingContext, capability: Capabilities): void;
     static clear(gl: WebGL2RenderingContext, buffer: BufferMask): void;
     static getViewport(gl: WebGL2RenderingContext): Int32Array;
     static getMaxSamples(gl: WebGL2RenderingContext): number;
+    static drawBuffers(gl: WebGL2RenderingContext, buffers: Iterable<number>): void;
+    static clearBuffers(gl: WebGL2RenderingContext, buffer: Buffer, index: number, values: Float32Array | Int32Array | Uint32Array, srcOffset?: number): void;
 }
