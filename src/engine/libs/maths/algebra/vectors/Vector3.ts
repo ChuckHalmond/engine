@@ -319,29 +319,28 @@ class Vector3Base implements Vector3 {
 	}
 
 	negate(): this {
-		this.array[0] *= -1;
-		this.array[1] *= -1;
-		this.array[2] *= -1;
-
+		const {array} = this;
+		array[0] *= -1;
+		array[1] *= -1;
+		array[2] *= -1;
 		return this;
 	}
 
 	mult(mat: Matrix3): this
 	mult(vec: Vector3): this
 	mult(arg0: Matrix3 | Vector3): this {
+		const {array} = this;
 		if (arg0 instanceof Vector3) {
 			const v = arg0.array;
 
-			this.array[0] = this.array[0] * v[0];
-			this.array[1] = this.array[1] * v[1];
-			this.array[2] = this.array[2] * v[2];
+			array[0] = array[0] * v[0];
+			array[1] = array[1] * v[1];
+			array[2] = array[2] * v[2];
 
 			return this;
 		}
 		else {
-			const x = this.x;
-			const y = this.y;
-			const z = this.z;
+			const [x, y, z] = this;
 
 			const m = arg0.array;
 

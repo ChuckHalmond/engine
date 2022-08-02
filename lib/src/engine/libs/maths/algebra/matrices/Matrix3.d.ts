@@ -126,7 +126,7 @@ declare class Matrix3Base implements Matrix3 {
     setRotationY(angle: number): this;
     static rotationZ(angle: number): Matrix3Base;
     setRotationZ(angle: number): this;
-    solve(vecB: Vector3): Vector3Values;
+    solve(b: Vector3): Vector3Values;
     solve2(vecB: Vector2): Vector2Values;
 }
 declare var Matrix3: Matrix3Constructor;

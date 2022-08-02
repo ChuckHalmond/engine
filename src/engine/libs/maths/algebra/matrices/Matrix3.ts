@@ -637,8 +637,50 @@ class Matrix3Base implements Matrix3 {
     return this;
   }
 
-  solve(vecB: Vector3): Vector3Values {
-    const a = this.array;
+  solve(b: Vector3): Vector3Values {
+    const a  = this.array;
+
+    const A0x = a[0];
+    const A0y = a[3];
+    const A0z = a[6];
+    const A1x = a[1];
+    const A1y = a[4];
+    const A1z = a[7];
+    const A2x = a[2];
+    const A2y = a[5];
+    const A2z = a[8];
+    let rx, ry, rz;
+    let det;
+
+    // Column1 cross Column 2
+    rx = A1y * A2z - A1z * A2y;
+    ry = A1z * A2x - A1x * A2z;
+    rz = A1x * A2y - A1y * A2x;
+
+    // A.getColumn(0).dot(x)
+    det = A0x * rx + A0y * ry + A0z * rz;
+    if (det != 0.0) {
+      det = 1.0 / det;
+    }
+
+    // b dot [Column1 cross Column 2]
+    const x_ = det * (b.x * rx + b.y * ry + b.z * rz);
+
+    // Column2 cross b
+    rx = -(A2y * b.z - A2z * b.y);
+    ry = -(A2z * b.x - A2x * b.z);
+    rz = -(A2x * b.y - A2y * b.x);
+    // Column0 dot -[Column2 cross b (Column3)]
+    const y_ = det * (A0x * rx + A0y * ry + A0z * rz);
+
+    // b cross Column 1
+    rx = -(b.y * A1z - b.z * A1y);
+    ry = -(b.z * A1x - b.x * A1z);
+    rz = -(b.x * A1y - b.y * A1x);
+    // Column0 dot -[b cross Column 1]
+    const z_ = det * (A0x * rx + A0y * ry + A0z * rz);
+    return [x_, y_, z_];
+    /*const a = this.array;
     
     const a11 = a[0];
     const a12 = a[1];
@@ -678,7 +720,7 @@ class Matrix3Base implements Matrix3 {
     
     return [
       x, y, z
-    ];
+    ];*/
   }
 
   solve2(vecB: Vector2): Vector2Values {

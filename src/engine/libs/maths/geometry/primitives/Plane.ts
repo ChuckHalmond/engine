@@ -27,6 +27,7 @@ interface PlaneConstructor {
     fromNormalAndConstant(normal: Vector3, constant: number): Plane;
     fromNormalAndCoplanarPoint(normal: Vector3, point: Vector3): Plane;
     fromCoplanarPoints(a: Vector3, b: Vector3, c: Vector3): Plane;
+    intersection(a: Plane, b: Plane, c: Plane, result: Vector3): Vector3;
 }
 
 class PlaneBase implements Plane {
@@ -119,6 +120,23 @@ class PlaneBase implements Plane {
 
 		return this;
 	}
+
+    static intersection(a: Plane, b: Plane, c: Plane, result: Vector3): Vector3 {
+        const cross = new Vector3();
+        cross.copy(b.normal).cross(c.normal);
+        const f = -a.normal.dot(cross);
+        const v1 = cross.clone().scale(a.constant);
+        cross.copy(c.normal).cross(a.normal);
+        const v2 = cross.clone().scale(b.constant);
+        cross.copy(a.normal).cross(b.normal);
+        const v3 = cross.clone().scale(c.constant);
+        result.setValues(
+          (v1.x + v2.x + v3.x) / f,
+          (v1.y + v2.y + v3.y) / f,
+          (v1.z + v2.z + v3.z) / f
+        );
+        return result;
+    }
 }
 
 var Plane: PlaneConstructor = PlaneBase;

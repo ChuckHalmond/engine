@@ -52,8 +52,8 @@ export async function grid() {
 
     const fov = (1 / 3) * Math.PI;
     const aspect = canvas.width / canvas.height;
-    const zNear = 0.1;
-    const zFar = 1000;
+    const zNear = 0.5;
+    const zFar = 400;
 
     const camera = new PerspectiveCamera(fov, aspect, zNear, zFar);
     camera.transform.setTranslation(new Vector3([0, 10, 0]));

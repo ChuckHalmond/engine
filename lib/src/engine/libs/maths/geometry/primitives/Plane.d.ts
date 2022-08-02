@@ -22,6 +22,7 @@ interface PlaneConstructor {
     fromNormalAndConstant(normal: Vector3, constant: number): Plane;
     fromNormalAndCoplanarPoint(normal: Vector3, point: Vector3): Plane;
     fromCoplanarPoints(a: Vector3, b: Vector3, c: Vector3): Plane;
+    intersection(a: Plane, b: Plane, c: Plane, result: Vector3): Vector3;
 }
 declare class PlaneBase implements Plane {
     private _normal;
@@ -42,6 +43,7 @@ declare class PlaneBase implements Plane {
     setFromCoplanarPoints(point1: Vector3, point2: Vector3, point3: Vector3): PlaneBase;
     distanceToPoint(point: Vector3): number;
     normalized(): PlaneBase;
+    static intersection(a: Plane, b: Plane, c: Plane, result: Vector3): Vector3;
 }
 declare var Plane: PlaneConstructor;
 declare const PlaneInjector: Injector<PlaneConstructor>;
