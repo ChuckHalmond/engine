@@ -1,9 +1,9 @@
-import { Geometry } from "../scenes/geometries/Geometry";
+import { GeometryBuffer } from "../scenes/geometries/GeometryBuffer";
 
 export { Mesh };
 
 interface MeshProperties {
-    geometry: Geometry;
+    geometry: GeometryBuffer;
     material: Object;
 }
 
@@ -13,12 +13,12 @@ interface MeshConstructor {
 }
 
 interface Mesh {
-    geometry: Geometry;
+    geometry: GeometryBuffer;
     material: Object;
 }
 
 class MeshBase implements Mesh {
-    geometry: Geometry;
+    geometry: GeometryBuffer;
     material: Object;
 
     constructor(properties: MeshProperties) {

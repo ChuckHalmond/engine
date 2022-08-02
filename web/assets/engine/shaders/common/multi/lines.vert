@@ -5,6 +5,7 @@
 #define MAX_INSTANCE_COUNT 640
 
 in vec4 a_position;
+in vec3 a_color;
 
 flat out vec3 v_color;
 
@@ -27,5 +28,5 @@ void main() {
   mat4 model = instances[gl_InstanceID].u_model;
   vec3 color = instances[gl_InstanceID].u_color;
   gl_Position = u_projection * u_view * model * a_position;
-  v_color = color;
+  v_color = a_color;
 }

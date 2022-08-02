@@ -1,7 +1,7 @@
-import { Geometry } from "../scenes/geometries/Geometry";
+import { GeometryBuffer } from "../scenes/geometries/GeometryBuffer";
 export { Mesh };
 interface MeshProperties {
-    geometry: Geometry;
+    geometry: GeometryBuffer;
     material: Object;
 }
 interface MeshConstructor {
@@ -9,7 +9,7 @@ interface MeshConstructor {
     new (properties: MeshProperties): Mesh;
 }
 interface Mesh {
-    geometry: Geometry;
+    geometry: GeometryBuffer;
     material: Object;
 }
 declare var Mesh: MeshConstructor;

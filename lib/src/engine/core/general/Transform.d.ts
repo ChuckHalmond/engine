@@ -37,7 +37,7 @@ interface Transform {
     getScaling(scaling: Vector3): Vector3;
     setScaling(scaling: Vector3): this;
     scale(scaling: Vector3): this;
-    lookAt(target: Vector3, up?: Vector3): this;
+    lookAt(target: Vector3, up: Vector3): this;
 }
 declare class TransformBase implements Transform {
     readonly localArray: Float32Array;

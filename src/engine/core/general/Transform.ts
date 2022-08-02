@@ -53,7 +53,7 @@ interface Transform {
     setScaling(scaling: Vector3): this;
     scale(scaling: Vector3): this;
     
-    lookAt(target: Vector3, up?: Vector3): this;
+    lookAt(target: Vector3, up: Vector3): this;
 }
 
 class TransformBase implements Transform {

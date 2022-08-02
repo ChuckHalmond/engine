@@ -1,3 +1,6 @@
+import { Camera } from "../scenes/cameras/Camera";
+import { Entity } from "./Entity";
+
 export { Scene };
 
 interface SceneProperties {
@@ -15,6 +18,11 @@ interface Scene {
 class SceneBase implements Scene {
 
     constructor(properties: SceneProperties) {
+
+    }
+
+    addEntity(entity: Entity): void {
+        
     }
 }
 

@@ -17,7 +17,7 @@ interface ColorConstructor {
     lerp(a: Color, b: Color, t: number): Color;
 }
 
-interface Color extends ArrayLike<number> {
+interface Color extends ArrayLike<number>, Iterable<number> {
     readonly array: Float32Array;
     readonly length: number;
     0: number;

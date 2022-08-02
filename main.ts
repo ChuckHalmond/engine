@@ -15,6 +15,7 @@ import { buildArrayFromIndexedArrays } from "./src/engine/utils/Snippets";
 import { start } from "./src/samples/scenes/SimpleScene";
 import { octree } from "./src/samples/scenes/Octree";
 import { deferred } from "./src/samples/scenes/Deferred";
+import { grid } from "./src/samples/scenes/Grid";
 /*
 function windingOrder(v0: Vector3, v1: Vector3, v2: Vector3) {
     const triangle = new Triangle(v0, v1, v2);
@@ -66,7 +67,8 @@ export async function main() {
 
     myWorker.postMessage(sab);*/
 
-    deferred();
+    grid();
+    //deferred();
     //octree();
     //start();
     //multiDraw();
