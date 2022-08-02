@@ -109,6 +109,7 @@ interface Matrix4 {
     scale(vector: Vector3): this;
     lookAt(eye: Vector3 | Vector3Values, target: Vector3, up: Vector3): this;
     transformPoint(point: Vector3): Vector3;
+    transformPoint4(point: Vector4): Vector4;
     transformDirection(direction: Vector3): Vector3;
     transformNormal(normal: Vector3): Vector3;
     setFrustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
@@ -208,6 +209,7 @@ declare class Matrix4Base implements Matrix4 {
     static lookAt(eye: Vector3, target: Vector3, up: Vector3, out: Matrix4): Matrix4;
     lookAt(eye: Vector3, target: Vector3, up: Vector3): this;
     transformPoint(point: Vector3): Vector3;
+    transformPoint4(point: Vector4): Vector4;
     transformDirection(direction: Vector3): Vector3;
     transformNormal(normal: Vector3): Vector3;
     static perspective(fov: number, aspect: number, zNear: number, zFar: number): Matrix4Base;

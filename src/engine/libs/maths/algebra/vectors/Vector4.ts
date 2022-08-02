@@ -12,7 +12,8 @@ export type Vector4Values = [number, ...number[]] & { length: 4 };
 interface Vector4Constructor {
 	readonly prototype: Vector4;
 	new(): Vector4;
-	new(values: Vector4Values): Vector4;
+	new(x: number, y: number, z: number, w: number): Vector4;
+	new(array: ArrayLike<number>): Vector4;
 	mult(mat: Matrix4, vec: Vector4): Vector4;
 }
 
@@ -57,11 +58,31 @@ class Vector4Base implements Vector4 {
 	readonly array: Float32Array;
 
 	constructor()
-	constructor(values: Vector4Values)
-	constructor(values?: Vector4Values) {
-		this.array = (values) ? new Float32Array([
-			values[0], values[1], values[2], values[3]
-		]) : new Float32Array([0, 0, 0, 0]);
+	constructor(array: ArrayLike<number>)
+	  constructor(
+	  x: number, y: number, z: number, w: number
+	)
+	constructor(
+	  ...args: any[]
+	) {
+		if (typeof args[0] === "number") {
+			this.array = new Float32Array([args[0], args[1], args[2], args[3]]);
+		}
+		else if (typeof args[0] === "object") {
+			const array = args[0];
+			if (array.length < 4) {
+				throw new MathError(`Array must be of length 4 at least.`);
+			}
+			if (array instanceof Float32Array) {
+				this.array = array;
+			}
+			else {
+				this.array = new Float32Array(array);
+			}
+		}
+		else {
+			this.array = new Float32Array([0, 0, 0, 0]);
+		}
 	}
 	
 	get values(): Vector4Values {

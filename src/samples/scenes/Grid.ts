@@ -1,6 +1,8 @@
 import { FreeCameraControl } from "../../engine/core/controls/FreeCameraControl";
 import { Input } from "../../engine/core/input/Input";
+import { CameraHelper } from "../../engine/core/rendering/helpers/CameraHelper";
 import { GridHelper } from "../../engine/core/rendering/helpers/GridHelper";
+import { OrthographicCamera } from "../../engine/core/rendering/scenes/cameras/OrthographicCamera";
 import { PerspectiveCamera } from "../../engine/core/rendering/scenes/cameras/PerspectiveCamera";
 import { BufferDataUsage } from "../../engine/core/rendering/webgl/WebGLBufferUtilities";
 import { WebGLPacketUtilities } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
@@ -58,12 +60,12 @@ export async function grid() {
     camera.transform.lookAt(new Vector3(0, -1, 0), Space.up);
     const cameraControl = new FreeCameraControl(camera)
 
-    const grid = new GridHelper();
+    const grid = new CameraHelper(new PerspectiveCamera(fov, aspect, zNear, zFar / 4));//new GridHelper();
     const gridTransform = new Matrix4().setIdentity();
     const gridLines = grid.geometry.getAttribute("a_position")!;
     const gridColors = grid.geometry.getAttribute("a_color")!;
-    console.log(gridLines);
-    console.log(gridColors);
+    
+
     const gridPacket = WebGLPacketUtilities.createPacket(gl, {
         program: linesProgram,
         vertexArray: {

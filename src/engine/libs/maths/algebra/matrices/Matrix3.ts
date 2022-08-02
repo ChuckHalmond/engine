@@ -649,9 +649,9 @@ class Matrix3Base implements Matrix3 {
     const a31 = a[6];
     const a32 = a[7];
     const a33 = a[8];
-    const bx = vecB.x - a[12];
-    const by = vecB.y - a[13];
-    const bz = vecB.z - a[14];
+    const bx = vecB.x;
+    const by = vecB.y;
+    const bz = vecB.z;
 
     let rx = a22 * a33 - a23 * a32;
     let ry = a23 * a31 - a21 * a33;
@@ -669,14 +669,13 @@ class Matrix3Base implements Matrix3 {
     rz = -(a31 * by - a32 * bx);
     
     const y = det * (a11 * rx + a12 * ry + a13 * rz);
-  
     
     rx = -(by * a23 - bz * a22);
     ry = -(bz * a21 - bx * a23);
     rz = -(bx * a22 - by * a21);
     
     const z = det * (a11 * rx + a12 * ry + a13 * rz);
-
+    
     return [
       x, y, z
     ];

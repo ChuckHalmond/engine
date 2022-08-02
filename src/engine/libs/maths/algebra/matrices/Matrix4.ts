@@ -140,6 +140,7 @@ interface Matrix4 {
   lookAt(eye: Vector3 | Vector3Values, target: Vector3, up: Vector3): this;
 
   transformPoint(point: Vector3): Vector3;
+  transformPoint4(point: Vector4): Vector4;
   transformDirection(direction: Vector3): Vector3;
   transformNormal(normal: Vector3): Vector3;
   
@@ -1546,6 +1547,27 @@ class Matrix4Base implements Matrix4 {
       (x * thisArray[0] + y * thisArray[4] + z * thisArray[ 8] + thisArray[12]) / d,
       (x * thisArray[1] + y * thisArray[5] + z * thisArray[ 9] + thisArray[13]) / d,
       (x * thisArray[2] + y * thisArray[6] + z * thisArray[10] + thisArray[14]) / d
+    );
+
+    return point;
+  }
+
+  transformPoint4(point: Vector4): Vector4 {
+    const thisArray = this.array;
+    const pointArray = point.array;
+
+    const x = pointArray[0];
+    const y = pointArray[1];
+    const z = pointArray[2];
+    const w = pointArray[3];
+
+    const d = x * thisArray[3] + y * thisArray[7] + z * thisArray[11] + w * thisArray[15];
+
+    point.setValues(
+      (x * thisArray[0] + y * thisArray[4] + z * thisArray[ 8] + thisArray[12]) / d,
+      (x * thisArray[1] + y * thisArray[5] + z * thisArray[ 9] + thisArray[13]) / d,
+      (x * thisArray[2] + y * thisArray[6] + z * thisArray[10] + thisArray[14]) / d,
+      (x * thisArray[3] + y * thisArray[7] + z * thisArray[11] + thisArray[15]) / d
     );
 
     return point;

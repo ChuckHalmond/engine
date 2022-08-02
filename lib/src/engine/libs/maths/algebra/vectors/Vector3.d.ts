@@ -10,7 +10,7 @@ export declare type Vector3Values = [number, ...number[]] & {
 interface Vector3Constructor {
     readonly prototype: Vector3;
     new (): Vector3;
-    new (a: number, y: number, z: number): Vector3;
+    new (x: number, y: number, z: number): Vector3;
     new (array: ArrayLike<number>): Vector3;
     angle(vectorA: Vector3, vectorB: Vector3): number;
 }

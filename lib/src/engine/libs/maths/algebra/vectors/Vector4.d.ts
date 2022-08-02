@@ -10,7 +10,8 @@ export declare type Vector4Values = [number, ...number[]] & {
 interface Vector4Constructor {
     readonly prototype: Vector4;
     new (): Vector4;
-    new (values: Vector4Values): Vector4;
+    new (x: number, y: number, z: number, w: number): Vector4;
+    new (array: ArrayLike<number>): Vector4;
     mult(mat: Matrix4, vec: Vector4): Vector4;
 }
 interface Vector4 {
@@ -47,7 +48,8 @@ interface Vector4 {
 declare class Vector4Base implements Vector4 {
     readonly array: Float32Array;
     constructor();
-    constructor(values: Vector4Values);
+    constructor(array: ArrayLike<number>);
+    constructor(x: number, y: number, z: number, w: number);
     get values(): Vector4Values;
     set values(values: Vector4Values);
     get 0(): number;
