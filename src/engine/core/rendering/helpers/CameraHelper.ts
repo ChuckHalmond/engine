@@ -50,8 +50,7 @@ class CameraHelperBase extends Mesh implements CameraHelper {
         });*/
         const {frustrum} = camera;
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = frustrum;
-        console.log(nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane);
-        const {normal: nearPlaneNormal, constant: nearPlaneConstant} = nearPlane;
+        /*const {normal: nearPlaneNormal, constant: nearPlaneConstant} = nearPlane;
         const {normal: farPlaneNormal, constant: farPlaneConstant} = farPlane;
         const {normal: bottomPlaneNormal, constant: bottomPlaneConstant} = bottomPlane;
         const {normal: topPlaneNormal, constant: topPlaneConstant} = topPlane;
@@ -80,16 +79,15 @@ class CameraHelperBase extends Mesh implements CameraHelper {
         ).transpose().solve(new Vector3(rightPlaneConstant, bottomPlaneConstant, farPlaneConstant).negate());
         const rightTopFar = new Matrix3(
             [...rightPlaneNormal, ...topPlaneNormal, ...farPlaneNormal]
-        ).transpose().solve(new Vector3(rightPlaneConstant, topPlaneConstant, farPlaneConstant).negate());
-        /*const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
+        ).transpose().solve(new Vector3(rightPlaneConstant, topPlaneConstant, farPlaneConstant).negate());*/
+        const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
         const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
         const rightBottomNear = Plane.intersection(rightPlane, bottomPlane, nearPlane, new Vector3());
         const rightTopNear = Plane.intersection(rightPlane, topPlane, nearPlane, new Vector3());
         const leftBottomFar  = Plane.intersection(leftPlane, bottomPlane, farPlane, new Vector3());
         const leftTopFar = Plane.intersection(leftPlane, topPlane, farPlane, new Vector3());
         const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
-        const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());*/
-        console.log(leftBottomNear, leftTopNear, rightBottomNear, rightTopNear, leftBottomFar, leftTopFar, rightBottomFar, rightTopFar);
+        const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
 
         const vertices = [
             ...leftBottomNear, ...leftTopNear,
