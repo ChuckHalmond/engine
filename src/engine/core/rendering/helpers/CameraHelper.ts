@@ -76,9 +76,9 @@ class CameraHelperBase extends Mesh implements CameraHelper {
             ...rightBottomFar, ...leftBottomFar,
         ];
 
-        const nearColor = Color.rgba(Color.RED);
-        const farColor = Color.rgba(Color.GREEN);
-        const sideColor = Color.rgba(Color.BLUE);
+        const nearColor = Color.RED;
+        const farColor = Color.GREEN;
+        const sideColor = Color.BLUE;
 
         const colors = [
             ...nearColor, ...nearColor,

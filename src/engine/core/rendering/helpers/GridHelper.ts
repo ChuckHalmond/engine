@@ -32,8 +32,8 @@ class GridHelperBase extends Mesh implements GridHelper {
         properties = properties ?? {};
         let {size, divisions, color1, color2} = properties;
 
-		color1 = color1 ? color1 : Color.rgba(Color.RED);
-		color2 = color2 ? color2 : Color.rgba(Color.GREEN);
+		color1 = color1 ? color1 : Color.RED;
+		color2 = color2 ? color2 : Color.GREEN;
 
         divisions = divisions ?? 10;
         size = size ?? 10;
@@ -59,7 +59,7 @@ class GridHelperBase extends Mesh implements GridHelper {
             },
             "a_color": {
                 array: new Float32Array(colors),
-                type: AttributeDataType.VEC4
+                type: AttributeDataType.VEC3
             }
         });
 
