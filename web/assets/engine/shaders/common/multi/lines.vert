@@ -32,5 +32,5 @@ void main() {
   vec4 position = u_projection * u_view * model * a_position;
   gl_Position = position;
   v_color = a_color;
-  v_position = position.xyz;
+  v_position = (model * a_position).xyz;
 }
