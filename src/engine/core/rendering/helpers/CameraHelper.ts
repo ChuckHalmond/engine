@@ -50,36 +50,6 @@ class CameraHelperBase extends Mesh implements CameraHelper {
         });*/
         const {frustrum} = camera;
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = frustrum;
-        /*const {normal: nearPlaneNormal, constant: nearPlaneConstant} = nearPlane;
-        const {normal: farPlaneNormal, constant: farPlaneConstant} = farPlane;
-        const {normal: bottomPlaneNormal, constant: bottomPlaneConstant} = bottomPlane;
-        const {normal: topPlaneNormal, constant: topPlaneConstant} = topPlane;
-        const {normal: leftPlaneNormal, constant: leftPlaneConstant} = leftPlane;
-        const {normal: rightPlaneNormal, constant: rightPlaneConstant} = rightPlane;
-        const leftBottomNear = new Matrix3(
-            [...leftPlaneNormal, ...bottomPlaneNormal, ...nearPlaneNormal]
-        ).transpose().solve(new Vector3(leftPlaneConstant, bottomPlaneConstant, nearPlaneConstant).negate());
-        const leftTopNear = new Matrix3(
-            [...leftPlaneNormal, ...topPlaneNormal, ...nearPlaneNormal]
-        ).transpose().solve(new Vector3(leftPlaneConstant, topPlaneConstant, nearPlaneConstant).negate());
-        const rightBottomNear = new Matrix3(
-            [...rightPlaneNormal, ...bottomPlaneNormal, ...nearPlaneNormal]
-        ).transpose().solve(new Vector3(rightPlaneConstant, bottomPlaneConstant, nearPlaneConstant).negate());
-        const rightTopNear = new Matrix3(
-            [...rightPlaneNormal, ...topPlaneNormal, ...nearPlaneNormal]
-        ).transpose().solve(new Vector3(rightPlaneConstant, topPlaneConstant, nearPlaneConstant).negate());
-        const leftBottomFar = new Matrix3(
-            [...leftPlaneNormal, ...bottomPlaneNormal, ...farPlaneNormal]
-        ).transpose().solve(new Vector3(leftPlaneConstant, bottomPlaneConstant, farPlaneConstant).negate());
-        const leftTopFar = new Matrix3(
-            [...leftPlaneNormal, ...topPlaneNormal, ...farPlaneNormal]
-        ).transpose().solve(new Vector3(leftPlaneConstant, topPlaneConstant, farPlaneConstant).negate());
-        const rightBottomFar = new Matrix3(
-            [...rightPlaneNormal, ...bottomPlaneNormal, ...farPlaneNormal]
-        ).transpose().solve(new Vector3(rightPlaneConstant, bottomPlaneConstant, farPlaneConstant).negate());
-        const rightTopFar = new Matrix3(
-            [...rightPlaneNormal, ...topPlaneNormal, ...farPlaneNormal]
-        ).transpose().solve(new Vector3(rightPlaneConstant, topPlaneConstant, farPlaneConstant).negate());*/
         const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
         const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
         const rightBottomNear = Plane.intersection(rightPlane, bottomPlane, nearPlane, new Vector3());
@@ -106,9 +76,9 @@ class CameraHelperBase extends Mesh implements CameraHelper {
             ...rightBottomFar, ...leftBottomFar,
         ];
 
-        const nearColor = Color.RED;
-        const farColor = Color.GREEN;
-        const sideColor = Color.BLUE;
+        const nearColor = Color.rgba(Color.RED);
+        const farColor = Color.rgba(Color.GREEN);
+        const sideColor = Color.rgba(Color.BLUE);
 
         const colors = [
             ...nearColor, ...nearColor,
@@ -137,7 +107,7 @@ class CameraHelperBase extends Mesh implements CameraHelper {
                 type: AttributeDataType.VEC3
             }
         });
-
+        
 		const material = new WireframeMaterial();
         super({geometry, material});
 

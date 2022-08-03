@@ -6,8 +6,8 @@ type ColorValues = [number, number, number];
 interface ColorConstructor {
     readonly prototype: Color;
     new(): Color;
-    new(values: ColorValues): Color;
-    new(values?: ColorValues): Color;
+    new(r: number, g: number, b: number): Color;
+    new(r: number, g: number, b: number, a: number): Color;
     readonly BLACK: Color;
     readonly RED: Color;
     readonly GREEN: Color;
@@ -15,6 +15,10 @@ interface ColorConstructor {
     readonly WHITE: Color;
     array(...colors: Color[]): number[];
     lerp(a: Color, b: Color, t: number): Color;
+    rgb(r: number, g: number, b: number): Color;
+    rgba(rgb: Color): Color;
+    rgba(rgb: Color, a: number): Color;
+    rgba(r: number, g: number, b: number, a: number): Color;
 }
 
 interface Color extends ArrayLike<number>, Iterable<number> {
@@ -23,16 +27,19 @@ interface Color extends ArrayLike<number>, Iterable<number> {
     0: number;
     1: number;
     2: number;
+    3: number;
     r: number;
     g: number;
     b: number;
+    a: number;
     copy(color: Color): Color;
     clone(): Color;
     getValues(): ColorValues;
     setValues(
         r: number,
         g: number,
-        b: number
+        b: number,
+        a?: number
     ): Color;
     lerp(color: Color, t: number): Color;
     normalize(): Color;
@@ -44,8 +51,11 @@ class ColorBase implements Color {
 
 	constructor()
     constructor(r: number, g: number, b: number)
-    constructor(r?: number, g?: number, b?: number) {
-		this.array = new Float32Array([
+    constructor(r: number, g: number, b: number, a: number)
+    constructor(r?: number, g?: number, b?: number, a?: number) {
+		this.array = a !== undefined ? new Float32Array([
+            r ?? 0, g ?? 0, b ?? 0, a
+        ]) : new Float32Array([
             r ?? 0, g ?? 0, b ?? 0
         ]);
     }
@@ -55,6 +65,25 @@ class ColorBase implements Color {
     static readonly GREEN = new ColorBase(0, 1, 0);
     static readonly BLUE = new ColorBase(0, 0, 1);
     static readonly WHITE = new ColorBase(1, 1, 1);
+
+    static rgb(r: number, g: number, b: number): Color {
+        return new Color(r, g, b);
+    }
+
+    static rgba(rgb: Color): Color;
+    static rgba(rgb: Color, a: number): Color;
+    static rgba(r: number, g: number, b: number, a: number): Color;
+    static rgba(rgbOrR: any, aOrG?: number, b?: number, a?: number): Color {
+        if (rgbOrR instanceof Color) {
+            const {r, g, b} = rgbOrR;
+            return aOrG !== undefined ?
+                new Color(r, g, b, aOrG) :
+                new Color(r, g, b, 1.0);
+        }
+        else {
+            return new Color(rgbOrR, aOrG!, b!, a!);
+        }
+    }
 
     static array(...colors: Color[]): number[] {
         const a = new Array<number>(colors.length * 4);

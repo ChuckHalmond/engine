@@ -7,9 +7,8 @@ export { PlaneInjector };
 export { PlaneBase };
 
 interface Plane {
-    normal: Vector3;
+    readonly normal: Vector3;
     constant: number;
-
     copy(plane: Plane): Plane;
     set(x: number, y: number, z: number, constant: number): Plane;
     setFromNormalAndConstant(normal: Vector3, constant: number): Plane;
@@ -32,14 +31,14 @@ interface PlaneConstructor {
 
 class PlaneBase implements Plane {
 
-    private _normal: Vector3;
-    private _constant: number;
+    readonly normal: Vector3;
+    constant: number;
 
     constructor()
     constructor(normal: Vector3, constant: number)
     constructor(normal?: Vector3, constant?: number) {
-        this._normal = normal || new Vector3([0, 0, 0]);
-        this._constant = constant || 0;
+        this.normal = normal ?? new Vector3();
+        this.constant = constant ?? 0;
     }
 
     static fromNormalAndConstant(normal: Vector3, constant: number): Plane {
@@ -54,46 +53,29 @@ class PlaneBase implements Plane {
         return new PlaneBase().setFromCoplanarPoints(a, b, c);
     }
 
-    get normal(): Vector3 {
-		return this._normal;
-	}
-
-	set normal(normal: Vector3) {
-		this._normal = normal;
-	}
-
-	get constant(): number {
-		return this._constant;
-	}
-
-	set constant(constant: number) {
-		this._constant = constant;
-	}
-
     copy(plane: PlaneBase): PlaneBase {
-        this._normal = plane._normal.clone();
-        this._constant = plane._constant;
-
+        this.normal.copy(plane.normal);
+        this.constant = plane.constant;
         return this;
     }
 
     set(x: number, y: number, z: number, constant: number): PlaneBase {
-        this._normal.setValues(x, y, z);
-        this._constant = constant;
+        this.normal.setValues(x, y, z);
+        this.constant = constant;
 
         return this;
     }
 
     setFromNormalAndConstant(normal: Vector3, constant: number): PlaneBase {
-        this._normal.copy(normal);
-        this._constant = constant;
+        this.normal.copy(normal);
+        this.constant = constant;
 
         return this;
     }
 
 	setFromNormalAndCoplanarPoint(normal: Vector3, point: Vector3): PlaneBase {
-		this._normal.copy(normal);
-        this._constant = -point.dot(this._normal);
+		this.normal.copy(normal);
+        this.constant = -point.dot(this.normal);
         
         return this;
 	}
@@ -109,31 +91,31 @@ class PlaneBase implements Plane {
     }
 
 	distanceToPoint(point: Vector3): number {
-		return this._normal.dot(point) + this._constant;
+		return this.normal.dot(point) + this.constant;
 	}
     
     normalized(): PlaneBase {
-        const inverseNormalLength = 1.0 / this._normal.length();
-        
-        this._normal.scale(inverseNormalLength);
-		this._constant *= inverseNormalLength;
-
+        const inverseNormalLength = 1.0 / this.normal.length();
+        this.normal.scale(inverseNormalLength);
+		this.constant *= inverseNormalLength;
 		return this;
 	}
 
     static intersection(a: Plane, b: Plane, c: Plane, result: Vector3): Vector3 {
-        const cross = new Vector3();
-        cross.copy(b.normal).cross(c.normal);
-        const f = -a.normal.dot(cross);
-        const v1 = cross.clone().scale(a.constant);
-        cross.copy(c.normal).cross(a.normal);
-        const v2 = cross.clone().scale(b.constant);
-        cross.copy(a.normal).cross(b.normal);
-        const v3 = cross.clone().scale(c.constant);
+        const {normal: aNormal, constant: aConstant} = a;
+        const {normal: bNormal, constant: bConstant} = b;
+        const {normal: cNormal, constant: cConstant} = c;
+        result.copy(bNormal).cross(cNormal);
+        const f = -aNormal.dot(result);
+        const [v1x, v1y, v1z] = result.scale(aConstant).array;
+        result.copy(cNormal).cross(aNormal);
+        const [v2x, v2y, v2z] = result.scale(bConstant).array;
+        result.copy(aNormal).cross(bNormal);
+        const [v3x, v3y, v3z] = result.scale(cConstant).array;
         result.setValues(
-          (v1.x + v2.x + v3.x) / f,
-          (v1.y + v2.y + v3.y) / f,
-          (v1.z + v2.z + v3.z) / f
+          (v1x + v2x + v3x) / f,
+          (v1y + v2y + v3y) / f,
+          (v1z + v2z + v3z) / f
         );
         return result;
     }

@@ -63,13 +63,13 @@ class GeometryBufferBase implements GeometryBuffer {
         interleaved?: boolean
     ) {
         if (attributes) {
-            const attributesBuffers = Object.values(attributes);
-            const bufferByteLength = attributesBuffers.reduce(
-                (byteLength, attribute) => byteLength + attribute.array.byteLength, 0
+            const attributesEntries = Object.entries(attributes);
+            const bufferByteLength = attributesEntries.reduce(
+                (byteLength, [_, attribute]) => byteLength + attribute.array.byteLength, 0
             );
             const buffer = new ArrayBuffer(bufferByteLength);
-            const stride = (interleaved) ? attributesBuffers.reduce(
-                (stride, attribute) => {
+            const stride = (interleaved) ? attributesEntries.reduce(
+                (stride, [_, attribute]) => {
                     const {array, type} = attribute;
                     return stride + array.BYTES_PER_ELEMENT * WebGLVertexArrayUtilities.getDataTypeNumComponents(type);
                 }, 0

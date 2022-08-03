@@ -7,14 +7,14 @@ import { PerspectiveCamera } from "../../engine/core/rendering/scenes/cameras/Pe
 import { BufferDataUsage } from "../../engine/core/rendering/webgl/WebGLBufferUtilities";
 import { WebGLPacketUtilities } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
-import { BufferMask, Capabilities, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
+import { BlendingMode, BufferMask, Capabilities, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
 import { DrawMode } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
 import { Vector3 } from "../../engine/libs/maths/algebra/vectors/Vector3";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
 
-export async function grid() {
+export async function helpers() {
     const canvas = document.createElement("canvas");
     canvas.style.display = "block";
     canvas.tabIndex = 0;
@@ -60,18 +60,35 @@ export async function grid() {
     camera.transform.lookAt(new Vector3(0, -1, 0), Space.up);
     const cameraControl = new FreeCameraControl(camera)
 
-    const grid = new CameraHelper(new PerspectiveCamera(fov, aspect, zNear, zFar / 4));//new GridHelper();
-    const gridTransform = new Matrix4().setIdentity();
-    const gridLines = grid.geometry.getAttribute("a_position")!;
-    const gridColors = grid.geometry.getAttribute("a_color")!;
-    
+    const gridHelper = new GridHelper({
+        size: 256,
+        divisions: 256
+    });
+    const gridHelperTransform = new Matrix4().setIdentity();
+    const gridHelperLines = gridHelper.geometry.getAttribute("a_position")!;
+    const gridHelperColors = gridHelper.geometry.getAttribute("a_color")!;
+
+    const cameraHelper = new CameraHelper(new PerspectiveCamera(fov, aspect, zNear, zFar / 4));//new GridHelper();
+    const cameraHelperTransform = new Matrix4().setIdentity();
+    const cameraHelperLines = cameraHelper.geometry.getAttribute("a_position")!;
+    const cameraHelperColors = cameraHelper.geometry.getAttribute("a_color")!;
+
+    const lines = {
+        type: gridHelperLines.type,
+        array: Float32Array.of(...gridHelperLines.array, ...cameraHelperLines.array)
+    };
+    const colors = {
+        type: gridHelperColors.type,
+        array: Float32Array.of(...gridHelperColors.array, ...cameraHelperColors.array)
+    };
+    const elementsCount = lines.array.length;
 
     const gridPacket = WebGLPacketUtilities.createPacket(gl, {
         program: linesProgram,
         vertexArray: {
             vertexAttributes: {
-                a_position: gridLines,
-                a_color: gridColors
+                a_position: lines,
+                a_color: colors
             }
         },
         uniformBuffers: [
@@ -83,12 +100,13 @@ export async function grid() {
             basicModelBlock: {
                 buffer: 0,
                 uniforms: {
-                    "instances[0].u_model": { value: gridTransform.array },
-                    "instances[0].u_color": { value: [1, 0, 0] },
+                    "instances[0].u_model": { value: gridHelperTransform.array },
+                    "instances[1].u_model": { value: cameraHelperTransform.array },
                 }
             },
             viewBlock: {
                 uniforms: {
+                    u_model: { value: camera.transform.array },
                     u_view: { value: camera.view.array },
                     u_projection: { value: camera.projection.array }
                 }
@@ -96,7 +114,7 @@ export async function grid() {
         },
         drawCommand: {
             mode: DrawMode.LINES,
-            elementsCount: gridLines.array.length
+            elementsCount: elementsCount
         }
     });
     if (gridPacket === null) return;
@@ -106,6 +124,8 @@ export async function grid() {
     WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
     WebGLRendererUtilities.enable(gl, Capabilities.DEPTH_TEST);
     WebGLRendererUtilities.clearColor(gl, Color.BLACK);
+    WebGLRendererUtilities.enable(gl, Capabilities.BLEND);
+    WebGLRendererUtilities.blendFunction(gl, BlendingMode.SRC_ALPHA, BlendingMode.ONE_MINUS_SRC_ALPHA);
 
     Input.initialize(canvas);
 
@@ -126,6 +146,7 @@ export async function grid() {
             uniformBlocks: {
                 viewBlock: {
                     uniforms: {
+                        u_model: { value: camera.transform.array },
                         u_view: { value: camera.view.array },
                         u_projection: { value: camera.projection.array }
                     }

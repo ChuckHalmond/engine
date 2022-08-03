@@ -4,7 +4,7 @@ export { Plane };
 export { PlaneInjector };
 export { PlaneBase };
 interface Plane {
-    normal: Vector3;
+    readonly normal: Vector3;
     constant: number;
     copy(plane: Plane): Plane;
     set(x: number, y: number, z: number, constant: number): Plane;
@@ -25,17 +25,13 @@ interface PlaneConstructor {
     intersection(a: Plane, b: Plane, c: Plane, result: Vector3): Vector3;
 }
 declare class PlaneBase implements Plane {
-    private _normal;
-    private _constant;
+    readonly normal: Vector3;
+    constant: number;
     constructor();
     constructor(normal: Vector3, constant: number);
     static fromNormalAndConstant(normal: Vector3, constant: number): Plane;
     static fromNormalAndCoplanarPoint(normal: Vector3, point: Vector3): Plane;
     static fromCoplanarPoints(a: Vector3, b: Vector3, c: Vector3): Plane;
-    get normal(): Vector3;
-    set normal(normal: Vector3);
-    get constant(): number;
-    set constant(constant: number);
     copy(plane: PlaneBase): PlaneBase;
     set(x: number, y: number, z: number, constant: number): PlaneBase;
     setFromNormalAndConstant(normal: Vector3, constant: number): PlaneBase;
