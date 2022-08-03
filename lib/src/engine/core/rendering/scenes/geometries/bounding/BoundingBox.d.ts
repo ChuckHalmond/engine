@@ -9,6 +9,7 @@ interface BoundingBox {
     readonly min: Vector3;
     readonly max: Vector3;
     hits(other: BoundingBox): boolean;
-    transform(matrix: Matrix4): void;
+    transform(matrix: Matrix4): BoundingBox;
+    transformed(matrix: Matrix4): BoundingBox;
 }
 declare var BoundingBox: BoundingBoxConstructor;

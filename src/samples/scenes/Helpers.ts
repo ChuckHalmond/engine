@@ -123,7 +123,7 @@ export async function helpers() {
     WebGLRendererUtilities.viewport(gl, 0, 0, canvas.width, canvas.height);
     WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
     WebGLRendererUtilities.enable(gl, Capabilities.DEPTH_TEST);
-    WebGLRendererUtilities.clearColor(gl, Color.BLACK);
+    WebGLRendererUtilities.clearColor(gl, Color.WHITE);
     WebGLRendererUtilities.enable(gl, Capabilities.BLEND);
     WebGLRendererUtilities.blendFunction(gl, BlendingMode.SRC_ALPHA, BlendingMode.ONE_MINUS_SRC_ALPHA);
 

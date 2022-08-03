@@ -12,6 +12,9 @@ interface FreeCameraControlConstructor {
 }
 
 interface FreeCameraControl {
+    camera: Camera;
+    rotationSpeed: number;
+    translationSpeed: number;
     update(deltaTime: number): void;
 }
 

@@ -2,9 +2,9 @@ import { VertexArray, VertexArrayValues, VertexArrayProperties, DrawMode } from 
 import { Texture, TextureProperties } from "./WebGLTextureUtilities";
 import { UniformBlock, UniformBlockProperties, UniformBuffer, UniformBufferProperties } from "./WebGLUniformBlockUtilities";
 import { Uniform, UniformsListSetter } from "./WebGLUniformUtilities";
-import { Program } from "./WebGLProgramUtilities";
+import { Program, ProgramProperties } from "./WebGLProgramUtilities";
 export declare type PacketProperties = {
-    program: Program;
+    program: ProgramProperties | Program;
     vertexArray: VertexArrayProperties;
     uniformBuffers?: (UniformBufferProperties | UniformBuffer)[];
     uniformBlocks?: Record<string, UniformBlockProperties>;

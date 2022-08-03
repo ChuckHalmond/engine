@@ -67,9 +67,9 @@ export async function main() {
 
     myWorker.postMessage(sab);*/
 
-    helpers();
+    //helpers();
     //deferred();
-    //octree();
+    octree();
     //start();
     //multiDraw();
 

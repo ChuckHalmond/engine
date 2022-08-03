@@ -2,10 +2,10 @@ import { VertexArray, VertexArrayValues, VertexArrayProperties, WebGLVertexArray
 import { Texture, TextureProperties, WebGLTextureUtilities } from "./WebGLTextureUtilities"
 import { UniformBlock, UniformBlockProperties, UniformBuffer, UniformBufferProperties, WebGLUniformBlockUtilities } from "./WebGLUniformBlockUtilities"
 import { Uniform, UniformsListSetter, WebGLUniformUtilities } from "./WebGLUniformUtilities"
-import { Program, WebGLProgramUtilities } from "./WebGLProgramUtilities"
+import { Program, ProgramProperties, WebGLProgramUtilities } from "./WebGLProgramUtilities"
 
 export type PacketProperties = {
-    program: Program;
+    program: ProgramProperties | Program;
     vertexArray: VertexArrayProperties;
     uniformBuffers?: (UniformBufferProperties | UniformBuffer)[];
     uniformBlocks?: Record<string, UniformBlockProperties>;
@@ -77,9 +77,20 @@ export class WebGLPacketUtilities {
     }
     
     static createPacket(gl: WebGL2RenderingContext, packet: PacketProperties): Packet | null {
-        const {program, vertexArray: vertexArrayProperties, uniforms: uniformsProperties, uniformBlocks: uniformBlocksProperties, uniformBuffers: uniformBuffersProperties} = packet;
+        const {program: programProperties, vertexArray: vertexArrayProperties, uniforms: uniformsProperties, uniformBlocks: uniformBlocksProperties, uniformBuffers: uniformBuffersProperties} = packet;
         const {drawCommand} = packet;
 
+        let program: Program | null = null;
+        if ("internalProgram" in programProperties) {
+            program = programProperties;
+        }
+        else {
+            program = WebGLProgramUtilities.createProgram(gl, programProperties);
+        }
+        if (program === null) {
+            return null;
+        }
+        
         let vertexArray: VertexArray | null = null;
         vertexArray = WebGLVertexArrayUtilities.createVertexArray(gl, program, vertexArrayProperties);
         if (vertexArray === null) {
@@ -111,7 +122,7 @@ export class WebGLPacketUtilities {
                         ([_, uniformBlockProperty]) => uniformBlockProperty.buffer === i
                     );
                     const relatedBlocks = <UniformBlock[]>relatedBlockProperties.map(
-                        ([blockName, _]) => WebGLUniformBlockUtilities.createUniformBlock(gl, program, blockName)
+                        ([blockName, _]) => WebGLUniformBlockUtilities.createUniformBlock(gl, program!, blockName)
                     );
                     const {length: relatedBlocksCount} = relatedBlocks;        
                     if ("internalBuffer" in uniformBuffersProperty_i) {
@@ -167,7 +178,7 @@ export class WebGLPacketUtilities {
         );
         remainingBlockProperties.forEach(([blockName, uniformBlockProperties]) => {
             const {uniforms} = uniformBlockProperties;
-            const block = WebGLUniformBlockUtilities.createUniformBlock(gl, program, blockName);
+            const block = WebGLUniformBlockUtilities.createUniformBlock(gl, program!, blockName);
             if (block === null) {
                 return null;
             }

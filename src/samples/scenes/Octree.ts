@@ -2,6 +2,8 @@ import { ArcballCameraControl } from "../../engine/core/controls/ArcballCameraCo
 import { FreeCameraControl } from "../../engine/core/controls/FreeCameraControl";
 import { Transform } from "../../engine/core/general/Transform";
 import { Input } from "../../engine/core/input/Input";
+import { CameraHelper } from "../../engine/core/rendering/helpers/CameraHelper";
+import { Camera } from "../../engine/core/rendering/scenes/cameras/Camera";
 import { PerspectiveCamera } from "../../engine/core/rendering/scenes/cameras/PerspectiveCamera";
 import { BoundingBox } from "../../engine/core/rendering/scenes/geometries/bounding/BoundingBox";
 import { GeometryBuffer } from "../../engine/core/rendering/scenes/geometries/GeometryBuffer";
@@ -11,7 +13,7 @@ import { QuadGeometry } from "../../engine/core/rendering/scenes/geometries/lib/
 import { BufferDataUsage } from "../../engine/core/rendering/webgl/WebGLBufferUtilities";
 import { WebGLPacketUtilities } from "../../engine/core/rendering/webgl/WebGLPacketUtilities";
 import { WebGLProgramUtilities } from "../../engine/core/rendering/webgl/WebGLProgramUtilities";
-import { BufferMask, Capabilities, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
+import { BufferMask, Capabilities, TestFunction, WebGLRendererUtilities } from "../../engine/core/rendering/webgl/WebGLRendererUtilities";
 import { AttributeDataType, DrawMode, WebGLVertexArrayUtilities } from "../../engine/core/rendering/webgl/WebGLVertexArrayUtilities";
 import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
@@ -47,8 +49,9 @@ export async function octree() {
       };
     }
 
-    let updateSelection: Function;
+    
     let selectionMatrix = new Matrix4();
+    /*let updateSelection: Function;
 
     const [minXInput, minYInput, minZInput, maxXInput, maxYInput, maxZInput] = new Array(6).fill(0).map(() => {
         const input  = document.createElement("input");
@@ -68,29 +71,46 @@ export async function octree() {
             const centerY = (minY + maxY) / 2;
             const centerZ = (minZ + maxZ) / 2;
             const boxCenter = new Vector3(centerX, centerY, centerZ);
-            const boxScaling =new Vector3(boxWidth, boxHeight, boxDepth);
+            const boxScaling = new Vector3(boxWidth, boxHeight, boxDepth);
             selectionMatrix.setIdentity().translate(boxCenter).scale(boxScaling);
         };
         return input;
-    });
+    });*/
+
+    let camera: Camera;
+
+    const cameraSwitch = document.createElement("input");
+    cameraSwitch.type = "checkbox";
+    cameraSwitch.onchange = () => {
+        const {checked} = cameraSwitch;
+        camera = checked ? cullingCamera : defaultCamera;
+        cameraControl.camera = camera;
+    };
 
     document.body.append(
-        minXInput, minYInput, minZInput, maxXInput, maxYInput, maxZInput, playpause, canvas
+        cameraSwitch, playpause, canvas
     );
 
     const linesVert = await fetch("assets/engine/shaders/common/multi/lines.vert").then(resp => resp.text());
     const linesFrag = await fetch("assets/engine/shaders/common/multi/lines.frag").then(resp => resp.text());
-    const linesProgram = WebGLProgramUtilities.createProgram(gl, {vertexSource: linesVert, fragmentSource: linesFrag});
-    if (linesProgram === null) return;
 
     const fov = (1 / 3) * Math.PI;
     const aspect = canvas.width / canvas.height;
     const zNear = 0.1;
     const zFar = 1000;
 
-    const camera = new PerspectiveCamera(fov, aspect, zNear, zFar);
-    camera.transform.setTranslation(new Vector3([0, 0, 25]));
-    const cameraControl = new FreeCameraControl(camera)
+    const defaultCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
+    defaultCamera.transform.setTranslation(new Vector3([0, 0, 25]));
+
+    const cullingCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
+    const cullingCameraHelper = new CameraHelper(cullingCamera);
+
+    camera = defaultCamera;
+    const cameraControl = new FreeCameraControl(camera);
+
+
+    const cameraLines = cullingCameraHelper.geometry.getAttribute("a_position")!;
+    const cameraColors = cullingCameraHelper.geometry.getAttribute("a_color")!;
 
     const cubeGeometry = new CubeGeometry();
     const cubeGeometryBuilder = cubeGeometry.toBuilder();
@@ -154,29 +174,9 @@ export async function octree() {
     const octants = octree.innerOctants().slice(1);
     const octantsCount = octants.length;
     const instancesCount = entitiesCount + octantsCount + 1;
+    const entities = [...staticEntities, ...nonStaticEntities];
 
-    // const colors = [
-    //     "silver",
-    //     "gray",
-    //     "white",
-    //     "maroon",
-    //     "red",
-    //     "purple",
-    //     "fuchsia",
-    //     "green",
-    //     "lime",
-    //     "olive",
-    //     "yellow",
-    //     "navy",
-    //     "blue",
-    //     "teal",
-    //     "aqua"
-    // ];
-
-    /*console.log(octree);
-    console.log(staticEntities);
-    console.log(nonStaticEntities);*/
-    console.table(
+    /*console.table(
         octants.map((octant_i, i) => {
             const {id} = octant_i;
             const {min, max} = octant_i.region;
@@ -198,9 +198,6 @@ export async function octree() {
                 testedStaticEntities: Array.from(testedStaticEntities).join(","),
                 testedNonStaticEntities: Array.from(testedNonStaticEntities).join(","),
             };
-            /*console.log(`Octant ${i} makes region [${Array.from(min)}, ${Array.from(max)}]`);
-            console.log(`Octant ${i} contains static entities ${}`);
-            console.log(`Octant ${i} contains non-static entities ${octant_i.nonStaticEntities.map(entity => nonStaticEntities.indexOf(entity))}`);*/
         })
     );
 
@@ -213,23 +210,9 @@ export async function octree() {
                 max: Array.from(max).join(","),
             }
         })
-    );
+    );*/
 
-    /*staticEntities.forEach((entity_i, i) => {
-        octants.forEach((octant_j, j) => {
-            const collides = octant_j.region.hits(entity_i.box);
-            console.log(`Static entity ${i} ${collides ? "does" : "does not"} collide with octant ${j}`);
-        });
-    });
-
-    nonStaticEntities.forEach((entity_i, i) => {
-        octants.forEach((octant_j, j) => {
-            const collides = octant_j.region.hits(entity_i.box);
-            console.log(`Non-static entity ${i} ${collides ? "does" : "does not"} collide with octant ${j}`);
-        });
-    });*/
-
-    const uniformEntries = [...staticEntities, ...nonStaticEntities].flatMap((entity_i, i) => {
+    const uniformEntries = entities.flatMap((entity_i, i) => {
         const {box} = entity_i;
         const {min, max} = box;
         const {x: minX, y: minY, z: minZ} = min;
@@ -267,16 +250,16 @@ export async function octree() {
                 [`instances[${entitiesCount + i}].u_color`, {value: [0, 1, 0]}]
             ];
         })
-    ).concat([
-        [`instances[${entitiesCount + octantsCount}].u_model`, {value: selectionMatrix.array}],
-        [`instances[${entitiesCount + octantsCount}].u_color`, {value: [0, 0, 1]}]
-    ]);
+    );
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
-        program: linesProgram,
+        program: {
+            vertexSource: linesVert,
+            fragmentSource: linesFrag
+        },
         vertexArray: {
             vertexAttributes: {
-                a_position: { array: cubeLinesArray, type: AttributeDataType.VEC3 }
+                a_position: { array: cubeLinesArray, type: AttributeDataType.VEC3 },
             },
             elementIndices: cubeLinesIndicesArray
         },
@@ -288,21 +271,12 @@ export async function octree() {
         uniformBlocks: {
             basicModelBlock: {
                 buffer: 0,
-                uniforms: Object.fromEntries(uniformEntries)/*{
-                    "instances[0].u_model": { value: cubeTransform.matrix.array },
-                    "instances[0].u_color": { value: [1, 0, 0] },
-                    "instances[0].u_model": { value: quadTransform.matrix.array },
-                    "instances[0].u_color": { value: [0, 1, 0] },
-                    "instances[1].u_model": { value: cubeTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
-                    "instances[1].u_color": { value: [0, 0, 1] },
-                    "instances[1].u_model": { value: quadTransform.matrix.clone().translate(new Vector3(1, 1, 1)).array },
-                    "instances[1].u_color": { value: [0, 1, 1] }
-                }*/
+                uniforms: Object.fromEntries(uniformEntries)
             },
             viewBlock: {
                 uniforms: {
-                    u_view: { value: camera.view.array },
-                    u_projection: { value: camera.projection.array }
+                    u_view: { value: defaultCamera.view.array },
+                    u_projection: { value: defaultCamera.projection.array }
                 }
             }
         },
@@ -313,6 +287,41 @@ export async function octree() {
         }
     });
     if (cubePacket === null) return;
+
+    const cameraPacket = WebGLPacketUtilities.createPacket(gl, {
+        program: {
+            vertexSource: linesVert,
+            fragmentSource: linesFrag
+        },
+        vertexArray: {
+            vertexAttributes: {
+                a_position: cameraLines,
+                a_color: cameraColors
+            }
+        },
+        uniformBuffers: [
+            {
+                usage: BufferDataUsage.STATIC_READ
+            },
+            cubePacket.uniformBlocks!.viewBlock.buffer!
+        ],
+        uniformBlocks: {
+            basicModelBlock: {
+                buffer: 0,
+                uniforms: {
+                    "instances[0].u_model": { value: cullingCamera.transform.array },
+                }
+            },
+            viewBlock: {
+                buffer: 1
+            }
+        },
+        drawCommand: {
+            mode: DrawMode.LINES,
+            elementsCount: cameraLines.array.length
+        }
+    });
+    if (cameraPacket === null) return;
     
     WebGLRendererUtilities.viewport(gl, 0, 0, canvas.width, canvas.height);
     WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
@@ -322,6 +331,7 @@ export async function octree() {
     Input.initialize(canvas);
 
     let deltaTime, lastFrameTime = 0;
+
     const render = (frameTime: number) => {
         if (paused) {
             return;
@@ -334,8 +344,26 @@ export async function octree() {
 
         cameraControl.update(deltaTime);
 
+        const invertedView = cullingCamera.view;
+        const uniformEntries = entities.flatMap((entity_i, i) => {
+            const transformedBox = entity_i.box.transformed(invertedView);
+            const visible = cullingCamera.frustrum.intersectsBox(transformedBox);
+            return [
+                [`instances[${i}].u_color`, {value: visible ? [0, 0, 1] : [1, 0, 0]}]
+            ];
+        }).concat(octants.flatMap((octant_i, i) => {
+            const transformedBox = octant_i.region.transformed(invertedView);
+            const visible = cullingCamera.frustrum.intersectsBox(transformedBox);
+            return [
+                [`instances[${entitiesCount + i}].u_color`, {value: visible ? [0, 0, 1] : [0, 1, 0]}]
+            ];
+        }));
+
         WebGLPacketUtilities.setPacketValues(gl, cubePacket, {
             uniformBlocks: {
+                basicModelBlock: {
+                    uniforms: Object.fromEntries(uniformEntries)
+                },
                 viewBlock: {
                     uniforms: {
                         u_view: { value: camera.view.array },
@@ -345,17 +373,18 @@ export async function octree() {
             }
         });
 
-        WebGLPacketUtilities.setPacketValues(gl, cubePacket, {
+        WebGLPacketUtilities.setPacketValues(gl, cameraPacket, {
             uniformBlocks: {
                 basicModelBlock: {
                     uniforms: {
-                        [`instances[${instancesCount - 1}].u_model`]: {value: selectionMatrix.array}
+                        "instances[0].u_model": { value: cullingCamera.transform.array },
                     }
                 }
             }
         });
 
         WebGLPacketUtilities.drawPacket(gl, cubePacket);
+        WebGLPacketUtilities.drawPacket(gl, cameraPacket);
         
         Input.clear();
 

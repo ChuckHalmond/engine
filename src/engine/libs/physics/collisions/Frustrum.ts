@@ -1,14 +1,15 @@
+import { BoundingBox } from "../../../core/rendering/scenes/geometries/bounding/BoundingBox";
 import { Matrix4 } from "../../maths/algebra/matrices/Matrix4";
 import { Vector3 } from "../../maths/algebra/vectors/Vector3";
 import { Vector3Pool } from "../../maths/extensions/pools/Vector3Pools";
 import { Plane } from "../../maths/geometry/primitives/Plane";
 import { Injector } from "../../patterns/injectors/Injector";
-import { BoundingBox } from "./AxisAlignedBoundingBox";
 import { BoundingSphere } from "./BoundingSphere";
 
 export { Frustrum };
 export { FrustrumInjector };
-export { FrustrumBase };
+
+const tempVector = new Vector3();
 
 interface Frustrum {
     readonly nearPlane: Plane;
@@ -126,42 +127,39 @@ class FrustrumBase implements Frustrum {
 	intersectsBox(box: BoundingBox): boolean {
         let intersects = true;
 
-        const boxMax = box.max;
-        const boxMin = box.min;
-
-        const [temp] = Vector3Pool.acquire(1);
+        const {max: boxMax, min: boxMin} = box;
+        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
         intersects = 
-            this.nearPlane.distanceToPoint(temp.setValues(
-                this.nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this.nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this.nearPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            nearPlane.distanceToPoint(tempVector.setValues(
+                nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                nearPlane.normal.z > 0 ? boxMax.z : boxMin.z
             )) >= 0 &&
-            this.farPlane.distanceToPoint(temp.setValues(
-                this.farPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this.farPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this.farPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            farPlane.distanceToPoint(tempVector.setValues(
+                farPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                farPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                farPlane.normal.z > 0 ? boxMax.z : boxMin.z
             )) >= 0 &&
-            this.bottomPlane.distanceToPoint(temp.setValues(
-                this.bottomPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this.bottomPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this.bottomPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            bottomPlane.distanceToPoint(tempVector.setValues(
+                bottomPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                bottomPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                bottomPlane.normal.z > 0 ? boxMax.z : boxMin.z
             )) >= 0 &&
-            this.topPlane.distanceToPoint(temp.setValues(
-                this.topPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this.topPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this.topPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            topPlane.distanceToPoint(tempVector.setValues(
+                topPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                topPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                topPlane.normal.z > 0 ? boxMax.z : boxMin.z
             )) >= 0 &&
-            this.leftPlane.distanceToPoint(temp.setValues(
-                this.leftPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this.leftPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this.leftPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            leftPlane.distanceToPoint(tempVector.setValues(
+                leftPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                leftPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                leftPlane.normal.z > 0 ? boxMax.z : boxMin.z
             )) >= 0 &&
-            this.rightPlane.distanceToPoint(temp.setValues(
-                this.rightPlane.normal.x > 0 ? boxMax.x : boxMin.x,
-                this.rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
-                this.rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
+            rightPlane.distanceToPoint(tempVector.setValues(
+                rightPlane.normal.x > 0 ? boxMax.x : boxMin.x,
+                rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
+                rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
             )) >= 0;
-        Vector3Pool.release(1);
 
 		return intersects;
 	}

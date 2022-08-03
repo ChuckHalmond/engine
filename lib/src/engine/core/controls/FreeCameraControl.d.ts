@@ -8,6 +8,9 @@ interface FreeCameraControlConstructor {
     }): FreeCameraControl;
 }
 interface FreeCameraControl {
+    camera: Camera;
+    rotationSpeed: number;
+    translationSpeed: number;
     update(deltaTime: number): void;
 }
 declare var FreeCameraControl: FreeCameraControlConstructor;

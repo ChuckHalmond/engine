@@ -18,7 +18,8 @@ interface BoundingBox {
     readonly min: Vector3;
     readonly max: Vector3;
     hits(other: BoundingBox): boolean;
-    transform(matrix: Matrix4): void;
+    transform(matrix: Matrix4): BoundingBox;
+    transformed(matrix: Matrix4): BoundingBox;
 }
 
 class BoundingBoxBase {
@@ -71,18 +72,18 @@ class BoundingBoxBase {
             (minZ <= otherMaxZ && maxZ >= otherMinZ);
     }
 
-    transform(matrix: Matrix4): void {
+    transform(matrix: Matrix4): BoundingBox {
         const {min, max} = this;
         let {x: minX, y: minY, z: minZ} = min;
         let {x: maxX, y: maxY, z: maxZ} = max;
-        corners[0].copy(min);
+        corners[0].setValues(minX, minY, minZ);
         corners[1].setValues(minX, minY, maxZ);
         corners[2].setValues(minX, maxY, minZ);
         corners[3].setValues(maxX, minY, minZ);
         corners[4].setValues(minX, maxY, maxZ);
         corners[5].setValues(maxX, minY, maxZ);
         corners[6].setValues(maxX, maxY, minZ);
-        corners[7].copy(max);
+        corners[7].setValues(maxX, maxY, maxZ);
         const {POSITIVE_INFINITY, NEGATIVE_INFINITY} = Number;
         minX = minY = minZ = POSITIVE_INFINITY;
         maxX = maxY = maxZ = NEGATIVE_INFINITY;
@@ -98,6 +99,17 @@ class BoundingBoxBase {
         });
         min.setValues(minX, minY, minZ);
         max.setValues(maxX, maxY, maxZ);
+        return this;
+    }
+
+    transformed(matrix: Matrix4): BoundingBox {
+        const {min, max} = this;
+        const {x: minX, y: minY, z: minZ} = min;
+        const {x: maxX, y: maxY, z: maxZ} = max;
+        return new BoundingBox(
+            new Vector3(minX, minY, minZ),
+            new Vector3(maxX, maxY, maxZ)
+        ).transform(matrix);
     }
 }
 

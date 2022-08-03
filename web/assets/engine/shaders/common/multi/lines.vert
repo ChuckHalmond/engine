@@ -29,8 +29,12 @@ void main() {
   // see Uniform Block to StructuredBuffer Translation in chrome
   mat4 model = instances[gl_InstanceID].u_model;
   vec3 color = instances[gl_InstanceID].u_color;
+  //#ifdef PER_VERTEX_COLOR
+    v_color = length(color) == 0.0 ? a_color : color;
+  /*#else
+    v_color = instances[gl_InstanceID].u_color;
+  #endif*/
   vec4 position = u_projection * u_view * model * a_position;
   gl_Position = position;
-  v_color = a_color;
   v_position = (model * a_position).xyz;
 }
