@@ -3,6 +3,7 @@ import { FreeCameraControl } from "../../engine/core/controls/FreeCameraControl"
 import { Transform } from "../../engine/core/general/Transform";
 import { Input } from "../../engine/core/input/Input";
 import { CameraHelper } from "../../engine/core/rendering/helpers/CameraHelper";
+import { GridHelper } from "../../engine/core/rendering/helpers/GridHelper";
 import { Camera } from "../../engine/core/rendering/scenes/cameras/Camera";
 import { PerspectiveCamera } from "../../engine/core/rendering/scenes/cameras/PerspectiveCamera";
 import { BoundingBox } from "../../engine/core/rendering/scenes/geometries/bounding/BoundingBox";
@@ -104,13 +105,19 @@ export async function octree() {
 
     const cullingCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
     const cullingCameraHelper = new CameraHelper(cullingCamera);
+    const cameraLines = cullingCameraHelper.geometry.getAttribute("a_position")!;
+    const cameraColors = cullingCameraHelper.geometry.getAttribute("a_color")!;
 
+    
     camera = defaultCamera;
     const cameraControl = new FreeCameraControl(camera);
 
-
-    const cameraLines = cullingCameraHelper.geometry.getAttribute("a_position")!;
-    const cameraColors = cullingCameraHelper.geometry.getAttribute("a_color")!;
+    const gridHelper = new GridHelper({
+        size: 100,
+        divisions: 100
+    });
+    const gridLines = gridHelper.geometry.getAttribute("a_position")!;
+    const gridColors = gridHelper.geometry.getAttribute("a_color")!;
 
     const cubeGeometry = new CubeGeometry();
     const cubeGeometryBuilder = cubeGeometry.toBuilder();
@@ -322,6 +329,42 @@ export async function octree() {
         }
     });
     if (cameraPacket === null) return;
+
+    const gridPacket = WebGLPacketUtilities.createPacket(gl, {
+        program: {
+            vertexSource: linesVert,
+            fragmentSource: linesFrag
+        },
+        vertexArray: {
+            vertexAttributes: {
+                a_position: gridLines,
+                a_color: gridColors
+            }
+        },
+        uniformBuffers: [
+            {
+                usage: BufferDataUsage.STATIC_READ
+            },
+            cubePacket.uniformBlocks!.viewBlock.buffer!
+        ],
+        uniformBlocks: {
+            basicModelBlock: {
+                buffer: 0,
+                uniforms: {
+                    "instances[0].u_model": { value: cullingCamera.transform.array },
+                }
+            },
+            viewBlock: {
+                buffer: 1
+            }
+        },
+        drawCommand: {
+            mode: DrawMode.LINES,
+            elementsCount: gridLines.array.length
+        }
+    });
+    if (gridPacket === null) return;
+    
     
     WebGLRendererUtilities.viewport(gl, 0, 0, canvas.width, canvas.height);
     WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
@@ -383,6 +426,7 @@ export async function octree() {
             }
         });
 
+        WebGLPacketUtilities.drawPacket(gl, gridPacket);
         WebGLPacketUtilities.drawPacket(gl, cubePacket);
         WebGLPacketUtilities.drawPacket(gl, cameraPacket);
         
