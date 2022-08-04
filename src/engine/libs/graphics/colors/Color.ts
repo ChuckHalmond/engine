@@ -8,6 +8,7 @@ interface ColorConstructor {
     new(): Color;
     new(r: number, g: number, b: number): Color;
     new(r: number, g: number, b: number, a: number): Color;
+    readonly YELLOW: Color;
     readonly BLACK: Color;
     readonly RED: Color;
     readonly GREEN: Color;
@@ -62,6 +63,7 @@ class ColorBase implements Color {
     
     static readonly BLACK = new ColorBase(0, 0, 0);
     static readonly RED = new ColorBase(1, 0, 0);
+    static readonly YELLOW = new ColorBase(1, 1, 0);
     static readonly GREEN = new ColorBase(0, 1, 0);
     static readonly BLUE = new ColorBase(0, 0, 1);
     static readonly WHITE = new ColorBase(1, 1, 1);

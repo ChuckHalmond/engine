@@ -6,6 +6,7 @@ interface ColorConstructor {
     new (): Color;
     new (r: number, g: number, b: number): Color;
     new (r: number, g: number, b: number, a: number): Color;
+    readonly YELLOW: Color;
     readonly BLACK: Color;
     readonly RED: Color;
     readonly GREEN: Color;

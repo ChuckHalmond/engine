@@ -78,14 +78,14 @@ export async function octree() {
         return input;
     });*/
 
-    let camera: Camera;
+    let controlledCamera: Camera;
 
     const cameraSwitch = document.createElement("input");
     cameraSwitch.type = "checkbox";
     cameraSwitch.onchange = () => {
         const {checked} = cameraSwitch;
-        camera = checked ? cullingCamera : defaultCamera;
-        cameraControl.camera = camera;
+        controlledCamera = checked ? cullingCamera : defaultCamera;
+        cameraControl.camera = controlledCamera;
     };
 
     document.body.append(
@@ -103,14 +103,14 @@ export async function octree() {
     const defaultCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
     defaultCamera.transform.setTranslation(new Vector3([0, 0, 25]));
 
-    const cullingCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
+    const cullingCamera = new PerspectiveCamera(fov / 2, aspect, 0.1, 100);
     const cullingCameraHelper = new CameraHelper(cullingCamera);
     const cameraLines = cullingCameraHelper.geometry.getAttribute("a_position")!;
     const cameraColors = cullingCameraHelper.geometry.getAttribute("a_color")!;
 
     
-    camera = defaultCamera;
-    const cameraControl = new FreeCameraControl(camera);
+    controlledCamera = defaultCamera;
+    const cameraControl = new FreeCameraControl(controlledCamera);
 
     const gridHelper = new GridHelper({
         size: 100,
@@ -180,9 +180,19 @@ export async function octree() {
     const entitiesCount = staticEntities.length + nonStaticEntities.length;
     const octants = octree.innerOctants().slice(1);
     const octantsCount = octants.length;
-    const instancesCount = entitiesCount + octantsCount + 1;
+    const instancesCount = entitiesCount + octantsCount;
     const entities = [...staticEntities, ...nonStaticEntities];
 
+    
+    let highlightedEntity: {
+        box: BoundingBox;
+    };
+    (window as any)["entities"] = entities;
+    (window as any)["highlightEntity"] = (entity: {
+        box: BoundingBox;
+    }) => {
+        highlightedEntity = entity;
+    };
     /*console.table(
         octants.map((octant_i, i) => {
             const {id} = octant_i;
@@ -219,8 +229,7 @@ export async function octree() {
         })
     );*/
 
-    const uniformEntries = entities.flatMap((entity_i, i) => {
-        const {box} = entity_i;
+    function getBoxMatrix(box: BoundingBox) {
         const {min, max} = box;
         const {x: minX, y: minY, z: minZ} = min;
         const {x: maxX, y: maxY, z: maxZ} = max;
@@ -233,6 +242,11 @@ export async function octree() {
         const boxCenter = new Vector3(centerX, centerY, centerZ);
         const boxScaling = new Vector3(boxWidth, boxHeight, boxDepth);
         const matrix = Matrix4.identity().translate(boxCenter).scale(boxScaling);
+        return matrix;
+    }
+
+    const uniformEntries = entities.flatMap((entity_i, i) => {
+        const matrix = getBoxMatrix(entity_i.box);
         return [
             [`instances[${i}].u_model`, {value: matrix.array}],
             [`instances[${i}].u_color`, {value: [1, 0, 0]}]
@@ -369,7 +383,7 @@ export async function octree() {
     WebGLRendererUtilities.viewport(gl, 0, 0, canvas.width, canvas.height);
     WebGLRendererUtilities.enable(gl, Capabilities.CULL_FACE);
     WebGLRendererUtilities.enable(gl, Capabilities.DEPTH_TEST);
-    WebGLRendererUtilities.clearColor(gl, Color.BLACK);
+    WebGLRendererUtilities.clearColor(gl, Color.WHITE);
 
     Input.initialize(canvas);
 
@@ -392,15 +406,15 @@ export async function octree() {
             const transformedBox = entity_i.box.transformed(invertedView);
             const visible = cullingCamera.frustrum.intersectsBox(transformedBox);
             return [
-                [`instances[${i}].u_color`, {value: visible ? [0, 0, 1] : [1, 0, 0]}]
+                [`instances[${i}].u_color`, {value: Array.from(entity_i === highlightedEntity ? Color.YELLOW : visible ? Color.BLUE : Color.RED)}]
             ];
-        }).concat(octants.flatMap((octant_i, i) => {
+        });/*.concat(octants.flatMap((octant_i, i) => {
             const transformedBox = octant_i.region.transformed(invertedView);
             const visible = cullingCamera.frustrum.intersectsBox(transformedBox);
             return [
-                [`instances[${entitiesCount + i}].u_color`, {value: visible ? [0, 0, 1] : [0, 1, 0]}]
+                [`instances[${entitiesCount + i}].u_color`, {value: visible ? Array.from(Color.BLUE) : Array.from(Color.GREEN)}]
             ];
-        }));
+        }));*/
 
         WebGLPacketUtilities.setPacketValues(gl, cubePacket, {
             uniformBlocks: {
@@ -409,8 +423,8 @@ export async function octree() {
                 },
                 viewBlock: {
                     uniforms: {
-                        u_view: { value: camera.view.array },
-                        u_projection: { value: camera.projection.array }
+                        u_view: { value: controlledCamera.view.array },
+                        u_projection: { value: controlledCamera.projection.array }
                     }
                 }
             }

@@ -255,8 +255,7 @@ class WebGLVertexArrayUtilities {
     
             attributesEntries.forEach(([attributeName, attribute]) => {
                 const {array, type} = attribute;
-                let {constant, divisor, normalize, componentType} = attribute;
-                constant = constant ?? false;
+                let {constant = false, divisor, normalize, componentType} = attribute;
                 componentType = array?this.getArrayComponentType(array) : componentType!;
 
                 const location = gl.getAttribLocation(internalProgram, attributeName);

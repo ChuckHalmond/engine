@@ -100,8 +100,7 @@ class WebGLUniformUtilities {
 
     static getUniformSetter(gl: WebGL2RenderingContext, uniform: Uniform, location: WebGLUniformLocation , uniformType: UniformType): UniformSetter | null { 
         const {value, srcOffset, srcLength} = uniform;
-        let {transpose} = uniform;
-        transpose = transpose ?? false;
+        let {transpose = false} = uniform;
 
         switch (uniformType) {
             case UniformType.FLOAT:

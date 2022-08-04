@@ -6,6 +6,7 @@ import { Plane } from "../../../libs/maths/geometry/primitives/Plane";
 import { Mesh } from "../hl/Mesh";
 import { WireframeMaterial } from "../hl/WireframeMaterial";
 import { Camera } from "../scenes/cameras/Camera";
+import { PerspectiveCamera } from "../scenes/cameras/PerspectiveCamera";
 import { GeometryBuffer } from "../scenes/geometries/GeometryBuffer";
 import { AttributeDataType } from "../webgl/WebGLVertexArrayUtilities";
 
@@ -58,7 +59,19 @@ class CameraHelperBase extends Mesh implements CameraHelper {
         const leftTopFar = Plane.intersection(leftPlane, topPlane, farPlane, new Vector3());
         const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
         const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
-
+        //const offset = nearPlane.normal.normalize().clone().scale(nearPlane.constant);
+        [
+            leftBottomNear,
+            leftTopNear,
+            rightBottomNear,
+            rightTopNear,
+            leftBottomFar,
+            leftTopFar,
+            rightBottomFar,
+            rightTopFar
+        ].forEach((vertex) => {
+            console.log(Array.from(vertex));
+        });
         const vertices = [
             ...leftBottomNear, ...leftTopNear,
             ...leftTopNear, ...rightTopNear,
@@ -76,9 +89,10 @@ class CameraHelperBase extends Mesh implements CameraHelper {
             ...rightBottomFar, ...leftBottomFar,
         ];
 
-        const nearColor = Color.RED;
-        const farColor = Color.GREEN;
-        const sideColor = Color.BLUE;
+        const nearColor = Color.YELLOW;
+        const farColor = Color.RED;
+        const leftColor = Color.BLUE;
+        const rightColor = Color.GREEN;
 
         const colors = [
             ...nearColor, ...nearColor,
@@ -86,10 +100,10 @@ class CameraHelperBase extends Mesh implements CameraHelper {
             ...nearColor, ...nearColor,
             ...nearColor, ...nearColor,
 
-            ...sideColor, ...sideColor,
-            ...sideColor, ...sideColor,
-            ...sideColor, ...sideColor,
-            ...sideColor, ...sideColor,
+            ...leftColor, ...leftColor,
+            ...leftColor, ...leftColor,
+            ...rightColor, ...rightColor,
+            ...rightColor, ...rightColor,
 
             ...farColor, ...farColor,
             ...farColor, ...farColor,

@@ -42,7 +42,7 @@ export class CylinderGeometry extends GeometryBase {
 		heightSegments = Math.floor(heightSegments);
 
 		const halfHeight = height / 2;
-
+		
 		const indices: number[] = [];
 		const vertices: number[] = [];
 		const uvs: number[] = [];

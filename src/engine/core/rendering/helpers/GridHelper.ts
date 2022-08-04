@@ -30,14 +30,8 @@ class GridHelperBase extends Mesh implements GridHelper {
         size?: number, divisions?: number, color1?: Color, color2?: Color
     }) {
         properties = properties ?? {};
-        let {size, divisions, color1, color2} = properties;
-
-		color1 = color1 ? color1 : Color.RED;
-		color2 = color2 ? color2 : Color.GREEN;
-
-        divisions = divisions ?? 10;
-        size = size ?? 10;
-
+        const {size = 10, divisions = 10, color1 = Color.RED, color2 = Color.GREEN} = properties;
+        
 		const center = divisions / 2;
 		const step = size / divisions;
 		const halfSize = size / 2;
