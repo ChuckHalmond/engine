@@ -100,10 +100,33 @@ export async function octree() {
     const zNear = 0.1;
     const zFar = 1000;
 
-    const defaultCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
-    defaultCamera.transform.setTranslation(new Vector3([0, 0, 25]));
+    const cullingCamera = new PerspectiveCamera(fov, aspect, 0.1, 1);
+    cullingCamera.transform.setTranslation(new Vector3([0, 0, 15]));
 
-    const cullingCamera = new PerspectiveCamera(fov / 2, aspect, 0.1, 100);
+    /*const defaultCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
+    defaultCamera.transform.setTranslation(
+        cullingCamera.transform
+            .getTranslation(new Vector3())
+            .add(
+                cullingCamera.transform.getForward(new Vector3())
+            )
+    );
+    defaultCamera.transform.lookAt(
+        cullingCamera.transform.getTranslation(new Vector3()),
+        Space.up
+    );*/
+
+    const defaultCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
+    defaultCamera.transform.setTranslation(
+        Space.left.clone().scale(25).add(
+            Space.forward.clone().scale(15)
+        )
+    );
+    defaultCamera.transform.lookAt(
+        Space.origin,
+        Space.up
+    );
+
     const cullingCameraHelper = new CameraHelper(cullingCamera);
     const cameraLines = cullingCameraHelper.geometry.getAttribute("a_position")!;
     const cameraColors = cullingCameraHelper.geometry.getAttribute("a_color")!;
@@ -130,8 +153,8 @@ export async function octree() {
         new Vector3(rootScaling, rootScaling, rootScaling)
     );
 
-    const entityBoxScalingRatio = 2;
-    const entityBoxTranslationRatio = rootScaling - 4;
+    const entityBoxScalingRatio = 1;
+    const entityBoxTranslationRatio = rootScaling / 2;
 
     const staticEntitiesCount = 8;
     const staticEntities = new Array(staticEntitiesCount).fill(0).map(() => {
@@ -180,9 +203,8 @@ export async function octree() {
     const entitiesCount = staticEntities.length + nonStaticEntities.length;
     const octants = octree.innerOctants().slice(1);
     const octantsCount = octants.length;
-    const instancesCount = entitiesCount + octantsCount;
+    const instancesCount = entitiesCount/* + octantsCount*/;
     const entities = [...staticEntities, ...nonStaticEntities];
-
     
     let highlightedEntity: {
         box: BoundingBox;
@@ -251,7 +273,7 @@ export async function octree() {
             [`instances[${i}].u_model`, {value: matrix.array}],
             [`instances[${i}].u_color`, {value: [1, 0, 0]}]
         ];
-    }).concat(
+    })/*.concat(
         ...octants.map((octree, i) => {
             const {region} = octree;
             const {min, max} = region;
@@ -271,7 +293,7 @@ export async function octree() {
                 [`instances[${entitiesCount + i}].u_color`, {value: [0, 1, 0]}]
             ];
         })
-    );
+    )*/;
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
         program: {
@@ -401,12 +423,13 @@ export async function octree() {
 
         cameraControl.update(deltaTime);
 
-        const invertedView = cullingCamera.view;
+        const {frustrum} = cullingCamera;
+        frustrum.setFromPerspectiveMatrix(cullingCamera.viewProjection);
+        console.log(`Culling camera is at ${Array.from(cullingCamera.transform.getTranslation(new Vector3()))}`);
         const uniformEntries = entities.flatMap((entity_i, i) => {
-            const transformedBox = entity_i.box.transformed(invertedView);
-            const visible = cullingCamera.frustrum.intersectsBox(transformedBox);
+            const visible = cullingCamera.frustrum.intersectsBox(entity_i.box);
             return [
-                [`instances[${i}].u_color`, {value: Array.from(entity_i === highlightedEntity ? Color.YELLOW : visible ? Color.BLUE : Color.RED)}]
+                [`instances[${i}].u_color`, {value: Array.from(/*entity_i === highlightedEntity ? Color.YELLOW : */visible ? Color.BLUE : Color.RED)}]
             ];
         });/*.concat(octants.flatMap((octant_i, i) => {
             const transformedBox = octant_i.region.transformed(invertedView);
@@ -440,13 +463,13 @@ export async function octree() {
             }
         });
 
-        WebGLPacketUtilities.drawPacket(gl, gridPacket);
+        //WebGLPacketUtilities.drawPacket(gl, gridPacket);
         WebGLPacketUtilities.drawPacket(gl, cubePacket);
         WebGLPacketUtilities.drawPacket(gl, cameraPacket);
         
         Input.clear();
 
-        requestAnimationFrame(render);
+        //requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);

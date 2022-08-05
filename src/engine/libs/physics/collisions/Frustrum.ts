@@ -66,7 +66,7 @@ class FrustrumBase implements Frustrum {
 		return this;
 	}
 
-    copy(frustrum: FrustrumBase): FrustrumBase {
+    copy(frustrum: FrustrumBase): Frustrum {
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = frustrum;
         this.set(
             nearPlane,
@@ -79,11 +79,11 @@ class FrustrumBase implements Frustrum {
         return this;
     }
 
-	clone(): FrustrumBase {
+	clone(): Frustrum {
 		return new FrustrumBase().copy(this);
     }
     
-	setFromPerspectiveMatrix(matrix: Matrix4): FrustrumBase {
+	setFromPerspectiveMatrix(matrix: Matrix4): Frustrum {
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
         const [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15] = matrix.array;
         rightPlane.set(m3 - m0, m7 - m4, m11 - m8, m15 - m12).normalized();
@@ -92,6 +92,31 @@ class FrustrumBase implements Frustrum {
         topPlane.set(m3 - m1, m7 - m5, m11 - m9, m15 - m13).normalized();
         farPlane.set(m3 - m2, m7 - m6, m11 - m10, m15 - m14).normalized();
         nearPlane.set(m3 + m2, m7 + m6, m11 + m10, m15 + m14).normalized();
+        
+
+
+        const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
+        const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
+        const rightBottomNear = Plane.intersection(rightPlane, bottomPlane, nearPlane, new Vector3());
+        const rightTopNear = Plane.intersection(rightPlane, topPlane, nearPlane, new Vector3());
+        const leftBottomFar  = Plane.intersection(leftPlane, bottomPlane, farPlane, new Vector3());
+        const leftTopFar = Plane.intersection(leftPlane, topPlane, farPlane, new Vector3());
+        const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
+        const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
+        //const offset = nearPlane.normal.normalize().clone().scale(nearPlane.constant);
+        (<[string, Vector3][]>[
+            ["leftBottomNear", leftBottomNear],
+            ["leftTopNear", leftTopNear],
+            ["rightBottomNear", rightBottomNear],
+            ["rightTopNear", rightTopNear],
+            ["leftBottomFar", leftBottomFar],
+            ["leftTopFar", leftTopFar],
+            ["rightBottomFar", rightBottomFar],
+            ["rightTopFar", rightTopFar]
+        ]).forEach(([name, vertex]) => {
+            console.log(`${name} ${Array.from(vertex)}`);
+        });
+
 		return this;
     }
     
@@ -105,9 +130,9 @@ class FrustrumBase implements Frustrum {
             center.dot(leftPlane.normal) + leftPlane.constant + radius <= 0 ||
             center.dot(rightPlane.normal) + rightPlane.constant + radius <= 0;
 	}
-
+    
 	intersectsBox(box: BoundingBox): boolean {
-        let intersects = true;
+        let intersects = false;
         const {max: boxMax, min: boxMin} = box;
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
         intersects = 
@@ -141,7 +166,9 @@ class FrustrumBase implements Frustrum {
                 rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
                 rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
             )) >= 0;
-
+        if (intersects) {
+            console.log(`Box min(${Array.from(box.min)}) max(${Array.from(box.max)}) intersects!`);
+        }
 		return intersects;
 	}
 
