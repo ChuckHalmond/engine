@@ -60,7 +60,7 @@ class CameraHelperBase extends Mesh implements CameraHelper {
         const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
         const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
         //const offset = nearPlane.normal.normalize().clone().scale(nearPlane.constant);
-        [
+        /*[
             leftBottomNear,
             leftTopNear,
             rightBottomNear,
@@ -71,7 +71,7 @@ class CameraHelperBase extends Mesh implements CameraHelper {
             rightTopFar
         ].forEach((vertex) => {
             console.log(Array.from(vertex));
-        });
+        });*/
         const vertices = [
             ...leftBottomNear, ...leftTopNear,
             ...leftTopNear, ...rightTopNear,

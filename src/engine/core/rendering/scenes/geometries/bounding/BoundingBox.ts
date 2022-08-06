@@ -20,6 +20,7 @@ interface BoundingBox {
     hits(other: BoundingBox): boolean;
     transform(matrix: Matrix4): BoundingBox;
     transformed(matrix: Matrix4): BoundingBox;
+    extents(): Vector3[];
 }
 
 class BoundingBoxBase {
@@ -100,6 +101,22 @@ class BoundingBoxBase {
         min.setValues(minX, minY, minZ);
         max.setValues(maxX, maxY, maxZ);
         return this;
+    }
+
+    extents(): Vector3[] {
+        const {min, max} = this;
+        let {x: minX, y: minY, z: minZ} = min;
+        let {x: maxX, y: maxY, z: maxZ} = max;
+        return [
+            new Vector3(minX, minY, minZ),
+            new Vector3(minX, minY, maxZ),
+            new Vector3(minX, maxY, minZ),
+            new Vector3(maxX, minY, minZ),
+            new Vector3(minX, maxY, maxZ),
+            new Vector3(maxX, minY, maxZ),
+            new Vector3(maxX, maxY, minZ),
+            new Vector3(maxX, maxY, maxZ)
+        ];
     }
 
     transformed(matrix: Matrix4): BoundingBox {

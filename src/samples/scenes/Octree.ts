@@ -19,7 +19,17 @@ import { AttributeDataType, DrawMode, WebGLVertexArrayUtilities } from "../../en
 import { Color } from "../../engine/libs/graphics/colors/Color";
 import { Matrix4 } from "../../engine/libs/maths/algebra/matrices/Matrix4";
 import { Vector3 } from "../../engine/libs/maths/algebra/vectors/Vector3";
+import { Plane } from "../../engine/libs/maths/geometry/primitives/Plane";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
+
+function projectedInterval(a: Vector3, b: Vector3, points: Vector3[]): Vector3[] {
+    const ab = b.clone().sub(a);
+    return points.map(p => {
+        const ap = p.clone().sub(a);
+        const dot = ap.dot(ab);
+        return ap.copy(a).add(ab.scale(dot / ab.dot(ab)));
+    });
+}
 
 export async function octree() {
     const canvas = document.createElement("canvas");
@@ -100,7 +110,7 @@ export async function octree() {
     const zNear = 0.1;
     const zFar = 1000;
 
-    const cullingCamera = new PerspectiveCamera(fov, aspect, 0.1, 1);
+    const cullingCamera = new PerspectiveCamera(fov, aspect, 0.1, 10);
     cullingCamera.transform.setTranslation(new Vector3([0, 0, 15]));
 
     /*const defaultCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
@@ -425,9 +435,27 @@ export async function octree() {
 
         const {frustrum} = cullingCamera;
         frustrum.setFromPerspectiveMatrix(cullingCamera.viewProjection);
-        console.log(`Culling camera is at ${Array.from(cullingCamera.transform.getTranslation(new Vector3()))}`);
+
+        
+        const temp = new Vector3();
+        const separatingAxis = frustrum.separatingAxis();
         const uniformEntries = entities.flatMap((entity_i, i) => {
-            const visible = cullingCamera.frustrum.intersectsBox(entity_i.box);
+            let visible = cullingCamera.frustrum.intersectsBox(entity_i.box);
+            if (visible) {
+                const extents = entity_i.box.extents();
+                visible = separatingAxis.some(
+                    ([a, b]) => {
+                        const axis = b.clone().sub(a);
+                        const middle = b.clone().add(a).scale(0.5);
+                        const halfSize = axis.length() / 2;
+                        const interval = projectedInterval(a, b, extents);
+                        const overlap = interval.some(
+                            point => temp.copy(point).sub(middle).length() < halfSize
+                        );
+                        return overlap;
+                    }
+                )
+            };
             return [
                 [`instances[${i}].u_color`, {value: Array.from(/*entity_i === highlightedEntity ? Color.YELLOW : */visible ? Color.BLUE : Color.RED)}]
             ];
@@ -469,7 +497,7 @@ export async function octree() {
         
         Input.clear();
 
-        //requestAnimationFrame(render);
+        requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);

@@ -1,5 +1,6 @@
 import { BoundingBox } from "../../../core/rendering/scenes/geometries/bounding/BoundingBox";
 import { Matrix4 } from "../../maths/algebra/matrices/Matrix4";
+import { Vector2 } from "../../maths/algebra/vectors/Vector2";
 import { Vector3 } from "../../maths/algebra/vectors/Vector3";
 import { Plane } from "../../maths/geometry/primitives/Plane";
 import { Injector } from "../../patterns/injectors/Injector";
@@ -28,6 +29,8 @@ interface Frustrum {
 	intersectsSphere(sphere: BoundingSphere): boolean;
 	intersectsBox(box: BoundingBox): boolean;
 	containsPoint(point: Vector3): boolean;
+    separatingAxis(): [Vector3, Vector3][];
+    points(): Vector3[];
 }
 
 interface FrustrumConstructor {
@@ -92,31 +95,6 @@ class FrustrumBase implements Frustrum {
         topPlane.set(m3 - m1, m7 - m5, m11 - m9, m15 - m13).normalized();
         farPlane.set(m3 - m2, m7 - m6, m11 - m10, m15 - m14).normalized();
         nearPlane.set(m3 + m2, m7 + m6, m11 + m10, m15 + m14).normalized();
-        
-
-
-        const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
-        const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
-        const rightBottomNear = Plane.intersection(rightPlane, bottomPlane, nearPlane, new Vector3());
-        const rightTopNear = Plane.intersection(rightPlane, topPlane, nearPlane, new Vector3());
-        const leftBottomFar  = Plane.intersection(leftPlane, bottomPlane, farPlane, new Vector3());
-        const leftTopFar = Plane.intersection(leftPlane, topPlane, farPlane, new Vector3());
-        const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
-        const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
-        //const offset = nearPlane.normal.normalize().clone().scale(nearPlane.constant);
-        (<[string, Vector3][]>[
-            ["leftBottomNear", leftBottomNear],
-            ["leftTopNear", leftTopNear],
-            ["rightBottomNear", rightBottomNear],
-            ["rightTopNear", rightTopNear],
-            ["leftBottomFar", leftBottomFar],
-            ["leftTopFar", leftTopFar],
-            ["rightBottomFar", rightBottomFar],
-            ["rightTopFar", rightTopFar]
-        ]).forEach(([name, vertex]) => {
-            console.log(`${name} ${Array.from(vertex)}`);
-        });
-
 		return this;
     }
     
@@ -132,10 +110,9 @@ class FrustrumBase implements Frustrum {
 	}
     
 	intersectsBox(box: BoundingBox): boolean {
-        let intersects = false;
         const {max: boxMax, min: boxMin} = box;
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
-        intersects = 
+        let intersects = 
             nearPlane.distanceToPoint(tempVector.setValues(
                 nearPlane.normal.x > 0 ? boxMax.x : boxMin.x,
                 nearPlane.normal.y > 0 ? boxMax.y : boxMin.y,
@@ -166,11 +143,50 @@ class FrustrumBase implements Frustrum {
                 rightPlane.normal.y > 0 ? boxMax.y : boxMin.y,
                 rightPlane.normal.z > 0 ? boxMax.z : boxMin.z
             )) >= 0;
-        if (intersects) {
-            console.log(`Box min(${Array.from(box.min)}) max(${Array.from(box.max)}) intersects!`);
-        }
 		return intersects;
 	}
+
+    separatingAxis(): [Vector3, Vector3][] {
+        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
+        const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
+        const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
+        const rightBottomNear = Plane.intersection(rightPlane, bottomPlane, nearPlane, new Vector3());
+        const rightTopNear = Plane.intersection(rightPlane, topPlane, nearPlane, new Vector3());
+        const leftBottomFar  = Plane.intersection(leftPlane, bottomPlane, farPlane, new Vector3());
+        const leftTopFar = Plane.intersection(leftPlane, topPlane, farPlane, new Vector3());
+        const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
+        const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
+        return [
+            [leftTopNear, leftTopFar],
+            [rightTopNear, rightTopFar],
+            [leftBottomNear, leftBottomFar],
+            [rightBottomNear, rightBottomFar],
+            [leftTopFar, rightTopFar],
+            [rightBottomNear, rightTopNear]
+        ];
+    }
+
+    points(): Vector3[] {
+        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
+        const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
+        const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
+        const rightBottomNear = Plane.intersection(rightPlane, bottomPlane, nearPlane, new Vector3());
+        const rightTopNear = Plane.intersection(rightPlane, topPlane, nearPlane, new Vector3());
+        const leftBottomFar  = Plane.intersection(leftPlane, bottomPlane, farPlane, new Vector3());
+        const leftTopFar = Plane.intersection(leftPlane, topPlane, farPlane, new Vector3());
+        const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
+        const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
+        return [
+            leftBottomNear,
+            leftTopNear,
+            rightBottomNear,
+            rightTopNear,
+            leftBottomFar,
+            leftTopFar,
+            rightBottomFar,
+            rightTopFar
+        ];
+    }
 
 	containsPoint(point: Vector3): boolean {
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;

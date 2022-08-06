@@ -171,7 +171,6 @@ class Vector3Base implements Vector3 {
 		this.array[0] = 0;
 		this.array[1] = 0;
 		this.array[2] = 0;
-
 		return this;
 	}
 
@@ -179,7 +178,6 @@ class Vector3Base implements Vector3 {
 		this.array[0] = 1;
 		this.array[1] = 1;
 		this.array[2] = 1;
-
 		return this;
 	}
 
@@ -187,7 +185,6 @@ class Vector3Base implements Vector3 {
 		this.array[0] = this.array[0] + vector.array[0];
 		this.array[1] = this.array[1] + vector.array[1];
 		this.array[2] = this.array[2] + vector.array[2];
-
 		return this;
 	}
 
@@ -195,7 +192,6 @@ class Vector3Base implements Vector3 {
 		this.array[0] = this.array[0] + k;
 		this.array[1] = this.array[1] + k;
 		this.array[2] = this.array[2] + k;
-
 		return this;
 	}
 
@@ -203,16 +199,13 @@ class Vector3Base implements Vector3 {
 		this.array[0] = this.array[0] - vector.array[0];
 		this.array[1] = this.array[1] - vector.array[1];
 		this.array[2] = this.array[2] - vector.array[2];
-		
 		return this;
 	}
 
 	lerp(from: Vector3, to: Vector3, t: number): this {
-		
 		this.array[0] = (1 - t) * from.x + t * (to.x - from.x);
 		this.array[1] = (1 - t) * from.y + t * (to.y - from.y);
 		this.array[2] = (1 - t) * from.z + t * (to.z - from.z);
-
 		return this;
 	}
 
@@ -220,7 +213,6 @@ class Vector3Base implements Vector3 {
 		this.array[0] = Math.max(this.array[0], vectorB.array[0]);
 		this.array[1] = Math.max(this.array[1], vectorB.array[1]);
 		this.array[2] = Math.max(this.array[2], vectorB.array[2]);
-
 		return this;
 	}
 
@@ -228,7 +220,6 @@ class Vector3Base implements Vector3 {
 		this.array[0] = Math.min(this.array[0], vectorB.array[0]);
 		this.array[1] = Math.min(this.array[1], vectorB.array[1]);
 		this.array[2] = Math.min(this.array[2], vectorB.array[2]);
-
 		return this;
 	}
 
@@ -236,7 +227,6 @@ class Vector3Base implements Vector3 {
 		this.array[0] = Math.min(max.array[0], Math.max(this.array[0], min.array[0]));
 		this.array[1] = Math.min(max.array[1], Math.max(this.array[1], min.array[1]));
 		this.array[2] = Math.min(max.array[2], Math.max(this.array[2], min.array[2]));
-		
 		return this;
 	}
 
@@ -244,7 +234,6 @@ class Vector3Base implements Vector3 {
 		this.array[0] = this.array[0] * k;
 		this.array[1] = this.array[1] * k;
 		this.array[2] = this.array[2] * k;
-
 		return this;
 	}
 
@@ -252,11 +241,9 @@ class Vector3Base implements Vector3 {
 		const t0 = this.array[1] * vector.array[2] - this.array[2] * vector.array[1];
 		const t1 = this.array[2] * vector.array[0] - this.array[0] * vector.array[2];
 		const t2 = this.array[0] * vector.array[1] - this.array[1] * vector.array[0];
-		
 		this.array[0] = t0;
 		this.array[1] = t1;
 		this.array[2] = t2;
-		
 		return this;
 	}
 

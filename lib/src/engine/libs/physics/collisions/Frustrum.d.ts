@@ -20,6 +20,8 @@ interface Frustrum {
     intersectsSphere(sphere: BoundingSphere): boolean;
     intersectsBox(box: BoundingBox): boolean;
     containsPoint(point: Vector3): boolean;
+    separatingAxis(): [Vector3, Vector3][];
+    points(): Vector3[];
 }
 interface FrustrumConstructor {
     readonly prototype: Frustrum;
