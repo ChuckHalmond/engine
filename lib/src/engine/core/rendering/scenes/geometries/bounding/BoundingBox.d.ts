@@ -12,5 +12,6 @@ interface BoundingBox {
     transform(matrix: Matrix4): BoundingBox;
     transformed(matrix: Matrix4): BoundingBox;
     extents(): Vector3[];
+    edges(): Vector3[];
 }
 declare var BoundingBox: BoundingBoxConstructor;

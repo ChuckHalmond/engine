@@ -73,7 +73,7 @@ class Vector3Base implements Vector3 {
 	  ...args: any[]
 	) {
 		if (typeof args[0] === "number") {
-			this.array = new Float32Array([args[0], args[2], args[1]]);
+			this.array = new Float32Array([args[0], args[1], args[2]]);
 		}
 		else if (typeof args[0] === "object") {
 			const array = args[0];

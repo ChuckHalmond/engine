@@ -203,7 +203,6 @@ export class Octree {
             const {region} = this;
             const {min, max} = region;
             if (/*min.distance(max) > SQRT3 **/ depth < this.MAX_DEPTH) {
-                console.log("expand");
                 const {octants, staticEntities, nonStaticEntities} = this;
                 const {x: minX, y: minY, z: minZ} = min;
                 const {x: maxX, y: maxY, z: maxZ} = max;
@@ -254,7 +253,6 @@ export class Octree {
     collapse(): void {
         const {expanded} = this;
         if (expanded) {
-            console.log("collapse");
             const {octants, staticEntities, nonStaticEntities} = this;
             octants.forEach((octant) => {
                 const {staticEntities: octantStaticEntities, nonStaticEntities: octantNonStaticEntities} = octant;

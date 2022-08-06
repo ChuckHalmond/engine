@@ -22,15 +22,6 @@ import { Vector3 } from "../../engine/libs/maths/algebra/vectors/Vector3";
 import { Plane } from "../../engine/libs/maths/geometry/primitives/Plane";
 import { Space } from "../../engine/libs/maths/geometry/space/Space";
 
-function projectedInterval(a: Vector3, b: Vector3, points: Vector3[]): Vector3[] {
-    const ab = b.clone().sub(a);
-    return points.map(p => {
-        const ap = p.clone().sub(a);
-        const dot = ap.dot(ab);
-        return ap.copy(a).add(ab.scale(dot / ab.dot(ab)));
-    });
-}
-
 export async function octree() {
     const canvas = document.createElement("canvas");
     canvas.style.display = "block";
@@ -436,26 +427,29 @@ export async function octree() {
         const {frustrum} = cullingCamera;
         frustrum.setFromPerspectiveMatrix(cullingCamera.viewProjection);
 
-        
-        const temp = new Vector3();
-        const separatingAxis = frustrum.separatingAxis();
+        const frustrumEdges = frustrum.edges();
+        const frustrumExtents = frustrum.extents();
         const uniformEntries = entities.flatMap((entity_i, i) => {
-            let visible = cullingCamera.frustrum.intersectsBox(entity_i.box);
-            if (visible) {
-                const extents = entity_i.box.extents();
-                visible = separatingAxis.some(
-                    ([a, b]) => {
-                        const axis = b.clone().sub(a);
-                        const middle = b.clone().add(a).scale(0.5);
-                        const halfSize = axis.length() / 2;
-                        const interval = projectedInterval(a, b, extents);
-                        const overlap = interval.some(
-                            point => temp.copy(point).sub(middle).length() < halfSize
-                        );
-                        return overlap;
-                    }
+            const {box} = entity_i;
+            const boxEdges = box.edges();
+            const boxExtents = box.extents();
+            const separatingAxis = frustrumEdges.flatMap(
+                (frustrumEdge) => boxEdges.map(
+                    (boxEdge) => boxEdge.clone().cross(frustrumEdge)
                 )
-            };
+            ).concat(frustrumEdges).concat(boxEdges);
+            let visible = !separatingAxis.some(
+                (axis) => {
+                    axis.normalize();
+                    const intF = frustrumExtents.map(f => f.dot(axis));
+                    const minF = Math.min(...intF);
+                    const maxF = Math.max(...intF);
+                    const intB = boxExtents.map(b => b.dot(axis));
+                    const minB = Math.min(...intB);
+                    const maxB = Math.max(...intB);
+                    return (minF > maxB) || (minB > maxF);
+                }
+            );
             return [
                 [`instances[${i}].u_color`, {value: Array.from(/*entity_i === highlightedEntity ? Color.YELLOW : */visible ? Color.BLUE : Color.RED)}]
             ];

@@ -29,8 +29,8 @@ interface Frustrum {
 	intersectsSphere(sphere: BoundingSphere): boolean;
 	intersectsBox(box: BoundingBox): boolean;
 	containsPoint(point: Vector3): boolean;
-    separatingAxis(): [Vector3, Vector3][];
-    points(): Vector3[];
+    edges(): Vector3[];
+    extents(): Vector3[];
 }
 
 interface FrustrumConstructor {
@@ -146,7 +146,7 @@ class FrustrumBase implements Frustrum {
 		return intersects;
 	}
 
-    separatingAxis(): [Vector3, Vector3][] {
+    edges(): Vector3[] {
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
         const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
         const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
@@ -157,16 +157,16 @@ class FrustrumBase implements Frustrum {
         const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
         const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
         return [
-            [leftTopNear, leftTopFar],
-            [rightTopNear, rightTopFar],
-            [leftBottomNear, leftBottomFar],
-            [rightBottomNear, rightBottomFar],
-            [leftTopFar, rightTopFar],
-            [rightBottomNear, rightTopNear]
+            leftTopFar.clone().sub(leftTopNear),
+            rightTopFar.clone().sub(rightTopNear),
+            leftBottomFar.clone().sub(leftBottomNear),
+            rightBottomFar.clone().sub(rightBottomNear),
+            rightTopFar.clone().sub(leftTopFar),
+            rightTopNear.clone().sub(rightBottomNear)
         ];
     }
 
-    points(): Vector3[] {
+    extents(): Vector3[] {
         const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
         const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
         const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());

@@ -1,6 +1,5 @@
 import { Matrix4 } from "../../../../../libs/maths/algebra/matrices/Matrix4";
 import { Vector3 } from "../../../../../libs/maths/algebra/vectors/Vector3";
-import { Frustrum } from "../../../../../libs/physics/collisions/Frustrum";
 
 export { BoundingBox };
 
@@ -21,6 +20,7 @@ interface BoundingBox {
     transform(matrix: Matrix4): BoundingBox;
     transformed(matrix: Matrix4): BoundingBox;
     extents(): Vector3[];
+    edges(): Vector3[];
 }
 
 class BoundingBoxBase {
@@ -101,6 +101,17 @@ class BoundingBoxBase {
         min.setValues(minX, minY, minZ);
         max.setValues(maxX, maxY, maxZ);
         return this;
+    }
+
+    edges(): Vector3[] {
+        const {min, max} = this;
+        let {x: minX, y: minY, z: minZ} = min;
+        let {x: maxX, y: maxY, z: maxZ} = max;
+        return [
+            new Vector3(minX, minY, maxZ).sub(min),
+            new Vector3(maxX, minY, minZ).sub(min),
+            new Vector3(minX, maxY, minZ).sub(min)
+        ];
     }
 
     extents(): Vector3[] {
