@@ -1,6 +1,5 @@
 import { BoundingBox } from "../../../core/rendering/scenes/geometries/bounding/BoundingBox";
 import { Matrix4 } from "../../maths/algebra/matrices/Matrix4";
-import { Vector2 } from "../../maths/algebra/vectors/Vector2";
 import { Vector3 } from "../../maths/algebra/vectors/Vector3";
 import { Plane } from "../../maths/geometry/primitives/Plane";
 import { Injector } from "../../patterns/injectors/Injector";

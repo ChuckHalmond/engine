@@ -101,7 +101,7 @@ export async function octree() {
     const zNear = 0.1;
     const zFar = 1000;
 
-    const cullingCamera = new PerspectiveCamera(fov, aspect, 0.1, 10);
+    const cullingCamera = new PerspectiveCamera(fov / 2, aspect, 0.5, 30);
     cullingCamera.transform.setTranslation(new Vector3([0, 0, 15]));
 
     /*const defaultCamera = new PerspectiveCamera(fov, aspect, zNear, zFar);
@@ -204,7 +204,7 @@ export async function octree() {
     const entitiesCount = staticEntities.length + nonStaticEntities.length;
     const octants = octree.innerOctants().slice(1);
     const octantsCount = octants.length;
-    const instancesCount = entitiesCount/* + octantsCount*/;
+    const instancesCount = entitiesCount + octantsCount;
     const entities = [...staticEntities, ...nonStaticEntities];
     
     let highlightedEntity: {
@@ -274,7 +274,7 @@ export async function octree() {
             [`instances[${i}].u_model`, {value: matrix.array}],
             [`instances[${i}].u_color`, {value: [1, 0, 0]}]
         ];
-    })/*.concat(
+    }).concat(
         ...octants.map((octree, i) => {
             const {region} = octree;
             const {min, max} = region;
@@ -294,7 +294,7 @@ export async function octree() {
                 [`instances[${entitiesCount + i}].u_color`, {value: [0, 1, 0]}]
             ];
         })
-    )*/;
+    );
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
         program: {
@@ -433,11 +433,13 @@ export async function octree() {
             const {box} = entity_i;
             const boxEdges = box.edges();
             const boxExtents = box.extents();
-            const separatingAxis = frustrumEdges.flatMap(
-                (frustrumEdge) => boxEdges.map(
-                    (boxEdge) => boxEdge.clone().cross(frustrumEdge)
-                )
-            ).concat(frustrumEdges).concat(boxEdges);
+            const separatingAxis = frustrumEdges
+                .concat(boxEdges)
+                .concat(
+                    frustrumEdges.flatMap((frustrumEdge) =>
+                        boxEdges.map((boxEdge) => boxEdge.clone().cross(frustrumEdge))
+                    )
+                );
             let visible = !separatingAxis.some(
                 (axis) => {
                     axis.normalize();
@@ -451,15 +453,35 @@ export async function octree() {
                 }
             );
             return [
-                [`instances[${i}].u_color`, {value: Array.from(/*entity_i === highlightedEntity ? Color.YELLOW : */visible ? Color.BLUE : Color.RED)}]
+                [`instances[${i}].u_color`, {value: Array.from(visible ? Color.BLUE : Color.RED)}]
             ];
-        });/*.concat(octants.flatMap((octant_i, i) => {
-            const transformedBox = octant_i.region.transformed(invertedView);
-            const visible = cullingCamera.frustrum.intersectsBox(transformedBox);
+        }).concat(octants.flatMap((octant_i, i) => {
+            const {region: box} = octant_i;
+            const boxEdges = box.edges();
+            const boxExtents = box.extents();
+            const separatingAxis = frustrumEdges
+                .concat(boxEdges)
+                .concat(
+                    frustrumEdges.flatMap((frustrumEdge) =>
+                        boxEdges.map((boxEdge) => boxEdge.clone().cross(frustrumEdge))
+                    )
+                );
+            let visible = !separatingAxis.some(
+                (axis) => {
+                    axis.normalize();
+                    const intF = frustrumExtents.map(f => f.dot(axis));
+                    const minF = Math.min(...intF);
+                    const maxF = Math.max(...intF);
+                    const intB = boxExtents.map(b => b.dot(axis));
+                    const minB = Math.min(...intB);
+                    const maxB = Math.max(...intB);
+                    return (minF > maxB) || (minB > maxF);
+                }
+            );
             return [
-                [`instances[${entitiesCount + i}].u_color`, {value: visible ? Array.from(Color.BLUE) : Array.from(Color.GREEN)}]
+                [`instances[${entitiesCount + i}].u_color`, {value: Array.from(visible ? Color.BLUE : Color.GREEN)}]
             ];
-        }));*/
+        }));
 
         WebGLPacketUtilities.setPacketValues(gl, cubePacket, {
             uniformBlocks: {
