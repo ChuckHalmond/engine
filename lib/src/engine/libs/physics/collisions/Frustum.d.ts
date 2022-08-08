@@ -11,15 +11,16 @@ interface Frustum {
     readonly bottomPlane: Plane;
     readonly leftPlane: Plane;
     readonly rightPlane: Plane;
+    readonly extents: Vector3[];
     copy(Frustum: Frustum): Frustum;
     clone(): Frustum;
-    setFromPerspectiveMatrix(matrix: Matrix4): Frustum;
+    setFromMatrix(matrix: Matrix4): Frustum;
     set(nearPlane: Plane, farPlane: Plane, topPlane: Plane, bottomPlane: Plane, leftPlane: Plane, rightPlane: Plane): Frustum;
     intersectsSphere(sphere: BoundingSphere): boolean;
     intersectsBox(box: BoundingBox): boolean;
     containsPoint(point: Vector3): boolean;
-    edges(): Vector3[];
-    extents(): Vector3[];
+    getEdges(edges: Vector3[]): Vector3[];
+    getExtents(extents: Vector3[]): Vector3[];
 }
 interface FrustumConstructor {
     readonly prototype: Frustum;

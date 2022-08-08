@@ -19,8 +19,8 @@ interface BoundingBox {
     hits(other: BoundingBox): boolean;
     transform(matrix: Matrix4): BoundingBox;
     transformed(matrix: Matrix4): BoundingBox;
-    extents(): Vector3[];
-    edges(): Vector3[];
+    getExtents(extents: Vector3[]): Vector3[];
+    getEdges(edges: Vector3[]): Vector3[];
 }
 
 class BoundingBoxBase {
@@ -103,31 +103,29 @@ class BoundingBoxBase {
         return this;
     }
 
-    edges(): Vector3[] {
+    getEdges(edges: Vector3[]): Vector3[] {
         const {min, max} = this;
-        let {x: minX, y: minY, z: minZ} = min;
-        let {x: maxX, y: maxY, z: maxZ} = max;
-        return [
-            new Vector3(minX, minY, maxZ).sub(min),
-            new Vector3(maxX, minY, minZ).sub(min),
-            new Vector3(minX, maxY, minZ).sub(min)
-        ];
+        const {x: minX, y: minY, z: minZ} = min;
+        const {x: maxX, y: maxY, z: maxZ} = max;
+        edges[0].setValues(maxX - minX, 0, 0);
+        edges[1].setValues(0, maxY - minY, 0);
+        edges[2].setValues(0, 0, maxZ - minZ);
+        return edges;
     }
 
-    extents(): Vector3[] {
+    getExtents(extents: Vector3[]): Vector3[] {
         const {min, max} = this;
-        let {x: minX, y: minY, z: minZ} = min;
-        let {x: maxX, y: maxY, z: maxZ} = max;
-        return [
-            new Vector3(minX, minY, minZ),
-            new Vector3(minX, minY, maxZ),
-            new Vector3(minX, maxY, minZ),
-            new Vector3(maxX, minY, minZ),
-            new Vector3(minX, maxY, maxZ),
-            new Vector3(maxX, minY, maxZ),
-            new Vector3(maxX, maxY, minZ),
-            new Vector3(maxX, maxY, maxZ)
-        ];
+        const {x: minX, y: minY, z: minZ} = min;
+        const {x: maxX, y: maxY, z: maxZ} = max;
+        extents[0].setValues(minX, minY, minZ);
+        extents[1].setValues(minX, minY, maxZ);
+        extents[2].setValues(minX, maxY, minZ);
+        extents[3].setValues(maxX, minY, minZ);
+        extents[4].setValues(minX, maxY, maxZ);
+        extents[5].setValues(maxX, minY, maxZ);
+        extents[6].setValues(maxX, maxY, minZ);
+        extents[7].setValues(maxX, maxY, maxZ);
+        return extents;
     }
 
     transformed(matrix: Matrix4): BoundingBox {

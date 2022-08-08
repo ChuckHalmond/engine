@@ -1,7 +1,18 @@
 import { Matrix4 } from "../../../../libs/maths/algebra/matrices/Matrix4";
-import { CameraBase } from "./Camera";
+import { Camera } from "./Camera";
 
-export class PerspectiveCamera extends CameraBase {
+export { PerspectiveCamera };
+
+interface PerspectiveCameraConstructor {
+    prototype: PerspectiveCamera;
+    new(fov: number, aspect: number, zNear: number, zFar: number): PerspectiveCamera;
+}
+
+interface PerspectiveCamera extends Camera {
+    setValues(fov: number, aspect: number, zNear: number, zFar: number): PerspectiveCamera
+}
+
+class PerspectiveCameraBase extends Camera {
     
     constructor(
         fov: number,
@@ -18,7 +29,9 @@ export class PerspectiveCamera extends CameraBase {
         zFar: number): PerspectiveCamera
     {
         this.projection.setPerspective(fov, aspect, zNear, zFar);
-        this.updateFrustrum();
+        this.updateFrustum();
         return this;
     }
 }
+
+var PerspectiveCamera: PerspectiveCameraConstructor = PerspectiveCameraBase;

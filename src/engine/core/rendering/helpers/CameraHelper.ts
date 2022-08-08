@@ -25,32 +25,8 @@ class CameraHelperBase extends Mesh implements CameraHelper {
     readonly camera: Camera;
 
     constructor(camera: Camera) {
-        /*const {viewProjection} = camera;
-        const viewProjectionInvert = viewProjection.invert();
-        const clipPoints = [
-            new Vector4(-1, -1, 0, 1),
-            new Vector4(-1, 1, 0, 1),
-            new Vector4(1, 1, 0, 1),
-            new Vector4(1, -1, 0, 1),
-            new Vector4(-1, -1, 1, 1),
-            new Vector4(-1, 1, 1, 1),
-            new Vector4(1, 1, 1, 1),
-            new Vector4(1, -1, 1, 1),
-        ];
-        clipPoints.forEach((point) => {
-            viewProjectionInvert.transformPoint4(point);
-            console.log(point.w);
-            point.multScalar(1 / point.w);
-        });
-        const [
-            leftBottomNear, leftTopNear, rightTopNear, rightBottomNear,
-            leftBottomFar, leftTopFar, rightTopFar, rightBottomFar
-        ] = clipPoints.map((vector) => {
-            const [x, y, z] = vector.array;
-            return new Vector3(x, y, z);
-        });*/
-        const {frustrum} = camera;
-        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = frustrum;
+        const {frustum} = camera;
+        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = frustum;
         const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
         const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
         const rightBottomNear = Plane.intersection(rightPlane, bottomPlane, nearPlane, new Vector3());
@@ -59,19 +35,6 @@ class CameraHelperBase extends Mesh implements CameraHelper {
         const leftTopFar = Plane.intersection(leftPlane, topPlane, farPlane, new Vector3());
         const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
         const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
-        //const offset = nearPlane.normal.normalize().clone().scale(nearPlane.constant);
-        /*[
-            leftBottomNear,
-            leftTopNear,
-            rightBottomNear,
-            rightTopNear,
-            leftBottomFar,
-            leftTopFar,
-            rightBottomFar,
-            rightTopFar
-        ].forEach((vertex) => {
-            console.log(Array.from(vertex));
-        });*/
         const vertices = [
             ...leftBottomNear, ...leftTopNear,
             ...leftTopNear, ...rightTopNear,

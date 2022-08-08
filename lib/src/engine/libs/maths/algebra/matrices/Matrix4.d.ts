@@ -48,7 +48,7 @@ interface Matrix4Constructor {
     scaling(vector: Vector3): Matrix4;
     perspective(fieldOfViewYInRadians: number, aspect: number, zNear: number, zFar: number): Matrix4;
     orthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4;
-    frustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4;
+    frustum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4;
 }
 /**
  * 4x4 matrix. Values are stored in column major order.
@@ -112,7 +112,7 @@ interface Matrix4 {
     transformPoint4(point: Vector4): Vector4;
     transformDirection(direction: Vector3): Vector3;
     transformNormal(normal: Vector3): Vector3;
-    setFrustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
+    setFrustum(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
     setPerspective(fieldOfViewYInRadians: number, aspect: number, zNear: number, zFar: number): this;
     setOrthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
 }
@@ -216,8 +216,8 @@ declare class Matrix4Base implements Matrix4 {
     setPerspective(fov: number, aspect: number, zNear: number, zFar: number): this;
     static orthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4Base;
     setOrthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
-    static frustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4Base;
-    setFrustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
+    static frustum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4Base;
+    setFrustum(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
 }
 declare var Matrix4: Matrix4Constructor;
 declare const Matrix4Injector: Injector<Matrix4Constructor>;

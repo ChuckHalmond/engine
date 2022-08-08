@@ -268,15 +268,15 @@ export async function octree() {
         return matrix;
     }
 
-    const uniformEntries = entities.flatMap((entity_i, i) => {
+    const uniformEntries = /*entities.flatMap((entity_i, i) => {
         const matrix = getBoxMatrix(entity_i.box);
         return [
             [`instances[${i}].u_model`, {value: matrix.array}],
             [`instances[${i}].u_color`, {value: [1, 0, 0]}]
         ];
     }).concat(
-        ...octants.map((octree, i) => {
-            const {region} = octree;
+        ...*/octants.flatMap((octree, i) => {
+            const {region, expanded} = octree;
             const {min, max} = region;
             const {x: minX, y: minY, z: minZ} = min;
             const {x: maxX, y: maxY, z: maxZ} = max;
@@ -290,11 +290,11 @@ export async function octree() {
             const boxScaling = new Vector3(boxWidth, boxHeight, boxDepth);
             const matrix = Matrix4.identity().translate(boxCenter).scale(boxScaling);
             return [
-                [`instances[${entitiesCount + i}].u_model`, {value: matrix.array}],
-                [`instances[${entitiesCount + i}].u_color`, {value: [0, 1, 0]}]
+                [`instances[${i}].u_model`, {value: matrix.array}],
+                [`instances[${i}].u_color`, {value: [0, 1, 0]}]
             ];
         })
-    );
+    /*)*/;
     
     const cubePacket = WebGLPacketUtilities.createPacket(gl, {
         program: {
@@ -327,7 +327,7 @@ export async function octree() {
         drawCommand: {
             mode: DrawMode.LINES,
             elementsCount: cubeLinesIndicesArray.length,
-            instanceCount: instancesCount
+            instanceCount: octantsCount
         }
     });
     if (cubePacket === null) return;
@@ -412,6 +412,12 @@ export async function octree() {
 
     let deltaTime, lastFrameTime = 0;
 
+    const frustumExtents = new Array(8).fill(0).map(_ => new Vector3());
+    const frustumEdges = new Array(6).fill(0).map(_ => new Vector3());
+    const boxExtents = new Array(8).fill(0).map(_ => new Vector3());
+    const boxEdges = new Array(3).fill(0).map(_ => new Vector3());
+    const frustumCrossBoxEdges = new Array(6 * 3).fill(0).map(_ => new Vector3());
+
     const render = (frameTime: number) => {
         if (paused) {
             return;
@@ -424,26 +430,26 @@ export async function octree() {
 
         cameraControl.update(deltaTime);
 
-        const {frustrum} = cullingCamera;
-        frustrum.setFromPerspectiveMatrix(cullingCamera.viewProjection);
+        const {frustum} = cullingCamera;
+        cullingCamera.updateFrustum();
+        frustum.getEdges(frustumEdges);
+        frustum.getExtents(frustumExtents);
 
-        const frustrumEdges = frustrum.edges();
-        const frustrumExtents = frustrum.extents();
-        const uniformEntries = entities.flatMap((entity_i, i) => {
+        const uniformEntries = /*entities.flatMap((entity_i, i) => {
             const {box} = entity_i;
             const boxEdges = box.edges();
             const boxExtents = box.extents();
-            const separatingAxis = frustrumEdges
+            const separatingAxis = frustumEdges
                 .concat(boxEdges)
                 .concat(
-                    frustrumEdges.flatMap((frustrumEdge) =>
-                        boxEdges.map((boxEdge) => boxEdge.clone().cross(frustrumEdge))
+                    frustumEdges.flatMap((frustumEdge) =>
+                        boxEdges.map((boxEdge) => boxEdge.clone().cross(frustumEdge))
                     )
                 );
             let visible = !separatingAxis.some(
                 (axis) => {
                     axis.normalize();
-                    const intF = frustrumExtents.map(f => f.dot(axis));
+                    const intF = frustumExtents.map(f => f.dot(axis));
                     const minF = Math.min(...intF);
                     const maxF = Math.max(...intF);
                     const intB = boxExtents.map(b => b.dot(axis));
@@ -453,23 +459,23 @@ export async function octree() {
                 }
             );
             return [
-                [`instances[${i}].u_color`, {value: Array.from(visible ? Color.BLUE : Color.RED)}]
+                [`instances[${i}].u_color`, {value: Array.from(Color.RED)}]
             ];
-        }).concat(octants.flatMap((octant_i, i) => {
+        }).concat(*/octants.flatMap((octant_i, i) => {
             const {region: box} = octant_i;
-            const boxEdges = box.edges();
-            const boxExtents = box.extents();
-            const separatingAxis = frustrumEdges
+            box.getEdges(boxEdges);
+            box.getExtents(boxExtents);
+            const separatingAxis = frustumEdges
                 .concat(boxEdges)
                 .concat(
-                    frustrumEdges.flatMap((frustrumEdge) =>
-                        boxEdges.map((boxEdge) => boxEdge.clone().cross(frustrumEdge))
+                    frustumEdges.flatMap((frustumEdge_i, i) =>
+                        boxEdges.map((boxEdge_j, j) => frustumCrossBoxEdges[i * 3 + j].copy(boxEdge_j).cross(frustumEdge_i))
                     )
                 );
             let visible = !separatingAxis.some(
                 (axis) => {
                     axis.normalize();
-                    const intF = frustrumExtents.map(f => f.dot(axis));
+                    const intF = frustumExtents.map(f => f.dot(axis));
                     const minF = Math.min(...intF);
                     const maxF = Math.max(...intF);
                     const intB = boxExtents.map(b => b.dot(axis));
@@ -479,9 +485,9 @@ export async function octree() {
                 }
             );
             return [
-                [`instances[${entitiesCount + i}].u_color`, {value: Array.from(visible ? Color.BLUE : Color.GREEN)}]
+                [`instances[${i}].u_color`, {value: Array.from(visible ? Color.BLUE : Color.GREEN)}]
             ];
-        }));
+        });
 
         WebGLPacketUtilities.setPacketValues(gl, cubePacket, {
             uniformBlocks: {
@@ -507,7 +513,7 @@ export async function octree() {
             }
         });
 
-        //WebGLPacketUtilities.drawPacket(gl, gridPacket);
+        WebGLPacketUtilities.drawPacket(gl, gridPacket);
         WebGLPacketUtilities.drawPacket(gl, cubePacket);
         WebGLPacketUtilities.drawPacket(gl, cameraPacket);
         
