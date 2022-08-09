@@ -6,6 +6,10 @@ import { Camera } from "../rendering/scenes/cameras/Camera";
 
 export { FreeCameraControl };
 
+const tempVector1 = new Vector3();
+const tempVector2 = new Vector3();
+const tempVector3 = new Vector3();
+
 interface FreeCameraControlConstructor {
     readonly prototype: FreeCameraControl;
     new(camera: Camera, params?: {rotationSpeed?: number, translationSpeed?: number}): FreeCameraControl;
@@ -34,28 +38,28 @@ class FreeCameraControlBase {
 
     update(deltaTime: number) {
         const {camera, rotationSpeed, translationSpeed} = this;
-        const {transform: cameraTransform} = camera;
         const lastPointerPosition = this.#lastPointerPosition;
-        const cameraPosition = cameraTransform.getTranslation(new Vector3());
-        const cameraForward = cameraTransform.getBackward(new Vector3());
+        const {transform: cameraTransform} = camera;
+        const cameraPosition = cameraTransform.getTranslation(tempVector1);
+        const cameraForward = cameraTransform.getBackward(tempVector2);
         const {array: cameraForwardArray} = cameraForward;
         const {origin, up, down} = Space;
-        let cameraUpSign = cameraTransform.getUp(new Vector3()).dot(up);
+        let cameraUpSign = cameraTransform.getUp(tempVector3).dot(up);
       
         if (Input.getKey(Key.Z) || Input.getKey(Key.ARROW_UP)) {
-            const forward = cameraTransform.getBackward(new Vector3()).scale(translationSpeed * deltaTime);
+            const forward = cameraTransform.getBackward(tempVector3).scale(translationSpeed * deltaTime);
             cameraTransform.translate(forward);
         }
         if (Input.getKey(Key.Q) || Input.getKey(Key.ARROW_LEFT)) {
-            const left = cameraTransform.getLeft(new Vector3()).scale(translationSpeed * deltaTime);
+            const left = cameraTransform.getLeft(tempVector3).scale(translationSpeed * deltaTime);
             cameraTransform.translate(left);
         }
         if (Input.getKey(Key.S) || Input.getKey(Key.ARROW_DOWN)) {
-            const backward = cameraTransform.getForward(new Vector3()).scale(translationSpeed * deltaTime);
+            const backward = cameraTransform.getForward(tempVector3).scale(translationSpeed * deltaTime);
             cameraTransform.translate(backward);
         }
         if (Input.getKey(Key.D) || Input.getKey(Key.ARROW_RIGHT)) {
-            const right = cameraTransform.getRight(new Vector3()).scale(translationSpeed * deltaTime);
+            const right = cameraTransform.getRight(tempVector3).scale(translationSpeed * deltaTime);
             cameraTransform.translate(right);
         }
 
@@ -68,9 +72,9 @@ class FreeCameraControlBase {
             if (!newPointerPosition.equals(lastPointerPosition)) {
                 const dx = (lastPointerPosition.x - newPointerPosition.x) * rotationSpeed * deltaTime;
                 const dy = (lastPointerPosition.y - newPointerPosition.y) * rotationSpeed * deltaTime;
-                cameraPosition.copy(cameraTransform.getTranslation(new Vector3()));
+                cameraPosition.copy(cameraTransform.getTranslation(tempVector3));
                 if (dx !== 0 || dy !== 0) {
-                    cameraUpSign = Math.sign(cameraTransform.getUp(new Vector3()).dot(up));
+                    cameraUpSign = Math.sign(cameraTransform.getUp(tempVector3).dot(up));
                     cameraForward.toSpherical(origin);
                     const theta = cameraForwardArray[1];
                     const phi = cameraForwardArray[2];

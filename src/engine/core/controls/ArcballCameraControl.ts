@@ -22,7 +22,11 @@ interface ArcballCameraControl {
     update(deltaTime: number): void;
 }
 
-class ArcballCameraControlBase {
+const tempVector1 = new Vector3();
+const tempVector2 = new Vector3();
+const tempVector3 = new Vector3();
+
+class ArcballCameraControlBase implements ArcballCameraControl {
     camera: Camera;
     target: Transform;
     rotationSpeed: number;
@@ -51,17 +55,12 @@ class ArcballCameraControlBase {
     }
 
     update(deltaTime: number) {
-        const scrollSpeed = this.scrollSpeed;
-        const rotationSpeed = this.rotationSpeed;
-        const translation = this.translation;
-        const translationSpeed = this.translationSpeed;
-        const minRadius = this.minRadius;
-        const cameraTransform = this.camera.transform;
-        const cameraPosition = cameraTransform.getTranslation(new Vector3());
-        const targetTransform = this.target;
-        const targetPosition = targetTransform.getTranslation(new Vector3());
+        const {scrollSpeed, rotationSpeed, translation, translationSpeed, minRadius, target, camera} = this;
+        const {transform: cameraTransform} = camera;
+        const cameraPosition = cameraTransform.getTranslation(tempVector1);
+        const targetPosition = target.getTranslation(tempVector2);
         const lastPointerPosition = this.#lastPointerPosition;
-        let cameraUpSign = cameraTransform.getUp(new Vector3()).dot(Space.up);
+        let cameraUpSign = cameraTransform.getUp(tempVector3).dot(Space.up);
         
         const wheelDelta = Input.getWheelDelta();
         if (wheelDelta !== 0) {
@@ -86,7 +85,7 @@ class ArcballCameraControlBase {
                     const dy = (lastPointerPosition.y - newPointerPosition.y) * rotationSpeed * deltaTime;
                     cameraTransform.getTranslation(cameraPosition);
                     if (dx !== 0 || dy !== 0) {
-                        cameraUpSign = Math.sign(cameraTransform.getUp(new Vector3()).dot(Space.up));
+                        cameraUpSign = Math.sign(cameraTransform.getUp(tempVector3).dot(Space.up));
                         cameraPosition.toSpherical(targetPosition);
                         const theta = cameraPosition.y;
                         const phi = cameraPosition.z;
@@ -110,17 +109,16 @@ class ArcballCameraControlBase {
                     const distance = cameraPosition.distance(targetPosition);
                     const dx = (lastPointerPosition.x - newPointerPosition.x) * translationSpeed * deltaTime;
                     const dy = (lastPointerPosition.y - newPointerPosition.y) * translationSpeed * deltaTime;
-                    const translation = new Vector3();
                     if (dx !== 0) {
-                        const right = cameraTransform.getRight(new Vector3());
-                        translation.copy(right.scale(dx * distance));
-                        targetTransform.setTranslation(targetPosition.add(translation));
+                        const translation = cameraTransform.getRight(tempVector3);
+                        translation.scale(dx * distance);
+                        target.setTranslation(targetPosition.add(translation));
                         cameraPosition.add(translation);
                     }
                     if (dy !== 0) {
-                        const down = cameraTransform.getDown(new Vector3());
-                        translation.copy(down.scale(dy * distance));
-                        targetTransform.setTranslation(targetPosition.add(translation));
+                        const translation = cameraTransform.getDown(tempVector3);
+                        translation.scale(dy * distance);
+                        target.setTranslation(targetPosition.add(translation));
                         cameraPosition.add(translation);
                     }
                     cameraTransform.setTranslation(cameraPosition);

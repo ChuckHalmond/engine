@@ -513,7 +513,7 @@ export async function octree() {
             }
         });
 
-        WebGLPacketUtilities.drawPacket(gl, gridPacket);
+        //WebGLPacketUtilities.drawPacket(gl, gridPacket);
         WebGLPacketUtilities.drawPacket(gl, cubePacket);
         WebGLPacketUtilities.drawPacket(gl, cameraPacket);
         
