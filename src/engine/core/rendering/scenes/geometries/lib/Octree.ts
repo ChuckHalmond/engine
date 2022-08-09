@@ -1,5 +1,5 @@
 import { Vector3 } from "../../../../../libs/maths/algebra/vectors/Vector3";
-import { Frustrum } from "../../../../../libs/physics/collisions/Frustrum";
+import { Frustum } from "../../../../../libs/physics/collisions/Frustum";
 import { BoundingBox } from "../bounding/BoundingBox";
 
 const tempVector = new Vector3();
@@ -104,10 +104,10 @@ export class Octree {
         });
     }*/
 
-    *entitiesWithinFrustrum(frustrum: Frustrum): IterableIterator<OctreeEntity> {
+    *entitiesWithinFrustum(frustum: Frustum): IterableIterator<OctreeEntity> {
         const {region, expanded, octants, staticEntities, nonStaticEntities} = this;
 
-        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = frustrum;
+        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = frustum;
         const {normal: nearPlaneNormal} = nearPlane;
         const {normal: farPlaneNormal} = farPlane;
         const {normal: bottomPlaneNormal} = bottomPlane;
@@ -115,7 +115,7 @@ export class Octree {
         const {normal: leftPlaneNormal} = leftPlane;
         const {normal: rightPlaneNormal} = rightPlane;
 
-        const intersectsWithFrustrum = (box: BoundingBox) => {
+        const intersectsWithFrustum = (box: BoundingBox) => {
             const {min, max} = box;
             const {x: minX, y: minY, z: minZ} = min;
             const {x: maxX, y: maxY, z: maxZ} = max;
@@ -150,9 +150,9 @@ export class Octree {
                 bottomPlaneNormal.z > 0 ? maxZ : minZ
             )) >= 0;
         };
-        if (intersectsWithFrustrum(region)) {
+        if (intersectsWithFrustum(region)) {
             if (expanded) {
-                octants.forEach(octant => octant.entitiesWithinFrustrum(frustrum));
+                octants.forEach(octant => octant.entitiesWithinFrustum(frustum));
             }
             else {
                 yield *[...staticEntities, ...nonStaticEntities];

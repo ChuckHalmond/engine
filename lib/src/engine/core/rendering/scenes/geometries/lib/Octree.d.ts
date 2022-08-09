@@ -1,4 +1,4 @@
-import { Frustrum } from "../../../../../libs/physics/collisions/Frustrum";
+import { Frustum } from "../../../../../libs/physics/collisions/Frustum";
 import { BoundingBox } from "../bounding/BoundingBox";
 interface OctreeEntity {
     box: BoundingBox;
@@ -17,7 +17,7 @@ export declare class Octree {
     constructor(region: BoundingBox, parent?: Octree | null, nonStaticEntities?: OctreeEntity[], staticEntities?: OctreeEntity[]);
     get depth(): number;
     innerOctants(): Octree[];
-    entitiesWithinFrustrum(frustrum: Frustrum): IterableIterator<OctreeEntity>;
+    entitiesWithinFrustum(frustum: Frustum): IterableIterator<OctreeEntity>;
     init(): void;
     update(): void;
     expand(): void;

@@ -1,7 +1,18 @@
 import { Matrix4 } from "../../../../libs/maths/algebra/matrices/Matrix4";
-import { CameraBase, Camera } from "./Camera";
+import { Camera } from "./Camera";
 
-export class OrthographicCamera extends CameraBase {
+export { OrthographicCamera };
+
+interface OrthographicCameraConstructor {
+    prototype: OrthographicCamera;
+    new(left: number, right: number, bottom: number, top: number, near: number, far: number): OrthographicCamera;
+}
+
+interface OrthographicCamera extends Camera {
+    setValues(left: number, right: number, bottom: number, top: number, near: number, far: number): Camera
+}
+
+class OrthographicCameraBase extends Camera implements OrthographicCamera {
     
     constructor(
         left: number,
@@ -22,7 +33,9 @@ export class OrthographicCamera extends CameraBase {
         far: number): Camera {
         
         this.projection.setOrthographic(left, right, bottom, top, near, far);
-        this.updateFrustrum();
+        this.updateFrustum();
         return this;
     }
 }
+
+var OrthographicCamera: OrthographicCameraConstructor = OrthographicCameraBase;

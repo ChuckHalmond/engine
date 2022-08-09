@@ -2,48 +2,48 @@ import { BoundingBox } from "../../../core/rendering/scenes/geometries/bounding/
 import { Matrix4 } from "../../maths/algebra/matrices/Matrix4";
 import { Vector3 } from "../../maths/algebra/vectors/Vector3";
 import { Plane } from "../../maths/geometry/primitives/Plane";
-import { Injector } from "../../patterns/injectors/Injector";
 import { BoundingSphere } from "./BoundingSphere";
 
-export { Frustrum };
-export { FrustrumInjector };
+export { Frustum };
 
 const tempVector = new Vector3();
 
-interface Frustrum {
+interface Frustum {
     readonly nearPlane: Plane;
     readonly farPlane: Plane;
     readonly topPlane: Plane;
     readonly bottomPlane: Plane;
     readonly leftPlane: Plane;
     readonly rightPlane: Plane;
-    copy(frustrum: Frustrum): Frustrum;
-	clone(): Frustrum;
-	setFromPerspectiveMatrix(matrix: Matrix4): Frustrum;
+    readonly extents: Vector3[];
+    copy(Frustum: Frustum): Frustum;
+	clone(): Frustum;
+	setFromMatrix(matrix: Matrix4): Frustum;
 	set(
         nearPlane: Plane, farPlane: Plane,
         topPlane: Plane, bottomPlane: Plane,
         leftPlane: Plane, rightPlane: Plane
-    ): Frustrum;
+    ): Frustum;
 	intersectsSphere(sphere: BoundingSphere): boolean;
 	intersectsBox(box: BoundingBox): boolean;
 	containsPoint(point: Vector3): boolean;
-    edges(): Vector3[];
-    extents(): Vector3[];
+    getEdges(edges: Vector3[]): Vector3[];
+    getExtents(extents: Vector3[]): Vector3[];
 }
 
-interface FrustrumConstructor {
-    readonly prototype: Frustrum;
-    new(): Frustrum;
+interface FrustumConstructor {
+    readonly prototype: Frustum;
+    new(): Frustum;
 }
 
-class FrustrumBase implements Frustrum {
+class FrustumBase implements Frustum {
     readonly nearPlane: Plane;
     readonly farPlane: Plane;
     readonly topPlane: Plane;
     readonly bottomPlane: Plane;
     readonly leftPlane: Plane;
     readonly rightPlane: Plane;
+    readonly extents: Vector3[];
 
     constructor() {
 		this.nearPlane = new Plane();
@@ -52,12 +52,13 @@ class FrustrumBase implements Frustrum {
         this.bottomPlane = new Plane();
         this.leftPlane = new Plane();
         this.rightPlane = new Plane();
+        this.extents = new Array(8).fill(0).map(_ => new Vector3());
     }
 
     set(
         nearPlane: Plane, farPlane: Plane,
         topPlane: Plane, bottomPlane: Plane,
-        leftPlane: Plane, rightPlane: Plane): Frustrum {
+        leftPlane: Plane, rightPlane: Plane): Frustum {
         const {nearPlane: _nearPlane, farPlane: _farPlane, bottomPlane: _bottomPlane, topPlane: _topPlane, leftPlane: _leftPlane, rightPlane: _rightPlane} = this;
 		_nearPlane.copy(nearPlane);
 		_farPlane.copy(farPlane);
@@ -68,8 +69,8 @@ class FrustrumBase implements Frustrum {
 		return this;
 	}
 
-    copy(frustrum: FrustrumBase): Frustrum {
-        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = frustrum;
+    copy(Frustum: FrustumBase): Frustum {
+        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = Frustum;
         this.set(
             nearPlane,
             farPlane,
@@ -81,12 +82,12 @@ class FrustrumBase implements Frustrum {
         return this;
     }
 
-	clone(): Frustrum {
-		return new FrustrumBase().copy(this);
+	clone(): Frustum {
+		return new FrustumBase().copy(this);
     }
     
-	setFromPerspectiveMatrix(matrix: Matrix4): Frustrum {
-        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
+	setFromMatrix(matrix: Matrix4): Frustum {
+        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane, extents} = this;
         const [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15] = matrix.array;
         rightPlane.set(m3 - m0, m7 - m4, m11 - m8, m15 - m12).normalized();
         leftPlane.set(m3 + m0, m7 + m4, m11 + m8, m15 + m12).normalized();
@@ -94,6 +95,16 @@ class FrustrumBase implements Frustrum {
         topPlane.set(m3 - m1, m7 - m5, m11 - m9, m15 - m13).normalized();
         farPlane.set(m3 - m2, m7 - m6, m11 - m10, m15 - m14).normalized();
         nearPlane.set(m3 + m2, m7 + m6, m11 + m10, m15 + m14).normalized();
+
+        Plane.intersection(leftPlane, bottomPlane, nearPlane, extents[0]);
+        Plane.intersection(leftPlane, topPlane, nearPlane, extents[1]);
+        Plane.intersection(rightPlane, bottomPlane, nearPlane, extents[2]);
+        Plane.intersection(rightPlane, topPlane, nearPlane, extents[3]);
+        Plane.intersection(leftPlane, bottomPlane, farPlane, extents[4]);
+        Plane.intersection(leftPlane, topPlane, farPlane, extents[5]);
+        Plane.intersection(rightPlane, bottomPlane, farPlane, extents[6]);
+        Plane.intersection(rightPlane, topPlane, farPlane, extents[7]);
+        
 		return this;
     }
     
@@ -145,46 +156,36 @@ class FrustrumBase implements Frustrum {
 		return intersects;
 	}
 
-    edges(): Vector3[] {
-        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
-        const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
-        const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
-        const rightBottomNear = Plane.intersection(rightPlane, bottomPlane, nearPlane, new Vector3());
-        const rightTopNear = Plane.intersection(rightPlane, topPlane, nearPlane, new Vector3());
-        const leftBottomFar  = Plane.intersection(leftPlane, bottomPlane, farPlane, new Vector3());
-        const leftTopFar = Plane.intersection(leftPlane, topPlane, farPlane, new Vector3());
-        const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
-        const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
-        return [
-            leftTopFar.clone().sub(leftTopNear),
-            rightTopFar.clone().sub(rightTopNear),
-            leftBottomFar.clone().sub(leftBottomNear),
-            rightBottomFar.clone().sub(rightBottomNear),
-            rightTopFar.clone().sub(leftTopFar),
-            rightTopNear.clone().sub(rightBottomNear)
-        ];
+    getEdges(edges: Vector3[]): Vector3[] {
+        const {extents} = this;
+        const leftBottomNear = extents[0];
+        const leftTopNear = extents[1];
+        const rightBottomNear = extents[2];
+        const rightTopNear = extents[3];
+        const leftBottomFar = extents[4];
+        const leftTopFar = extents[5];
+        const rightBottomFar = extents[6];
+        const rightTopFar = extents[7];
+        edges[0].copy(leftTopFar).sub(leftTopNear);
+        edges[1].copy(rightTopFar).sub(rightTopNear);
+        edges[2].copy(leftBottomFar).sub(leftBottomNear);
+        edges[3].copy(rightBottomFar).sub(rightBottomNear);
+        edges[4].copy(rightTopFar).sub(leftTopFar);
+        edges[5].copy(rightTopNear).sub(rightBottomNear);
+        return edges;
     }
 
-    extents(): Vector3[] {
-        const {nearPlane, farPlane, bottomPlane, topPlane, leftPlane, rightPlane} = this;
-        const leftBottomNear = Plane.intersection(leftPlane, bottomPlane, nearPlane, new Vector3());
-        const leftTopNear = Plane.intersection(leftPlane, topPlane, nearPlane, new Vector3());
-        const rightBottomNear = Plane.intersection(rightPlane, bottomPlane, nearPlane, new Vector3());
-        const rightTopNear = Plane.intersection(rightPlane, topPlane, nearPlane, new Vector3());
-        const leftBottomFar  = Plane.intersection(leftPlane, bottomPlane, farPlane, new Vector3());
-        const leftTopFar = Plane.intersection(leftPlane, topPlane, farPlane, new Vector3());
-        const rightBottomFar = Plane.intersection(rightPlane, bottomPlane, farPlane, new Vector3());
-        const rightTopFar = Plane.intersection(rightPlane, topPlane, farPlane, new Vector3());
-        return [
-            leftBottomNear,
-            leftTopNear,
-            rightBottomNear,
-            rightTopNear,
-            leftBottomFar,
-            leftTopFar,
-            rightBottomFar,
-            rightTopFar
-        ];
+    getExtents(extents: Vector3[]): Vector3[] {
+        const {extents: _extents} = this;
+        extents[0].copy(_extents[0]);
+        extents[1].copy(_extents[1]);
+        extents[2].copy(_extents[2]);
+        extents[3].copy(_extents[3]);
+        extents[4].copy(_extents[4]);
+        extents[5].copy(_extents[5]);
+        extents[6].copy(_extents[6]);
+        extents[7].copy(_extents[7]);
+        return extents;
     }
 
 	containsPoint(point: Vector3): boolean {
@@ -198,11 +199,4 @@ class FrustrumBase implements Frustrum {
     }
 }
 
-var Frustrum: FrustrumConstructor = FrustrumBase;
-const FrustrumInjector: Injector<FrustrumConstructor> = new Injector({
-	defaultCtor: FrustrumBase,
-	onDefaultOverride:
-		(ctor: FrustrumConstructor) => {
-			Frustrum = ctor;
-		}
-});
+var Frustum: FrustumConstructor = FrustumBase;

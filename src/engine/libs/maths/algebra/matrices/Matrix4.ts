@@ -56,7 +56,7 @@ interface Matrix4Constructor {
   
   perspective(fieldOfViewYInRadians: number, aspect: number, zNear: number, zFar: number): Matrix4;
   orthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4;
-  frustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4;
+  frustum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4;
 }
 
 /**
@@ -144,7 +144,7 @@ interface Matrix4 {
   transformDirection(direction: Vector3): Vector3;
   transformNormal(normal: Vector3): Vector3;
   
-  setFrustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
+  setFrustum(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
   setPerspective(fieldOfViewYInRadians: number, aspect: number, zNear: number, zFar: number): this;
   setOrthographic(left: number, right: number, bottom: number, top: number, near: number, far: number): this;
 }
@@ -1666,11 +1666,11 @@ class Matrix4Base implements Matrix4 {
     return this;
   }
 
-  static frustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4Base {
-    return new Matrix4Base().setFrustrum(left, right, bottom, top, near, far);
+  static frustum(left: number, right: number, bottom: number, top: number, near: number, far: number): Matrix4Base {
+    return new Matrix4Base().setFrustum(left, right, bottom, top, near, far);
   }
 
-  setFrustrum(left: number, right: number, bottom: number, top: number, near: number, far: number): this {
+  setFrustum(left: number, right: number, bottom: number, top: number, near: number, far: number): this {
     const thisArray = this.array;
     const invWidth = 1 / (right - left);
     const invHeight = 1 / (top - bottom);
