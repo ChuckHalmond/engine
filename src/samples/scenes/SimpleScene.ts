@@ -151,13 +151,13 @@ export async function launchScene() {
     return;
   }
   
-  const canvasWidth = 800;
-  const canvasHeight = 600;
+  const CANVAS_WIDTH = 1400;
+  const CANVAS_HEIGHT = 800;
   const supersamplingRatio = 1;
-  canvas.width = canvasWidth * supersamplingRatio;
-  canvas.height = canvasHeight * supersamplingRatio;
-  canvas.style.width = `${canvasWidth}px`;
-  canvas.style.height = `${canvasHeight}px`;
+  canvas.width = CANVAS_WIDTH * supersamplingRatio;
+  canvas.height = CANVAS_HEIGHT * supersamplingRatio;
+  canvas.style.width = `${CANVAS_WIDTH}px`;
+  canvas.style.height = `${CANVAS_HEIGHT}px`;
   
   const gl = canvas.getContext("webgl2");
   if (!gl) {

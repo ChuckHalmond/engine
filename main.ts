@@ -16,6 +16,7 @@ import { start } from "./src/samples/scenes/SimpleScene";
 import { octree } from "./src/samples/scenes/Octree";
 import { deferred } from "./src/samples/scenes/Deferred";
 import { helpers } from "./src/samples/scenes/Helpers";
+import { physics } from "./src/samples/scenes/Physics";
 /*
 function windingOrder(v0: Vector3, v1: Vector3, v2: Vector3) {
     const triangle = new Triangle(v0, v1, v2);
@@ -67,6 +68,7 @@ export async function main() {
 
     myWorker.postMessage(sab);*/
 
+    //physics();
     //helpers();
     //deferred();
     //octree();
