@@ -151,8 +151,8 @@ export async function launchScene() {
     return;
   }
   
-  const CANVAS_WIDTH = 1400;
-  const CANVAS_HEIGHT = 800;
+  const CANVAS_WIDTH = 900;
+  const CANVAS_HEIGHT = 600;
   const supersamplingRatio = 1;
   canvas.width = CANVAS_WIDTH * supersamplingRatio;
   canvas.height = CANVAS_HEIGHT * supersamplingRatio;
