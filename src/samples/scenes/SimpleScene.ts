@@ -31,16 +31,19 @@ const simpleSceneDOM = /*template*/`
     <main class="flex-rows flex-auto">
         <section class="centered padded">
           <div id="ui" class="flex-cols">
-            <div class="flex-none">FPS: <span id="canvas-fps">-.-</span><button id="playpause">Pause</button></div>
+            <button id="playpause">Pause</button>
+            <div class="flex-none">
+              FPS: <span id="canvas-fps">-.-</span>
+            </div>
           </div>
           <div id="widgets"></div>
-          <canvas id="canvas" tabindex="0" tooltip="mon-canvas" oncontextmenu="return false;"></canvas>
-          <style>
+          <canvas id="canvas" tabindex="0" oncontextmenu="return false;"></canvas>
+          <!--<style>
             circle:hover {
               fill: rgb(255, 0, 0);
             }
           </style>
-          <!--<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
             <circle cx="10" cy="10" r="4"/>
           </svg>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" id="save" fill="none">

@@ -1,19 +1,13 @@
 @import "theme.css";
 @import "default.css";
 
-*:focus {
-    z-index: 1;
+body {
+    background-color: black;
+    color: white;
 }
 
 a {
     color: rgb(0, 128, 255);
-}
-
-.statusbar-dropdown [slot="content"] {
-    top: unset;
-    bottom: 100%;
-    max-width: 100%;
-    overflow: hidden;
 }
 
 .hidden {
@@ -24,42 +18,12 @@ a {
     display: flex;
 }
 
-.blue {
-    color: rgb(150, 190, 233);
-}
-
-.yellow {
-    color: rgb(255, 200, 95);
-}
-
 .centered {
     text-align: center;
 }
 
 .padded {
     padding: 4px;
-}
-
-[data-role="dropdown-button"] {
-    position: relative;
-    border: 0;
-}
-
-[data-role="dropdown-menu"] {
-    display: flex;
-    z-index: 1;
-    position: absolute;
-
-    left: 0;
-    top: 100%;
-
-    padding: 8px 0;
-    background-color: white;
-    border: 1px solid grey;
-}
-
-[data-role="dropdown-menu"][data-hidden] {
-    display: none;
 }
 
 #container {
@@ -76,7 +40,6 @@ a {
     border-radius: 4px;
     margin: 0;
     border: none;
-    min-width: 1080px;
     background-color: white;
 }
 

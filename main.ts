@@ -69,8 +69,8 @@ export async function main() {
 
     //helpers();
     //deferred();
-    octree();
-    //start();
+    //octree();
+    start();
     //multiDraw();
 
     //startMaps();
