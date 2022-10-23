@@ -45,7 +45,7 @@ class FreeCameraControlBase {
         const {array: cameraForwardArray} = cameraForward;
         const {origin, up, down} = Space;
         let cameraUpSign = cameraTransform.getUp(tempVector3).dot(up);
-      
+        
         if (Input.getKey(Key.Z) || Input.getKey(Key.ARROW_UP)) {
             const forward = cameraTransform.getBackward(tempVector3).scale(translationSpeed * deltaTime);
             cameraTransform.translate(forward);

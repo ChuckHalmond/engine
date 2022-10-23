@@ -1,18 +1,21 @@
 {
   "compilerOptions": {
-    "outDir": "./lib",
-    "target": "es2018",
+    "target": "es2021",
     "experimentalDecorators": true,
+    "noImplicitAny": true,
     "module": "esnext",
     "moduleResolution": "node",
     "sourceMap": true,
     "strict": true,
     "declaration": true,
-    "rootDir": "./",
-    "baseUrl": "./src",
+    /*"rootDir": "./",*/
+    "baseUrl": "./",
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
+  },
+  "paths": {
+    "editor/*": ["./node_modules/editor/*"]
   },
   "exclude": [
     "./lib",

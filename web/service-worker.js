@@ -44,6 +44,7 @@ const FILES_TO_CACHE = [
   '/images/wind.svg',
 ];*/
 
+console.log("Yo!");
 
 self.addEventListener('install', (evt) => {
   console.log('[ServiceWorker] Install');

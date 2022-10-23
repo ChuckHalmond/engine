@@ -1,6 +1,6 @@
 {
-  "name": "Weather",
-  "short_name": "Weather",
+  "name": "Editor",
+  "short_name": "Editor",
   "icons": [
     {
     "src": "https://cdn.glitch.com/def9d4c8-6511-4cc6-9092-8908325b8711%2Ficon-128x128.png?1553034692387",
@@ -33,8 +33,7 @@
       "type": "image/png"
     }
   ],
-  "start_url": "https://localhost:5500/",
-  "scope": "https://localhost:5500/",
+  "start_url": "/web/",
   "display": "fullscreen",
   "background_color": "#ffffff",
   "theme_color": "#dcdcdc"

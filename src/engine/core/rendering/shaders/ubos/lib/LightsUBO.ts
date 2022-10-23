@@ -1,4 +1,4 @@
-import { Uniform } from "engine/core/rendering/webgl/WebGLUniformUtilities";
+import { Uniform } from "../../../webgl/WebGLUniformUtilities";
 import { UBOBase } from "../UBO";
 
 export { LightsUBO };

@@ -1,6 +1,6 @@
-import { Matrix3 } from "engine/libs/maths/algebra/matrices/Matrix3";
 import { Injector } from "../../../patterns/injectors/Injector";
 import { MathError } from "../../MathError";
+import { Matrix3 } from "../matrices/Matrix3";
 
 export { Vector3Constructor };
 export { Vector3 };

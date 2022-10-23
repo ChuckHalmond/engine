@@ -25,7 +25,12 @@ import { SphereGeometry } from "../../engine/core/rendering/scenes/geometries/li
 import { CylinderGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/CylinderGeometry";
 import { DodecahedronGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/DodecahedronGeometry";
 
-const simpleSceneDOM = /*template*/`
+import { element } from "editor/src/elements/Element";
+import { HTMLELoaderElement } from "editor/src/elements/misc/Loader";
+
+HTMLELoaderElement;
+
+const simpleSceneDOM = /*html*/`
 <!--<link rel="stylesheet" href="./css/main.css"/>-->
   <div class="flex-auto flex-cols">
     <main class="flex-rows flex-auto">
@@ -38,7 +43,8 @@ const simpleSceneDOM = /*template*/`
           </div>
           <div id="widgets"></div>
           <canvas id="canvas" tabindex="0" oncontextmenu="return false;"></canvas>
-          <!--<style>
+          <!--
+          <style>
             circle:hover {
               fill: rgb(255, 0, 0);
             }
@@ -51,7 +57,8 @@ const simpleSceneDOM = /*template*/`
               <rect x="0" y="0" width="100" height="100" fill="red"></rect>
               <text text-anchor="middle" alignment-baseline="middle" x="50" y="50" font-family="Verdana" fill="blue">Hello,World!</text>
             </g>
-          </svg>-->
+          </svg>
+          -->
         </section>
     </main>
   </div>`;
@@ -213,6 +220,7 @@ export async function launchScene() {
       }
     });
   }
+  
   // Images
   const albedoMapImg = await fetchImage("assets/engine/img/NormalMap.png");
   const brickwallImg = await fetchImage("assets/engine/img/brickwall.jpg");
@@ -1055,4 +1063,8 @@ export async function launchScene() {
   //     document.body.append(img);
   //   }
   // )
+
+  document.body.append(
+    element("e-loader")
+  );
 }

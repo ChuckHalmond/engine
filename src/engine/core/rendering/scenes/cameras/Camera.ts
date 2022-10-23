@@ -1,5 +1,5 @@
-import { Vector3 } from "engine/libs/maths/algebra/vectors/Vector3";
 import { Matrix4 } from "../../../../libs/maths/algebra/matrices/Matrix4";
+import { Vector3 } from "../../../../libs/maths/algebra/vectors/Vector3";
 import { Space } from "../../../../libs/maths/geometry/space/Space";
 import { UUID, UUIDGenerator } from "../../../../libs/maths/statistics/random/UUIDGenerator";
 import { Frustum } from "../../../../libs/physics/collisions/Frustum";
