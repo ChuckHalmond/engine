@@ -1,8 +1,6 @@
 {
   "name": "engine",
   "version": "1.0.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.js",
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch"
@@ -16,7 +14,7 @@
   },
   "dependencies": {
     "@types/offscreencanvas": "^2019.7.0",
-    "editor": "git+https://github.com/ChuckHalmond/editor.git",
+    "editor": "file:../editor",
     "typescript": "^4.8.4"
   }
 }

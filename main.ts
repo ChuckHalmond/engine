@@ -17,6 +17,9 @@ import { octree } from "./src/samples/scenes/Octree";
 import { deferred } from "./src/samples/scenes/Deferred";
 import { helpers } from "./src/samples/scenes/Helpers";
 import { physics } from "./src/samples/scenes/Physics";
+
+import { element } from "editor/lib/elements/Element";
+import { HTMLEMenuBarElement } from "editor/lib/elements/containers/menus/MenuBar";
 /*
 function windingOrder(v0: Vector3, v1: Vector3, v2: Vector3) {
     const triangle = new Triangle(v0, v1, v2);
@@ -55,7 +58,84 @@ function windingOrder(v0: Vector3, v1: Vector3, v2: Vector3) {
     // const angles = [v0_angle, v1_angle, v2_angle];
 }*/
 
+import "editor/lib/elements/containers/menus";
+import "editor/lib/elements/containers/toolbars";
+
+import "editor/lib/elements/misc";
+
+const menubar = element("e-menubar", {
+    children: [
+        element("e-menuitem", {
+            attributes: {
+                type: "menu"
+            },
+            children: [
+                "File",
+                element("e-menu", {
+                    attributes: {
+                        slot: "menu"
+                    },
+                    children: [
+                        element("e-menuitem", {
+                            attributes: {
+                                type: "button"
+                            },
+                            children: "Action 1"
+                        })
+                    ]
+                })
+            ]
+        }),
+        element("e-menuitem", {
+            attributes: {
+                type: "menu"
+            },
+            children: [
+                "Help",
+                element("e-menu", {
+                    attributes: {
+                        slot: "menu"
+                    },
+                    children: [
+                        element("e-menuitem", {
+                            attributes: {
+                                type: "button"
+                            },
+                            children: "About"
+                        })
+                    ]
+                })
+            ]
+        })
+    ]
+});
+
+const toolbar = element("e-toolbar", {
+    children: [
+        element("e-toolbaritem", {
+            attributes: {
+                id: "play-pause",
+                type: "checkbox",
+                name: "play-pause",
+                iconed: true
+            }
+        })
+    ]
+});
+
+const tooltips = [
+    element("e-tooltip", {
+        attributes: {
+            for: "play-pause"
+        },
+        children: "Play/pause rendering"
+    })
+];
+
 export async function main() {
+    document.body.prepend(menubar);
+    menubar.after(toolbar);
+    document.body.append(...tooltips);
     //instanced();
     //wireframe();
 

@@ -1,6 +1,20 @@
-@import "theme.css";
-@import "default.css";
+:root {
+    --play-icon: url("../assets/play_arrow_FILL1_wght400_GRAD0_opsz48.svg");
+    --pause-icon: url("../assets/pause_FILL0_wght400_GRAD0_opsz48.svg");
+}
 
+e-toolbaritem[name="play-pause"]::part(icon)::before {
+    background-color: black;
+    mask-image: var(--play-icon);
+    -webkit-mask-image: var(--play-icon);
+}
+
+e-toolbaritem[name="play-pause"][pressed]::part(icon)::before {
+    mask-image: var(--pause-icon);
+    -webkit-mask-image: var(--pause-icon);
+}
+
+/*
 body {
     background-color: black;
     color: white;
@@ -90,4 +104,4 @@ main {
 
 header {
     text-align: center;
-}
+}*/

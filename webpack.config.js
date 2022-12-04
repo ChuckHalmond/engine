@@ -1,5 +1,4 @@
 const path = require("path");
-const webpack = require("webpack");
 
 exports.default = {
   entry: "./main.ts",
@@ -10,13 +9,16 @@ exports.default = {
         test: /\.ts$/,
         use: "ts-loader"
       },
+      {
+        test: /\.svg/,
+        type: "asset/resource"
+      },
+      {
+        test: /\.ttf/,
+        type: "asset/resource"
+      }
     ],
   },
-  plugins: [
-    new webpack.WatchIgnorePlugin({
-      paths: [/\.js$/, /\.d\.ts$/]
-    })
-  ],
   resolve: {
     extensions: [".ts", ".js"],
     modules: [

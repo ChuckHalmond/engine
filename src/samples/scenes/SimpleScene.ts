@@ -24,25 +24,17 @@ import { addWidgets, createPositionWidgets, createRelativePositionWidgets, creat
 import { SphereGeometry } from "../../engine/core/rendering/scenes/geometries/lib/SphereGeometry";
 import { CylinderGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/CylinderGeometry";
 import { DodecahedronGeometry } from "../../engine/core/rendering/scenes/geometries/lib/polyhedron/DodecahedronGeometry";
-
-import { element } from "editor/src/elements/Element";
-import { HTMLELoaderElement } from "editor/src/elements/misc/Loader";
-
-HTMLELoaderElement;
+import { HTMLEToolBarElement, HTMLEToolBarItemElement } from "editor/lib/elements/containers/toolbars";
 
 const simpleSceneDOM = /*html*/`
 <!--<link rel="stylesheet" href="./css/main.css"/>-->
   <div class="flex-auto flex-cols">
     <main class="flex-rows flex-auto">
         <section class="centered padded">
-          <div id="ui" class="flex-cols">
-            <button id="playpause">Pause</button>
-            <div class="flex-none">
-              FPS: <span id="canvas-fps">-.-</span>
-            </div>
+          <div id="canvas-container" style="position: relative;">
+            <canvas id="canvas" tabindex="0" oncontextmenu="return false;"></canvas>
+            <canvas id="canvas-2d" tabindex="0" style="display: block; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none;"></canvas>
           </div>
-          <div id="widgets"></div>
-          <canvas id="canvas" tabindex="0" oncontextmenu="return false;"></canvas>
           <!--
           <style>
             circle:hover {
@@ -135,28 +127,44 @@ input.addEventListener("input", () => {
 export async function launchScene() {
   let render: (time: number) => void;
   let fps: number = 0;
-  let paused = false;
+  let playing = false;
 
-  const playPause = document.getElementById('playpause') as HTMLButtonElement;
-  if (playPause !== null) {
-    playPause.onclick = () => {
-      paused = !paused;
-      playPause.textContent = paused ? "Play" : "Pause";
-      if (!paused) {
-        requestAnimationFrame(render);
+  const toolbar = document.querySelector<HTMLEToolBarElement>("e-toolbar");/*getElementById('playpause') as HTMLButtonElement;*/
+  if (toolbar !== null) {
+    toolbar.onclick = (event) => {
+      const item = (<Element>event.target).closest("e-toolbaritem");
+      if (item) {
+        switch (item.name) {
+          case "play-pause": {
+            playing = item.pressed;
+            if (playing) {
+              requestAnimationFrame(render);
+            }
+            break;
+          }
+        }
       }
     };
   }
-
-  const fpsElement = document.getElementById('canvas-fps') as HTMLSpanElement;
-  if (!fpsElement) {
-    return;
-  }
+  setTimeout(() => {
+    toolbar?.querySelector<HTMLElement>("e-toolbaritem[name='play-pause']")!.click();
+  }, 500);
 
   const canvas = document.getElementById("canvas") as HTMLCanvasElement;
   if (!canvas) {
     return;
   }
+
+  const canvas2D = document.getElementById("canvas-2d") as HTMLCanvasElement;
+  if (!canvas2D) {
+    return;
+  }
+
+  const ctx = canvas2D.getContext("2d");
+  if (!ctx) {
+    return;
+  }
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
   
   const CANVAS_WIDTH = 900;
   const CANVAS_HEIGHT = 600;
@@ -165,6 +173,11 @@ export async function launchScene() {
   canvas.height = CANVAS_HEIGHT * supersamplingRatio;
   canvas.style.width = `${CANVAS_WIDTH}px`;
   canvas.style.height = `${CANVAS_HEIGHT}px`;
+
+  canvas2D.width = CANVAS_WIDTH;
+  canvas2D.height = CANVAS_HEIGHT;
+  canvas2D.style.width = `${CANVAS_WIDTH}px`;
+  canvas2D.style.height = `${CANVAS_HEIGHT}px`;
   
   const gl = canvas.getContext("webgl2");
   if (!gl) {
@@ -892,24 +905,44 @@ export async function launchScene() {
   WebGLFramebufferUtilities.unbindFramebuffer(gl);
 
   const cameraControl = new FreeCameraControl(camera);
-
+  
   // WebGLProgramUtilities.recompileProgram(gl, phongProgram, {fragmentSource: phong2Frag});
   // phongCubePacket = WebGLPacketUtilities.createPacket(gl, phongCubePacketProperties)!;
   
   WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, phongPacketInitValues);
   WebGLRendererUtilities.clearColor(gl, Color.BLACK.normalize());
   
-  render = function(frameTime: number) {
-    if (paused) {
-      return;
-    }
+  ctx.font = "18px 'Open Sans'";
+  ctx.strokeStyle = "black";
+  ctx.fillStyle = "white";
+
+  const renderGUI = function(frameTime: number) {
+    frameTime *= 0.001;
+    deltaTime = frameTime - lastFrameTime;
     
+    fps = 1 / deltaTime;
+
+    ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
+
+    ctx.shadowBlur = 2;
+    ctx.strokeText(`${fps.toFixed(1)} FPS`, 20, 20);
+    ctx.shadowBlur = 0;
+    ctx.fillText(`${fps.toFixed(1)} FPS`, 20, 20);
+  };
+
+  render = function(frameTime: number) {
+    renderGUI(frameTime);
+
     frameTime *= 0.001;
     deltaTime = frameTime - lastFrameTime;
     lastFrameTime = frameTime;
-    fps = 1 / deltaTime;
 
-    fpsElement.textContent = fps.toFixed(1);
+    if (!playing) {
+      return;
+    }
+
+    //fpsElement.textContent = fps.toFixed(1);
+
 
     cameraControl.update(deltaTime);
     lightTransform.setMatrix(camera.transform.matrix);
@@ -1007,7 +1040,7 @@ export async function launchScene() {
     Input.clear();
 
     requestAnimationFrame(render);
-  }
+  };
 
   /*const stream = gl.canvas.captureStream(60);
   const rec = new MediaRecorder(stream, {
@@ -1032,8 +1065,6 @@ export async function launchScene() {
   setTimeout(() => {
     rec.stop();
   }, 5_000);*/
-  
-  requestAnimationFrame(render);
   
   // const saveSVG = document.querySelector<SVGSVGElement>("svg#save")!;
   // const getSVGImageData = (svg: SVGSVGElement) => new Promise((resolve: (value: string) => void) => {
@@ -1063,8 +1094,4 @@ export async function launchScene() {
   //     document.body.append(img);
   //   }
   // )
-
-  document.body.append(
-    element("e-loader")
-  );
 }

@@ -8,18 +8,17 @@
     "sourceMap": true,
     "strict": true,
     "declaration": true,
-    /*"rootDir": "./",*/
+    "rootDir": "./",
     "baseUrl": "./",
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
-  },
-  "paths": {
-    "editor/*": ["./node_modules/editor/*"]
+    "allowSyntheticDefaultImports": true,
+    "paths": {
+      "editor/*": ["./node_modules/editor/*"]
+    }
   },
   "exclude": [
-    "./lib",
     "./node_modules",
-    "./server"
+    "./web"
   ]
 }
