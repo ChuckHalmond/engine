@@ -146,9 +146,6 @@ export async function launchScene() {
       }
     };
   }
-  setTimeout(() => {
-    toolbar?.querySelector<HTMLElement>("e-toolbaritem[name='play-pause']")!.click();
-  }, 500);
 
   const canvas = document.getElementById("canvas") as HTMLCanvasElement;
   if (!canvas) {
