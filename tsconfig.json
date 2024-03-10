@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2021",
+    "target": "es2022",
     "experimentalDecorators": true,
     "noImplicitAny": true,
     "module": "esnext",
@@ -15,7 +15,8 @@
     "allowSyntheticDefaultImports": true,
     "paths": {
       "editor/*": ["./node_modules/editor/*"]
-    }
+    },
+    "types": ["@webgpu/types"]
   },
   "exclude": [
     "./node_modules",

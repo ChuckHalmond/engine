@@ -3,6 +3,22 @@
     --pause-icon: url("../assets/pause_FILL0_wght400_GRAD0_opsz48.svg");
 }
 
+@font-face {
+    font-family: "Inter";
+    src: url("../assets/Inter Web/Inter-Regular.woff2");
+}
+
+@font-face {
+    font-family: "Menlo";
+    src: url("../assets/menlo-cufonfonts-webfont/Menlo-Regular.woff");
+}
+
+body {
+    font-family: "Menlo";
+    font-size: 14px;
+    color: rgb(32, 18, 58);
+}
+
 e-toolbaritem[name="play-pause"]::part(icon)::before {
     background-color: black;
     mask-image: var(--play-icon);

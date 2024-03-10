@@ -909,7 +909,7 @@ export async function launchScene() {
   WebGLPacketUtilities.setPacketValues(gl, phongCubePacket, phongPacketInitValues);
   WebGLRendererUtilities.clearColor(gl, Color.BLACK.normalize());
   
-  ctx.font = "18px 'Open Sans'";
+  ctx.font = "14px Menlo";
   ctx.strokeStyle = "black";
   ctx.fillStyle = "white";
 

@@ -16,6 +16,10 @@ exports.default = {
       {
         test: /\.ttf/,
         type: "asset/resource"
+      },
+      {
+        assert: { type: "css" },
+        loader: "css-loader"
       }
     ],
   },

@@ -1,2 +1,19 @@
 {
+    "json.schemas": [
+        {
+            "fileMatch": [
+                "engine.json"
+            ],
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "name" : {
+                        "type": "string",
+                        "description": "The name of the entry"
+                    }
+                },
+                "additionalProperties": false
+            }
+        }
+    ]
 }
